@@ -1,0 +1,166 @@
+/**
+ * North Indian style Vedic birth chart visualization
+ * Diamond-shaped chart where Ascendant is always at top
+ */
+
+import React from 'react';
+import { motion } from 'framer-motion';
+import type { PlanetPosition } from '../../types/astrology';
+import { RASHIS, PLANET_SYMBOLS } from '../../types/astrology';
+
+interface Props {
+  planets: PlanetPosition[];
+  ascendantRashi: number;
+}
+
+// North Indian chart house positions (relative to ascendant)
+// House 1 is always at top center
+const HOUSE_PATHS: Record<number, string> = {
+  1: 'M50,0 L100,50 L50,50 Z',      // Top center triangle
+  2: 'M100,0 L100,50 L50,50 Z',     // Top right
+  3: 'M100,0 L150,50 L100,50 Z',    // Right top
+  4: 'M100,50 L150,50 L100,100 Z',  // Right center
+  5: 'M100,100 L150,50 L150,150 Z', // Right bottom
+  6: 'M100,100 L150,150 L100,150 Z',// Bottom right
+  7: 'M50,100 L100,100 L100,150 L50,150 Z', // Bottom center
+  8: 'M50,100 L50,150 L0,150 Z',    // Bottom left
+  9: 'M0,50 L50,100 L0,150 Z',      // Left bottom
+  10: 'M0,50 L50,50 L50,100 Z',     // Left center
+  11: 'M0,0 L50,50 L0,50 Z',        // Left top
+  12: 'M0,0 L50,0 L50,50 Z',        // Top left
+};
+
+// Positions for planet text in each house
+const HOUSE_TEXT_POSITIONS: Record<number, [number, number]> = {
+  1: [75, 35],
+  2: [85, 25],
+  3: [115, 35],
+  4: [115, 65],
+  5: [125, 100],
+  6: [115, 125],
+  7: [75, 125],
+  8: [35, 125],
+  9: [25, 100],
+  10: [35, 65],
+  11: [25, 35],
+  12: [35, 25],
+};
+
+export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) => {
+  // Group planets by house (house = rashi - ascendant + 1)
+  const planetsByHouse: Record<number, PlanetPosition[]> = {};
+  for (let i = 1; i <= 12; i++) {
+    planetsByHouse[i] = [];
+  }
+  
+  planets.forEach(p => {
+    // Calculate house number (1-12)
+    let house = ((p.rashiIndex - ascendantRashi + 12) % 12) + 1;
+    planetsByHouse[house].push(p);
+  });
+
+  // Get rashi for a house
+  const getRashiForHouse = (house: number): number => {
+    return (ascendantRashi + house - 1) % 12;
+  };
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <svg 
+        viewBox="0 0 150 150" 
+        className="w-full h-auto"
+        style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+      >
+        {/* Background */}
+        <rect x="0" y="0" width="150" height="150" fill="#FEF7C3" rx="8" />
+        
+        {/* Outer border */}
+        <rect 
+          x="0" y="0" width="150" height="150" 
+          fill="none" stroke="#8D2141" strokeWidth="2" rx="8"
+        />
+        
+        {/* Center diamond */}
+        <polygon 
+          points="50,50 100,50 100,100 50,100" 
+          fill="#FEF1D6" 
+          stroke="#BC5411" 
+          strokeWidth="1"
+        />
+        
+        {/* Diagonal lines for houses */}
+        <line x1="0" y1="0" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="150" y1="0" x2="100" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="0" y1="150" x2="50" y2="100" stroke="#BC5411" strokeWidth="1" />
+        <line x1="150" y1="150" x2="100" y2="100" stroke="#BC5411" strokeWidth="1" />
+        
+        {/* Vertical and horizontal lines */}
+        <line x1="50" y1="0" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="100" y1="0" x2="100" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="50" y1="100" x2="50" y2="150" stroke="#BC5411" strokeWidth="1" />
+        <line x1="100" y1="100" x2="100" y2="150" stroke="#BC5411" strokeWidth="1" />
+        <line x1="0" y1="50" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="100" y1="50" x2="150" y2="50" stroke="#BC5411" strokeWidth="1" />
+        <line x1="0" y1="100" x2="50" y2="100" stroke="#BC5411" strokeWidth="1" />
+        <line x1="100" y1="100" x2="150" y2="100" stroke="#BC5411" strokeWidth="1" />
+
+        {/* House numbers and planets */}
+        {Object.entries(HOUSE_TEXT_POSITIONS).map(([houseStr, [x, y]]) => {
+          const house = parseInt(houseStr);
+          const rashi = getRashiForHouse(house);
+          const planetsInHouse = planetsByHouse[house];
+          
+          return (
+            <g key={house}>
+              {/* Rashi number */}
+              <text 
+                x={x} 
+                y={y - 8} 
+                textAnchor="middle" 
+                className="text-[8px] fill-maroon-400"
+              >
+                {rashi + 1}
+              </text>
+              
+              {/* Planets */}
+              {planetsInHouse.map((planet, idx) => (
+                <motion.text
+                  key={planet.planet}
+                  x={x}
+                  y={y + idx * 10}
+                  textAnchor="middle"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 + idx * 0.1 }}
+                  className={`text-[10px] font-bold ${planet.isRetrograde ? 'fill-red-600' : 'fill-maroon-800'}`}
+                >
+                  {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
+                  {planet.isRetrograde && 'ᴿ'}
+                </motion.text>
+              ))}
+            </g>
+          );
+        })}
+
+        {/* Ascendant label in center */}
+        <text x="75" y="72" textAnchor="middle" className="text-[10px] fill-maroon-600 font-medium">
+          Lagna
+        </text>
+        <text x="75" y="84" textAnchor="middle" className="text-[11px] fill-maroon-800 font-bold">
+          {RASHIS[ascendantRashi]}
+        </text>
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-gray-600">
+        {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
+          <div key={planet} className="flex items-center gap-1">
+            <span className="font-bold text-maroon-600">{symbol}</span>
+            <span>{planet}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+

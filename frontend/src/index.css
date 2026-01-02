@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+:root {
+  --color-saffron: #f28c1c;
+  --color-maroon: #8d2141;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fef7c3;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #f28c1c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e37012;
+}
+
+/* Custom animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Chart styles */
+.chart-cell {
+  @apply border border-saffron-300 transition-colors hover:bg-saffron-50;
+}
+
+.chart-cell-active {
+  @apply bg-saffron-100 ring-2 ring-saffron-400;
+}
+
+/* Planet retrograde indicator */
+.planet-retrograde {
+  @apply text-red-600;
+}
+
+/* Dasha colors utilities */
+.dasha-sun { @apply bg-amber-400; }
+.dasha-moon { @apply bg-slate-200; }
+.dasha-mars { @apply bg-red-500; }
+.dasha-mercury { @apply bg-green-400; }
+.dasha-jupiter { @apply bg-yellow-400; }
+.dasha-venus { @apply bg-pink-300; }
+.dasha-saturn { @apply bg-indigo-600; }
+.dasha-rahu { @apply bg-gray-700; }
+.dasha-ketu { @apply bg-amber-700; }
+
+/* Form input focus styles */
+input:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(242, 140, 28, 0.2);
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-transform hover:scale-[1.02] hover:shadow-lg;
+}
+
+/* Gradient text */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-saffron-500 to-maroon-600;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin h-5 w-5 border-2 border-saffron-500 border-t-transparent rounded-full;
+}
+

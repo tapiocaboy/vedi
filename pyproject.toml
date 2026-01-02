@@ -1,0 +1,22 @@
+# Root pyproject.toml - workspace configuration
+# Individual packages are in backend/ and frontend/
+
+[project]
+name = "vedi"
+version = "0.1.0"
+description = "Vedic Astrology Software - Full Stack Application"
+authors = [
+    {name = "tapiocaboy", email = "kalanamith@outlook.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.urls]
+Homepage = "https://github.com/tapiocaboy/vedi"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
