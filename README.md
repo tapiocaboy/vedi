@@ -26,7 +26,37 @@ A full-stack Vedic Astrology application with accurate astronomical calculations
 
 ## Quick Start
 
-### Prerequisites
+### 🐳 Docker Setup (Recommended)
+
+For the easiest setup, use Docker:
+
+**Linux/macOS:**
+```bash
+docker-compose up --build
+```
+
+**Windows:**
+```cmd
+# Using batch script (recommended)
+docker-run.bat
+
+# Or using PowerShell
+.\docker-run.ps1
+
+# Or manually
+docker-compose -f docker-compose.windows.yml up --build
+```
+
+The application will be available at:
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **API Docs:** http://localhost:8000/docs
+
+See [README-Windows.md](README-Windows.md) for detailed Windows setup instructions.
+
+### Manual Setup
+
+#### Prerequisites
 
 - Python 3.11+
 - Node.js 18+

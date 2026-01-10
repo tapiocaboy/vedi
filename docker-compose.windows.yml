@@ -1,19 +1,26 @@
 version: '3.8'
 
+# Windows-specific Docker Compose configuration
+# Use this file on Windows systems: docker-compose -f docker-compose.windows.yml up
+
 services:
-  # FastAPI Backend
+  # FastAPI Backend - Windows optimized
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.windows
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src
+      # Windows-specific environment variables
+      - PYTHONIOENCODING=utf-8
     volumes:
-      # Mount source for development (hot reload) - Windows compatible paths
+      # Mount source for development (hot reload) - Windows compatible
       - ./backend/src:/app/src:ro
+      # Ensure proper line endings for Windows
+      - /tmp:/tmp:rw
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
       interval: 30s
@@ -21,31 +28,35 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
-    # Windows-specific settings
+    # Force Linux containers on Windows
     platform: linux/amd64
 
-  # React Frontend (development)
+  # React Frontend - Windows optimized
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.windows
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true  # Better file watching on Windows
+      - WATCHPACK_POLLING=true    # Additional polling for Windows
+      # Windows-specific Node.js settings
+      - NODE_OPTIONS=--max-old-space-size=4096
     volumes:
       - ./frontend/src:/app/src:ro
       - ./frontend/public:/app/public:ro
       - ./frontend/package.json:/app/package.json:ro
       - ./frontend/package-lock.json:/app/package-lock.json:ro
+      # Windows temp directory
+      - /tmp:/tmp:rw
     depends_on:
       - backend
     restart: unless-stopped
-    # Windows-specific settings
     platform: linux/amd64
 
-  # PostgreSQL Database (optional, for future use)
+  # Optional: PostgreSQL for future database needs
   # db:
   #   image: postgres:15-alpine
   #   environment:
@@ -61,7 +72,12 @@ services:
   #     interval: 10s
   #     timeout: 5s
   #     retries: 5
+  #   platform: linux/amd64
 
 volumes:
   postgres_data:
 
+# Windows-specific network settings
+networks:
+  default:
+    driver: bridge

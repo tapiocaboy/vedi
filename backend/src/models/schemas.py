@@ -12,7 +12,7 @@ class BirthData(BaseModel):
     date: datetime = Field(..., description="Birth date and time")
     latitude: float = Field(..., ge=-90, le=90, description="Birth place latitude")
     longitude: float = Field(..., ge=-180, le=180, description="Birth place longitude")
-    timezone: str = Field(default="UTC", description="Timezone (e.g., 'Asia/Kolkata')")
+    timezone: str = Field(default="Etc/GMT+4", description="Timezone (e.g., 'Asia/Kolkata', 'Etc/GMT+4' for UTC-4)")
     ayanamsa: Literal["LAHIRI", "KRISHNAMURTI", "RAMAN"] = Field(
         default="LAHIRI",
         description="Ayanamsa system to use"

@@ -68,15 +68,15 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
     if (cellType === 'center') {
       if (row === 1 && col === 1) {
         return (
-          <div className="flex items-center justify-center h-full bg-gradient-to-br from-saffron-50 to-maroon-50">
+          <div className="flex items-center justify-center h-full bg-slate-900/80">
             <div className="text-center p-2">
-              <div className="text-xs text-maroon-600 font-medium">Lagna</div>
-              <div className="text-sm font-bold text-maroon-800">{RASHIS[ascendantRashi]}</div>
+              <div className="text-xs text-cyber-400 font-mono uppercase tracking-wider">Lagna</div>
+              <div className="text-sm font-bold text-white">{RASHIS[ascendantRashi]}</div>
             </div>
           </div>
         );
       }
-      return <div className="bg-gradient-to-br from-saffron-50 to-maroon-50" />;
+      return <div className="bg-slate-900/80" />;
     }
 
     if (rashiIndex === null) return null;
@@ -90,20 +90,20 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: rashiIndex * 0.05 }}
         className={`
-          relative h-full p-1.5 border border-saffron-300
-          ${isAscendant ? 'bg-saffron-100 ring-2 ring-saffron-400' : 'bg-white/90'}
-          hover:bg-saffron-50 transition-colors cursor-pointer
+          relative h-full p-1.5 border border-cyber-800/50
+          ${isAscendant ? 'bg-cyber-900/60 ring-1 ring-cyber-500/50' : 'bg-slate-800/40'}
+          hover:bg-cyber-900/40 transition-all cursor-pointer
         `}
         title={`${RASHIS[rashiIndex]} (${RASHI_ENGLISH[rashiIndex]})`}
       >
         {/* Rashi number/name */}
-        <div className="absolute top-0.5 left-1 text-[10px] text-maroon-400 font-medium">
+        <div className="absolute top-0.5 left-1 text-[10px] text-slate-500 font-mono">
           {rashiIndex + 1}
         </div>
         
         {/* Ascendant marker */}
         {isAscendant && (
-          <div className="absolute top-0.5 right-1 text-[10px] text-saffron-600 font-bold">
+          <div className="absolute top-0.5 right-1 text-[10px] text-cyber-400 font-bold">
             ↑
           </div>
         )}
@@ -118,7 +118,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
               transition={{ delay: 0.3 + idx * 0.1 }}
               className={`
                 text-xs font-semibold px-1 py-0.5 rounded
-                ${planet.isRetrograde ? 'text-red-600' : 'text-maroon-700'}
+                ${planet.isRetrograde ? 'text-pink-400' : 'text-cyber-300'}
               `}
               title={`${planet.planet}: ${planet.rashiDegree.toFixed(2)}° ${planet.isRetrograde ? '(R)' : ''}`}
             >
@@ -129,7 +129,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         </div>
 
         {/* Rashi name at bottom */}
-        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[8px] text-gray-500 truncate px-1">
+        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[8px] text-slate-500 truncate px-1 font-mono">
           {RASHIS[rashiIndex]}
         </div>
       </motion.div>
@@ -138,7 +138,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="grid grid-cols-4 gap-0 border-2 border-maroon-600 rounded-lg overflow-hidden shadow-lg aspect-square">
+      <div className="grid grid-cols-4 gap-0 border border-cyber-700/50 rounded-xl overflow-hidden shadow-neon aspect-square bg-slate-900/50">
         {[0, 1, 2, 3].map(row => (
           <React.Fragment key={row}>
             {[0, 1, 2, 3].map(col => (
@@ -151,10 +151,10 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
       </div>
       
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-gray-600">
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-slate-500">
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1">
-            <span className="font-bold text-maroon-600">{symbol}</span>
+            <span className="font-bold text-cyber-400">{symbol}</span>
             <span>{planet}</span>
           </div>
         ))}
@@ -162,4 +162,3 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
     </div>
   );
 };
-

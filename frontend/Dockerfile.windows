@@ -1,0 +1,47 @@
+# Windows-compatible Dockerfile for React Frontend
+# Use this Dockerfile on Windows systems for better compatibility
+
+FROM node:20-alpine
+
+# Set environment variables for Windows compatibility
+ENV NODE_ENV=development \
+    CHOKIDAR_USEPOLLING=true \
+    WATCHPACK_POLLING=true \
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    CI=false
+
+# Install system dependencies for better Windows compatibility
+RUN apk add --no-cache \
+    git \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first (for better caching)
+COPY package*.json ./
+
+# Install dependencies with better error handling for Windows
+RUN npm ci --only=production --no-audit --no-fund --prefer-offline || \
+    npm install --production --no-audit --no-fund --prefer-offline
+
+# Copy source code with proper structure
+COPY . .
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Change ownership of the app directory
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check for development server
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+
+# Development server with Windows-compatible settings
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000", "--disable-host-check"]

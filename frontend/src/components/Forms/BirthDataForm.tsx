@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Sun } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings } from 'lucide-react';
 import type { BirthData } from '../../types/astrology';
 
 interface Props {
@@ -13,14 +13,16 @@ interface Props {
 
 // Common timezones
 const TIMEZONES = [
-  { value: 'Asia/Colombo', label: 'Sri Lanka (SLST)' },
-  { value: 'Asia/Kolkata', label: 'India (IST)' },
-  { value: 'Europe/Helsinki', label: 'Finland (EET)' },
+  { value: 'Etc/GMT+4', label: 'UTC-4 (Eastern Daylight)' },
+  { value: 'Etc/GMT+5', label: 'UTC-5 (Eastern Standard)' },
   { value: 'America/New_York', label: 'US Eastern' },
   { value: 'America/Los_Angeles', label: 'US Pacific' },
   { value: 'Europe/London', label: 'UK (GMT)' },
+  { value: 'Europe/Helsinki', label: 'Finland (EET)' },
   { value: 'Asia/Dubai', label: 'Dubai (GST)' },
   { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Asia/Kolkata', label: 'India (IST)' },
+  { value: 'Asia/Colombo', label: 'Sri Lanka (SLST)' },
   { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
   { value: 'UTC', label: 'UTC' },
 ];
@@ -38,7 +40,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     time: '',
     latitude: '',
     longitude: '',
-    timezone: 'Asia/Colombo',
+    timezone: 'Etc/GMT+4',
     ayanamsa: 'LAHIRI' as const,
   });
 
@@ -67,9 +69,9 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
 
   // Preset locations
   const presetLocations = [
-    { name: 'Colombo', lat: 6.9271, lng: 79.8612, tz: 'Asia/Colombo' },
-    { name: 'Kandy', lat: 7.2906, lng: 80.6337, tz: 'Asia/Colombo' },
-    { name: 'Kalutara', lat: 6.5854, lng: 79.9607, tz: 'Asia/Colombo' },
+    { name: 'New York', lat: 40.7128, lng: -74.0060, tz: 'America/New_York' },
+    { name: 'Los Angeles', lat: 34.0522, lng: -118.2437, tz: 'America/Los_Angeles' },
+    { name: 'London', lat: 51.5074, lng: -0.1278, tz: 'Europe/London' },
     { name: 'Helsinki', lat: 60.1699, lng: 24.9384, tz: 'Europe/Helsinki' },
   ];
 
@@ -82,11 +84,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     }));
   };
 
+  const inputClasses = "w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:border-cyber-500 focus:ring-1 focus:ring-cyber-500/30 outline-none transition-all";
+  const labelClasses = "block text-sm font-medium text-slate-300 mb-2";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-maroon-700 mb-2">
+        <label className={labelClasses}>
           Name (Optional)
         </label>
         <input
@@ -95,15 +100,15 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           value={formData.name}
           onChange={handleChange}
           placeholder="Enter name"
-          className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+          className={inputClasses}
         />
       </div>
 
       {/* Date & Time */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-maroon-700 mb-2">
-            <Calendar className="inline w-4 h-4 mr-1" />
+          <label className={labelClasses}>
+            <Calendar className="inline w-4 h-4 mr-1.5 text-cyber-400" />
             Birth Date
           </label>
           <input
@@ -112,12 +117,12 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             value={formData.date}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+            className={inputClasses}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-maroon-700 mb-2">
-            <Clock className="inline w-4 h-4 mr-1" />
+          <label className={labelClasses}>
+            <Clock className="inline w-4 h-4 mr-1.5 text-cyber-400" />
             Birth Time
           </label>
           <input
@@ -126,14 +131,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             value={formData.time}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+            className={inputClasses}
           />
         </div>
       </div>
 
       {/* Quick Location Presets */}
       <div>
-        <label className="block text-sm font-medium text-maroon-700 mb-2">
+        <label className={labelClasses}>
           Quick Locations
         </label>
         <div className="flex flex-wrap gap-2">
@@ -142,7 +147,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="px-3 py-1.5 text-sm rounded-full bg-saffron-100 text-saffron-700 hover:bg-saffron-200 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-cyber-500/50 hover:text-cyber-400 transition-all"
             >
               {preset.name}
             </button>
@@ -151,10 +156,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       </div>
 
       {/* Coordinates */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-maroon-700 mb-2">
-            <MapPin className="inline w-4 h-4 mr-1" />
+          <label className={labelClasses}>
+            <MapPin className="inline w-4 h-4 mr-1.5 text-cyber-400" />
             Latitude
           </label>
           <input
@@ -166,13 +171,13 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             step="any"
             min="-90"
             max="90"
-            placeholder="e.g., 28.6139"
-            className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+            placeholder="e.g., 40.7128"
+            className={inputClasses}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-maroon-700 mb-2">
-            <MapPin className="inline w-4 h-4 mr-1" />
+          <label className={labelClasses}>
+            <MapPin className="inline w-4 h-4 mr-1.5 text-cyber-400" />
             Longitude
           </label>
           <input
@@ -184,22 +189,23 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             step="any"
             min="-180"
             max="180"
-            placeholder="e.g., 77.2090"
-            className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+            placeholder="e.g., -74.0060"
+            className={inputClasses}
           />
         </div>
       </div>
 
       {/* Timezone */}
       <div>
-        <label className="block text-sm font-medium text-maroon-700 mb-2">
+        <label className={labelClasses}>
+          <Clock className="inline w-4 h-4 mr-1.5 text-cyber-400" />
           Timezone
         </label>
         <select
           name="timezone"
           value={formData.timezone}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+          className={inputClasses}
         >
           {TIMEZONES.map(tz => (
             <option key={tz.value} value={tz.value}>{tz.label}</option>
@@ -209,15 +215,15 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
 
       {/* Ayanamsa */}
       <div>
-        <label className="block text-sm font-medium text-maroon-700 mb-2">
-          <Sun className="inline w-4 h-4 mr-1" />
+        <label className={labelClasses}>
+          <Settings className="inline w-4 h-4 mr-1.5 text-cyber-400" />
           Ayanamsa
         </label>
         <select
           name="ayanamsa"
           value={formData.ayanamsa}
           onChange={handleChange}
-          className="w-full px-4 py-3 rounded-xl border-2 border-saffron-200 focus:border-saffron-500 focus:ring-2 focus:ring-saffron-200 outline-none transition-all bg-white/80"
+          className={inputClasses}
         >
           {AYANAMSAS.map(ay => (
             <option key={ay.value} value={ay.value}>{ay.label}</option>
@@ -229,7 +235,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-4 px-6 bg-gradient-to-r from-saffron-500 to-maroon-600 text-white font-semibold rounded-xl hover:from-saffron-600 hover:to-maroon-700 transform hover:scale-[1.02] transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        className="w-full py-3.5 px-6 bg-gradient-to-r from-cyber-600 to-cyber-500 text-white font-semibold rounded-xl hover:from-cyber-500 hover:to-cyber-400 transform hover:scale-[1.02] transition-all shadow-neon hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none btn-glow"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
@@ -237,13 +243,12 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            Calculating...
+            Analyzing...
           </span>
         ) : (
-          'Generate Birth Chart'
+          'Generate Chart'
         )}
       </button>
     </form>
   );
 };
-

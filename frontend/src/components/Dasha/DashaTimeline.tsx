@@ -35,18 +35,18 @@ interface Props {
 }
 
 const TREND_CONFIG = {
-  positive: { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50', label: 'Favorable' },
-  negative: { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50', label: 'Challenging' },
-  mixed: { icon: MinusCircle, color: 'text-amber-600', bg: 'bg-amber-50', label: 'Mixed' },
-  neutral: { icon: MinusCircle, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Neutral' },
+  positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Favorable' },
+  negative: { icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', label: 'Challenging' },
+  mixed: { icon: MinusCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'Mixed' },
+  neutral: { icon: MinusCircle, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30', label: 'Neutral' },
 };
 
 const AREA_CONFIG = {
-  health: { icon: Heart, color: 'text-rose-600', bgColor: 'bg-rose-100', label: 'Health' },
-  wealth: { icon: Wallet, color: 'text-emerald-600', bgColor: 'bg-emerald-100', label: 'Wealth' },
-  career: { icon: Briefcase, color: 'text-blue-600', bgColor: 'bg-blue-100', label: 'Career' },
-  relationships: { icon: Users, color: 'text-pink-600', bgColor: 'bg-pink-100', label: 'Relationships' },
-  general: { icon: Sparkles, color: 'text-purple-600', bgColor: 'bg-purple-100', label: 'General' },
+  health: { icon: Heart, color: 'text-rose-400', bgColor: 'bg-rose-500/10', label: 'Health' },
+  wealth: { icon: Wallet, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', label: 'Wealth' },
+  career: { icon: Briefcase, color: 'text-cyber-400', bgColor: 'bg-cyber-500/10', label: 'Career' },
+  relationships: { icon: Users, color: 'text-pink-400', bgColor: 'bg-pink-500/10', label: 'Relationships' },
+  general: { icon: Sparkles, color: 'text-purple-400', bgColor: 'bg-purple-500/10', label: 'General' },
 };
 
 interface PredictionDisplayProps {
@@ -63,7 +63,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
     const config = TREND_CONFIG[trend as keyof typeof TREND_CONFIG] || TREND_CONFIG.neutral;
     const Icon = config.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color}`}>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color} border ${config.border}`}>
         <Icon className="w-3 h-3" />
         {config.label}
       </span>
@@ -74,24 +74,24 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mt-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-saffron-200 overflow-hidden"
+      className="mt-3 glass-card rounded-lg overflow-hidden"
     >
       {/* Header */}
-      <div className="p-4 bg-gradient-to-r from-maroon-700 to-maroon-800 text-white">
+      <div className="p-4 bg-gradient-to-r from-cyber-700 to-neon-700">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-display font-semibold text-lg">
+            <h4 className="font-display font-semibold text-lg text-white">
               {mahadashaLord} - {antardashaLord} Predictions
             </h4>
-            <p className="text-maroon-200 text-sm mt-1 line-clamp-2">
+            <p className="text-cyber-200 text-sm mt-1 line-clamp-2">
               {prediction.overallTheme}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-maroon-200 text-xs">Rating</div>
+            <div className="text-cyber-200 text-xs">Rating</div>
             <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-              <span className="font-bold text-lg">{prediction.overallRating}/10</span>
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span className="font-bold text-lg text-white">{prediction.overallRating}/10</span>
             </div>
           </div>
         </div>
@@ -99,7 +99,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
 
       {/* Life Areas Grid */}
       <div className="p-4 space-y-2">
-        <h5 className="text-sm font-semibold text-gray-700 mb-3">Life Area Outlook</h5>
+        <h5 className="text-sm font-semibold text-slate-300 mb-3">Life Area Outlook</h5>
         
         {Object.entries(prediction.predictions).map(([area, data]) => {
           const config = AREA_CONFIG[area as keyof typeof AREA_CONFIG];
@@ -109,26 +109,26 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
           const isExpanded = expandedArea === area;
           
           return (
-            <div key={area} className="rounded-lg border border-gray-100 overflow-hidden bg-white">
+            <div key={area} className="rounded-lg border border-slate-700/50 overflow-hidden bg-slate-800/30">
               <button
                 onClick={() => setExpandedArea(isExpanded ? null : area)}
-                className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full p-3 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg ${config.bgColor}`}>
+                  <div className={`p-1.5 rounded-lg ${config.bgColor} border border-slate-600/30`}>
                     <Icon className={`w-4 h-4 ${config.color}`} />
                   </div>
                   <div className="text-left">
-                    <div className="font-medium text-gray-800 text-sm">{config.label}</div>
-                    <div className="text-xs text-gray-500 line-clamp-1 max-w-xs">{data.summary}</div>
+                    <div className="font-medium text-white text-sm">{config.label}</div>
+                    <div className="text-xs text-slate-400 line-clamp-1 max-w-xs">{data.summary}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {renderTrendBadge(data.trend)}
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-gray-400" />
+                    <ChevronUp className="w-4 h-4 text-slate-500" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                    <ChevronDown className="w-4 h-4 text-slate-500" />
                   )}
                 </div>
               </button>
@@ -139,16 +139,16 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="border-t border-gray-100"
+                    className="border-t border-slate-700/50"
                   >
-                    <div className="p-4 bg-gray-50/50 space-y-4">
+                    <div className="p-4 bg-slate-800/50 space-y-4">
                       {/* Details */}
                       <div>
-                        <h6 className="font-medium text-gray-700 text-sm mb-2">Details</h6>
+                        <h6 className="font-medium text-slate-300 text-sm mb-2">Details</h6>
                         <ul className="space-y-1">
                           {data.details.slice(0, 5).map((detail, i) => (
-                            <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                              <span className="text-saffron-500 mt-0.5">•</span>
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                              <span className="text-cyber-400 mt-0.5">•</span>
                               <span>{detail}</span>
                             </li>
                           ))}
@@ -158,11 +158,11 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
                       {/* Remedies */}
                       {data.remedies.length > 0 && (
                         <div>
-                          <h6 className="font-medium text-gray-700 text-sm mb-2">Remedies</h6>
+                          <h6 className="font-medium text-slate-300 text-sm mb-2">Remedies</h6>
                           <ul className="space-y-1">
                             {data.remedies.slice(0, 3).map((remedy, i) => (
-                              <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
-                                <span className="text-green-500">✓</span>
+                              <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                                <span className="text-emerald-400">✓</span>
                                 <span>{remedy}</span>
                               </li>
                             ))}
@@ -181,28 +181,28 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
       {/* Remedies & Activities */}
       <div className="px-4 pb-4 space-y-3">
         {/* Main Remedies */}
-        <div className="p-3 bg-white rounded-lg border border-saffron-100">
-          <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-            <Gem className="w-4 h-4 text-purple-500" />
+        <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+          <h5 className="text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+            <Gem className="w-4 h-4 text-purple-400" />
             Recommended Remedies
           </h5>
           <div className="grid grid-cols-3 gap-2 text-xs">
             {prediction.remedies.gemstone && (
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <div className="text-purple-600 font-medium">Gemstone</div>
-                <div className="text-gray-700">{prediction.remedies.gemstone}</div>
+              <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <div className="text-purple-400 font-medium">Gemstone</div>
+                <div className="text-slate-300">{prediction.remedies.gemstone}</div>
               </div>
             )}
             {prediction.remedies.mantra && (
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <div className="text-blue-600 font-medium">Mantra</div>
-                <div className="text-gray-700 truncate">{prediction.remedies.mantra}</div>
+              <div className="p-2 bg-cyber-500/10 rounded-lg border border-cyber-500/20">
+                <div className="text-cyber-400 font-medium">Mantra</div>
+                <div className="text-slate-300 truncate">{prediction.remedies.mantra}</div>
               </div>
             )}
             {prediction.remedies.deity && (
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <div className="text-amber-600 font-medium">Deity</div>
-                <div className="text-gray-700">{prediction.remedies.deity}</div>
+              <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <div className="text-amber-400 font-medium">Deity</div>
+                <div className="text-slate-300">{prediction.remedies.deity}</div>
               </div>
             )}
           </div>
@@ -211,13 +211,13 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
         {/* Activities */}
         <button
           onClick={() => setShowActivities(!showActivities)}
-          className="w-full p-3 flex items-center justify-between bg-white rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+          className="w-full p-3 flex items-center justify-between bg-slate-800/50 rounded-lg border border-slate-700/50 hover:bg-slate-700/40 transition-colors"
         >
-          <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-green-500" />
+          <span className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
             Activities Guide
           </span>
-          {showActivities ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          {showActivities ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
         </button>
 
         <AnimatePresence>
@@ -228,27 +228,27 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
               exit={{ height: 0, opacity: 0 }}
               className="grid grid-cols-2 gap-3"
             >
-              <div className="p-3 bg-green-50 rounded-lg">
-                <h6 className="font-medium text-green-700 text-xs mb-2 flex items-center gap-1">
+              <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
+                <h6 className="font-medium text-emerald-400 text-xs mb-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" /> Favorable
                 </h6>
                 <ul className="space-y-1">
                   {prediction.favorableActivities.slice(0, 4).map((activity, i) => (
-                    <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
-                      <span className="text-green-500">✓</span>
+                    <li key={i} className="text-xs text-slate-300 flex items-start gap-1">
+                      <span className="text-emerald-400">✓</span>
                       <span>{activity}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="p-3 bg-red-50 rounded-lg">
-                <h6 className="font-medium text-red-700 text-xs mb-2 flex items-center gap-1">
+              <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/30">
+                <h6 className="font-medium text-rose-400 text-xs mb-2 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> Avoid
                 </h6>
                 <ul className="space-y-1">
                   {prediction.unfavorableActivities.slice(0, 4).map((activity, i) => (
-                    <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
-                      <span className="text-red-500">✗</span>
+                    <li key={i} className="text-xs text-slate-300 flex items-start gap-1">
+                      <span className="text-rose-400">✗</span>
                       <span>{activity}</span>
                     </li>
                   ))}
@@ -318,10 +318,10 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-display font-semibold text-maroon-800">
+        <h3 className="text-lg font-display font-semibold text-white">
           Mahadasha Timeline
         </h3>
-        <p className="text-xs text-gray-500">Click on any Antardasha to view detailed predictions</p>
+        <p className="text-xs text-slate-500 font-mono">Click any period to view predictions</p>
       </div>
 
       {timeline.map((item, idx) => {
@@ -336,16 +336,16 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className="rounded-xl overflow-hidden shadow-sm border border-saffron-100"
+            className="rounded-xl overflow-hidden border border-slate-700/50"
           >
             {/* Mahadasha header */}
             <div
               onClick={() => toggleExpand(mahadasha.lord, idx)}
               className={`
                 p-4 cursor-pointer flex items-center justify-between
-                transition-colors hover:opacity-90
-                ${DASHA_COLORS[mahadasha.lord] || 'bg-gray-400'}
-                ${isMdCurrent ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+                transition-all hover:brightness-110
+                ${DASHA_COLORS[mahadasha.lord] || 'bg-slate-600'}
+                ${isMdCurrent ? 'ring-2 ring-cyber-400 ring-offset-2 ring-offset-slate-900' : ''}
               `}
             >
               <div className="flex items-center gap-3">
@@ -353,12 +353,12 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                   {mahadasha.lord}
                 </span>
                 {mahadasha.isBirthDasha && (
-                  <span className="px-2 py-0.5 bg-white/20 rounded text-xs text-white">
-                    Birth Dasha
+                  <span className="px-2 py-0.5 bg-white/20 rounded text-xs text-white font-mono">
+                    Birth
                   </span>
                 )}
                 {isMdCurrent && (
-                  <span className="px-2 py-0.5 bg-blue-500 rounded text-xs text-white font-semibold">
+                  <span className="px-2 py-0.5 bg-cyber-500 rounded text-xs text-white font-semibold">
                     Current
                   </span>
                 )}
@@ -366,7 +366,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
               
               <div className="flex items-center gap-4 text-white">
                 <div className="text-right text-sm">
-                  <div className="opacity-80">
+                  <div className="opacity-80 font-mono text-xs">
                     {formatDate(mahadasha.start)} – {formatDate(mahadasha.end)}
                   </div>
                   <div className="font-semibold">
@@ -389,7 +389,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-white"
+                  className="bg-slate-900/50"
                 >
                   <div className="p-3 space-y-2">
                     {antardashas.map((ad, adIdx) => {
@@ -406,35 +406,35 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             onClick={() => birthData && handleAntardashaClick(mahadasha.lord, ad.lord, idx, adIdx)}
                             className={`
                               p-3 rounded-lg flex items-center justify-between
-                              ${DASHA_COLORS[ad.lord] || 'bg-gray-200'} bg-opacity-20
-                              ${isAdCurrent ? 'ring-2 ring-blue-400' : ''}
-                              ${birthData ? 'cursor-pointer hover:bg-opacity-30 transition-all' : ''}
-                              ${isSelected ? 'ring-2 ring-saffron-500 bg-opacity-40' : ''}
+                              bg-slate-800/50 border
+                              ${isAdCurrent ? 'border-cyber-400' : 'border-slate-700/50'}
+                              ${birthData ? 'cursor-pointer hover:bg-slate-700/50 transition-all' : ''}
+                              ${isSelected ? 'ring-2 ring-cyber-500 bg-slate-700/50' : ''}
                             `}
                           >
                             <div className="flex items-center gap-2">
                               <span 
                                 className={`
                                   w-3 h-3 rounded-full
-                                  ${DASHA_COLORS[ad.lord] || 'bg-gray-400'}
+                                  ${DASHA_COLORS[ad.lord] || 'bg-slate-500'}
                                 `}
                               />
-                              <span className="font-medium text-gray-700">
+                              <span className="font-medium text-white">
                                 {mahadasha.lord} - {ad.lord}
                               </span>
                               {isAdCurrent && (
-                                <span className="px-2 py-0.5 bg-blue-500 rounded text-xs text-white">
+                                <span className="px-2 py-0.5 bg-cyber-500 rounded text-xs text-white">
                                   Now
                                 </span>
                               )}
                               {birthData && (
-                                <Eye className={`w-4 h-4 ${isSelected ? 'text-saffron-600' : 'text-gray-400'}`} />
+                                <Eye className={`w-4 h-4 ${isSelected ? 'text-cyber-400' : 'text-slate-500'}`} />
                               )}
                             </div>
                             
-                            <div className="text-right text-sm text-gray-600">
-                              <div>{formatDate(ad.start)} – {formatDate(ad.end)}</div>
-                              <div className="font-medium">{formatDays(ad.durationDays)}</div>
+                            <div className="text-right text-sm text-slate-400">
+                              <div className="font-mono text-xs">{formatDate(ad.start)} – {formatDate(ad.end)}</div>
+                              <div className="font-medium text-slate-300">{formatDays(ad.durationDays)}</div>
                             </div>
                           </motion.div>
 
@@ -447,9 +447,9 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                                 exit={{ opacity: 0, height: 0 }}
                               >
                                 {isPredictionLoading ? (
-                                  <div className="mt-3 p-6 bg-saffron-50 rounded-lg flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 animate-spin text-saffron-600 mr-2" />
-                                    <span className="text-sm text-gray-600">Loading predictions...</span>
+                                  <div className="mt-3 p-6 glass-card rounded-lg flex items-center justify-center">
+                                    <Loader2 className="w-5 h-5 animate-spin text-cyber-500 mr-2" />
+                                    <span className="text-sm text-slate-400 font-mono">Loading predictions...</span>
                                   </div>
                                 ) : prediction ? (
                                   <PredictionDisplay 

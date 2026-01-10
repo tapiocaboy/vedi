@@ -1,0 +1,81 @@
+# Frontend files (not needed in backend container)
+../frontend/
+node_modules/
+*.js
+*.jsx
+*.ts
+*.tsx
+
+# Git and docs
+.git
+.gitignore
+README.md
+TODO.md
+TODO_2.md
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+*.bat
+*.ps1
+
+# Python cache and build files
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments (will be created in container)
+.venv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and testing
+*.log
+logs/
+.coverage
+.pytest_cache/
+.tox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Temporary files
+*.tmp
+*.temp

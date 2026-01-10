@@ -69,40 +69,42 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
       <svg 
         viewBox="0 0 150 150" 
         className="w-full h-auto"
-        style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
+        style={{ filter: 'drop-shadow(0 4px 20px rgba(59, 130, 246, 0.2))' }}
       >
         {/* Background */}
-        <rect x="0" y="0" width="150" height="150" fill="#FEF7C3" rx="8" />
+        <rect x="0" y="0" width="150" height="150" fill="#0d1424" rx="8" />
         
-        {/* Outer border */}
+        {/* Outer border with glow effect */}
         <rect 
           x="0" y="0" width="150" height="150" 
-          fill="none" stroke="#8D2141" strokeWidth="2" rx="8"
+          fill="none" stroke="#3380ff" strokeWidth="1.5" rx="8"
+          style={{ filter: 'drop-shadow(0 0 8px rgba(51, 128, 255, 0.5))' }}
         />
         
         {/* Center diamond */}
         <polygon 
           points="50,50 100,50 100,100 50,100" 
-          fill="#FEF1D6" 
-          stroke="#BC5411" 
-          strokeWidth="1"
+          fill="#1a2234" 
+          stroke="#3380ff" 
+          strokeWidth="0.5"
+          strokeOpacity="0.5"
         />
         
         {/* Diagonal lines for houses */}
-        <line x1="0" y1="0" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="150" y1="0" x2="100" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="0" y1="150" x2="50" y2="100" stroke="#BC5411" strokeWidth="1" />
-        <line x1="150" y1="150" x2="100" y2="100" stroke="#BC5411" strokeWidth="1" />
+        <line x1="0" y1="0" x2="50" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="150" y1="0" x2="100" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="0" y1="150" x2="50" y2="100" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="150" y1="150" x2="100" y2="100" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
         
         {/* Vertical and horizontal lines */}
-        <line x1="50" y1="0" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="100" y1="0" x2="100" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="50" y1="100" x2="50" y2="150" stroke="#BC5411" strokeWidth="1" />
-        <line x1="100" y1="100" x2="100" y2="150" stroke="#BC5411" strokeWidth="1" />
-        <line x1="0" y1="50" x2="50" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="100" y1="50" x2="150" y2="50" stroke="#BC5411" strokeWidth="1" />
-        <line x1="0" y1="100" x2="50" y2="100" stroke="#BC5411" strokeWidth="1" />
-        <line x1="100" y1="100" x2="150" y2="100" stroke="#BC5411" strokeWidth="1" />
+        <line x1="50" y1="0" x2="50" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="100" y1="0" x2="100" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="50" y1="100" x2="50" y2="150" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="100" y1="100" x2="100" y2="150" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="0" y1="50" x2="50" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="100" y1="50" x2="150" y2="50" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="0" y1="100" x2="50" y2="100" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
+        <line x1="100" y1="100" x2="150" y2="100" stroke="#3380ff" strokeWidth="0.5" strokeOpacity="0.5" />
 
         {/* House numbers and planets */}
         {Object.entries(HOUSE_TEXT_POSITIONS).map(([houseStr, [x, y]]) => {
@@ -117,7 +119,9 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
                 x={x} 
                 y={y - 8} 
                 textAnchor="middle" 
-                className="text-[8px] fill-maroon-400"
+                className="text-[8px]"
+                fill="#64748b"
+                fontFamily="monospace"
               >
                 {rashi + 1}
               </text>
@@ -132,7 +136,8 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 + idx * 0.1 }}
-                  className={`text-[10px] font-bold ${planet.isRetrograde ? 'fill-red-600' : 'fill-maroon-800'}`}
+                  className="text-[10px] font-bold"
+                  fill={planet.isRetrograde ? '#f472b6' : '#8ec7ff'}
                 >
                   {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
                   {planet.isRetrograde && 'ᴿ'}
@@ -143,19 +148,19 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         })}
 
         {/* Ascendant label in center */}
-        <text x="75" y="72" textAnchor="middle" className="text-[10px] fill-maroon-600 font-medium">
-          Lagna
+        <text x="75" y="72" textAnchor="middle" className="text-[10px]" fill="#3380ff" fontFamily="monospace">
+          LAGNA
         </text>
-        <text x="75" y="84" textAnchor="middle" className="text-[11px] fill-maroon-800 font-bold">
+        <text x="75" y="84" textAnchor="middle" className="text-[11px] font-bold" fill="#ffffff">
           {RASHIS[ascendantRashi]}
         </text>
       </svg>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-gray-600">
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-slate-500">
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1">
-            <span className="font-bold text-maroon-600">{symbol}</span>
+            <span className="font-bold text-cyber-400">{symbol}</span>
             <span>{planet}</span>
           </div>
         ))}
@@ -163,4 +168,3 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
     </div>
   );
 };
-

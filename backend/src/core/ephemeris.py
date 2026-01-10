@@ -47,7 +47,7 @@ AYANAMSA = {
 NAKSHATRA_SPAN = 13.333333333333334
 
 
-def datetime_to_jd(dt: datetime, timezone: str = "UTC") -> float:
+def datetime_to_jd(dt: datetime, timezone: str = "Etc/GMT+4") -> float:
     """Convert datetime to Julian Day number."""
     if dt.tzinfo is None:
         tz = pytz.timezone(timezone)
@@ -130,7 +130,7 @@ def get_planet_positions(
     dt: datetime,
     latitude: float,
     longitude: float,
-    timezone: str = "UTC",
+    timezone: str = "Etc/GMT+4",
     ayanamsa: str = "LAHIRI"
 ) -> dict[str, PlanetPosition]:
     """

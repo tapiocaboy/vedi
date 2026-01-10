@@ -1,0 +1,53 @@
+# Windows-compatible Dockerfile for Vedic Astrology Backend
+# Use this Dockerfile on Windows systems for better compatibility
+
+FROM python:3.11-slim
+
+# Set environment variables for Windows compatibility
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src \
+    PYTHONIOENCODING=utf-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for Swiss Ephemeris (Windows-compatible)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files first (for better caching)
+COPY pyproject.toml poetry.lock ./
+
+# Install Poetry
+RUN pip install --no-cache-dir poetry
+
+# Configure poetry: Don't create virtual environment, install dependencies globally
+RUN poetry config virtualenvs.create false
+
+# Install Python dependencies using Poetry
+RUN poetry install --no-dev --no-interaction --no-ansi
+
+# Copy source code with proper permissions
+COPY src/ ./src/
+COPY tests/ ./tests/
+
+# Create non-root user for security (Windows-compatible)
+RUN useradd --create-home --shell /bin/bash app \
+    && chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
+
+# Run the application with proper Python path
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "info"]
