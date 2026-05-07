@@ -60,14 +60,14 @@ interface Props {
 const TREND_CONFIG = {
   positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Favorable' },
   negative: { icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', label: 'Challenging' },
-  mixed: { icon: MinusCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'Mixed' },
-  neutral: { icon: MinusCircle, color: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30', label: 'Neutral' },
+  mixed: { icon: MinusCircle, color: 'text-violet-300', bg: 'bg-violet-400/10', border: 'border-violet-400/30', label: 'Mixed' },
+  neutral: { icon: MinusCircle, color: 'text-white/50', bg: 'bg-slate-500/10', border: 'border-slate-500/30', label: 'Neutral' },
 };
 
 const AREA_CONFIG = {
   health: { icon: Heart, color: 'text-rose-400', label: 'Health' },
   wealth: { icon: Wallet, color: 'text-emerald-400', label: 'Wealth' },
-  career: { icon: Briefcase, color: 'text-cyber-400', label: 'Career' },
+  career: { icon: Briefcase, color: 'text-violet-400', label: 'Career' },
   relationships: { icon: Users, color: 'text-pink-400', label: 'Relationships' },
   general: { icon: Sparkles, color: 'text-purple-400', label: 'General' },
 };
@@ -83,7 +83,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
       stars.push(
         <Star
           key={i}
-          className={`w-4 h-4 ${i < rating ? 'text-amber-400 fill-amber-400' : 'text-slate-600'}`}
+          className={`w-4 h-4 ${i < rating ? 'text-violet-300 fill-violet-300' : 'text-slate-600'}`}
         />
       );
     }
@@ -107,26 +107,26 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
     const isExpanded = expandedArea === area;
 
     return (
-      <div key={area} className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/30">
+      <div key={area} className="border border-white/6 rounded-lg overflow-hidden bg-white/3">
         <button
           onClick={() => setExpandedArea(isExpanded ? null : area)}
-          className="w-full p-4 flex items-center justify-between hover:bg-slate-700/30 transition-colors"
+          className="w-full p-4 flex items-center justify-between hover:bg-white/4 transition-colors"
         >
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${TREND_CONFIG[data.trend]?.bg || 'bg-slate-700/50'} border ${TREND_CONFIG[data.trend]?.border || 'border-slate-600/50'}`}>
+            <div className={`p-2 rounded-lg ${TREND_CONFIG[data.trend]?.bg || 'bg-white/4'} border ${TREND_CONFIG[data.trend]?.border || 'border-white/8'}`}>
               <Icon className={`w-5 h-5 ${config.color}`} />
             </div>
             <div className="text-left">
               <div className="font-semibold text-white">{config.label}</div>
-              <div className="text-sm text-slate-400 max-w-md truncate">{data.summary}</div>
+              <div className="text-sm text-white/50 max-w-md truncate">{data.summary}</div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {renderTrendBadge(data.trend)}
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-slate-500" />
+              <ChevronUp className="w-5 h-5 text-white/25" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-slate-500" />
+              <ChevronDown className="w-5 h-5 text-white/25" />
             )}
           </div>
         </button>
@@ -135,16 +135,16 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="border-t border-slate-700/50 p-4 bg-slate-800/50"
+            className="border-t border-white/6 p-4 bg-white/3"
           >
             <div className="space-y-4">
               {/* Details */}
               <div>
-                <h5 className="font-medium text-slate-300 mb-2">Details</h5>
+                <h5 className="font-medium text-white/70 mb-2">Details</h5>
                 <ul className="space-y-1.5">
                   {data.details.map((detail, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-slate-400">
-                      <span className="text-cyber-400 mt-1">•</span>
+                    <li key={i} className="flex items-start gap-2 text-sm text-white/50">
+                      <span className="text-violet-400 mt-1">•</span>
                       <span>{detail}</span>
                     </li>
                   ))}
@@ -154,10 +154,10 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
               {/* Remedies */}
               {data.remedies.length > 0 && (
                 <div>
-                  <h5 className="font-medium text-slate-300 mb-2">Remedies</h5>
+                  <h5 className="font-medium text-white/70 mb-2">Remedies</h5>
                   <ul className="space-y-1.5">
                     {data.remedies.map((remedy, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-slate-400">
+                      <li key={i} className="flex items-start gap-2 text-sm text-white/50">
                         <span className="text-emerald-400 mt-1">✓</span>
                         <span>{remedy}</span>
                       </li>
@@ -172,7 +172,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
                   {data.keywords.map((keyword, i) => (
                     <span
                       key={i}
-                      className="px-2 py-1 bg-slate-700/50 text-slate-400 text-xs rounded-full border border-slate-600/50"
+                      className="px-2 py-1 bg-white/4 text-white/50 text-xs rounded-full border border-white/8"
                     >
                       {keyword}
                     </span>
@@ -188,12 +188,12 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
 
   if (compact) {
     return (
-      <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+      <div className="p-4 bg-white/3 rounded-lg border border-white/6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-slate-400">Overall Rating</span>
+          <span className="text-sm text-white/50">Overall Rating</span>
           {renderRating(prediction.overall_rating)}
         </div>
-        <p className="text-sm text-slate-300 line-clamp-2">{prediction.overall_theme}</p>
+        <p className="text-sm text-white/70 line-clamp-2">{prediction.overall_theme}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {Object.entries(prediction.predictions).slice(0, 4).map(([area, data]) => (
             <span
@@ -211,24 +211,24 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="p-6 bg-gradient-to-r from-cyber-700 to-neon-700">
+      <div className="p-6 bg-gradient-to-r from-violet-800 to-violet-700">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-display font-semibold text-white">
               {prediction.dasha_lord} {prediction.period_type === 'mahadasha' ? 'Mahadasha' : 'Period'}
             </h3>
-            <p className="text-cyber-200 text-sm">
+            <p className="text-white/70 text-sm">
               {prediction.period_type.charAt(0).toUpperCase() + prediction.period_type.slice(1)} Predictions
             </p>
           </div>
           <div className="text-right">
-            <div className="text-sm text-cyber-200 mb-1">Overall Rating</div>
+            <div className="text-sm text-white/70 mb-1">Overall Rating</div>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-white">{prediction.overall_rating}/10</span>
             </div>
           </div>
         </div>
-        <p className="text-cyber-100">{prediction.overall_theme}</p>
+        <p className="text-white/80">{prediction.overall_theme}</p>
       </div>
 
       {/* Predictions by Area */}
@@ -243,16 +243,16 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
       <div className="px-6 pb-6">
         <button
           onClick={() => setShowRemedies(!showRemedies)}
-          className="w-full p-4 flex items-center justify-between bg-gradient-to-r from-purple-900/30 to-cyber-900/30 rounded-lg hover:from-purple-800/40 hover:to-cyber-800/40 transition-colors border border-purple-500/20"
+          className="w-full p-4 flex items-center justify-between bg-gradient-to-r from-purple-900/30 to-violet-900/20 rounded-lg hover:from-purple-800/40 hover:to-violet-800/30 transition-colors border border-purple-500/20"
         >
           <div className="flex items-center gap-3">
             <Gem className="w-5 h-5 text-purple-400" />
             <span className="font-semibold text-white">Recommended Remedies</span>
           </div>
           {showRemedies ? (
-            <ChevronUp className="w-5 h-5 text-slate-400" />
+            <ChevronUp className="w-5 h-5 text-white/50" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400" />
+            <ChevronDown className="w-5 h-5 text-white/50" />
           )}
         </button>
 
@@ -260,32 +260,23 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="mt-3 p-4 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-4"
+            className="mt-3 p-4 bg-white/3 rounded-lg border border-white/6 space-y-4"
           >
             {prediction.remedies.gemstone && (
               <div className="flex items-start gap-3">
                 <Gem className="w-5 h-5 text-purple-400 mt-0.5" />
                 <div>
                   <span className="font-medium text-white">Gemstone:</span>
-                  <p className="text-slate-400">{prediction.remedies.gemstone}</p>
+                  <p className="text-white/50">{prediction.remedies.gemstone}</p>
                 </div>
               </div>
             )}
             {prediction.remedies.mantra && (
               <div className="flex items-start gap-3">
-                <Moon className="w-5 h-5 text-cyber-400 mt-0.5" />
+                <Moon className="w-5 h-5 text-violet-400 mt-0.5" />
                 <div>
-                  <span className="font-medium text-white">Mantra:</span>
-                  <p className="text-slate-400">{prediction.remedies.mantra}</p>
-                </div>
-              </div>
-            )}
-            {prediction.remedies.deity && (
-              <div className="flex items-start gap-3">
-                <Star className="w-5 h-5 text-amber-400 mt-0.5" />
-                <div>
-                  <span className="font-medium text-white">Deity to Worship:</span>
-                  <p className="text-slate-400">{prediction.remedies.deity}</p>
+                  <span className="font-medium text-white">Affirmation:</span>
+                  <p className="text-white/50">{prediction.remedies.mantra}</p>
                 </div>
               </div>
             )}
@@ -297,16 +288,16 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
       <div className="px-6 pb-6">
         <button
           onClick={() => setShowActivities(!showActivities)}
-          className="w-full p-4 flex items-center justify-between bg-gradient-to-r from-emerald-900/30 to-cyber-900/30 rounded-lg hover:from-emerald-800/40 hover:to-cyber-800/40 transition-colors border border-emerald-500/20"
+          className="w-full p-4 flex items-center justify-between bg-gradient-to-r from-emerald-900/30 to-violet-900/20 rounded-lg hover:from-emerald-800/40 hover:to-violet-800/30 transition-colors border border-emerald-500/20"
         >
           <div className="flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-emerald-400" />
             <span className="font-semibold text-white">Activities Guide</span>
           </div>
           {showActivities ? (
-            <ChevronUp className="w-5 h-5 text-slate-400" />
+            <ChevronUp className="w-5 h-5 text-white/50" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-slate-400" />
+            <ChevronDown className="w-5 h-5 text-white/50" />
           )}
         </button>
 
@@ -322,7 +313,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
               </h5>
               <ul className="space-y-1.5">
                 {prediction.favorable_activities.map((activity, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                  <li key={i} className="flex items-start gap-2 text-sm text-white/70">
                     <span className="text-emerald-400">✓</span>
                     <span>{activity}</span>
                   </li>
@@ -336,7 +327,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
               </h5>
               <ul className="space-y-1.5">
                 {prediction.unfavorable_activities.map((activity, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                  <li key={i} className="flex items-start gap-2 text-sm text-white/70">
                     <span className="text-rose-400">✗</span>
                     <span>{activity}</span>
                   </li>

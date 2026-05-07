@@ -25,7 +25,7 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
         transition={{ duration: 0.5 }}
       >
         <thead>
-          <tr className="bg-gradient-to-r from-cyber-700 to-cyber-600 text-white">
+          <tr className="bg-gradient-to-r from-violet-800 to-cyber-600 text-white">
             <th className="px-4 py-3 text-left rounded-tl-lg font-medium">Planet</th>
             <th className="px-4 py-3 text-left font-medium">Rashi</th>
             <th className="px-4 py-3 text-left font-medium">Degree</th>
@@ -42,8 +42,8 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.05 }}
               className={`
-                border-b border-slate-700/50
-                ${idx % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/10'}
+                border-b border-white/6
+                ${idx % 2 === 0 ? 'bg-white/2' : 'bg-white/1'}
                 hover:bg-cyber-900/30 transition-colors
               `}
             >
@@ -58,20 +58,20 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                   <span className="text-white">{planet.planet}</span>
                 </div>
               </td>
-              <td className="px-4 py-3 text-slate-300">
+              <td className="px-4 py-3 text-white/75">
                 {planet.rashi}
-                <span className="text-slate-500 text-xs ml-1 font-mono">
+                <span className="text-white/35 text-xs ml-1 font-mono">
                   ({planet.rashiIndex + 1})
                 </span>
               </td>
-              <td className="px-4 py-3 font-mono text-cyber-400">
+              <td className="px-4 py-3 font-mono text-violet-400">
                 {formatDegree(planet.rashiDegree)}
               </td>
-              <td className="px-4 py-3 text-slate-300">
+              <td className="px-4 py-3 text-white/75">
                 {planet.nakshatra}
               </td>
               <td className="px-4 py-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyber-800/50 text-cyber-300 font-semibold text-xs border border-cyber-600/30">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyber-800/50 text-cyber-300 font-semibold text-xs border border-violet-600/30">
                   {planet.nakshatraPada}
                 </span>
               </td>

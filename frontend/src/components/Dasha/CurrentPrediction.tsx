@@ -5,7 +5,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { getCurrentPrediction, type DashaPredictionData, type BirthData } from '../../services/api';
+import { getCurrentPrediction, type BirthData } from '../../services/api';
 import DashaPrediction from './DashaPrediction';
 import { Loader2, Calendar, Moon, Star } from 'lucide-react';
 
@@ -24,8 +24,8 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12 glass-card rounded-xl">
-        <Loader2 className="w-8 h-8 animate-spin text-cyber-500" />
-        <span className="ml-3 text-slate-400 font-mono text-sm">Loading predictions...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+        <span className="ml-3 text-white/50 font-mono text-sm">Loading predictions...</span>
       </div>
     );
   }
@@ -66,23 +66,23 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
     >
       {/* Current Period Header */}
       {prediction.currentPeriods && (
-        <div className="glass-card rounded-xl p-4 border border-cyber-600/30">
+        <div className="glass-card rounded-xl p-4 border border-violet-600/30">
           <h3 className="text-lg font-display font-semibold mb-4 flex items-center gap-2 text-white">
-            <Calendar className="w-5 h-5 text-cyber-400" />
+            <Calendar className="w-5 h-5 text-violet-400" />
             Currently Running Periods
           </h3>
           
           <div className="grid md:grid-cols-3 gap-4">
             {/* Mahadasha */}
-            <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+            <div className="bg-white/3 rounded-lg p-3 border border-white/6">
               <div className="flex items-center gap-2 mb-2">
-                <Star className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-slate-400">Mahadasha</span>
+                <Star className="w-4 h-4 text-violet-300" />
+                <span className="text-sm text-white/50">Mahadasha</span>
               </div>
               <div className="text-xl font-bold text-white">
                 {prediction.currentPeriods.mahadasha?.lord}
               </div>
-              <div className="text-xs text-slate-500 mt-1 font-mono">
+              <div className="text-xs text-white/25 mt-1 font-mono">
                 {prediction.currentPeriods.mahadasha?.start?.split('T')[0]} to{' '}
                 {prediction.currentPeriods.mahadasha?.end?.split('T')[0]}
               </div>
@@ -90,15 +90,15 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
 
             {/* Antardasha */}
             {prediction.currentPeriods.antardasha && (
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+              <div className="bg-white/3 rounded-lg p-3 border border-white/6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Moon className="w-4 h-4 text-cyber-400" />
-                  <span className="text-sm text-slate-400">Antardasha</span>
+                  <Moon className="w-4 h-4 text-violet-400" />
+                  <span className="text-sm text-white/50">Antardasha</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   {prediction.currentPeriods.antardasha?.lord}
                 </div>
-                <div className="text-xs text-slate-500 mt-1 font-mono">
+                <div className="text-xs text-white/25 mt-1 font-mono">
                   {prediction.currentPeriods.antardasha?.start?.split('T')[0]} to{' '}
                   {prediction.currentPeriods.antardasha?.end?.split('T')[0]}
                 </div>
@@ -107,15 +107,15 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
 
             {/* Pratyantardasha */}
             {prediction.currentPeriods.pratyantardasha && (
-              <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
+              <div className="bg-white/3 rounded-lg p-3 border border-white/6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-4 h-4 text-neon-400" />
-                  <span className="text-sm text-slate-400">Pratyantardasha</span>
+                  <Star className="w-4 h-4 text-violet-300" />
+                  <span className="text-sm text-white/50">Pratyantardasha</span>
                 </div>
                 <div className="text-xl font-bold text-white">
                   {prediction.currentPeriods.pratyantardasha?.lord}
                 </div>
-                <div className="text-xs text-slate-500 mt-1 font-mono">
+                <div className="text-xs text-white/25 mt-1 font-mono">
                   {prediction.currentPeriods.pratyantardasha?.start?.split('T')[0]} to{' '}
                   {prediction.currentPeriods.pratyantardasha?.end?.split('T')[0]}
                 </div>

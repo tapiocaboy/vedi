@@ -1,299 +1,354 @@
-/**
- * Main Application Component
- */
-
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, LayoutGrid, List, AlertCircle, Sparkles, Zap } from 'lucide-react';
+import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle } from 'lucide-react';
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
 import { NorthIndianChart } from './components/Chart/NorthIndianChart';
 import { PlanetTable } from './components/Chart/PlanetTable';
+import { YogasDisplay } from './components/Chart/YogasDisplay';
 import { CurrentDasha } from './components/Dasha/CurrentDasha';
 import { DashaTimeline } from './components/Dasha/DashaTimeline';
 import { NakshatraInfo } from './components/Dasha/NakshatraInfo';
-import { CurrentPrediction } from './components/Dasha/CurrentPrediction';
+import { DeepInsights } from './components/Insights/DeepInsights';
+import { DisclaimerModal } from './components/DisclaimerModal';
+import { PrivacyBanner } from './components/PrivacyBanner';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
 import type { BirthData, Chart } from './types/astrology';
 
-// Create QueryClient
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'dasha' | 'predictions';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'insights';
 
 function AppContent() {
-  const [birthData, setBirthData] = useState<BirthData | null>(null);
+  const [birthData, setBirthData]   = useState<BirthData | null>(null);
   const [chartStyle, setChartStyle] = useState<ChartStyle>('south');
-  const [activeTab, setActiveTab] = useState<ViewTab>('chart');
-  const [chartData, setChartData] = useState<Chart | null>(null);
+  const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
+  const [chartData, setChartData]   = useState<Chart | null>(null);
+  const [isLight, setIsLight]       = useState<boolean>(() => {
+    return localStorage.getItem('predictor_theme') === 'light';
+  });
+  const [disclaimerVisible, setDisclaimerVisible] = useState(false);
+  const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
+  const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
 
-  // API hooks
   const generateChart = useGenerateChart();
-  const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(
-    birthData,
-    80 // 80 years ahead
-  );
+  const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(birthData, 80);
   const { data: health, isError: isHealthError } = useHealthCheck();
 
-  const handleSubmit = async (data: BirthData) => {
+
+  // Apply theme class to <html> so body background responds
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isLight) {
+      root.classList.add('theme-light');
+      root.classList.remove('theme-dark');
+    } else {
+      root.classList.remove('theme-light');
+      root.classList.add('theme-dark');
+    }
+    localStorage.setItem('predictor_theme', isLight ? 'light' : 'dark');
+  }, [isLight]);
+
+  const toggleTheme = () => setIsLight(v => !v);
+
+  const runGenerate = async (data: BirthData) => {
     setBirthData(data);
     try {
       const result = await generateChart.mutateAsync(data);
       setChartData(result);
-    } catch (error) {
-      console.error('Failed to generate chart:', error);
+      setActiveTab('chart');
+    } catch (err) {
+      console.error('Failed to generate chart:', err);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-925 to-cyber-950 tech-grid">
-      {/* Ambient glow effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyber-600/20 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 -left-20 w-60 h-60 bg-neon-600/10 rounded-full blur-[80px]" />
-        <div className="absolute -bottom-20 right-1/4 w-72 h-72 bg-accent-purple/10 rounded-full blur-[90px]" />
-      </div>
+  const handleSubmit = (data: BirthData) => {
+    // Step 1: store data, open the "Before You Continue" disclaimer
+    setPendingBirthData(data);
+    setDisclaimerVisible(true);
+  };
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-cyber-800/30 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyber-500 to-neon-500 flex items-center justify-center shadow-neon">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-display font-bold tracking-tight text-white">VEDI</h1>
-                <p className="text-xs text-cyber-400 font-mono uppercase tracking-wider">Astrology Engine</p>
-              </div>
+  const handleDisclaimerAccept = () => {
+    // Step 2: disclaimer accepted → show privacy banner
+    setDisclaimerVisible(false);
+    setPrivacyTrigger('generate');
+    setPrivacyVisible(true);
+  };
+
+  const handlePrivacyDismiss = () => {
+    // Step 3: banner dismissed → run chart generation
+    setPrivacyVisible(false);
+    if (pendingBirthData) {
+      const data = pendingBirthData;
+      setPendingBirthData(null);
+      runGenerate(data);
+    }
+  };
+
+  const TabBtn = ({
+    id, label, icon: Icon,
+  }: { id: ViewTab; label: string; icon: React.ElementType }) => (
+    <button
+      onClick={() => setActiveTab(id)}
+      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 ${
+        activeTab === id
+          ? 'bg-violet-500 text-black shadow-neon'
+          : 'text-white/40 hover:text-white hover:bg-white/5'
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className={`min-h-screen tech-grid transition-colors duration-300 ${isLight ? 'theme-light' : ''}`}
+      style={{ backgroundColor: 'var(--bg-page)' }}
+    >
+      {/* Disclaimer — shown on every Generate Chart press */}
+      <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />
+
+      {/* Privacy banner — shown on load + each generate */}
+      <PrivacyBanner
+        visible={privacyVisible}
+        onDismiss={privacyTrigger === 'generate' ? handlePrivacyDismiss : () => setPrivacyVisible(false)}
+        trigger={privacyTrigger}
+      />
+
+      {/* Ambient glow — dark only */}
+      {!isLight && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[140px]" />
+          <div className="absolute bottom-0 -left-20 w-72 h-72 bg-violet-700/4 rounded-full blur-[100px]" />
+        </div>
+      )}
+
+      {/* ── Header ───────────────────────────────────────────────────── */}
+      <header className="relative z-10 border-b app-header sticky top-0">
+        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Logo */}
+            <div className="w-9 h-9 rounded-xl bg-violet-500 flex items-center justify-center shadow-neon shrink-0">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-black">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 2a8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8 8 8 0 0 1 8-8z" opacity=".35"/>
+                <path d="M12 5l1.5 4.5L18 12l-4.5 1.5L12 19l-1.5-4.5L6 12l4.5-1.5z" opacity=".9"/>
+              </svg>
             </div>
-            
-            {/* API Status */}
-            <div className="flex items-center gap-3">
-              {isHealthError ? (
-                <span className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-red-400">
-                  <AlertCircle className="w-3 h-3" />
-                  Offline
-                </span>
-              ) : health ? (
-                <span className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  v{health.version}
-                </span>
-              ) : (
-                <span className="text-xs text-slate-500">Connecting...</span>
-              )}
+            <div>
+              <h1 className="text-lg font-display font-bold tracking-widest text-white">Predictor</h1>
+              <p className={`text-[10px] font-mono uppercase tracking-[0.25em] ${isLight ? 'text-violet-600/70' : 'text-violet-400/70'}`}>
+                Astrology Predictor
+              </p>
             </div>
+          </div>
+
+          {/* Right side: status + theme toggle */}
+          <div className="flex items-center gap-2">
+            {isHealthError ? (
+              <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400">
+                <AlertCircle className="w-3 h-3" /> Offline
+              </span>
+            ) : health ? (
+              <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
+                isLight
+                  ? 'bg-black/5 border border-black/10 text-black/40'
+                  : 'bg-white/4 border border-white/8 text-white/50'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                v{health.version}
+              </span>
+            ) : null}
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                isLight
+                  ? 'bg-black/6 border border-black/10 text-black/50 hover:bg-black/10'
+                  : 'bg-white/5 border border-white/8 text-white/50 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </header>
 
+      {/* ── Main ─────────────────────────────────────────────────────── */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Form */}
+
+          {/* Left — Birth form */}
           <div className="lg:col-span-1">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               className="glass-card rounded-2xl p-6"
             >
-              <h2 className="text-lg font-display font-semibold text-white mb-6 flex items-center gap-2">
-                <Moon className="w-5 h-5 text-cyber-400" />
-                Birth Details
-              </h2>
-              <BirthDataForm 
-                onSubmit={handleSubmit} 
-                isLoading={generateChart.isPending} 
-              />
-              
+              <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-black/8' : 'border-white/5'}`}>
+                <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+                  <Moon className="w-4 h-4 text-violet-400" />
+                </div>
+                <h2 className="text-sm font-semibold text-white tracking-wide">Birth Details</h2>
+              </div>
+
+              <BirthDataForm onSubmit={handleSubmit} isLoading={generateChart.isPending} />
+
               {generateChart.isError && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm"
+                  className="mt-4 p-3 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-2"
                 >
-                  <AlertCircle className="inline w-4 h-4 mr-2" />
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   {generateChart.error?.message || 'Failed to generate chart'}
                 </motion.div>
               )}
             </motion.div>
           </div>
 
-          {/* Right Column - Results */}
+          {/* Right — Results */}
           <div className="lg:col-span-2">
             <AnimatePresence mode="wait">
               {chartData ? (
                 <motion.div
                   key="results"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-4"
                 >
-                  {/* Tabs */}
-                  <div className="flex gap-1 bg-slate-900/60 backdrop-blur-sm rounded-xl p-1.5 border border-cyber-800/30">
-                    <button
-                      onClick={() => setActiveTab('chart')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
-                        activeTab === 'chart'
-                          ? 'bg-cyber-600 text-white shadow-neon'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <LayoutGrid className="w-4 h-4" />
-                      Chart
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('dasha')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
-                        activeTab === 'dasha'
-                          ? 'bg-cyber-600 text-white shadow-neon'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <List className="w-4 h-4" />
-                      Timeline
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('predictions')}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-300 ${
-                        activeTab === 'predictions'
-                          ? 'bg-cyber-600 text-white shadow-neon'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Insights
-                    </button>
+                  {/* Tab bar */}
+                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border ${
+                    isLight ? 'bg-black/4 border-black/8' : 'bg-black/60 border-white/6'
+                  }`}>
+                    <TabBtn id="chart"    label="Chart"    icon={LayoutGrid} />
+                    <TabBtn id="dasha"    label="Timeline" icon={List}       />
+                    <TabBtn id="yogas"    label="Patterns" icon={Stars}      />
+                    <TabBtn id="insights" label="Insights" icon={Zap}        />
                   </div>
 
+                  {/* ── Chart ─────────────────────────────────────── */}
                   {activeTab === 'chart' && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-6"
-                    >
-                      {/* Chart Style Toggle */}
+                    <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                       <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => setChartStyle('south')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                            chartStyle === 'south'
-                              ? 'bg-cyber-600 text-white shadow-neon'
-                              : 'bg-slate-800/50 text-slate-400 hover:text-white border border-slate-700/50'
-                          }`}
-                        >
-                          South Indian
-                        </button>
-                        <button
-                          onClick={() => setChartStyle('north')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                            chartStyle === 'north'
-                              ? 'bg-cyber-600 text-white shadow-neon'
-                              : 'bg-slate-800/50 text-slate-400 hover:text-white border border-slate-700/50'
-                          }`}
-                        >
-                          North Indian
-                        </button>
+                        {(['south', 'north'] as ChartStyle[]).map(style => (
+                          <button
+                            key={style}
+                            onClick={() => setChartStyle(style)}
+                            className={`px-5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                              chartStyle === style
+                                ? 'bg-violet-500 text-black shadow-neon'
+                                : isLight
+                                  ? 'bg-black/5 text-black/50 hover:text-black border border-black/10'
+                                  : 'bg-white/4 text-white/40 hover:text-white border border-white/8'
+                            }`}
+                          >
+                            {style === 'south' ? 'South Indian' : 'North Indian'}
+                          </button>
+                        ))}
                       </div>
 
-                      {/* Chart */}
                       <div className="glass-card rounded-2xl p-6">
-                        {chartStyle === 'south' ? (
-                          <SouthIndianChart
-                            planets={chartData.planets}
-                            ascendantRashi={chartData.ascendant.rashiIndex}
-                          />
-                        ) : (
-                          <NorthIndianChart
-                            planets={chartData.planets}
-                            ascendantRashi={chartData.ascendant.rashiIndex}
-                          />
-                        )}
+                        {chartStyle === 'south'
+                          ? <SouthIndianChart planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
+                          : <NorthIndianChart  planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
+                        }
                       </div>
 
-                      {/* Nakshatra Info */}
                       <NakshatraInfo nakshatra={chartData.moonNakshatra} />
 
-                      {/* Planet Table */}
                       <div className="glass-card rounded-2xl p-6">
-                        <h3 className="text-lg font-display font-semibold text-white mb-4 flex items-center gap-2">
-                          <Sun className="w-5 h-5 text-amber-400" />
+                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                          <Sun className="w-4 h-4 text-violet-400" />
                           Planetary Positions
                         </h3>
-                        <PlanetTable
-                          planets={chartData.planets}
-                          ascendant={chartData.ascendant}
-                        />
-                        <div className="mt-4 pt-3 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-500">
-                          <span className="font-mono">Ayanamsa: {chartData.birthData.ayanamsa}</span>
-                          <span className="font-mono">{chartData.ayanamsaValue.toFixed(4)}°</span>
+                        <PlanetTable planets={chartData.planets} ascendant={chartData.ascendant} />
+                        <div className={`mt-4 pt-3 border-t flex justify-between items-center text-[10px] font-mono ${
+                          isLight ? 'border-black/8 text-black/25' : 'border-white/5 text-white/20'
+                        }`}>
+                          <span>Ayanamsa: {chartData.birthData.ayanamsa}</span>
+                          <span>{chartData.ayanamsaValue.toFixed(4)}°</span>
                         </div>
                       </div>
                     </motion.div>
                   )}
 
+                  {/* ── Dasha ─────────────────────────────────────── */}
                   {activeTab === 'dasha' && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-6"
-                    >
-                      {/* Current Dasha */}
+                    <motion.div key="dasha" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                       <div className="glass-card rounded-2xl p-6">
                         <CurrentDasha currentDasha={chartData.currentDasha} />
                       </div>
-
-                      {/* Dasha Timeline */}
                       <div className="glass-card rounded-2xl p-6">
                         {isDashaLoading ? (
-                          <div className="text-center py-8 text-slate-500">
-                            <div className="animate-spin w-8 h-8 border-2 border-cyber-500 border-t-transparent rounded-full mx-auto mb-3" />
-                            <span className="font-mono text-sm">Loading timeline...</span>
+                          <div className="text-center py-10">
+                            <div className="spinner mx-auto mb-3" />
+                            <span className={`font-mono text-sm ${isLight ? 'text-black/30' : 'text-white/30'}`}>
+                              Loading timeline…
+                            </span>
                           </div>
                         ) : dashaTimeline ? (
-                          <DashaTimeline timeline={dashaTimeline.timeline} birthData={birthData} />
+                          <DashaTimeline timeline={dashaTimeline.timeline} birthData={birthData ?? undefined} />
                         ) : null}
                       </div>
                     </motion.div>
                   )}
 
-                  {activeTab === 'predictions' && birthData && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="space-y-6"
-                    >
-                      <CurrentPrediction birthData={birthData} />
+                  {/* ── Patterns (Yogas) ──────────────────────────── */}
+                  {activeTab === 'yogas' && birthData && (
+                    <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <div className="glass-card rounded-2xl p-6">
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
+                            <Stars className="w-4 h-4 text-violet-300" />
+                          </div>
+                          <h3 className="text-sm font-semibold text-white">Planetary Patterns</h3>
+                        </div>
+                        <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-black/30' : 'text-white/25'}`}>
+                          Significant combinations detected in this birth chart
+                        </p>
+                        <YogasDisplay birthData={birthData} />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ── Insights ──────────────────────────────────── */}
+                  {activeTab === 'insights' && birthData && (
+                    <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <DeepInsights birthData={birthData} />
                     </motion.div>
                   )}
                 </motion.div>
               ) : (
+                /* Empty state */
                 <motion.div
                   key="empty"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="glass-card rounded-2xl p-12 text-center"
+                  className="glass-card rounded-2xl p-16 text-center"
                 >
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-cyber-600/20 to-neon-600/20 flex items-center justify-center border border-cyber-500/30">
-                    <Zap className="w-10 h-10 text-cyber-400" />
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-violet-500/8 border border-violet-500/15 flex items-center justify-center animate-pulse-glow">
+                    <svg viewBox="0 0 48 48" className="w-10 h-10">
+                      <circle cx="24" cy="24" r="6" fill="#8b5cf6" />
+                      <circle cx="24" cy="24" r="13" fill="none" stroke="#8b5cf6" strokeWidth="0.8" strokeOpacity=".3" />
+                      <circle cx="24" cy="24" r="21" fill="none" stroke="#8b5cf6" strokeWidth="0.8" strokeOpacity=".1" />
+                      <path d="M24 4l2 7 7 1-5 5 1.5 7L24 20l-5.5 4 1.5-7-5-5 7-1z" fill="#c084fc" opacity=".8"/>
+                    </svg>
                   </div>
-                  <h3 className="text-xl font-display font-semibold text-white mb-3">
-                    Ready to Analyze
+                  <h3 className="text-xl font-display font-bold text-white mb-2">
+                    Ready to Analyse Your Chart
                   </h3>
-                  <p className="text-slate-400 max-w-md mx-auto text-sm leading-relaxed">
-                    Enter birth details to generate a comprehensive astrological chart 
-                    with Vimshottari Dasha timeline and personalized insights.
+                  <p className={`max-w-xs mx-auto text-sm leading-relaxed ${isLight ? 'text-black/40' : 'text-white/30'}`}>
+                    Enter your birth details to generate a complete birth chart with planetary period analysis, combination patterns, and detailed life predictions.
                   </p>
                 </motion.div>
               )}
@@ -302,15 +357,13 @@ function AppContent() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 mt-16 py-6 border-t border-cyber-800/30 bg-slate-950/50">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <p className="text-slate-500 text-xs font-mono">
-            VEDI • Powered by Swiss Ephemeris
-          </p>
-          <p className="text-slate-600 text-xs">
-            Precision astronomical calculations
-          </p>
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <footer className={`relative z-10 mt-16 py-4 border-t ${isLight ? 'border-black/8' : 'border-white/4'}`}>
+        <div className={`max-w-7xl mx-auto px-5 flex items-center justify-between text-[10px] font-mono ${
+          isLight ? 'text-black/20' : 'text-white/15'
+        }`}>
+          <span>Predictor · Birth Chart Analysis</span>
+          <span>Meeus algorithms · Lahiri ayanamsa</span>
         </div>
       </footer>
     </div>
