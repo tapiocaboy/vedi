@@ -63,11 +63,22 @@ export interface PratyantardashaPeriod {
   antardashaLord: string;
 }
 
+export interface SookshmaDashaPeriod {
+  lord: string;
+  start: string;
+  end: string;
+  durationDays: number;
+  mahadashaLord: string;
+  antardashaLord: string;
+  pratyantarLord: string;
+}
+
 export interface CurrentDasha {
   targetDate: string;
   mahadasha: DashaPeriod;
   antardasha: AntardashaPeriod;
   pratyantardasha?: PratyantardashaPeriod;
+  sookshmaDasha?: SookshmaDashaPeriod;
 }
 
 export interface DashaWithAntardashas {
@@ -113,29 +124,29 @@ export const RASHI_ENGLISH = [
 
 // Planet colors for visualization
 export const PLANET_COLORS: Record<string, string> = {
-  SUN: '#F59E0B',     // Amber
-  MOON: '#E5E7EB',    // Gray
-  MARS: '#EF4444',    // Red
-  MERCURY: '#22C55E', // Green
-  JUPITER: '#EAB308', // Yellow
-  VENUS: '#EC4899',   // Pink
-  SATURN: '#6366F1',  // Indigo
-  RAHU: '#374151',    // Dark Gray
-  KETU: '#78350F',    // Brown
-  ASCENDANT: '#8B5CF6', // Purple
+  SUN:       '#a78bfa', // violet-400 — solar
+  MOON:      '#e2e8f0', // slate-200  — lunar silver
+  MARS:      '#ef4444', // red-500    — fiery
+  MERCURY:   '#34d399', // emerald-400 — quick
+  JUPITER:   '#c084fc', // purple-400 — guru
+  VENUS:     '#f472b6', // pink-400   — feminine
+  SATURN:    '#818cf8', // indigo-400 — karma
+  RAHU:      '#6b7280', // gray-500   — shadow
+  KETU:      '#7c3aed', // violet-700 — tail
+  ASCENDANT: '#8b5cf6', // violet-500 — lagna
 };
 
-// Dasha colors
+// Dasha planet color pills
 export const DASHA_COLORS: Record<string, string> = {
-  Sun: 'bg-amber-400',
-  Moon: 'bg-slate-200',
-  Mars: 'bg-red-500',
-  Mercury: 'bg-green-400',
-  Jupiter: 'bg-yellow-400',
-  Venus: 'bg-pink-300',
-  Saturn: 'bg-indigo-600',
-  Rahu: 'bg-gray-700',
-  Ketu: 'bg-amber-700',
+  Sun:     'bg-violet-500',
+  Moon:    'bg-slate-300',
+  Mars:    'bg-red-600',
+  Mercury: 'bg-emerald-500',
+  Jupiter: 'bg-purple-500',
+  Venus:   'bg-pink-500',
+  Saturn:  'bg-indigo-500',
+  Rahu:    'bg-gray-600',
+  Ketu:    'bg-violet-700',
 };
 
 // Planet symbols

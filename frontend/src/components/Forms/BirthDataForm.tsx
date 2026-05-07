@@ -11,20 +11,104 @@ interface Props {
   isLoading?: boolean;
 }
 
-// Common timezones
+// All UTC offsets and common timezones
 const TIMEZONES = [
-  { value: 'Etc/GMT+4', label: 'UTC-4 (Eastern Daylight)' },
+  // UTC Offsets (negative - West of GMT)
+  { value: 'Etc/GMT+12', label: 'UTC-12' },
+  { value: 'Etc/GMT+11', label: 'UTC-11' },
+  { value: 'Etc/GMT+10', label: 'UTC-10 (Hawaii)' },
+  { value: 'Etc/GMT+9', label: 'UTC-9 (Alaska)' },
+  { value: 'Etc/GMT+8', label: 'UTC-8 (Pacific Standard)' },
+  { value: 'Etc/GMT+7', label: 'UTC-7 (Mountain Standard)' },
+  { value: 'Etc/GMT+6', label: 'UTC-6 (Central Standard)' },
   { value: 'Etc/GMT+5', label: 'UTC-5 (Eastern Standard)' },
-  { value: 'America/New_York', label: 'US Eastern' },
-  { value: 'America/Los_Angeles', label: 'US Pacific' },
-  { value: 'Europe/London', label: 'UK (GMT)' },
-  { value: 'Europe/Helsinki', label: 'Finland (EET)' },
-  { value: 'Asia/Dubai', label: 'Dubai (GST)' },
+  { value: 'Etc/GMT+4', label: 'UTC-4 (Atlantic Standard)' },
+  { value: 'Etc/GMT+3', label: 'UTC-3 (Brazil)' },
+  { value: 'Etc/GMT+2', label: 'UTC-2' },
+  { value: 'Etc/GMT+1', label: 'UTC-1 (Azores)' },
+  // UTC
+  { value: 'UTC', label: 'UTC+0 (GMT)' },
+  // UTC Offsets (positive - East of GMT)
+  { value: 'Etc/GMT-1', label: 'UTC+1 (Central European)' },
+  { value: 'Etc/GMT-2', label: 'UTC+2 (Eastern European)' },
+  { value: 'Etc/GMT-3', label: 'UTC+3 (Moscow)' },
+  { value: 'Etc/GMT-4', label: 'UTC+4 (Gulf)' },
+  { value: 'Etc/GMT-5', label: 'UTC+5 (Pakistan)' },
+  { value: 'Asia/Kolkata', label: 'UTC+5:30 (India)' },
+  { value: 'Etc/GMT-6', label: 'UTC+6 (Bangladesh)' },
+  { value: 'Etc/GMT-7', label: 'UTC+7 (Indochina)' },
+  { value: 'Etc/GMT-8', label: 'UTC+8 (China/Singapore)' },
+  { value: 'Etc/GMT-9', label: 'UTC+9 (Japan/Korea)' },
+  { value: 'Etc/GMT-10', label: 'UTC+10 (Australia Eastern)' },
+  { value: 'Etc/GMT-11', label: 'UTC+11' },
+  { value: 'Etc/GMT-12', label: 'UTC+12 (New Zealand)' },
+  { value: 'Etc/GMT-13', label: 'UTC+13 (Samoa)' },
+  { value: 'Etc/GMT-14', label: 'UTC+14 (Line Islands)' },
+  // Named Timezones - Americas
+  { value: 'America/New_York', label: 'New York (US Eastern)' },
+  { value: 'America/Chicago', label: 'Chicago (US Central)' },
+  { value: 'America/Denver', label: 'Denver (US Mountain)' },
+  { value: 'America/Los_Angeles', label: 'Los Angeles (US Pacific)' },
+  { value: 'America/Anchorage', label: 'Anchorage (Alaska)' },
+  { value: 'America/Toronto', label: 'Toronto (Canada Eastern)' },
+  { value: 'America/Vancouver', label: 'Vancouver (Canada Pacific)' },
+  { value: 'America/Mexico_City', label: 'Mexico City' },
+  { value: 'America/Sao_Paulo', label: 'São Paulo (Brazil)' },
+  { value: 'America/Buenos_Aires', label: 'Buenos Aires (Argentina)' },
+  // Named Timezones - Europe
+  { value: 'Europe/London', label: 'London (UK)' },
+  { value: 'Europe/Paris', label: 'Paris (France)' },
+  { value: 'Europe/Berlin', label: 'Berlin (Germany)' },
+  { value: 'Europe/Rome', label: 'Rome (Italy)' },
+  { value: 'Europe/Madrid', label: 'Madrid (Spain)' },
+  { value: 'Europe/Amsterdam', label: 'Amsterdam (Netherlands)' },
+  { value: 'Europe/Brussels', label: 'Brussels (Belgium)' },
+  { value: 'Europe/Zurich', label: 'Zurich (Switzerland)' },
+  { value: 'Europe/Vienna', label: 'Vienna (Austria)' },
+  { value: 'Europe/Stockholm', label: 'Stockholm (Sweden)' },
+  { value: 'Europe/Oslo', label: 'Oslo (Norway)' },
+  { value: 'Europe/Copenhagen', label: 'Copenhagen (Denmark)' },
+  { value: 'Europe/Helsinki', label: 'Helsinki (Finland)' },
+  { value: 'Europe/Athens', label: 'Athens (Greece)' },
+  { value: 'Europe/Istanbul', label: 'Istanbul (Turkey)' },
+  { value: 'Europe/Moscow', label: 'Moscow (Russia)' },
+  { value: 'Europe/Kiev', label: 'Kyiv (Ukraine)' },
+  { value: 'Europe/Warsaw', label: 'Warsaw (Poland)' },
+  { value: 'Europe/Prague', label: 'Prague (Czech Republic)' },
+  { value: 'Europe/Budapest', label: 'Budapest (Hungary)' },
+  // Named Timezones - Asia
+  { value: 'Asia/Dubai', label: 'Dubai (UAE)' },
+  { value: 'Asia/Riyadh', label: 'Riyadh (Saudi Arabia)' },
+  { value: 'Asia/Tehran', label: 'Tehran (Iran)' },
+  { value: 'Asia/Karachi', label: 'Karachi (Pakistan)' },
+  { value: 'Asia/Kolkata', label: 'Kolkata/Mumbai (India)' },
+  { value: 'Asia/Colombo', label: 'Colombo (Sri Lanka)' },
+  { value: 'Asia/Dhaka', label: 'Dhaka (Bangladesh)' },
+  { value: 'Asia/Bangkok', label: 'Bangkok (Thailand)' },
+  { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh (Vietnam)' },
+  { value: 'Asia/Jakarta', label: 'Jakarta (Indonesia)' },
   { value: 'Asia/Singapore', label: 'Singapore' },
-  { value: 'Asia/Kolkata', label: 'India (IST)' },
-  { value: 'Asia/Colombo', label: 'Sri Lanka (SLST)' },
-  { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
-  { value: 'UTC', label: 'UTC' },
+  { value: 'Asia/Kuala_Lumpur', label: 'Kuala Lumpur (Malaysia)' },
+  { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
+  { value: 'Asia/Shanghai', label: 'Shanghai (China)' },
+  { value: 'Asia/Taipei', label: 'Taipei (Taiwan)' },
+  { value: 'Asia/Seoul', label: 'Seoul (South Korea)' },
+  { value: 'Asia/Tokyo', label: 'Tokyo (Japan)' },
+  // Named Timezones - Oceania
+  { value: 'Australia/Perth', label: 'Perth (Australia Western)' },
+  { value: 'Australia/Adelaide', label: 'Adelaide (Australia Central)' },
+  { value: 'Australia/Sydney', label: 'Sydney (Australia Eastern)' },
+  { value: 'Australia/Melbourne', label: 'Melbourne (Australia)' },
+  { value: 'Australia/Brisbane', label: 'Brisbane (Australia)' },
+  { value: 'Pacific/Auckland', label: 'Auckland (New Zealand)' },
+  { value: 'Pacific/Fiji', label: 'Fiji' },
+  { value: 'Pacific/Honolulu', label: 'Honolulu (Hawaii)' },
+  // Named Timezones - Africa
+  { value: 'Africa/Cairo', label: 'Cairo (Egypt)' },
+  { value: 'Africa/Johannesburg', label: 'Johannesburg (South Africa)' },
+  { value: 'Africa/Lagos', label: 'Lagos (Nigeria)' },
+  { value: 'Africa/Nairobi', label: 'Nairobi (Kenya)' },
+  { value: 'Africa/Casablanca', label: 'Casablanca (Morocco)' },
 ];
 
 const AYANAMSAS = [
@@ -84,7 +168,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     }));
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700/50 text-white placeholder-slate-500 focus:border-cyber-500 focus:ring-1 focus:ring-cyber-500/30 outline-none transition-all";
+  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/12 text-white placeholder-white/20 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 outline-none transition-all";
   const labelClasses = "block text-sm font-medium text-slate-300 mb-2";
 
   return (
@@ -108,7 +192,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <Calendar className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+            <Calendar className="inline w-4 h-4 mr-1.5 text-violet-400" />
             Birth Date
           </label>
           <input
@@ -122,7 +206,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <Clock className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+            <Clock className="inline w-4 h-4 mr-1.5 text-violet-400" />
             Birth Time
           </label>
           <input
@@ -147,7 +231,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:border-cyber-500/50 hover:text-cyber-400 transition-all"
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-950/30 text-slate-400 border border-violet-900/40 hover:border-violet-500/50 hover:text-violet-400 transition-all"
             >
               {preset.name}
             </button>
@@ -159,7 +243,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+            <MapPin className="inline w-4 h-4 mr-1.5 text-violet-400" />
             Latitude
           </label>
           <input
@@ -177,7 +261,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+            <MapPin className="inline w-4 h-4 mr-1.5 text-violet-400" />
             Longitude
           </label>
           <input
@@ -198,7 +282,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Timezone */}
       <div>
         <label className={labelClasses}>
-          <Clock className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+          <Clock className="inline w-4 h-4 mr-1.5 text-violet-400" />
           Timezone
         </label>
         <select
@@ -216,7 +300,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Ayanamsa */}
       <div>
         <label className={labelClasses}>
-          <Settings className="inline w-4 h-4 mr-1.5 text-cyber-400" />
+          <Settings className="inline w-4 h-4 mr-1.5 text-violet-400" />
           Ayanamsa
         </label>
         <select
@@ -235,7 +319,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3.5 px-6 bg-gradient-to-r from-cyber-600 to-cyber-500 text-white font-semibold rounded-xl hover:from-cyber-500 hover:to-cyber-400 transform hover:scale-[1.02] transition-all shadow-neon hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none btn-glow"
+        className="w-full py-3.5 px-6 bg-gradient-to-r from-violet-700 to-violet-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-violet-400 transform hover:scale-[1.02] transition-all shadow-neon hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none btn-glow"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

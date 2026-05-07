@@ -13,17 +13,7 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║                                                               ║${NC}"
-echo -e "${CYAN}║       ${BLUE}██╗   ██╗███████╗██████╗ ██╗${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║       ${BLUE}██║   ██║██╔════╝██╔══██╗██║${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║       ${BLUE}██║   ██║█████╗  ██║  ██║██║${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║       ${BLUE}╚██╗ ██╔╝██╔══╝  ██║  ██║██║${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║       ${BLUE} ╚████╔╝ ███████╗██████╔╝██║${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║       ${BLUE}  ╚═══╝  ╚══════╝╚═════╝ ╚═╝${NC}                             ${CYAN}║${NC}"
-echo -e "${CYAN}║                                                               ║${NC}"
-echo -e "${CYAN}║         Vedic Astrology Calculator - Dev Server               ║${NC}"
-echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${CYAN}Vedi - Vedic Astrology Calculator${NC}"
 echo ""
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -55,29 +45,31 @@ echo -e "${YELLOW}Cleaning up existing processes...${NC}"
 lsof -ti:8000 | xargs kill -9 2>/dev/null || true
 lsof -ti:5173 | xargs kill -9 2>/dev/null || true
 
-# Start Backend
-echo -e "${BLUE}Starting Backend Server...${NC}"
-cd "$PROJECT_ROOT/backend"
+# Start Backend (if backend directory exists)
+BACKEND_PID=""
+if [ -d "$PROJECT_ROOT/backend" ]; then
+    echo -e "${BLUE}Starting Backend Server...${NC}"
+    cd "$PROJECT_ROOT/backend"
 
-if [ -d "../.venv" ]; then
-    source ../.venv/bin/activate
-elif [ -d ".venv" ]; then
-    source .venv/bin/activate
+    if [ -d "../.venv" ]; then
+        source ../.venv/bin/activate
+    elif [ -d ".venv" ]; then
+        source .venv/bin/activate
+    else
+        echo -e "${YELLOW}Warning: Virtual environment not found. Skipping backend.${NC}"
+        cd "$PROJECT_ROOT"
+    fi
+
+    if [ -n "$VIRTUAL_ENV" ]; then
+        poetry install --quiet 2>/dev/null || pip install -q -e . 2>/dev/null || true
+        uvicorn src.main:app --reload --host 0.0.0.0 --port 8000 &
+        BACKEND_PID=$!
+        echo -e "${GREEN}✓ Backend starting on http://localhost:8000${NC}"
+        sleep 2
+    fi
 else
-    echo -e "${RED}Virtual environment not found. Please run: python -m venv .venv && pip install -r requirements.txt${NC}"
-    exit 1
+    echo -e "${YELLOW}No backend directory found, skipping backend server.${NC}"
 fi
-
-# Install dependencies if needed
-poetry install --quiet 2>/dev/null || pip install -q -e . 2>/dev/null || true
-
-# Start uvicorn in background
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000 &
-BACKEND_PID=$!
-echo -e "${GREEN}✓ Backend starting on http://localhost:8000${NC}"
-
-# Wait a moment for backend to start
-sleep 2
 
 # Start Frontend
 echo -e "${BLUE}Starting Frontend Server...${NC}"
@@ -95,17 +87,21 @@ FRONTEND_PID=$!
 echo -e "${GREEN}✓ Frontend starting on http://localhost:5173${NC}"
 
 echo ""
-echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Servers are running!${NC}"
+echo -e "${GREEN}Servers are running!${NC}"
 echo -e ""
 echo -e "  ${BLUE}Frontend:${NC}  http://localhost:5173"
-echo -e "  ${BLUE}Backend:${NC}   http://localhost:8000"
-echo -e "  ${BLUE}API Docs:${NC}  http://localhost:8000/docs"
+if [ -n "$BACKEND_PID" ]; then
+    echo -e "  ${BLUE}Backend:${NC}   http://localhost:8000"
+    echo -e "  ${BLUE}API Docs:${NC}  http://localhost:8000/docs"
+fi
 echo -e ""
-echo -e "${YELLOW}  Press Ctrl+C to stop all servers${NC}"
-echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
 echo ""
 
-# Wait for both processes
-wait $BACKEND_PID $FRONTEND_PID
+# Wait for running processes
+if [ -n "$BACKEND_PID" ]; then
+    wait $BACKEND_PID $FRONTEND_PID
+else
+    wait $FRONTEND_PID
+fi
 

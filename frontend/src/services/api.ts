@@ -1,133 +1,26 @@
 /**
- * API service for communicating with the Vedic Astrology backend
+ * API surface — all calculations run locally (no HTTP backend).
  */
 
 import type { BirthData, Chart, DashaTimeline, CurrentDasha } from '../types/astrology';
+export type { BirthData } from '../types/astrology';
+import { chartService } from '../lib/services/chartService';
+import type { YogaResult } from '../lib/core/yogas';
+import {
+  getMahadashaPrediction as libGetMD,
+  getAntardashaPrediction as libGetAD,
+  getPratyantardashaPrediction as libGetPD,
+  getCurrentPeriodPrediction,
+  getTimelineWithPredictions as libGetTimeline,
+  getSookshmaPeriodsForCurrent,
+  type SookshmaPeriodList,
+} from '../lib/services/predictionService';
 
-const API_BASE = '/api/v1';
+export type { SookshmaPeriodList };
 
-// Helper to convert camelCase to snake_case for API requests
-function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const key in obj) {
-    const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-    result[snakeKey] = obj[key];
-  }
-  return result;
-}
+export type { YogaResult };
 
-// Helper to convert snake_case to camelCase for API responses
-function toCamelCase<T>(obj: unknown): T {
-  if (Array.isArray(obj)) {
-    return obj.map(item => toCamelCase(item)) as T;
-  }
-  
-  if (obj !== null && typeof obj === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const key in obj as Record<string, unknown>) {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      result[camelKey] = toCamelCase((obj as Record<string, unknown>)[key]);
-    }
-    return result as T;
-  }
-  
-  return obj as T;
-}
-
-async function apiRequest<T>(
-  endpoint: string, 
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(error.detail || `API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return toCamelCase<T>(data);
-}
-
-/**
- * Generate a complete Vedic birth chart
- */
-export async function generateChart(birthData: BirthData): Promise<Chart> {
-  return apiRequest<Chart>('/chart', {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
-}
-
-/**
- * Get complete Dasha timeline with Antardashas
- */
-export async function getDashaTimeline(
-  birthData: BirthData, 
-  yearsAhead: number = 120
-): Promise<DashaTimeline> {
-  const params = new URLSearchParams({ years_ahead: yearsAhead.toString() });
-  return apiRequest<DashaTimeline>(`/dasha/timeline?${params}`, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
-}
-
-/**
- * Get currently running Dasha periods
- */
-export async function getCurrentDasha(
-  birthData: BirthData,
-  targetDate?: Date
-): Promise<CurrentDasha> {
-  const params = new URLSearchParams();
-  if (targetDate) {
-    params.set('target_date', targetDate.toISOString());
-  }
-  
-  const queryString = params.toString();
-  const url = queryString ? `/dasha/current?${queryString}` : '/dasha/current';
-  
-  return apiRequest<CurrentDasha>(url, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
-}
-
-/**
- * Get planetary positions only
- */
-export async function getPlanetPositions(birthData: BirthData) {
-  return apiRequest<{ planets: Chart['planets']; ascendant: Chart['ascendant'] }>('/planets', {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
-}
-
-/**
- * Get Moon's nakshatra details
- */
-export async function getMoonNakshatra(birthData: BirthData) {
-  return apiRequest<Chart['moonNakshatra']>('/nakshatra', {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
-}
-
-/**
- * Health check
- */
-export async function healthCheck() {
-  return apiRequest<{ status: string; version: string; timestamp: string }>('/health');
-}
-
-// ============ PREDICTIONS API ============
+// ─── Prediction types ────────────────────────────────────────────────────────
 
 export interface AreaPrediction {
   trend: 'positive' | 'negative' | 'mixed' | 'neutral';
@@ -140,6 +33,9 @@ export interface AreaPrediction {
 
 export interface DashaPredictionData {
   dashaLord: string;
+  antardasha?: string;
+  pratyantardasha?: string;
+  sookshmaDasha?: string;
   periodType: string;
   overallTheme: string;
   overallRating: number;
@@ -157,78 +53,73 @@ export interface DashaPredictionData {
     mantra: string | null;
     deity: string | null;
   };
+  combinationWarning?: string;
+  combinationBonus?: string;
   currentPeriods?: {
     mahadasha: { lord: string; start: string; end: string };
     antardasha?: { lord: string; start: string; end: string };
     pratyantardasha?: { lord: string; start: string; end: string };
+    sookshmaDasha?: { lord: string; start: string; end: string };
   };
 }
 
-/**
- * Get prediction for the current Dasha period
- */
-export async function getCurrentPrediction(
-  birthData: BirthData,
-  targetDate?: Date
-): Promise<DashaPredictionData> {
-  const params = new URLSearchParams();
-  if (targetDate) {
-    params.set('target_date', targetDate.toISOString());
-  }
-  
-  const queryString = params.toString();
-  const url = queryString ? `/predictions/current?${queryString}` : '/predictions/current';
-  
-  return apiRequest<DashaPredictionData>(url, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
+// ─── Chart ───────────────────────────────────────────────────────────────────
+
+export async function generateChart(birthData: BirthData): Promise<Chart> {
+  return chartService.calculateFullChart(birthData);
 }
 
-/**
- * Get prediction for a specific Mahadasha
- */
-export async function getMahadashaPrediction(
-  birthData: BirthData,
-  dashaLord: string
-): Promise<DashaPredictionData> {
-  return apiRequest<DashaPredictionData>(`/predictions/mahadasha/${dashaLord}`, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
+export async function getDashaTimeline(birthData: BirthData, yearsAhead = 120): Promise<DashaTimeline> {
+  return chartService.getDashaTimeline(birthData, yearsAhead);
 }
 
-/**
- * Get prediction for a specific Antardasha combination
- */
-export async function getAntardashaPrediction(
-  birthData: BirthData,
-  mahadasha: string,
-  antardasha: string
-): Promise<DashaPredictionData> {
-  return apiRequest<DashaPredictionData>(`/predictions/antardasha/${mahadasha}/${antardasha}`, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
+export async function getCurrentDasha(birthData: BirthData, targetDate?: Date): Promise<CurrentDasha> {
+  return chartService.getCurrentPeriods(birthData, targetDate);
 }
 
-/**
- * Get timeline with full predictions
- */
-export async function getTimelineWithPredictions(
-  birthData: BirthData,
-  yearsAhead: number = 80
-): Promise<unknown[]> {
-  const params = new URLSearchParams({ years_ahead: yearsAhead.toString() });
-  return apiRequest<unknown[]>(`/predictions/timeline?${params}`, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
+export async function getPlanetPositions(birthData: BirthData) {
+  const { planets, ascendant } = chartService.calculatePlanetPositions(birthData);
+  return { planets, ascendant };
 }
 
-/**
- * Get remedies for current period
- */
+export async function getMoonNakshatra(birthData: BirthData) {
+  return chartService.getMoonNakshatra(birthData);
+}
+
+export async function getYogas(birthData: BirthData): Promise<YogaResult[]> {
+  return chartService.calculateYogas(birthData);
+}
+
+export async function healthCheck() {
+  return { status: 'ok', version: '1.0.0-client', timestamp: new Date().toISOString() };
+}
+
+// ─── Predictions ─────────────────────────────────────────────────────────────
+
+export async function getCurrentPrediction(birthData: BirthData, targetDate?: Date): Promise<DashaPredictionData> {
+  return getCurrentPeriodPrediction(birthData, targetDate);
+}
+
+export async function getMahadashaPrediction(_birthData: BirthData, dashaLord: string): Promise<DashaPredictionData> {
+  return libGetMD(dashaLord);
+}
+
+export async function getAntardashaPrediction(_birthData: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
+  return libGetAD(mahadasha, antardasha);
+}
+
+export async function getPratyantardashaPrediction(_birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
+  return libGetPD(mahadasha, antardasha, pratyantardasha);
+}
+
+export async function getSookshmaPeriods(birthData: BirthData): Promise<SookshmaPeriodList | null> {
+  return getSookshmaPeriodsForCurrent(birthData);
+}
+
+export async function getTimelineWithPredictions(birthData: BirthData, yearsAhead = 80): Promise<unknown[]> {
+  return libGetTimeline(birthData, yearsAhead);
+}
+
 export async function getRemedies(birthData: BirthData): Promise<{
   currentPeriods: unknown;
   gemstone: string | null;
@@ -237,10 +128,23 @@ export async function getRemedies(birthData: BirthData): Promise<{
   favorableActivities: string[];
   unfavorableActivities: string[];
   areaRemedies: Record<string, string[]>;
+  combinationWarning?: string;
+  combinationBonus?: string;
 }> {
-  return apiRequest(`/predictions/remedies`, {
-    method: 'POST',
-    body: JSON.stringify(toSnakeCase(birthData as unknown as Record<string, unknown>)),
-  });
+  const pred = await getCurrentPrediction(birthData);
+  const areaRemedies: Record<string, string[]> = {};
+  for (const [area, p] of Object.entries(pred.predictions)) {
+    areaRemedies[area] = p.remedies;
+  }
+  return {
+    currentPeriods: pred.currentPeriods,
+    gemstone: pred.remedies.gemstone,
+    mantra: pred.remedies.mantra,
+    deity: pred.remedies.deity,
+    favorableActivities: pred.favorableActivities,
+    unfavorableActivities: pred.unfavorableActivities,
+    areaRemedies,
+    combinationWarning: pred.combinationWarning,
+    combinationBonus: pred.combinationBonus,
+  };
 }
-
