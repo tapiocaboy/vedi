@@ -1,4 +1,4 @@
-# वेदी (Vedi) - Vedic Astrology Software
+Vedic Astrology Software
 
 A full-stack Vedic Astrology application with accurate astronomical calculations for zodiac positions, Vimshottari Dasha, and Antardasha periods using traditional Jyotish methods.
 
