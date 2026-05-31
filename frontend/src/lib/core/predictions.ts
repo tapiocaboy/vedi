@@ -1,5 +1,40 @@
 /** Dasha Prediction Engine — enhanced with planet-pair combinations and sookshma-level awareness */
 
+import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Planet as AVPlanet, PLANETS as AV_PLANETS } from './ashtakavarga';
+
+/** Birth-chart context passed into the engine for chart-specific scoring. */
+export interface ChartContext {
+  ashtakavarga: AshtakavargaResult;
+  /** Whole-sign natal house (1–12) for each planet keyed by canonical name (Sun/Moon/...). */
+  planetHouses?: Record<string, number>;
+  /** Natal ascendant rashi (0–11). */
+  ascendantRashi?: number;
+}
+
+// Compact house themes used to colour predictions with the dasha lord's natal placement.
+const HOUSE_THEMES: Record<number, { theme: string; quality: 'kendra' | 'trikona' | 'dusthana' | 'upachaya' | 'other'; emphasis: string }> = {
+  1:  { theme: 'self, vitality, identity',                          quality: 'kendra',    emphasis: 'personal action and body' },
+  2:  { theme: 'wealth, family, speech',                            quality: 'other',     emphasis: 'savings, food, family values' },
+  3:  { theme: 'courage, siblings, communication',                  quality: 'upachaya',  emphasis: 'effort, writing, short trips' },
+  4:  { theme: 'home, mother, inner peace',                         quality: 'kendra',    emphasis: 'residence, comfort, emotions' },
+  5:  { theme: 'creativity, children, romance, intelligence',       quality: 'trikona',   emphasis: 'creative output and recognition' },
+  6:  { theme: 'service, competition, health, debts',               quality: 'dusthana',  emphasis: 'hard work, opponents, daily routines' },
+  7:  { theme: 'partnerships, marriage, deals',                     quality: 'kendra',    emphasis: 'one-on-one relationships and contracts' },
+  8:  { theme: 'transformation, hidden matters, longevity',         quality: 'dusthana',  emphasis: 'research, inheritance, deep change' },
+  9:  { theme: 'dharma, fortune, father, higher learning',          quality: 'trikona',   emphasis: 'philosophy, travel, mentors' },
+  10: { theme: 'career, status, public action',                     quality: 'kendra',    emphasis: 'profession and public visibility' },
+  11: { theme: 'gains, networks, aspirations',                      quality: 'upachaya',  emphasis: 'income, friendships, fulfilled goals' },
+  12: { theme: 'expenses, foreign lands, retreat, spirituality',    quality: 'dusthana',  emphasis: 'letting go, foreign matters, inner work' },
+};
+
+const QUALITY_NOTE: Record<string, string> = {
+  kendra:   'Kendra (angular) — naturally strong, direct expression.',
+  trikona:  'Trikona (trine) — auspicious, fortune-conferring.',
+  dusthana: 'Dusthana — challenging house; rewards come through difficulty.',
+  upachaya: 'Upachaya — improves over time with effort.',
+  other:    '',
+};
+
 export interface PredictionResult {
   area: string;
   trend: 'positive' | 'negative' | 'mixed' | 'neutral';
@@ -257,6 +292,10 @@ function getPairEffect(mahadasha: string, antardasha: string): PairEffect | null
 // ─── Prediction Engine ─────────────────────────────────────────────────────
 
 export class DashaPredictionEngine {
+  // Set per-call by generateCompletePrediction so all internal score lookups
+  // can pick up bindu strength without changing every method signature.
+  private _ctx: ChartContext | null = null;
+
   getPlanetData(planet: string) { return PLANET_SIGNIFICATIONS[planet] ?? {}; }
 
   getRelationship(p1: string, p2: string): string {
@@ -267,9 +306,32 @@ export class DashaPredictionEngine {
     return 'neutral';
   }
 
+  private _bindusForLord(planet: string): number | null {
+    if (!this._ctx) return null;
+    if (!(AV_PLANETS as readonly string[]).includes(planet)) return null;
+    return this._ctx.ashtakavarga.selfStrength[planet as AVPlanet];
+  }
+
+  private _natalHouseFor(planet: string): number | null {
+    return this._ctx?.planetHouses?.[planet] ?? null;
+  }
+
+  /** Compact one-liner that places the dasha lord in its natal house. */
+  private _houseAnnotation(planet: string): string | null {
+    const house = this._natalHouseFor(planet);
+    if (!house) return null;
+    const h = HOUSE_THEMES[house];
+    return `${planet} natally occupies your ${house}${ordinalSuffix(house)} house (${h.theme}). ${QUALITY_NOTE[h.quality]} Period emphasis: ${h.emphasis}.`;
+  }
+
   private _planetScore(planet: string, area: string): number {
     const pd = PLANET_SIGNIFICATIONS[planet] ?? {};
-    return (pd[area + 'Score'] as number) ?? 5;
+    const base = (pd[area + 'Score'] as number) ?? 5;
+    const bindus = this._bindusForLord(planet);
+    if (bindus == null) return base;
+    // Apply ±2 strength modifier, clamped to [1, 10].
+    const adjusted = base + bindusToScoreModifier(bindus);
+    return Math.max(1, Math.min(10, adjusted));
   }
 
   private _trendFromScore(score: number): PredictionResult['trend'] {
@@ -580,8 +642,11 @@ export class DashaPredictionEngine {
     mahadasha: string,
     antardasha?: string,
     pratyantardasha?: string,
-    sookshmaDasha?: string
+    sookshmaDasha?: string,
+    chartCtx?: ChartContext,
   ): DashaPrediction {
+    this._ctx = chartCtx ?? null;
+    try {
     const pd = this.getPlanetData(mahadasha);
     const periodType = sookshmaDasha ? 'sookshma'
       : pratyantardasha ? 'pratyantardasha'
@@ -622,6 +687,24 @@ export class DashaPredictionEngine {
     if (pratyantardasha) overallTheme += ` — currently in ${pratyantardasha} Pratyantardasha`;
     if (sookshmaDasha) overallTheme += ` (${sookshmaDasha} Sookshma Dasha)`;
 
+    // Surface the dasha lord's Ashtakavarga strength when available.
+    const lordBindus = this._bindusForLord(mahadasha);
+    if (lordBindus != null) {
+      overallTheme += `. ${mahadasha}'s Ashtakavarga in its own rashi: ${lordBindus}/8 (${bindusToLabel(lordBindus)})`;
+    }
+
+    // Surface the dasha lord's natal house — the most important chart-specific
+    // qualifier for any dasha prediction.
+    const houseNote = this._houseAnnotation(mahadasha);
+    if (houseNote) {
+      general.details.unshift(houseNote);
+      // If the antardasha lord is also placed, add its house too.
+      if (antardasha) {
+        const adNote = this._houseAnnotation(antardasha);
+        if (adNote) general.details.splice(1, 0, `Sub-period ${adNote.toLowerCase()}`);
+      }
+    }
+
     return {
       dashaLord: mahadasha, antardasha, pratyantardasha, sookshmaDasha,
       periodType, overallTheme, overallRating,
@@ -635,6 +718,9 @@ export class DashaPredictionEngine {
       combinationWarning: pairEff?.warning,
       combinationBonus: pairEff?.bonus,
     };
+    } finally {
+      this._ctx = null;
+    }
   }
 
   private _favorable(planet: string): string[] {
@@ -665,5 +751,16 @@ export class DashaPredictionEngine {
       Ketu:['Excessive material attachment when detachment is the clear lesson','Actively ignoring your genuine spiritual calling and deeper purpose','Strong resistance to necessary, inevitable, and growth-producing change','Desperately holding onto people, roles, and situations from the past','Harmful social isolation, withdrawal, and rejection of community support','Consistently ignoring deep intuition, inner knowing, and spiritual guidance'],
     };
     return a[planet] ?? [];
+  }
+}
+
+function ordinalSuffix(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
   }
 }

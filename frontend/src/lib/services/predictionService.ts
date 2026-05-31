@@ -2,15 +2,16 @@
  * Prediction Service — local-only, delegates to DashaPredictionEngine
  */
 
-import { getPlanetPositions } from '../core/ephemeris';
+import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
 import { VimshottariDasha } from '../core/dasha';
-import { DashaPredictionEngine, type DashaPrediction } from '../core/predictions';
+import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '../core/predictions';
+import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
 
 function toIso(d: Date): string { return d.toISOString(); }
 
-function formatPrediction(pred: DashaPrediction): DashaPredictionData {
+export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
   const predictions = Object.fromEntries(
     Object.entries(pred.predictions).map(([area, p]) => [area, {
       trend: p.trend, intensity: p.intensity, summary: p.summary,
@@ -35,26 +36,83 @@ function formatPrediction(pred: DashaPrediction): DashaPredictionData {
   };
 }
 
-function getMoonLon(bd: BirthData): number {
-  return getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa)['MOON'].longitude;
+async function getMoonLon(bd: BirthData): Promise<number> {
+  const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  return positions['MOON'].longitude;
+}
+
+const ENGINE_PLANET_KEY: Record<string, Contributor> = {
+  SUN: 'Sun', MOON: 'Moon', MARS: 'Mars', MERCURY: 'Mercury',
+  JUPITER: 'Jupiter', VENUS: 'Venus', SATURN: 'Saturn',
+};
+
+function buildChartContext(positions: Record<string, PlanetPosition>): ChartContext {
+  const rashis = { Lagna: positions['ASCENDANT'].rashi } as Record<Contributor, number>;
+  for (const [k, v] of Object.entries(ENGINE_PLANET_KEY)) {
+    rashis[v] = positions[k].rashi;
+  }
+  const ascRashi = positions['ASCENDANT'].rashi;
+  // Whole-sign natal house for every body (including the nodes, which Ashtakavarga skips).
+  const planetHouses: Record<string, number> = {};
+  for (const key of ['SUN','MOON','MARS','MERCURY','JUPITER','VENUS','SATURN','RAHU','KETU']) {
+    const r = positions[key]?.rashi;
+    if (r == null) continue;
+    const name = key.charAt(0) + key.slice(1).toLowerCase(); // SUN -> Sun
+    planetHouses[name] = ((r - ascRashi + 12) % 12) + 1;
+  }
+  return {
+    ashtakavarga: computeAshtakavarga(rashis),
+    planetHouses,
+    ascendantRashi: ascRashi,
+  };
+}
+
+async function getCurrentDashaContext(bd: BirthData): Promise<{
+  moonLon: number; ctx: ChartContext;
+}> {
+  const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  return { moonLon: positions['MOON'].longitude, ctx: buildChartContext(positions) };
 }
 
 const engine = new DashaPredictionEngine();
 
-export function getMahadashaPrediction(dashaLord: string): DashaPredictionData {
-  return formatPrediction(engine.generateCompletePrediction(dashaLord));
+async function chartCtxFor(bd: BirthData): Promise<ChartContext> {
+  const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  return buildChartContext(positions);
 }
 
-export function getAntardashaPrediction(mahadasha: string, antardasha: string): DashaPredictionData {
-  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha));
+export async function getMahadashaPrediction(bd: BirthData, dashaLord: string): Promise<DashaPredictionData> {
+  const ctx = await chartCtxFor(bd);
+  return formatPrediction(engine.generateCompletePrediction(dashaLord, undefined, undefined, undefined, ctx));
 }
 
-export function getPratyantardashaPrediction(mahadasha: string, antardasha: string, pratyantardasha: string): DashaPredictionData {
-  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, pratyantardasha));
+export async function getAntardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
+  const ctx = await chartCtxFor(bd);
+  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, undefined, undefined, ctx));
 }
 
-export function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date): DashaPredictionData {
-  const moonLon = getMoonLon(bd);
+export async function getPratyantardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
+  const ctx = await chartCtxFor(bd);
+  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, pratyantardasha, undefined, ctx));
+}
+
+/** Just the Ashtakavarga grid for the chart. */
+export async function getAshtakavargaForChart(bd: BirthData) {
+  const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  return computeAshtakavarga({
+    Lagna: positions['ASCENDANT'].rashi,
+    Sun: positions['SUN'].rashi,
+    Moon: positions['MOON'].rashi,
+    Mars: positions['MARS'].rashi,
+    Mercury: positions['MERCURY'].rashi,
+    Jupiter: positions['JUPITER'].rashi,
+    Venus: positions['VENUS'].rashi,
+    Saturn: positions['SATURN'].rashi,
+  });
+}
+
+export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date): Promise<DashaPredictionData> {
+  const { moonLon, ctx } = await getCurrentDashaContext(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
@@ -65,6 +123,7 @@ export function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date): Da
     current.antardasha.lord,
     current.pratyantardasha?.lord,
     current.sookshmaDasha?.lord,
+    ctx,
   );
   const result = formatPrediction(pred);
   result.currentPeriods = {
@@ -98,8 +157,8 @@ export interface SookshmaPeriodList {
   currentSookshmaLord: string | null;
 }
 
-export function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: Date): SookshmaPeriodList | null {
-  const moonLon = getMoonLon(bd);
+export async function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: Date): Promise<SookshmaPeriodList | null> {
+  const moonLon = await getMoonLon(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
@@ -135,13 +194,13 @@ export function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: Date): 
   };
 }
 
-export function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80): unknown[] {
-  const moonLon = getMoonLon(bd);
+export async function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80): Promise<unknown[]> {
+  const { moonLon, ctx } = await getCurrentDashaContext(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const mahadashas = calc.generateMahadashaTimeline(yearsAhead);
 
   return mahadashas.map(md => {
-    const prediction = engine.generateCompletePrediction(md.lord);
+    const prediction = engine.generateCompletePrediction(md.lord, undefined, undefined, undefined, ctx);
     const antardashas = calc.calculateAntardasha(md);
 
     return {
@@ -152,7 +211,7 @@ export function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80): unkn
       isBirthDasha: md.isBirthDasha,
       prediction: formatPrediction(prediction),
       antardashas: antardashas.map(ad => {
-        const adPred = engine.generateCompletePrediction(md.lord, ad.lord);
+        const adPred = engine.generateCompletePrediction(md.lord, ad.lord, undefined, undefined, ctx);
         return {
           lord: ad.lord,
           start: toIso(ad.start),

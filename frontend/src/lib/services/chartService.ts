@@ -1,6 +1,6 @@
 /**
  * Chart Service — orchestrates all local calculations.
- * No HTTP calls — everything runs in the browser.
+ * Ephemeris calls are async (Swiss Ephemeris WASM is lazy-loaded).
  */
 
 import { getPlanetPositions, getAyanamsaValue, type PlanetPosition as EphemerisPlanetPosition } from '../core/ephemeris';
@@ -48,8 +48,8 @@ function toNakshatraInfo(nakData: ReturnType<typeof getNakshatra>): NakshatraInf
 
 export class ChartService {
 
-  calculatePlanetPositions(bd: BirthData): { planets: PlanetPosition[]; ascendant: PlanetPosition } {
-    const positions = getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  async calculatePlanetPositions(bd: BirthData): Promise<{ planets: PlanetPosition[]; ascendant: PlanetPosition }> {
+    const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
     const planets: PlanetPosition[] = [];
     let ascendant!: PlanetPosition;
     for (const [name, pos] of Object.entries(positions)) {
@@ -60,14 +60,14 @@ export class ChartService {
     return { planets, ascendant };
   }
 
-  getMoonNakshatra(bd: BirthData): NakshatraInfo {
-    const positions = getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  async getMoonNakshatra(bd: BirthData): Promise<NakshatraInfo> {
+    const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
     return toNakshatraInfo(getNakshatra(positions['MOON'].longitude));
   }
 
   /** Calculate yogas from birth chart positions */
-  calculateYogas(bd: BirthData): YogaResult[] {
-    const rawPositions = getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  async calculateYogas(bd: BirthData): Promise<YogaResult[]> {
+    const rawPositions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
     const posMap: Record<string, number> = {};
     for (const [name, pos] of Object.entries(rawPositions)) {
       if (name !== 'ASCENDANT') posMap[name] = pos.rashi;
@@ -77,14 +77,14 @@ export class ChartService {
     return calc.detectAllYogas();
   }
 
-  private _createDashaCalc(bd: BirthData): VimshottariDasha {
-    const positions = getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  private async _createDashaCalc(bd: BirthData): Promise<VimshottariDasha> {
+    const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
     return new VimshottariDasha(positions['MOON'].longitude, new Date(bd.date));
   }
 
-  getDashaTimeline(bd: BirthData, yearsAhead = 120): DashaTimeline {
-    const calc = this._createDashaCalc(bd);
-    const moonNak = this.getMoonNakshatra(bd);
+  async getDashaTimeline(bd: BirthData, yearsAhead = 120): Promise<DashaTimeline> {
+    const calc = await this._createDashaCalc(bd);
+    const moonNak = await this.getMoonNakshatra(bd);
     const balance = calc.calculateDashaBalance();
     const fullTimeline = calc.getFullTimelineWithAntardashas(yearsAhead);
 
@@ -120,9 +120,9 @@ export class ChartService {
     };
   }
 
-  getCurrentPeriods(bd: BirthData, targetDate?: Date): CurrentDasha {
+  async getCurrentPeriods(bd: BirthData, targetDate?: Date): Promise<CurrentDasha> {
     const td = targetDate ?? new Date();
-    const calc = this._createDashaCalc(bd);
+    const calc = await this._createDashaCalc(bd);
     const result = calc.getCurrentPeriods(td);
     if ('error' in result) throw new Error(result.error);
 
@@ -155,11 +155,11 @@ export class ChartService {
     return { targetDate: toIso(td), mahadasha, antardasha, pratyantardasha };
   }
 
-  calculateFullChart(bd: BirthData): Chart {
-    const { planets, ascendant } = this.calculatePlanetPositions(bd);
-    const moonNakshatra = this.getMoonNakshatra(bd);
-    const currentDasha = this.getCurrentPeriods(bd);
-    const calc = this._createDashaCalc(bd);
+  async calculateFullChart(bd: BirthData): Promise<Chart> {
+    const { planets, ascendant } = await this.calculatePlanetPositions(bd);
+    const moonNakshatra = await this.getMoonNakshatra(bd);
+    const currentDasha = await this.getCurrentPeriods(bd);
+    const calc = await this._createDashaCalc(bd);
     const mahadashas = calc.generateMahadashaTimeline(120);
     const mahadashaTimeline: DashaPeriod[] = mahadashas.map(md => ({
       lord: md.lord,
@@ -169,7 +169,8 @@ export class ChartService {
       durationDays: md.days,
       isBirthDasha: md.isBirthDasha,
     }));
-    const ayanamsaValue = Math.round(getAyanamsaValue(bd.date, bd.timezone, bd.ayanamsa) * 1000000) / 1000000;
+    const rawAyanamsa = await getAyanamsaValue(bd.date, bd.timezone, bd.ayanamsa);
+    const ayanamsaValue = Math.round(rawAyanamsa * 1000000) / 1000000;
     return { birthData: bd, ayanamsaValue, planets, ascendant, moonNakshatra, currentDasha, mahadashaTimeline };
   }
 }

@@ -13,8 +13,14 @@ import {
   getCurrentPeriodPrediction,
   getTimelineWithPredictions as libGetTimeline,
   getSookshmaPeriodsForCurrent,
+  getAshtakavargaForChart,
   type SookshmaPeriodList,
 } from '../lib/services/predictionService';
+import type { AshtakavargaResult } from '../lib/core/ashtakavarga';
+import { getPeriodSnapshot, type PeriodSnapshot } from '../lib/services/periodService';
+import type { CurrentLocation } from '../lib/core/transits';
+
+export type { PeriodSnapshot, CurrentLocation };
 
 export type { SookshmaPeriodList };
 
@@ -78,7 +84,7 @@ export async function getCurrentDasha(birthData: BirthData, targetDate?: Date): 
 }
 
 export async function getPlanetPositions(birthData: BirthData) {
-  const { planets, ascendant } = chartService.calculatePlanetPositions(birthData);
+  const { planets, ascendant } = await chartService.calculatePlanetPositions(birthData);
   return { planets, ascendant };
 }
 
@@ -100,16 +106,29 @@ export async function getCurrentPrediction(birthData: BirthData, targetDate?: Da
   return getCurrentPeriodPrediction(birthData, targetDate);
 }
 
-export async function getMahadashaPrediction(_birthData: BirthData, dashaLord: string): Promise<DashaPredictionData> {
-  return libGetMD(dashaLord);
+export async function getMahadashaPrediction(birthData: BirthData, dashaLord: string): Promise<DashaPredictionData> {
+  return libGetMD(birthData, dashaLord);
 }
 
-export async function getAntardashaPrediction(_birthData: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
-  return libGetAD(mahadasha, antardasha);
+export async function getAntardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
+  return libGetAD(birthData, mahadasha, antardasha);
 }
 
-export async function getPratyantardashaPrediction(_birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
-  return libGetPD(mahadasha, antardasha, pratyantardasha);
+export async function getPratyantardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
+  return libGetPD(birthData, mahadasha, antardasha, pratyantardasha);
+}
+
+export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult> {
+  return getAshtakavargaForChart(birthData);
+}
+
+/** Full snapshot for the "Now" tab: dasha tree + chart-aware prediction + transits + optional relocation + playbook. */
+export async function getCurrentPeriodSnapshot(
+  birthData: BirthData,
+  currentLocation?: CurrentLocation,
+  asOf?: Date,
+): Promise<PeriodSnapshot> {
+  return getPeriodSnapshot(birthData, currentLocation, asOf);
 }
 
 export async function getSookshmaPeriods(birthData: BirthData): Promise<SookshmaPeriodList | null> {
