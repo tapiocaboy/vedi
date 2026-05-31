@@ -39,17 +39,6 @@ function daysToYMD(days: number): string {
   return parts.join(' ');
 }
 
-// Deterministic particle positions so there's no random flicker on re-render
-const PARTICLES: { dx: number[]; dy: number[]; delay: number; color: string }[] = [
-  { dx: [-5,  9, -5], dy: [-7,  1, -7], delay: 0.00, color: PALETTE.pink },
-  { dx: [ 7, -3,  7], dy: [-3,  7, -3], delay: 0.35, color: PALETTE.gold },
-  { dx: [-2,  7, -2], dy: [ 7, -7,  7], delay: 0.70, color: PALETTE.pink },
-  { dx: [ 9, -5,  9], dy: [ 1, -5,  1], delay: 1.05, color: PALETTE.gold },
-  { dx: [-7,  3, -7], dy: [-1,  9, -1], delay: 1.40, color: PALETTE.pink },
-  { dx: [ 3, -9,  3], dy: [ 5, -1,  5], delay: 0.50, color: PALETTE.gold },
-];
-
-
 interface BarRowProps {
   label: string;
   lord: string;

@@ -155,7 +155,7 @@ interface AnalysisProps extends ThemeProps {
 }
 
 function AnalysisContent({ analysis, planet, color, isLight,
-  panelBg, titleClr, bodyClr, mutedClr, subClr, cardBg, cardBdr, secBg, secBdr, divClr, barEmpty }: AnalysisProps) {
+  panelBg, titleClr, bodyClr, mutedClr, subClr: _subClr, cardBg, cardBdr, secBg, secBdr, divClr, barEmpty }: AnalysisProps) {
   const DignityIcon = DIGNITY_ICONS[analysis.dignity];
 
   return (
