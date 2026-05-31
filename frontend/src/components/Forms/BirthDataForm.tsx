@@ -2,8 +2,8 @@
  * Birth data input form component
  */
 
-import React, { useState } from 'react';
-import { Calendar, MapPin, Clock, Settings } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, MapPin, Clock, Settings, Sparkles } from 'lucide-react';
 import type { BirthData } from '../../types/astrology';
 
 interface Props {
@@ -117,32 +117,53 @@ const AYANAMSAS = [
   { value: 'RAMAN', label: 'Raman' },
 ] as const;
 
+const LOCATION_KEY = 'vedi_location_prefs';
+
+function loadSaved(): { latitude: string; longitude: string; timezone: string; ayanamsa: string } {
+  try {
+    const raw = localStorage.getItem(LOCATION_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { latitude: '', longitude: '', timezone: 'Etc/GMT+4', ayanamsa: 'LAHIRI' };
+}
+
 export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) => {
+  const saved = useRef(loadSaved());
+
   const [formData, setFormData] = useState({
     name: '',
     date: '',
     time: '',
-    latitude: '',
-    longitude: '',
-    timezone: 'Etc/GMT+4',
-    ayanamsa: 'LAHIRI' as const,
+    latitude:  saved.current.latitude,
+    longitude: saved.current.longitude,
+    timezone:  saved.current.timezone  || 'Etc/GMT+4',
+    ayanamsa:  (saved.current.ayanamsa || 'LAHIRI') as 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN',
   });
+
+
+  // Persist location fields whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCATION_KEY, JSON.stringify({
+        latitude:  formData.latitude,
+        longitude: formData.longitude,
+        timezone:  formData.timezone,
+        ayanamsa:  formData.ayanamsa,
+      }));
+    } catch {}
+  }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Combine date and time
     const dateTime = `${formData.date}T${formData.time}:00`;
-    
     const birthData: BirthData = {
       date: dateTime,
-      latitude: parseFloat(formData.latitude),
+      latitude:  parseFloat(formData.latitude),
       longitude: parseFloat(formData.longitude),
-      timezone: formData.timezone,
-      ayanamsa: formData.ayanamsa,
+      timezone:  formData.timezone,
+      ayanamsa:  formData.ayanamsa,
       name: formData.name || undefined,
     };
-    
     onSubmit(birthData);
   };
 
@@ -162,14 +183,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
   const setPresetLocation = (preset: typeof presetLocations[0]) => {
     setFormData(prev => ({
       ...prev,
-      latitude: preset.lat.toString(),
+      latitude:  preset.lat.toString(),
       longitude: preset.lng.toString(),
-      timezone: preset.tz,
+      timezone:  preset.tz,
     }));
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/12 text-white placeholder-white/20 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/30 outline-none transition-all";
-  const labelClasses = "block text-sm font-medium text-slate-300 mb-2";
+  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 focus:border-[#ffaf61]/60 focus:ring-1 focus:ring-[#ffaf61]/20 outline-none transition-all text-sm";
+  const labelClasses = "block text-xs font-medium text-white/55 mb-1.5 uppercase tracking-wide";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -192,7 +213,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <Calendar className="inline w-4 h-4 mr-1.5 text-violet-400" />
+            <Calendar className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
             Birth Date
           </label>
           <input
@@ -206,7 +227,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <Clock className="inline w-4 h-4 mr-1.5 text-violet-400" />
+            <Clock className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
             Birth Time
           </label>
           <input
@@ -231,7 +252,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-950/30 text-slate-400 border border-violet-900/40 hover:border-violet-500/50 hover:text-violet-400 transition-all"
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-white/50 border border-white/10 hover:border-[#ffaf61]/40 hover:text-[#ffaf61] transition-all"
             >
               {preset.name}
             </button>
@@ -243,7 +264,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-violet-400" />
+            <MapPin className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
             Latitude
           </label>
           <input
@@ -261,7 +282,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-violet-400" />
+            <MapPin className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
             Longitude
           </label>
           <input
@@ -282,7 +303,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Timezone */}
       <div>
         <label className={labelClasses}>
-          <Clock className="inline w-4 h-4 mr-1.5 text-violet-400" />
+          <Clock className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
           Timezone
         </label>
         <select
@@ -300,7 +321,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Ayanamsa */}
       <div>
         <label className={labelClasses}>
-          <Settings className="inline w-4 h-4 mr-1.5 text-violet-400" />
+          <Settings className="inline w-4 h-4 mr-1.5 text-[#ffaf61]" />
           Ayanamsa
         </label>
         <select
@@ -315,11 +336,35 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </select>
       </div>
 
+      {/* AI Integration — disabled in free version */}
+      <div
+        aria-disabled="true"
+        className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/8 bg-white/3 cursor-not-allowed select-none opacity-55"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(255,175,97,0.15)', border: '1px solid rgba(255,175,97,0.25)' }}>
+            <Sparkles className="w-3.5 h-3.5 text-[#ffaf61]/70" />
+          </div>
+          <div>
+            <div className="text-xs font-medium text-white">Integrate with AI</div>
+            <div className="text-[10px] text-white/40 mt-0.5">Not available in free version</div>
+          </div>
+        </div>
+        {/* inactive toggle */}
+        <div className="w-9 h-5 rounded-full bg-white/8 border border-white/12 relative shrink-0">
+          <div className="absolute left-1 top-1 w-3 h-3 rounded-full bg-white/25" />
+        </div>
+      </div>
+
       {/* Submit */}
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3.5 px-6 bg-gradient-to-r from-violet-700 to-violet-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-violet-400 transform hover:scale-[1.02] transition-all shadow-neon hover:shadow-neon-strong disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none btn-glow"
+        className="w-full py-3 px-6 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        style={{ backgroundColor: '#ffaf61' }}
+        onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f59e0b')}
+        onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#ffaf61')}
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

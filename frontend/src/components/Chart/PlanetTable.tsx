@@ -4,6 +4,9 @@ import type { PlanetPosition } from '../../types/astrology';
 import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { formatDegree } from '../../utils/dateUtils';
 import { PlanetDetailPanel } from './PlanetDetailPanel';
+import { useTheme } from '../../hooks/useTheme';
+
+const ACCENT = '#ffaf61';
 
 interface Props {
   planets: PlanetPosition[];
@@ -12,6 +15,7 @@ interface Props {
 
 export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
+  const isLight = useTheme();
 
   const allPositions: PlanetPosition[] = [
     ...planets,
@@ -20,10 +24,26 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
 
   const ascendantRashiIndex = ascendant.rashiIndex;
 
+  // Theme tokens
+  const headerBg    = isLight
+    ? `linear-gradient(to right, #92400e, ${ACCENT})`
+    : `linear-gradient(to right, #3b1a00, #c97a2a)`;
+  const rowEven     = isLight ? '#ffffff'          : 'rgba(255,255,255,0.008)';
+  const rowOdd      = isLight ? '#f8fafc'          : 'rgba(255,255,255,0.004)';
+  const rowSel      = isLight ? 'rgba(255,175,97,0.14)' : 'rgba(255,175,97,0.10)';
+  const rowHover    = isLight ? 'rgba(255,175,97,0.08)' : 'rgba(255,175,97,0.06)';
+  const borderClr   = isLight ? '#e2e8f0'          : 'rgba(255,255,255,0.06)';
+  const cellTxt     = isLight ? '#0f172a'          : 'rgba(255,255,255,0.88)';
+  const mutedTxt    = isLight ? '#64748b'          : 'rgba(255,255,255,0.50)';
+  const degreeTxt   = ACCENT;
+  const padaBg      = isLight ? 'rgba(255,175,97,0.18)' : 'rgba(255,175,97,0.20)';
+  const padaTxt     = isLight ? '#92400e'          : 'rgba(255,175,97,0.90)';
+  const padaBorder  = isLight ? 'rgba(255,175,97,0.35)' : 'rgba(255,175,97,0.30)';
+
   return (
     <>
       <div className="overflow-x-auto">
-        <p className="text-[11px] font-mono text-white/25 mb-3 px-1">
+        <p className="text-[11px] font-mono mb-3 px-1" style={{ color: mutedTxt }}>
           Click any row to see planetary effects, house placement, and predictions
         </p>
         <motion.table
@@ -33,60 +53,69 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
           transition={{ duration: 0.5 }}
         >
           <thead>
-            <tr className="bg-gradient-to-r from-violet-800 to-violet-600 text-white">
-              <th className="px-4 py-3 text-left rounded-tl-lg font-medium">Planet</th>
-              <th className="px-4 py-3 text-left font-medium">Rashi</th>
-              <th className="px-4 py-3 text-left font-medium">Degree</th>
-              <th className="px-4 py-3 text-left font-medium">Nakshatra</th>
-              <th className="px-4 py-3 text-left font-medium">Pada</th>
-              <th className="px-4 py-3 text-center rounded-tr-lg font-medium">℞</th>
+            <tr style={{ background: headerBg }}>
+              <th className="px-4 py-3 text-left rounded-tl-lg font-medium text-white">Planet</th>
+              <th className="px-4 py-3 text-left font-medium text-white">Rashi</th>
+              <th className="px-4 py-3 text-left font-medium text-white">Degree</th>
+              <th className="px-4 py-3 text-left font-medium text-white">Nakshatra</th>
+              <th className="px-4 py-3 text-left font-medium text-white">Pada</th>
+              <th className="px-4 py-3 text-center rounded-tr-lg font-medium text-white">℞</th>
             </tr>
           </thead>
           <tbody>
-            {allPositions.map((planet, idx) => (
-              <motion.tr
-                key={planet.planet}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                onClick={() => setSelected(planet)}
-                className={`
-                  border-b border-white/6 cursor-pointer
-                  ${idx % 2 === 0 ? 'bg-white/2' : 'bg-white/1'}
-                  hover:bg-violet-900/20 hover:border-violet-500/20 transition-all duration-150
-                  ${selected?.planet === planet.planet ? 'bg-violet-900/25 border-violet-500/30' : ''}
-                `}
-              >
-                <td className="px-4 py-3 font-medium">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg" style={{ color: PLANET_COLORS[planet.planet] }}>
-                      {PLANET_SYMBOLS[planet.planet]}
+            {allPositions.map((planet, idx) => {
+              const isSel = selected?.planet === planet.planet;
+              return (
+                <motion.tr
+                  key={planet.planet}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => setSelected(planet)}
+                  className="cursor-pointer transition-colors duration-150"
+                  style={{
+                    background: isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd,
+                    borderBottom: `1px solid ${borderClr}`,
+                  }}
+                  onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = rowHover; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd; }}
+                >
+                  <td className="px-4 py-3 font-medium">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg" style={{ color: PLANET_COLORS[planet.planet] }}>
+                        {PLANET_SYMBOLS[planet.planet]}
+                      </span>
+                      <span style={{ color: cellTxt }}>{planet.planet}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3" style={{ color: mutedTxt }}>
+                    {planet.rashi}
+                    <span className="text-xs ml-1 font-mono" style={{ color: isLight ? '#94a3b8' : 'rgba(255,255,255,0.30)' }}>
+                      ({planet.rashiIndex + 1})
                     </span>
-                    <span className="text-white">{planet.planet}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-white/75">
-                  {planet.rashi}
-                  <span className="text-white/35 text-xs ml-1 font-mono">({planet.rashiIndex + 1})</span>
-                </td>
-                <td className="px-4 py-3 font-mono text-violet-400">
-                  {formatDegree(planet.rashiDegree)}
-                </td>
-                <td className="px-4 py-3 text-white/75">{planet.nakshatra}</td>
-                <td className="px-4 py-3">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-800/50 text-violet-300 font-semibold text-xs border border-violet-600/30">
-                    {planet.nakshatraPada}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {planet.isRetrograde && (
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 font-bold text-xs border border-pink-500/30">
-                      ℞
+                  </td>
+                  <td className="px-4 py-3 font-mono font-semibold" style={{ color: degreeTxt }}>
+                    {formatDegree(planet.rashiDegree)}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: mutedTxt }}>{planet.nakshatra}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-full font-semibold text-xs"
+                      style={{ background: padaBg, color: padaTxt, border: `1px solid ${padaBorder}` }}
+                    >
+                      {planet.nakshatraPada}
                     </span>
-                  )}
-                </td>
-              </motion.tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {planet.isRetrograde && (
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 font-bold text-xs border border-pink-500/30">
+                        ℞
+                      </span>
+                    )}
+                  </td>
+                </motion.tr>
+              );
+            })}
           </tbody>
         </motion.table>
       </div>

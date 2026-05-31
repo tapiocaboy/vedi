@@ -4,6 +4,22 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, Compass, MapPin, AlertTriangle, Sparkles, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { getCurrentPeriodSnapshot, type BirthData, type CurrentLocation, type PeriodSnapshot } from '../../services/api';
 
+const LORD_HEX: Record<string, string> = {
+  Sun:     '#f59e0b',
+  Moon:    '#94a3b8',
+  Mars:    '#ef4444',
+  Mercury: '#10b981',
+  Jupiter: '#eab308',
+  Venus:   '#f472b6',
+  Saturn:  '#38bdf8',
+  Rahu:    '#6b7280',
+  Ketu:    '#f97316',
+};
+
+function fmtShort(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { year: '2-digit', month: 'short' });
+}
+
 interface Props {
   birthData: BirthData;
 }
@@ -26,42 +42,95 @@ function valenceClass(v: number): string {
 }
 
 const PeriodBanner: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
-  const cp = snap.currentPeriods;
-  const rows: Array<{ label: string; lord: string; ends: string; days: number }> = [
-    { label: 'Mahadasha',       lord: cp.mahadasha.lord,       ends: cp.mahadasha.end,       days: cp.mahadasha.daysRemaining },
-    { label: 'Antardasha',      lord: cp.antardasha.lord,      ends: cp.antardasha.end,      days: cp.antardasha.daysRemaining },
-    ...(cp.pratyantardasha ? [{ label: 'Pratyantardasha', lord: cp.pratyantardasha.lord, ends: cp.pratyantardasha.end, days: cp.pratyantardasha.daysRemaining }] : []),
-    ...(cp.sookshmaDasha   ? [{ label: 'Sookshma',        lord: cp.sookshmaDasha.lord,   ends: cp.sookshmaDasha.end,   days: cp.sookshmaDasha.daysRemaining }]   : []),
+  const cp   = snap.currentPeriods;
+  const nowMs = new Date(snap.gochara.asOf).getTime();
+
+  const rows = [
+    { label: 'Mahadasha',      lord: cp.mahadasha.lord,      start: cp.mahadasha.start,      end: cp.mahadasha.end      },
+    { label: 'Antardasha',     lord: cp.antardasha.lord,     start: cp.antardasha.start,     end: cp.antardasha.end     },
+    ...(cp.pratyantardasha ? [{ label: 'Pratyantardasha', lord: cp.pratyantardasha.lord, start: cp.pratyantardasha.start, end: cp.pratyantardasha.end }] : []),
+    ...(cp.sookshmaDasha   ? [{ label: 'Sookshma Dasha',  lord: cp.sookshmaDasha.lord,   start: cp.sookshmaDasha.start,   end: cp.sookshmaDasha.end   }] : []),
   ];
+
   return (
     <div className="glass-card rounded-2xl p-6">
-      <div className="flex items-center gap-2.5 mb-4">
-        <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-          <Clock className="w-4 h-4 text-violet-300" />
+      <div className="flex items-center gap-2.5 mb-5">
+        <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+          <Clock className="w-4 h-4 text-sky-300" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-white">Current Period</h3>
-          <p className="text-[11px] text-white/40">Nested dasha lords running for this person right now</p>
+          <h3 className="text-sm font-semibold text-white">Active Dasha Periods</h3>
+          <p className="text-[11px] text-white/40">
+            {rows.map(r => r.lord).join(' · ')}
+          </p>
         </div>
         <div className={`px-2.5 py-1 rounded-md border text-[11px] font-mono ${ratingColor(snap.prediction.overallRating)}`}>
           {snap.prediction.overallRating}/10
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {rows.map(r => (
-          <div key={r.label} className="rounded-xl border border-white/8 bg-black/30 px-3 py-2.5 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-wider text-white/40">{r.label}</div>
-              <div className="text-sm font-semibold text-white">{r.lord}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[10px] text-white/40">ends {fmtDate(r.ends)}</div>
-              <div className="text-[10px] font-mono text-white/60">{r.days}d left</div>
-            </div>
-          </div>
-        ))}
+
+      <div className="space-y-4">
+        {rows.map((r, i) => {
+          const startMs  = new Date(r.start).getTime();
+          const endMs    = new Date(r.end).getTime();
+          const total    = endMs - startMs;
+          const elapsed  = Math.max(0, Math.min(nowMs - startMs, total));
+          const pct      = total > 0 ? (elapsed / total) * 100 : 0;
+          const daysLeft = Math.max(0, Math.round((endMs - nowMs) / 86_400_000));
+          const color    = LORD_HEX[r.lord] ?? '#38bdf8';
+
+          return (
+            <motion.div
+              key={r.label}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.06 }}
+              className="grid grid-cols-[84px_1fr_60px] gap-3 items-center"
+            >
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase tracking-wider text-white/30 leading-none">{r.label}</div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span className="text-sm font-semibold text-white truncate">{r.lord}</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="relative">
+                  <div className="h-[18px] rounded-full overflow-hidden bg-white/4 border border-white/8">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${pct}%`,
+                        background: `linear-gradient(90deg, ${color}20 0%, ${color}55 100%)`,
+                      }}
+                    />
+                  </div>
+                  {pct > 1 && pct < 99 && (
+                    <div
+                      className="absolute top-[-3px] bottom-[-3px] w-[2px] rounded-sm pointer-events-none"
+                      style={{ left: `calc(${pct}% - 1px)`, backgroundColor: color, opacity: 0.9 }}
+                    />
+                  )}
+                </div>
+                <div className="flex justify-between mt-1">
+                  <span className="text-[9px] font-mono text-white/20">{fmtShort(r.start)}</span>
+                  <span className="text-[9px] font-mono text-white/20">{fmtShort(r.end)}</span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <div className="text-xs font-mono font-semibold" style={{ color }}>{pct.toFixed(0)}%</div>
+                <div className="text-[10px] text-white/40">{daysLeft}d left</div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
-      <p className="text-xs text-white/70 mt-4 leading-relaxed">{snap.prediction.overallTheme}</p>
+
+      <p className="text-xs text-white/70 mt-5 leading-relaxed border-t border-white/6 pt-4">
+        {snap.prediction.overallTheme}
+      </p>
     </div>
   );
 };
@@ -71,8 +140,8 @@ const TransitsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-          <Compass className="w-4 h-4 text-violet-300" />
+        <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+          <Compass className="w-4 h-4 text-sky-300" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">Current Transits (Gochara)</h3>
@@ -140,15 +209,15 @@ const LocationCard: React.FC<{
   return (
     <div className="glass-card rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-          <MapPin className="w-4 h-4 text-violet-300" />
+        <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+          <MapPin className="w-4 h-4 text-sky-300" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">Currently Living Somewhere Else?</h3>
           <p className="text-[11px] text-white/40">Re-cast your chart for your current location to see how houses shift</p>
         </div>
         {!enabled ? (
-          <button onClick={() => setEnabled(true)} className="text-xs px-3 py-1.5 rounded-lg bg-violet-500/15 border border-violet-400/30 text-violet-200 hover:bg-violet-500/25">
+          <button onClick={() => setEnabled(true)} className="text-xs px-3 py-1.5 rounded-lg bg-sky-500/15 border border-sky-400/30 text-sky-200 hover:bg-sky-500/25">
             Set location
           </button>
         ) : (
@@ -174,22 +243,22 @@ const LocationCard: React.FC<{
               <input value={tz} onChange={e => setTz(e.target.value)} placeholder="Europe/London" className="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white" />
             </label>
           </div>
-          <button onClick={apply} className="text-xs px-3 py-1.5 rounded-lg bg-violet-500/20 border border-violet-400/40 text-violet-100 hover:bg-violet-500/30">
+          <button onClick={apply} className="text-xs px-3 py-1.5 rounded-lg bg-sky-500/20 border border-sky-400/40 text-sky-100 hover:bg-sky-500/30">
             Apply location
           </button>
         </div>
       )}
 
       {relocation && (
-        <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 p-4 mt-2">
+        <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-4 mt-2">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[11px] uppercase tracking-wider text-violet-200/70">Relocated Chart</div>
+            <div className="text-[11px] uppercase tracking-wider text-sky-200/70">Relocated Chart</div>
             <div className="text-[10px] font-mono text-white/40">
               {relocation.location.latitude.toFixed(3)}, {relocation.location.longitude.toFixed(3)} · {relocation.location.timezone}
             </div>
           </div>
           <div className="text-sm text-white">
-            New Ascendant: <span className="font-semibold text-violet-200">{relocation.chart.ascendantRashiName}</span>{' '}
+            New Ascendant: <span className="font-semibold text-sky-200">{relocation.chart.ascendantRashiName}</span>{' '}
             <span className="text-white/40 font-mono text-xs">{relocation.chart.ascendantRashiDegree}°</span>
           </div>
           <p className="text-[11px] text-white/50 mt-1.5 leading-relaxed">
@@ -199,7 +268,7 @@ const LocationCard: React.FC<{
             {Object.entries(relocation.chart.planetHouses).map(([p, h]) => (
               <div key={p} className="rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] text-white/80 flex items-center justify-between">
                 <span>{p}</span>
-                <span className="font-mono text-violet-200">{h}H</span>
+                <span className="font-mono text-sky-200">{h}H</span>
               </div>
             ))}
           </div>
@@ -214,8 +283,8 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-          <Zap className="w-4 h-4 text-violet-300" />
+        <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+          <Zap className="w-4 h-4 text-sky-300" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">How to Use This Period</h3>
@@ -223,8 +292,8 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
-        <div className="text-[10px] uppercase tracking-wider text-violet-200/70 mb-1">Decision window</div>
+      <div className="rounded-xl border border-sky-400/20 bg-sky-500/5 p-3">
+        <div className="text-[10px] uppercase tracking-wider text-sky-200/70 mb-1">Decision window</div>
         <p className="text-xs text-white/80 leading-relaxed">{pb.decisionWindow}</p>
       </div>
 
@@ -279,13 +348,13 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
 
       <div className="rounded-xl border border-white/8 bg-black/30 p-3">
         <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">Daily practice</div>
-        <div className="text-[11px] text-white/75"><span className="text-violet-300">Mantra:</span> {pb.dailyPractice.mantra || '—'}</div>
-        <div className="text-[11px] text-white/75 mt-0.5"><span className="text-violet-300">Charity:</span> {pb.dailyPractice.charity || '—'}</div>
+        <div className="text-[11px] text-white/75"><span className="text-sky-300">Mantra:</span> {pb.dailyPractice.mantra || '—'}</div>
+        <div className="text-[11px] text-white/75 mt-0.5"><span className="text-sky-300">Charity:</span> {pb.dailyPractice.charity || '—'}</div>
         {snap.prediction.remedies.gemstone && (
-          <div className="text-[11px] text-white/75 mt-0.5"><span className="text-violet-300">Gemstone:</span> {snap.prediction.remedies.gemstone} (consult an astrologer before wearing)</div>
+          <div className="text-[11px] text-white/75 mt-0.5"><span className="text-sky-300">Gemstone:</span> {snap.prediction.remedies.gemstone} (consult an astrologer before wearing)</div>
         )}
         {snap.prediction.remedies.deity && (
-          <div className="text-[11px] text-white/75 mt-0.5"><span className="text-violet-300">Deity to honour:</span> {snap.prediction.remedies.deity}</div>
+          <div className="text-[11px] text-white/75 mt-0.5"><span className="text-sky-300">Deity to honour:</span> {snap.prediction.remedies.deity}</div>
         )}
       </div>
     </div>
@@ -304,8 +373,8 @@ const PredictionDetailsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => 
   return (
     <div className="glass-card rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-violet-300" />
+        <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+          <Sparkles className="w-4 h-4 text-sky-300" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-white">Period Analysis</h3>
@@ -326,7 +395,7 @@ const PredictionDetailsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => 
               <ul className="space-y-1">
                 {a.details.slice(0, 4).map((d, i) => (
                   <li key={i} className="text-[11px] text-white/60 leading-relaxed flex gap-2">
-                    <span className="text-violet-400 shrink-0">•</span>
+                    <span className="text-sky-400 shrink-0">•</span>
                     <span>{d}</span>
                   </li>
                 ))}

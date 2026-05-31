@@ -3,6 +3,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart } from 'lucide-react';
 
+const ACCENT = '#ffaf61';
+
+// Deterministic floating particle positions (no random so no re-render flicker)
+const BG_PARTICLES = [
+  { x: '12%',  y: '18%', size: 2,   dur: 9,  delay: 0   },
+  { x: '78%',  y: '8%',  size: 1.5, dur: 12, delay: 2   },
+  { x: '55%',  y: '35%', size: 1,   dur: 15, delay: 4.5 },
+  { x: '23%',  y: '62%', size: 2.5, dur: 10, delay: 1   },
+  { x: '88%',  y: '45%', size: 1.5, dur: 13, delay: 3.5 },
+  { x: '40%',  y: '80%', size: 1,   dur: 11, delay: 6   },
+  { x: '67%',  y: '70%', size: 2,   dur: 14, delay: 0.8 },
+  { x: '5%',   y: '90%', size: 1,   dur: 16, delay: 5   },
+  { x: '92%',  y: '75%', size: 1.5, dur: 8,  delay: 2.5 },
+  { x: '33%',  y: '12%', size: 1,   dur: 11, delay: 7   },
+];
+
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
 import { NorthIndianChart } from './components/Chart/NorthIndianChart';
@@ -101,9 +117,14 @@ function AppContent() {
       onClick={() => setActiveTab(id)}
       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 ${
         activeTab === id
-          ? 'bg-violet-500 text-black shadow-neon'
-          : 'text-white/40 hover:text-white hover:bg-white/5'
+          ? isLight
+            ? 'text-white shadow-sm'
+            : 'text-white shadow-sm'
+          : isLight
+            ? 'text-gray-500 hover:text-gray-800 hover:bg-white/70'
+            : 'text-white/38 hover:text-white/65 hover:bg-white/5'
       }`}
+      style={activeTab === id ? { backgroundColor: ACCENT } : undefined}
     >
       <Icon className="w-3.5 h-3.5" />
       <span className="hidden sm:inline">{label}</span>
@@ -124,11 +145,26 @@ function AppContent() {
         trigger={privacyTrigger}
       />
 
-      {/* Ambient glow — dark only */}
+      {/* Ambient glow + floating particles — dark only */}
       {!isLight && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
-          <div className="absolute -top-40 right-0 w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[140px]" />
-          <div className="absolute bottom-0 -left-20 w-72 h-72 bg-violet-700/4 rounded-full blur-[100px]" />
+          {/* Ambient radial glow */}
+          <div className="absolute -top-72 right-0 w-[700px] h-[700px] rounded-full blur-[220px]"
+            style={{ background: 'radial-gradient(ellipse, rgba(255,175,97,0.07) 0%, rgba(255,175,97,0.035) 50%, transparent 70%)' }} />
+          {/* Floating particles */}
+          {BG_PARTICLES.map((p, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: p.x, top: p.y,
+                width: p.size, height: p.size,
+                backgroundColor: ACCENT,
+              }}
+              animate={{ y: [0, -18, 0], opacity: [0.18, 0.55, 0.18] }}
+              transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
         </div>
       )}
 
@@ -137,16 +173,19 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Logo */}
-            <div className="w-9 h-9 rounded-xl bg-violet-500 flex items-center justify-center shadow-neon shrink-0">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-black">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT }}>
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 2a8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8 8 8 0 0 1 8-8z" opacity=".35"/>
                 <path d="M12 5l1.5 4.5L18 12l-4.5 1.5L12 19l-1.5-4.5L6 12l4.5-1.5z" opacity=".9"/>
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-display font-bold tracking-widest text-white">Predictor</h1>
-              <p className={`text-[10px] font-mono uppercase tracking-[0.25em] ${isLight ? 'text-violet-600/70' : 'text-violet-400/70'}`}>
+              <h1 className={`text-lg font-display font-bold tracking-widest ${isLight ? 'text-gray-900' : 'text-white'}`}>
+                Predictor
+              </h1>
+              <p className="text-[10px] font-mono uppercase tracking-[0.25em]"
+                style={{ color: isLight ? `rgba(255,175,97,0.85)` : 'rgba(255,175,97,0.65)' }}>
                 Astrology Predictor
               </p>
             </div>
@@ -161,10 +200,10 @@ function AppContent() {
             ) : health ? (
               <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
                 isLight
-                  ? 'bg-black/5 border border-black/10 text-black/40'
-                  : 'bg-white/4 border border-white/8 text-white/50'
+                  ? 'bg-gray-100 border border-gray-200 text-gray-500'
+                  : 'bg-white/4 border border-white/8 text-white/45'
               }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
                 v{health.version}
               </span>
             ) : null}
@@ -175,8 +214,8 @@ function AppContent() {
               title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
               className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
                 isLight
-                  ? 'bg-black/6 border border-black/10 text-black/50 hover:bg-black/10'
-                  : 'bg-white/5 border border-white/8 text-white/50 hover:bg-white/10 hover:text-white'
+                  ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
+                  : 'bg-white/5 border border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
               }`}
             >
               {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -196,11 +235,16 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card rounded-2xl p-6"
             >
-              <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-black/8' : 'border-white/5'}`}>
-                <div className="w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-                  <Moon className="w-4 h-4 text-violet-400" />
+              <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-gray-150' : 'border-white/5'}`}
+                style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : undefined }}
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'rgba(255,175,97,0.12)', border: '1px solid rgba(255,175,97,0.25)' }}>
+                  <Moon className="w-4 h-4" style={{ color: ACCENT }} />
                 </div>
-                <h2 className="text-sm font-semibold text-white tracking-wide">Birth Details</h2>
+                <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                  Birth Details
+                </h2>
               </div>
 
               <BirthDataForm onSubmit={handleSubmit} isLoading={generateChart.isPending} />
@@ -231,7 +275,7 @@ function AppContent() {
                 >
                   {/* Tab bar */}
                   <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border ${
-                    isLight ? 'bg-black/4 border-black/8' : 'bg-black/60 border-white/6'
+                    isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
                   }`}>
                     <TabBtn id="chart"    label="Chart"    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label="Timeline" icon={List}       />
@@ -251,11 +295,12 @@ function AppContent() {
                             onClick={() => setChartStyle(style)}
                             className={`px-5 py-2 rounded-lg text-xs font-semibold transition-all ${
                               chartStyle === style
-                                ? 'bg-violet-500 text-black shadow-neon'
+                                ? 'text-white'
                                 : isLight
-                                  ? 'bg-black/5 text-black/50 hover:text-black border border-black/10'
+                                  ? 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-200'
                                   : 'bg-white/4 text-white/40 hover:text-white border border-white/8'
                             }`}
+                            style={chartStyle === style ? { backgroundColor: ACCENT } : undefined}
                           >
                             {style === 'south' ? 'South Indian' : 'North Indian'}
                           </button>
@@ -273,12 +318,12 @@ function AppContent() {
 
                       <div className="glass-card rounded-2xl p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                          <Sun className="w-4 h-4 text-violet-400" />
+                          <Sun className="w-4 h-4 text-sky-400" />
                           Planetary Positions
                         </h3>
                         <PlanetTable planets={chartData.planets} ascendant={chartData.ascendant} />
                         <div className={`mt-4 pt-3 border-t flex justify-between items-center text-[10px] font-mono ${
-                          isLight ? 'border-black/8 text-black/25' : 'border-white/5 text-white/20'
+                          isLight ? 'border-slate-200 text-slate-400' : 'border-white/5 text-white/20'
                         }`}>
                           <span>Ayanamsa: {chartData.birthData.ayanamsa}</span>
                           <span>{chartData.ayanamsaValue.toFixed(4)}°</span>
@@ -299,7 +344,7 @@ function AppContent() {
                         {isDashaLoading ? (
                           <div className="text-center py-10">
                             <div className="spinner mx-auto mb-3" />
-                            <span className={`font-mono text-sm ${isLight ? 'text-black/30' : 'text-white/30'}`}>
+                            <span className={`font-mono text-sm ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
                               Loading timeline…
                             </span>
                           </div>
@@ -329,12 +374,12 @@ function AppContent() {
                     <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <div className="glass-card rounded-2xl p-6">
                         <div className="flex items-center gap-2.5 mb-1">
-                          <div className="w-8 h-8 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center">
-                            <Stars className="w-4 h-4 text-violet-300" />
+                          <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
+                            <Stars className="w-4 h-4 text-sky-300" />
                           </div>
                           <h3 className="text-sm font-semibold text-white">Planetary Patterns</h3>
                         </div>
-                        <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-black/30' : 'text-white/25'}`}>
+                        <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-slate-400' : 'text-white/25'}`}>
                           Significant combinations detected in this birth chart
                         </p>
                         <YogasDisplay birthData={birthData} />
@@ -357,12 +402,12 @@ function AppContent() {
                   animate={{ opacity: 1 }}
                   className="glass-card rounded-2xl p-16 text-center"
                 >
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-violet-500/8 border border-violet-500/15 flex items-center justify-center animate-pulse-glow">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-sky-500/8 border border-sky-500/15 flex items-center justify-center">
                     <svg viewBox="0 0 48 48" className="w-10 h-10">
-                      <circle cx="24" cy="24" r="6" fill="#8b5cf6" />
-                      <circle cx="24" cy="24" r="13" fill="none" stroke="#8b5cf6" strokeWidth="0.8" strokeOpacity=".3" />
-                      <circle cx="24" cy="24" r="21" fill="none" stroke="#8b5cf6" strokeWidth="0.8" strokeOpacity=".1" />
-                      <path d="M24 4l2 7 7 1-5 5 1.5 7L24 20l-5.5 4 1.5-7-5-5 7-1z" fill="#c084fc" opacity=".8"/>
+                      <circle cx="24" cy="24" r="6" fill="#38bdf8" />
+                      <circle cx="24" cy="24" r="13" fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeOpacity=".3" />
+                      <circle cx="24" cy="24" r="21" fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeOpacity=".1" />
+                      <path d="M24 4l2 7 7 1-5 5 1.5 7L24 20l-5.5 4 1.5-7-5-5 7-1z" fill="#7dd3fc" opacity=".8"/>
                     </svg>
                   </div>
                   <h3 className="text-xl font-display font-bold text-white mb-2">
@@ -379,9 +424,9 @@ function AppContent() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className={`relative z-10 mt-16 py-4 border-t ${isLight ? 'border-black/8' : 'border-white/4'}`}>
+      <footer className={`relative z-10 mt-16 py-4 border-t ${isLight ? 'border-slate-200' : 'border-white/4'}`}>
         <div className={`max-w-7xl mx-auto px-5 flex items-center justify-between text-[10px] font-mono ${
-          isLight ? 'text-black/20' : 'text-white/15'
+          isLight ? 'text-slate-400' : 'text-white/18'
         }`}>
           <span>Predictor · Birth Chart Analysis</span>
           <span>Meeus algorithms · Lahiri ayanamsa</span>

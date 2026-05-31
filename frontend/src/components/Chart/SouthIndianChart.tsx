@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import type { PlanetPosition } from '../../types/astrology';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
+import { useTheme } from '../../hooks/useTheme';
+
+const ACCENT = '#ffaf61';
 
 interface Props {
   planets: PlanetPosition[];
@@ -29,6 +32,7 @@ function getRashiForPosition(row: number, col: number): number | null {
 
 export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) => {
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
+  const isLight = useTheme();
 
   const planetsByRashi: Record<number, PlanetPosition[]> = {};
   for (let i = 0; i < 12; i++) planetsByRashi[i] = [];
@@ -39,19 +43,33 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
   const rashiToHouse = (rashiIndex: number) =>
     ((rashiIndex - ascendantRashi + 12) % 12) + 1;
 
+  // Theme-aware tokens
+  const centerBg    = isLight ? '#f1f5f9' : 'rgba(10,5,20,0.92)';
+  const lagnaBg     = isLight ? 'rgba(255,175,97,0.18)' : 'rgba(255,175,97,0.14)';
+  const cellBgBase  = isLight ? '#ffffff' : 'rgba(255,255,255,0.015)';
+  const cellBgSel   = isLight ? 'rgba(255,175,97,0.12)' : 'rgba(255,175,97,0.08)';
+  const borderBase  = isLight ? 'rgba(209,220,229,0.9)' : 'rgba(255,175,97,0.12)';
+  const borderAsc   = isLight ? 'rgba(255,175,97,0.7)'  : 'rgba(255,175,97,0.55)';
+  const borderSel   = isLight ? 'rgba(255,175,97,0.5)'  : 'rgba(255,175,97,0.35)';
+  const houseNumClr = isLight ? '#64748b'                : 'rgba(255,255,255,0.35)';
+  const rashiNameClr = isLight ? '#64748b'               : 'rgba(255,255,255,0.38)';
+  const planetClr   = isLight ? '#1e293b'                : 'rgba(255,255,255,0.82)';
+  const gridBorder  = isLight ? 'rgba(255,175,97,0.45)'  : 'rgba(255,175,97,0.3)';
+  const gridShadow  = isLight ? '0 0 0 1px rgba(255,175,97,0.2), 0 4px 20px rgba(0,0,0,0.08)' : '0 0 30px rgba(255,175,97,0.08)';
+
   const renderCell = (row: number, col: number) => {
     if (getCellType(row, col) === 'center') {
       if (row === 1 && col === 1) {
         return (
-          <div className="flex items-center justify-center h-full" style={{ background: 'rgba(10,5,20,0.9)' }}>
+          <div className="flex items-center justify-center h-full" style={{ background: lagnaBg, borderRight: `1px solid ${borderBase}`, borderBottom: `1px solid ${borderBase}` }}>
             <div className="text-center p-2">
-              <div className="text-[10px] text-violet-400 font-mono uppercase tracking-wider">Lagna</div>
-              <div className="text-sm font-bold text-white">{RASHIS[ascendantRashi]}</div>
+              <div className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: ACCENT }}>Lagna</div>
+              <div className="text-sm font-bold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{RASHIS[ascendantRashi]}</div>
             </div>
           </div>
         );
       }
-      return <div style={{ background: 'rgba(10,5,20,0.9)' }} />;
+      return <div style={{ background: centerBg, border: `1px solid ${borderBase}` }} />;
     }
 
     const rashiIndex = getRashiForPosition(row, col);
@@ -63,36 +81,34 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
 
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: rashiIndex * 0.04 }}
         onClick={() => setSelectedHouse(houseNum)}
-        className={`relative h-full p-1.5 cursor-pointer transition-all duration-150 select-none
-          ${isAscendant
-            ? 'ring-1 ring-violet-500/40'
-            : ''
-          }
-          ${selectedHouse === houseNum ? 'ring-1 ring-violet-400/60' : ''}
-        `}
+        className="relative h-full p-1.5 cursor-pointer transition-all duration-150 select-none"
         style={{
-          border: '1px solid rgba(139,92,246,0.2)',
-          background: isAscendant
-            ? 'rgba(139,92,246,0.1)'
+          border: isAscendant
+            ? `1.5px solid ${borderAsc}`
             : selectedHouse === houseNum
-            ? 'rgba(139,92,246,0.08)'
-            : 'rgba(255,255,255,0.015)',
+            ? `1.5px solid ${borderSel}`
+            : `1px solid ${borderBase}`,
+          background: isAscendant
+            ? isLight ? 'rgba(255,175,97,0.15)' : 'rgba(255,175,97,0.14)'
+            : selectedHouse === houseNum
+            ? cellBgSel
+            : cellBgBase,
         }}
-        whileHover={{ backgroundColor: 'rgba(139,92,246,0.07)' }}
         title={`House ${houseNum} — ${RASHIS[rashiIndex]} (${RASHI_ENGLISH[rashiIndex]})`}
       >
         {/* House number top-left */}
-        <div className="absolute top-0.5 left-1 text-[9px] text-violet-400/50 font-mono font-bold">
+        <div className="absolute top-0.5 left-1 text-[9px] font-mono font-bold"
+          style={{ color: isAscendant ? ACCENT : houseNumClr }}>
           {houseNum}
         </div>
 
         {/* Ascendant marker */}
         {isAscendant && (
-          <div className="absolute top-0.5 right-1 text-[9px] text-violet-400 font-bold">↑</div>
+          <div className="absolute top-0.5 right-1 text-[9px] font-bold" style={{ color: ACCENT }}>↑</div>
         )}
 
         {/* Planets */}
@@ -103,8 +119,8 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + idx * 0.08 }}
-              className={`text-xs font-semibold px-0.5 rounded
-                ${planet.isRetrograde ? 'text-pink-400' : 'text-violet-300'}`}
+              className="text-xs font-semibold px-0.5 rounded"
+              style={{ color: planet.isRetrograde ? '#e11d48' : planetClr }}
               title={`${planet.planet}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
             >
               {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
@@ -114,7 +130,8 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         </div>
 
         {/* Rashi name bottom */}
-        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[8px] text-slate-500 truncate px-1 font-mono">
+        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[8px] truncate px-1 font-mono"
+          style={{ color: rashiNameClr }}>
           {RASHIS[rashiIndex]}
         </div>
       </motion.div>
@@ -123,11 +140,11 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <p className="text-[11px] font-mono text-white/25 mb-3 text-center">
+      <p className="text-[11px] font-mono mb-3 text-center" style={{ color: isLight ? '#94a3b8' : 'rgba(255,255,255,0.25)' }}>
         Click any house to see its reading and planets
       </p>
       <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden aspect-square"
-        style={{ border: '1px solid rgba(139,92,246,0.3)', boxShadow: '0 0 30px rgba(139,92,246,0.1)' }}>
+        style={{ border: `1px solid ${gridBorder}`, boxShadow: gridShadow }}>
         {[0, 1, 2, 3].map(row => (
           <React.Fragment key={row}>
             {[0, 1, 2, 3].map(col => (
@@ -140,10 +157,10 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-slate-500">
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs" style={{ color: isLight ? '#64748b' : '#64748b' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1">
-            <span className="font-bold text-violet-400">{symbol}</span>
+            <span className="font-bold" style={{ color: ACCENT }}>{symbol}</span>
             <span>{planet}</span>
           </div>
         ))}
