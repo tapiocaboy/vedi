@@ -8,7 +8,7 @@ import { PLANETS, bindusToLabel, sarvaToLabel, type Planet } from '../../lib/cor
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
 import { useTheme } from '../../hooks/useTheme';
 
-const ACCENT = '#ffaf61';
+const ACCENT = '#FF2E51';
 
 interface Props {
   birthData: BirthData;
@@ -21,36 +21,36 @@ const PLANET_GLYPH: Record<Planet, string> = {
 
 // Dark-mode cell classes (existing)
 function bhinnaCellClassDark(b: number): string {
-  if (b <= 2) return 'bg-rose-500/15 text-rose-300 border-rose-400/30';
-  if (b === 3) return 'bg-amber-500/12 text-amber-300 border-amber-400/30';
-  if (b === 4) return 'bg-white/5 text-white/70 border-white/10';
-  if (b === 5) return 'bg-sky-500/12 text-sky-300 border-sky-400/30';
-  return 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30';
+  if (b <= 2) return 'bg-rose-500/20 text-rose-200 border-rose-400/35';
+  if (b === 3) return 'bg-amber-500/18 text-amber-200 border-amber-400/35';
+  if (b === 4) return 'bg-white/8 text-white border-white/15';
+  if (b === 5) return 'bg-violet-500/15 text-violet-200 border-violet-400/35';
+  return 'bg-emerald-500/20 text-emerald-200 border-emerald-400/35';
 }
 
 function sarvaCellClassDark(s: number): string {
-  if (s < 20) return 'bg-rose-500/20 text-rose-200 border-rose-400/40';
-  if (s < 25) return 'bg-amber-500/15 text-amber-200 border-amber-400/35';
-  if (s < 30) return 'bg-white/5 text-white/70 border-white/10';
-  if (s < 35) return 'bg-sky-500/15 text-sky-200 border-sky-400/35';
-  return 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40';
+  if (s < 20) return 'bg-rose-500/25 text-rose-100 border-rose-400/45';
+  if (s < 25) return 'bg-amber-500/20 text-amber-100 border-amber-400/40';
+  if (s < 30) return 'bg-white/8 text-white border-white/15';
+  if (s < 35) return 'bg-violet-500/18 text-violet-100 border-violet-400/40';
+  return 'bg-emerald-500/25 text-emerald-100 border-emerald-400/45';
 }
 
 // Light-mode cell classes — solid, opaque, readable
 function bhinnaCellClassLight(b: number): string {
-  if (b <= 2) return 'bg-rose-100 text-rose-700 border-rose-300';
-  if (b === 3) return 'bg-amber-100 text-amber-700 border-amber-300';
-  if (b === 4) return 'bg-slate-100 text-slate-600 border-slate-300';
-  if (b === 5) return 'bg-sky-100 text-sky-700 border-sky-300';
-  return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+  if (b <= 2) return 'bg-rose-100 text-rose-800 border-rose-300 font-semibold';
+  if (b === 3) return 'bg-amber-100 text-amber-800 border-amber-300 font-semibold';
+  if (b === 4) return 'bg-slate-100 text-slate-700 border-slate-300 font-semibold';
+  if (b === 5) return 'bg-blue-100 text-blue-800 border-blue-300 font-semibold';
+  return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold';
 }
 
 function sarvaCellClassLight(s: number): string {
-  if (s < 20) return 'bg-rose-100 text-rose-700 border-rose-300';
-  if (s < 25) return 'bg-amber-100 text-amber-700 border-amber-300';
-  if (s < 30) return 'bg-slate-100 text-slate-600 border-slate-300';
-  if (s < 35) return 'bg-sky-100 text-sky-700 border-sky-300';
-  return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+  if (s < 20) return 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+  if (s < 25) return 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
+  if (s < 30) return 'bg-slate-100 text-slate-700 border-slate-300 font-bold';
+  if (s < 35) return 'bg-blue-100 text-blue-800 border-blue-300 font-bold';
+  return 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold';
 }
 
 interface MiniGridProps {
@@ -82,9 +82,9 @@ const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLig
             {planet}
           </span>
         </div>
-        <div className="text-[10px] font-mono" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.40)' }}>
+        <div className="text-[10px] font-mono" style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.70)' }}>
           Σ {total} · self{' '}
-          <span style={{ color: isLight ? '#0f172a' : 'rgba(255,255,255,0.80)' }}>{selfBindus}</span>
+          <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{selfBindus}</span>
         </div>
       </div>
       <div className="grid grid-cols-12 gap-[2px]">
@@ -111,9 +111,9 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
     staleTime: Infinity,
   });
 
-  const mutedClr  = isLight ? '#64748b' : 'rgba(255,255,255,0.40)';
-  const strongClr = isLight ? '#0f172a' : 'rgba(255,255,255,0.80)';
-  const labelClr  = isLight ? '#94a3b8' : 'rgba(255,255,255,0.30)';
+  const mutedClr  = isLight ? '#334155' : 'rgba(255,255,255,0.70)';
+  const strongClr = isLight ? '#0f172a' : '#ffffff';
+  const labelClr  = isLight ? '#475569' : 'rgba(255,255,255,0.55)';
   const sarvaCell = isLight ? sarvaCellClassLight : sarvaCellClassDark;
 
   if (isLoading) {
@@ -133,7 +133,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
     <div className="glass-card rounded-2xl p-6 space-y-5">
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: 'rgba(255,175,97,0.12)', border: '1px solid rgba(255,175,97,0.25)' }}>
+          style={{ background: 'rgba(255,46,81,0.10)', border: '1px solid rgba(255,46,81,0.22)' }}>
           <Grid3x3 className="w-4 h-4" style={{ color: ACCENT }} />
         </div>
         <div className="flex-1">
@@ -146,13 +146,13 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
         </div>
         <div className="text-[10px] font-mono text-right" style={{ color: mutedClr }}>
           Total bindus: <span style={{ color: strongClr }}>{sarvaTotal}</span>
-          <span style={{ color: isLight ? '#94a3b8' : 'rgba(255,255,255,0.25)' }}> / 337</span>
+          <span style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.50)' }}> / 337</span>
         </div>
       </div>
 
       {/* Sarvashtakavarga */}
       <div>
-        <div className="text-[11px] uppercase tracking-wider mb-2" style={{ color: labelClr }}>
+        <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: labelClr }}>
           Sarvashtakavarga (sum of 7)
         </div>
         <div className="grid grid-cols-12 gap-1">
@@ -168,7 +168,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
         </div>
         <div className="grid grid-cols-12 gap-1 mt-1">
           {RASHI_ENGLISH.map((r, idx) => (
-            <div key={idx} className="text-[9px] text-center truncate" style={{ color: labelClr }} title={r}>
+            <div key={idx} className="text-[9px] font-semibold text-center truncate" style={{ color: labelClr }} title={r}>
               {r.slice(0, 3)}
             </div>
           ))}
@@ -177,7 +177,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
 
       {/* Bhinnashtakavargas */}
       <div>
-        <div className="text-[11px] uppercase tracking-wider mb-2" style={{ color: labelClr }}>
+        <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: labelClr }}>
           Bhinnashtakavargas
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -192,7 +192,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
         </div>
       </div>
 
-      <p className="text-[10px] leading-relaxed" style={{ color: labelClr }}>
+      <p className="text-[10px] font-medium leading-relaxed" style={{ color: labelClr }}>
         The highlighted cell in each planet's row marks its natal rashi (self-strength).
         Planets with 5+ bindus in their own rashi are strong; ≤3 bindus indicates weakness.
         Sarva ≥30 in a rashi marks a flourishing house.

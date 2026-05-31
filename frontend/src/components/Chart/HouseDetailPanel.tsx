@@ -37,7 +37,7 @@ const DIGNITY_LABEL: Record<string, string> = {
   'debilitated':  'Debilitated',
 };
 
-const ACCENT = '#ffaf61';
+const ACCENT = '#FF2E51';
 
 export const HouseDetailPanel: React.FC<Props> = ({
   houseNumber, ascendantRashiIndex, planets, onClose,

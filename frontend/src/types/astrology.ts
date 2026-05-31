@@ -8,7 +8,6 @@ export interface BirthData {
   longitude: number;
   timezone: string;
   ayanamsa: 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN';
-  name?: string;
 }
 
 export interface NakshatraInfo {

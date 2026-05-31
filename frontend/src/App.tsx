@@ -3,21 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart } from 'lucide-react';
 
-const ACCENT = '#ffaf61';
-
-// Deterministic floating particle positions (no random so no re-render flicker)
-const BG_PARTICLES = [
-  { x: '12%',  y: '18%', size: 2,   dur: 9,  delay: 0   },
-  { x: '78%',  y: '8%',  size: 1.5, dur: 12, delay: 2   },
-  { x: '55%',  y: '35%', size: 1,   dur: 15, delay: 4.5 },
-  { x: '23%',  y: '62%', size: 2.5, dur: 10, delay: 1   },
-  { x: '88%',  y: '45%', size: 1.5, dur: 13, delay: 3.5 },
-  { x: '40%',  y: '80%', size: 1,   dur: 11, delay: 6   },
-  { x: '67%',  y: '70%', size: 2,   dur: 14, delay: 0.8 },
-  { x: '5%',   y: '90%', size: 1,   dur: 16, delay: 5   },
-  { x: '92%',  y: '75%', size: 1.5, dur: 8,  delay: 2.5 },
-  { x: '33%',  y: '12%', size: 1,   dur: 11, delay: 7   },
-];
+const ACCENT = '#FF2E51';
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
@@ -31,8 +17,11 @@ import { NakshatraInfo } from './components/Dasha/NakshatraInfo';
 import { DeepInsights } from './components/Insights/DeepInsights';
 import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
+import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
+import { Logo, BrandTitle } from './components/Logo';
+import { ParticleField } from './components/ParticleField';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
 import type { BirthData, Chart } from './types/astrology';
 
@@ -49,9 +38,11 @@ function AppContent() {
   const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
   const [chartData, setChartData]   = useState<Chart | null>(null);
   const [isLight, setIsLight]       = useState<boolean>(() => {
-    return localStorage.getItem('predictor_theme') === 'light';
+    const saved = localStorage.getItem('trytellme_theme') ?? localStorage.getItem('predictor_theme');
+    return saved === 'light';
   });
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
+  const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
@@ -71,7 +62,7 @@ function AppContent() {
       root.classList.remove('theme-light');
       root.classList.add('theme-dark');
     }
-    localStorage.setItem('predictor_theme', isLight ? 'light' : 'dark');
+    localStorage.setItem('trytellme_theme', isLight ? 'light' : 'dark');
   }, [isLight]);
 
   const toggleTheme = () => setIsLight(v => !v);
@@ -110,11 +101,16 @@ function AppContent() {
     }
   };
 
+  const handleTabClick = (id: ViewTab) => {
+    if (id === 'match') setMatchExperimentalVisible(true);
+    setActiveTab(id);
+  };
+
   const TabBtn = ({
     id, label, icon: Icon,
   }: { id: ViewTab; label: string; icon: React.ElementType }) => (
     <button
-      onClick={() => setActiveTab(id)}
+      onClick={() => handleTabClick(id)}
       className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 ${
         activeTab === id
           ? isLight
@@ -138,6 +134,12 @@ function AppContent() {
       {/* Disclaimer — shown on every Generate Chart press */}
       <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />
 
+      {/* Experimental notice — shown when opening Match tab */}
+      <ExperimentalMatchModal
+        visible={matchExperimentalVisible}
+        onDismiss={() => setMatchExperimentalVisible(false)}
+      />
+
       {/* Privacy banner — shown on load + each generate */}
       <PrivacyBanner
         visible={privacyVisible}
@@ -145,50 +147,15 @@ function AppContent() {
         trigger={privacyTrigger}
       />
 
-      {/* Ambient glow + floating particles — dark only */}
-      {!isLight && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden>
-          {/* Ambient radial glow */}
-          <div className="absolute -top-72 right-0 w-[700px] h-[700px] rounded-full blur-[220px]"
-            style={{ background: 'radial-gradient(ellipse, rgba(255,175,97,0.07) 0%, rgba(255,175,97,0.035) 50%, transparent 70%)' }} />
-          {/* Floating particles */}
-          {BG_PARTICLES.map((p, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: p.x, top: p.y,
-                width: p.size, height: p.size,
-                backgroundColor: ACCENT,
-              }}
-              animate={{ y: [0, -18, 0], opacity: [0.18, 0.55, 0.18] }}
-              transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: 'easeInOut' }}
-            />
-          ))}
-        </div>
-      )}
+      {/* High-tech particle network — both themes */}
+      <ParticleField isLight={isLight} />
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="relative z-10 border-b app-header sticky top-0">
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo */}
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: ACCENT }}>
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 2a8 8 0 0 1 8 8 8 8 0 0 1-8 8 8 8 0 0 1-8-8 8 8 0 0 1 8-8z" opacity=".35"/>
-                <path d="M12 5l1.5 4.5L18 12l-4.5 1.5L12 19l-1.5-4.5L6 12l4.5-1.5z" opacity=".9"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className={`text-lg font-display font-bold tracking-widest ${isLight ? 'text-gray-900' : 'text-white'}`}>
-                Predictor
-              </h1>
-              <p className="text-[10px] font-mono uppercase tracking-[0.25em]"
-                style={{ color: isLight ? `rgba(255,175,97,0.85)` : 'rgba(255,175,97,0.65)' }}>
-                Astrology Predictor
-              </p>
-            </div>
+            <Logo size={40} className="shrink-0" />
+            <BrandTitle isLight={isLight} />
           </div>
 
           {/* Right side: status + theme toggle */}
@@ -203,7 +170,7 @@ function AppContent() {
                   ? 'bg-gray-100 border border-gray-200 text-gray-500'
                   : 'bg-white/4 border border-white/8 text-white/45'
               }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E51' }} />
                 v{health.version}
               </span>
             ) : null}
@@ -239,7 +206,7 @@ function AppContent() {
                 style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : undefined }}
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: 'rgba(255,175,97,0.12)', border: '1px solid rgba(255,175,97,0.25)' }}>
+                  style={{ background: 'rgba(255,46,81,0.10)', border: '1px solid rgba(255,46,81,0.22)' }}>
                   <Moon className="w-4 h-4" style={{ color: ACCENT }} />
                 </div>
                 <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
@@ -318,7 +285,7 @@ function AppContent() {
 
                       <div className="glass-card rounded-2xl p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                          <Sun className="w-4 h-4 text-sky-400" />
+                          <Sun className="w-4 h-4" style={{ color: '#FF2E51' }} />
                           Planetary Positions
                         </h3>
                         <PlanetTable planets={chartData.planets} ascendant={chartData.ascendant} />
@@ -374,8 +341,10 @@ function AppContent() {
                     <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <div className="glass-card rounded-2xl p-6">
                         <div className="flex items-center gap-2.5 mb-1">
-                          <div className="w-8 h-8 rounded-lg bg-sky-400/10 border border-sky-400/20 flex items-center justify-center">
-                            <Stars className="w-4 h-4 text-sky-300" />
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}
+                          >
+                            <Stars className="w-4 h-4" style={{ color: '#ff6b81' }} />
                           </div>
                           <h3 className="text-sm font-semibold text-white">Planetary Patterns</h3>
                         </div>
@@ -402,18 +371,20 @@ function AppContent() {
                   animate={{ opacity: 1 }}
                   className="glass-card rounded-2xl p-16 text-center"
                 >
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-sky-500/8 border border-sky-500/15 flex items-center justify-center">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
+                    style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.15)' }}
+                  >
                     <svg viewBox="0 0 48 48" className="w-10 h-10">
-                      <circle cx="24" cy="24" r="6" fill="#38bdf8" />
-                      <circle cx="24" cy="24" r="13" fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeOpacity=".3" />
-                      <circle cx="24" cy="24" r="21" fill="none" stroke="#38bdf8" strokeWidth="0.8" strokeOpacity=".1" />
-                      <path d="M24 4l2 7 7 1-5 5 1.5 7L24 20l-5.5 4 1.5-7-5-5 7-1z" fill="#7dd3fc" opacity=".8"/>
+                      <circle cx="24" cy="24" r="6" fill="#FF2E51" />
+                      <circle cx="24" cy="24" r="13" fill="none" stroke="#FF2E51" strokeWidth="0.8" strokeOpacity=".3" />
+                      <circle cx="24" cy="24" r="21" fill="none" stroke="#FF2E51" strokeWidth="0.8" strokeOpacity=".12" />
+                      <path d="M24 4l2 7 7 1-5 5 1.5 7L24 20l-5.5 4 1.5-7-5-5 7-1z" fill="#ff6b81" opacity=".8"/>
                     </svg>
                   </div>
                   <h3 className="text-xl font-display font-bold text-white mb-2">
                     Ready to Analyse Your Chart
                   </h3>
-                  <p className={`max-w-xs mx-auto text-sm leading-relaxed ${isLight ? 'text-black/40' : 'text-white/30'}`}>
+                  <p className={`max-w-xs mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/30'}`}>
                     Enter your birth details to generate a complete birth chart with planetary period analysis, combination patterns, and detailed life predictions.
                   </p>
                 </motion.div>
@@ -426,9 +397,10 @@ function AppContent() {
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className={`relative z-10 mt-16 py-4 border-t ${isLight ? 'border-slate-200' : 'border-white/4'}`}>
         <div className={`max-w-7xl mx-auto px-5 flex items-center justify-between text-[10px] font-mono ${
-          isLight ? 'text-slate-400' : 'text-white/18'
+          isLight ? 'text-slate-500' : 'text-white/18'
         }`}>
-          <span>Predictor · Birth Chart Analysis</span>
+          <span>trytellme.xyz · Astrology predictions</span>
+          <span>Non-Commercial Use Only</span>
           <span>Meeus algorithms · Lahiri ayanamsa</span>
         </div>
       </footer>

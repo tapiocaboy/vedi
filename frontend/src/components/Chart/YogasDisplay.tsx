@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, Sparkles, Star, TrendingUp, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { getYogas } from '../../services/api';
 import type { BirthData, YogaResult } from '../../services/api';
+import { BAR_PALETTE, ProgressBar } from '../shared/BarCharts';
 
 interface Props {
   birthData: BirthData;
@@ -14,7 +15,7 @@ const CATEGORY_CONFIG = {
   mahapurusha: { label:'Great Person Yogas',    color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Sparkles,      description:'Exceptional planetary strengths — mastery in specific domains' },
   dhana:       { label:'Wealth Combinations',   color:'text-emerald-400', bg:'bg-emerald-500/8', border:'border-emerald-500/20', icon:TrendingUp,    description:'Financial prosperity and material abundance indicators' },
   spiritual:   { label:'Spiritual Indicators',  color:'text-purple-400',  bg:'bg-purple-500/8',  border:'border-purple-500/20',  icon:Sparkles,      description:'Yogas indicating spiritual inclination and elevation' },
-  special:     { label:'Notable Combinations',  color:'text-sky-400',     bg:'bg-sky-500/8',     border:'border-sky-500/20',     icon:Shield,        description:'Distinctive planetary patterns with specific life effects' },
+  special:     { label:'Notable Combinations',  color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Shield,        description:'Distinctive planetary patterns with specific life effects' },
   daridra:     { label:'Challenge Indicators',  color:'text-rose-400',    bg:'bg-rose-500/8',    border:'border-rose-500/20',    icon:AlertTriangle, description:'Indicators of challenges — often mitigated by other factors' },
 };
 
@@ -105,8 +106,14 @@ const YogaCard: React.FC<YogaCardProps> = ({ yoga, index }) => {
             <div className="p-4 bg-black/20">
               <p className="text-sm text-white/60 leading-relaxed">{yoga.effects}</p>
               <div className="mt-3 flex items-center gap-2">
-                <div className={`h-1.5 rounded-full ${strCfg.dot} opacity-70`} style={{ width: `${yoga.strengthScore * 10}%` }} />
-                <span className={`text-xs font-mono ${strCfg.color}`}>{yoga.strengthScore}/10</span>
+                <ProgressBar
+                  pct={yoga.strengthScore * 10}
+                  color={BAR_PALETTE.gold}
+                  height="md"
+                  index={index}
+                  className="flex-1"
+                />
+                <span className={`text-xs font-mono shrink-0 ${strCfg.color}`}>{yoga.strengthScore}/10</span>
               </div>
             </div>
           </motion.div>

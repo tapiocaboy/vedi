@@ -4,8 +4,9 @@ import type { PlanetPosition } from '../../types/astrology';
 import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { analyzePlanet, type DignityLevel } from '../../lib/core/planetaryAnalysis';
 import { useTheme } from '../../hooks/useTheme';
+import { ProgressBar } from '../shared/BarCharts';
 
-const ACCENT = '#ffaf61';
+const ACCENT = '#FF2E51';
 
 interface Props {
   planet: PlanetPosition | null;
@@ -51,7 +52,6 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
   const secBg     = isLight ? '#f1f5f9'                : 'rgba(255,255,255,0.04)';
   const secBdr    = isLight ? '#D1DCE5'                : 'rgba(255,255,255,0.07)';
   const divClr    = isLight ? '#E2E8F0'                : 'rgba(255,255,255,0.05)';
-  const barEmpty  = isLight ? 'rgba(0,0,0,0.08)'       : 'rgba(255,255,255,0.08)';
   const backdropBg = isLight ? 'rgba(15,23,42,0.25)'   : 'rgba(0,0,0,0.50)';
 
   return (
@@ -105,7 +105,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
             ) : analysis ? (
               <AnalysisContent analysis={analysis} planet={planet!} color={color} isLight={isLight}
                 panelBg={panelBg} titleClr={titleClr} bodyClr={bodyClr} mutedClr={mutedClr} subClr={subClr}
-                cardBg={cardBg} cardBdr={cardBdr} secBg={secBg} secBdr={secBdr} divClr={divClr} barEmpty={barEmpty} />
+                cardBg={cardBg} cardBdr={cardBdr} secBg={secBg} secBdr={secBdr} divClr={divClr} />
             ) : null}
           </motion.div>
         </>
@@ -151,11 +151,11 @@ interface AnalysisProps extends ThemeProps {
   analysis: ReturnType<typeof analyzePlanet>;
   planet: PlanetPosition;
   color: string;
-  subClr: string; secBg: string; secBdr: string; divClr: string; barEmpty: string;
+  subClr: string; secBg: string; secBdr: string; divClr: string;
 }
 
 function AnalysisContent({ analysis, planet, color, isLight,
-  panelBg, titleClr, bodyClr, mutedClr, subClr: _subClr, cardBg, cardBdr, secBg, secBdr, divClr, barEmpty }: AnalysisProps) {
+  panelBg, titleClr, bodyClr, mutedClr, subClr: _subClr, cardBg, cardBdr, secBg, secBdr, divClr }: AnalysisProps) {
   const DignityIcon = DIGNITY_ICONS[analysis.dignity];
 
   return (
@@ -168,12 +168,13 @@ function AnalysisContent({ analysis, planet, color, isLight,
             <DignityIcon className={`w-4 h-4 ${analysis.dignityInfo.color}`} />
             <span className={`text-xs font-semibold ${analysis.dignityInfo.color}`}>{analysis.dignityInfo.label}</span>
           </div>
-          <div className="flex items-center gap-1 mt-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="h-1 flex-1 rounded-full"
-                style={{ background: i < analysis.dignityInfo.strength ? color : barEmpty }} />
-            ))}
-          </div>
+          <ProgressBar
+            pct={analysis.dignityInfo.strength * 10}
+            color={color}
+            height="md"
+            index={0}
+            className="mt-2"
+          />
           <p className="text-[11px] mt-2 leading-snug" style={{ color: mutedClr }}>{analysis.dignityInfo.desc}</p>
         </div>
 

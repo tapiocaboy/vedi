@@ -6,6 +6,7 @@ import { BirthDataForm } from '../Forms/BirthDataForm';
 import { getMatchReport } from '../../services/api';
 import type { BirthData, MatchSummary, KootaScore, DoshaResult } from '../../services/api';
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
+import { BAR_PALETTE, ProgressBar } from '../shared/BarCharts';
 
 interface Props {
   person: BirthData;
@@ -15,7 +16,7 @@ function verdictClass(v: MatchSummary['report']['verdict']): string {
   switch (v) {
     case 'excellent':       return 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40';
     case 'very good':       return 'bg-emerald-500/12 text-emerald-200 border-emerald-400/30';
-    case 'good':            return 'bg-sky-500/15 text-sky-200 border-sky-400/30';
+    case 'good':            return 'bg-violet-500/15 text-violet-200 border-violet-400/30';
     case 'acceptable':      return 'bg-amber-500/15 text-amber-200 border-amber-400/30';
     case 'not recommended': return 'bg-rose-500/20 text-rose-200 border-rose-400/40';
   }
@@ -46,9 +47,7 @@ const ScoreGauge: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
         </div>
       </div>
 
-      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-rose-400 via-violet-400 to-emerald-400 transition-all" style={{ width: `${pct}%` }} />
-      </div>
+      <ProgressBar pct={pct} color={BAR_PALETTE.pink} index={0} />
       <div className="grid grid-cols-2 gap-2 mt-4 text-[11px]">
         <div className="rounded-lg bg-black/30 border border-white/8 px-3 py-2">
           <div className="text-white/40 uppercase tracking-wider text-[10px]">Person</div>
@@ -80,9 +79,13 @@ const KootaCard: React.FC<{ k: KootaScore; index: number }> = ({ k, index }) => 
         </div>
         <div className="text-[11px] font-mono text-white/60">{k.obtained}<span className="text-white/30">/{k.max}</span></div>
       </div>
-      <div className="h-1 bg-black/40 rounded-full overflow-hidden mb-2">
-        <div className={`h-full ${k.passed ? 'bg-emerald-400' : 'bg-rose-400'}`} style={{ width: `${pct}%` }} />
-      </div>
+      <ProgressBar
+        pct={pct}
+        color={k.passed ? BAR_PALETTE.gold : BAR_PALETTE.pink}
+        height="md"
+        index={index}
+        className="mb-2"
+      />
       <p className="text-[11px] text-white/65 leading-relaxed">{k.reason}</p>
     </motion.div>
   );

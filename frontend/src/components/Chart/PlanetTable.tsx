@@ -6,7 +6,7 @@ import { formatDegree } from '../../utils/dateUtils';
 import { PlanetDetailPanel } from './PlanetDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 
-const ACCENT = '#ffaf61';
+const ACCENT = '#FF2E51';
 
 interface Props {
   planets: PlanetPosition[];

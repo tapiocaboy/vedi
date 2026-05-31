@@ -5,7 +5,7 @@ import { RASHIS, PLANET_SYMBOLS } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 
-const ACCENT = '#ffaf61';
+const ACCENT = '#FF2E51';
 
 interface Props {
   planets: PlanetPosition[];
@@ -76,7 +76,10 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <p className="text-[11px] font-mono mb-3 text-center" style={{ color: isLight ? '#94a3b8' : 'rgba(255,255,255,0.25)' }}>
+      <p
+        className="text-[11px] font-mono font-bold mb-3 text-center"
+        style={{ color: isLight ? '#334155' : '#ffffff' }}
+      >
         Click any house to see its reading and planets
       </p>
 
