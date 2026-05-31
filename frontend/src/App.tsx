@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass } from 'lucide-react';
+import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart } from 'lucide-react';
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
@@ -14,6 +14,7 @@ import { DashaTimeline } from './components/Dasha/DashaTimeline';
 import { NakshatraInfo } from './components/Dasha/NakshatraInfo';
 import { DeepInsights } from './components/Insights/DeepInsights';
 import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
+import { MatchTab } from './components/Match/MatchTab';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
@@ -24,7 +25,7 @@ const queryClient = new QueryClient({
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'insights';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights';
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
@@ -235,6 +236,7 @@ function AppContent() {
                     <TabBtn id="chart"    label="Chart"    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label="Timeline" icon={List}       />
                     <TabBtn id="now"      label="Now"      icon={Compass}    />
+                    <TabBtn id="match"    label="Match"    icon={Heart}      />
                     <TabBtn id="yogas"    label="Patterns" icon={Stars}      />
                     <TabBtn id="insights" label="Insights" icon={Zap}        />
                   </div>
@@ -312,6 +314,13 @@ function AppContent() {
                   {activeTab === 'now' && birthData && (
                     <motion.div key="now" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <CurrentPeriodTab birthData={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Match (Horoscope compatibility) ──────────── */}
+                  {activeTab === 'match' && birthData && (
+                    <motion.div key="match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <MatchTab person={birthData} />
                     </motion.div>
                   )}
 

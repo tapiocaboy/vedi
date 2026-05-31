@@ -55,6 +55,32 @@ npm run build
 
 Outputs to `frontend/dist/`. The Swiss Ephemeris WASM + data files are emitted under `dist/wasm/` by a small Vite plugin in `vite.config.ts` and lazy-loaded on first calculation (preload begins at app startup so the first chart isn't blocked).
 
+## Deploy to Vercel (free)
+
+The repo ships with a `vercel.json` at the root that handles the `frontend/` subdirectory build and sets correct MIME types + long-lived cache headers for the WASM assets.
+
+1. Push the repo to GitHub / GitLab / Bitbucket.
+2. In Vercel, click **Add New → Project**, import the repo.
+3. **Leave every field at its default** — `vercel.json` overrides the build command (`cd frontend && npm run build`), output directory (`frontend/dist`), and install command.
+4. Click **Deploy**.
+
+### What `vercel.json` does
+
+- **Build**: `cd frontend && npm install && npm run build` — runs from the repo root, drops into the actual app, builds with Vite.
+- **Output**: `frontend/dist`.
+- **Cache**: `swisseph.wasm`, `swisseph.data`, `swisseph.js`, and `/assets/*` get `Cache-Control: public, max-age=31536000, immutable` — first-time visitors download the 12 MB ephemeris file once; repeat visits cost ~0 bandwidth.
+- **MIME**: explicit `application/wasm` for the WASM and `application/octet-stream` for the ephemeris data file so all browsers handle them correctly.
+- **SPA fallback**: `/(.*)` rewrites to `/index.html` for any client-side navigation (existing static files take precedence, so the WASM URLs aren't intercepted).
+- **Security headers**: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, restrictive `Permissions-Policy`.
+
+### Free-tier capacity
+
+Vercel Hobby plan = **100 GB bandwidth/month**. Each cold visit downloads ~13 MB (JS + CSS + WASM + 12 MB data file), so ~7,500 cold visits/month before hitting the cap. Cached visits cost essentially zero.
+
+### Note on the existing `wrangler.*` files
+
+`wrangler.toml` / `wrangler.jsonc` at the repo root are leftover Cloudflare Workers config from a previous deploy target. Vercel ignores them — they can stay or be deleted.
+
 ## Public API (client-side)
 
 All calculations are local — there is no backend service. From `src/services/api.ts`:

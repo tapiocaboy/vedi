@@ -19,8 +19,10 @@ import {
 import type { AshtakavargaResult } from '../lib/core/ashtakavarga';
 import { getPeriodSnapshot, type PeriodSnapshot } from '../lib/services/periodService';
 import type { CurrentLocation } from '../lib/core/transits';
+import { runMatching, type MatchSummary } from '../lib/services/matchingService';
 
-export type { PeriodSnapshot, CurrentLocation };
+export type { PeriodSnapshot, CurrentLocation, MatchSummary };
+export type { MatchReport, KootaScore, DoshaResult } from '../lib/core/matching';
 
 export type { SookshmaPeriodList };
 
@@ -120,6 +122,11 @@ export async function getPratyantardashaPrediction(birthData: BirthData, mahadas
 
 export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult> {
   return getAshtakavargaForChart(birthData);
+}
+
+/** Ashtakoot Milan + dosha report between two birth charts. */
+export async function getMatchReport(person: BirthData, partner: BirthData): Promise<MatchSummary> {
+  return runMatching(person, partner);
 }
 
 /** Full snapshot for the "Now" tab: dasha tree + chart-aware prediction + transits + optional relocation + playbook. */
