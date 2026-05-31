@@ -59,11 +59,11 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
   const centerBg    = isLight ? '#e8edf3' : '#10101a';
   const lineStroke  = isLight ? 'rgba(100,116,139,0.35)' : 'rgba(255,175,97,0.35)';
   const outerBorder = ACCENT;
-  const houseNumClr = (h: number) => h === 1 ? ACCENT : (isLight ? '#475569' : 'rgba(255,255,255,0.42)');
+  const houseNumClr = (h: number) => h === 1 ? ACCENT : (isLight ? '#1e293b' : 'rgba(255,255,255,0.65)');
   const planetFill  = (retro: boolean) => retro ? '#e11d48' : (isLight ? '#1e293b' : 'rgba(255,255,255,0.85)');
   const ascLabelClr = ACCENT;
   const ascRashiClr = isLight ? '#0f172a' : '#ffffff';
-  const legendClr   = isLight ? '#64748b' : '#64748b';
+
 
   const fillForHouse = (house: number, selected: boolean) => {
     if (selected) return isLight ? 'rgba(255,175,97,0.22)' : 'rgba(255,175,97,0.20)';
@@ -77,8 +77,8 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
   return (
     <div className="w-full max-w-md mx-auto">
       <p
-        className="text-[11px] font-mono font-bold mb-3 text-center"
-        style={{ color: isLight ? '#334155' : '#ffffff' }}
+        className="text-sm font-bold mb-4 text-center tracking-wide"
+        style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
         Click any house to see its reading and planets
       </p>
@@ -136,7 +136,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
           return (
             <text key={house} x={tx} y={ty} textAnchor="middle"
               fill={houseNumClr(house)}
-              fontSize="7" fontFamily="monospace"
+              fontSize="9" fontWeight="800" fontFamily="monospace"
               className="pointer-events-none select-none">
               {rashi + 1}
             </text>
@@ -154,7 +154,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 + idx * 0.08 }}
-              fontSize="8" fontWeight="bold"
+              fontSize="10" fontWeight="900"
               fill={planetFill(planet.isRetrograde ?? false)}
               fontFamily="monospace"
               className="pointer-events-none select-none"
@@ -166,23 +166,23 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         })}
 
         {/* Center ASC label */}
-        <text x="75" y="72" textAnchor="middle" fontSize="8"
-          fill={ascLabelClr} fontFamily="monospace" fontWeight="bold"
+        <text x="75" y="70" textAnchor="middle" fontSize="10"
+          fill={ascLabelClr} fontFamily="monospace" fontWeight="900"
           className="pointer-events-none select-none">
           ASC
         </text>
-        <text x="75" y="83" textAnchor="middle" fontSize="9" fontWeight="bold"
+        <text x="75" y="84" textAnchor="middle" fontSize="11" fontWeight="900"
           fill={ascRashiClr} className="pointer-events-none select-none">
           {RASHIS[ascendantRashi]}
         </text>
       </svg>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs" style={{ color: legendClr }}>
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
-          <div key={planet} className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: ACCENT }}>{symbol}</span>
-            <span>{planet}</span>
+          <div key={planet} className="flex items-center gap-1.5">
+            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px ${ACCENT}44` }}>{symbol}</span>
+            <span className="font-bold">{planet}</span>
           </div>
         ))}
       </div>

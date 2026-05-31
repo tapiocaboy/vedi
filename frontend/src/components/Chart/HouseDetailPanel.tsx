@@ -175,12 +175,12 @@ export const HouseDetailPanel: React.FC<Props> = ({
                     {analysis.planetEffects.map(({ planet, effect, isRetrograde }) => (
                       <div key={planet} className="px-4 py-3 flex items-start gap-3"
                         style={{ borderBottom: `1px solid ${divClr}` }}>
-                        <span className="text-xl shrink-0 mt-0.5" style={{ color: PLANET_COLORS[planet] }}>
+                        <span className="text-2xl font-bold shrink-0 mt-0.5" style={{ color: PLANET_COLORS[planet], textShadow: `0 0 8px ${PLANET_COLORS[planet]}55` }}>
                           {PLANET_SYMBOLS[planet]}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold" style={{ color: titleClr }}>{planet}</span>
+                            <span className="text-sm font-bold" style={{ color: titleClr }}>{planet}</span>
                             {isRetrograde && (
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-pink-500"
                                 style={{ background: 'rgba(244,114,182,0.10)', border: '1px solid rgba(244,114,182,0.25)' }}>

@@ -43,7 +43,7 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   return (
     <>
       <div className="overflow-x-auto">
-        <p className="text-[11px] font-mono mb-3 px-1" style={{ color: mutedTxt }}>
+        <p className="text-sm font-bold mb-3 px-1 tracking-wide" style={{ color: mutedTxt }}>
           Click any row to see planetary effects, house placement, and predictions
         </p>
         <motion.table
@@ -54,12 +54,12 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
         >
           <thead>
             <tr style={{ background: headerBg }}>
-              <th className="px-4 py-3 text-left rounded-tl-lg font-medium text-white">Planet</th>
-              <th className="px-4 py-3 text-left font-medium text-white">Rashi</th>
-              <th className="px-4 py-3 text-left font-medium text-white">Degree</th>
-              <th className="px-4 py-3 text-left font-medium text-white">Nakshatra</th>
-              <th className="px-4 py-3 text-left font-medium text-white">Pada</th>
-              <th className="px-4 py-3 text-center rounded-tr-lg font-medium text-white">℞</th>
+              <th className="px-4 py-3 text-left rounded-tl-lg font-bold text-white">Planet</th>
+              <th className="px-4 py-3 text-left font-bold text-white">Rashi</th>
+              <th className="px-4 py-3 text-left font-bold text-white">Degree</th>
+              <th className="px-4 py-3 text-left font-bold text-white">Nakshatra</th>
+              <th className="px-4 py-3 text-left font-bold text-white">Pada</th>
+              <th className="px-4 py-3 text-center rounded-tr-lg font-bold text-white">℞</th>
             </tr>
           </thead>
           <tbody>
@@ -80,24 +80,24 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                   onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = rowHover; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd; }}
                 >
-                  <td className="px-4 py-3 font-medium">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg" style={{ color: PLANET_COLORS[planet.planet] }}>
+                  <td className="px-4 py-3 font-bold">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl font-bold" style={{ color: PLANET_COLORS[planet.planet], textShadow: `0 0 8px ${PLANET_COLORS[planet.planet]}55` }}>
                         {PLANET_SYMBOLS[planet.planet]}
                       </span>
-                      <span style={{ color: cellTxt }}>{planet.planet}</span>
+                      <span className="text-[15px] font-bold" style={{ color: cellTxt }}>{planet.planet}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3" style={{ color: mutedTxt }}>
+                  <td className="px-4 py-3 font-semibold" style={{ color: cellTxt }}>
                     {planet.rashi}
-                    <span className="text-xs ml-1 font-mono" style={{ color: isLight ? '#94a3b8' : 'rgba(255,255,255,0.30)' }}>
+                    <span className="text-xs ml-1 font-mono font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
                       ({planet.rashiIndex + 1})
                     </span>
                   </td>
                   <td className="px-4 py-3 font-mono font-semibold" style={{ color: degreeTxt }}>
                     {formatDegree(planet.rashiDegree)}
                   </td>
-                  <td className="px-4 py-3" style={{ color: mutedTxt }}>{planet.nakshatra}</td>
+                  <td className="px-4 py-3 font-semibold" style={{ color: cellTxt }}>{planet.nakshatra}</td>
                   <td className="px-4 py-3">
                     <span
                       className="inline-flex items-center justify-center w-6 h-6 rounded-full font-semibold text-xs"

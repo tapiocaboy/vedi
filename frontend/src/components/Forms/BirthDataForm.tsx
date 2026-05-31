@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, Clock, Settings, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings } from 'lucide-react';
 import type { BirthData } from '../../types/astrology';
 
 interface Props {
@@ -187,8 +187,8 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     }));
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/25 focus:border-[#FF2E51]/60 focus:ring-1 focus:ring-[#FF2E51]/20 outline-none transition-all text-sm";
-  const labelClasses = "block text-xs font-medium text-white/55 mb-1.5 uppercase tracking-wide";
+  const inputClasses = "w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-[15px] placeholder-white/30 focus:border-[#FF2E51]/60 focus:ring-1 focus:ring-[#FF2E51]/20 outline-none transition-all";
+  const labelClasses = "block text-sm font-bold text-white/70 mb-2 uppercase tracking-wide";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -196,7 +196,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <Calendar className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+            <Calendar className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
             Birth Date
           </label>
           <input
@@ -210,7 +210,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <Clock className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+            <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
             Birth Time
           </label>
           <input
@@ -235,7 +235,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-white/50 border border-white/10 hover:border-[#FF2E51]/40 hover:text-[#FF2E51] transition-all"
+              className="px-3.5 py-2 text-sm font-bold rounded-lg bg-white/5 text-white/60 border border-white/10 hover:border-[#FF2E51]/40 hover:text-[#FF2E51] transition-all"
             >
               {preset.name}
             </button>
@@ -247,7 +247,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
             Latitude
           </label>
           <input
@@ -265,7 +265,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
             Longitude
           </label>
           <input
@@ -286,7 +286,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Timezone */}
       <div>
         <label className={labelClasses}>
-          <Clock className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+          <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
           Timezone
         </label>
         <select
@@ -304,7 +304,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Ayanamsa */}
       <div>
         <label className={labelClasses}>
-          <Settings className="inline w-4 h-4 mr-1.5 text-[#FF2E51]" />
+          <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
           Ayanamsa
         </label>
         <select
@@ -319,32 +319,11 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </select>
       </div>
 
-      {/* AI Integration — disabled in free version */}
-      <div
-        aria-disabled="true"
-        className="flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/8 bg-white/3 cursor-not-allowed select-none opacity-55"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-            style={{ background: 'rgba(255,46,81,0.12)', border: '1px solid rgba(255,46,81,0.22)' }}>
-            <Sparkles className="w-3.5 h-3.5 text-[#FF2E51]/70" />
-          </div>
-          <div>
-            <div className="text-xs font-medium text-white">Integrate with AI</div>
-            <div className="text-[10px] text-white/40 mt-0.5">Not available in free version</div>
-          </div>
-        </div>
-        {/* inactive toggle */}
-        <div className="w-9 h-5 rounded-full bg-white/8 border border-white/12 relative shrink-0">
-          <div className="absolute left-1 top-1 w-3 h-3 rounded-full bg-white/25" />
-        </div>
-      </div>
-
       {/* Submit */}
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3 px-6 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+        className="w-full py-3.5 px-6 text-white text-base font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ backgroundColor: '#FF2E51' }}
         onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e01f3d')}
         onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FF2E51')}

@@ -79,7 +79,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
             <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4"
               style={{ background: headerBg, borderBottom: `1px solid ${headerBdr}`, backdropFilter: 'blur(12px)' }}>
               <div className="flex items-center gap-3">
-                <span className="text-3xl" style={{ color }}>{symbol}</span>
+                <span className="text-4xl font-black" style={{ color, textShadow: `0 0 12px ${color}55` }}>{symbol}</span>
                 <div>
                   <h2 className="text-lg font-display font-bold" style={{ color: titleClr }}>{displayName}</h2>
                   {analysis && (

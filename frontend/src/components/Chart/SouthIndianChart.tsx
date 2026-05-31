@@ -51,8 +51,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
   const borderBase  = isLight ? 'rgba(209,220,229,0.9)' : 'rgba(255,175,97,0.12)';
   const borderAsc   = isLight ? 'rgba(255,175,97,0.7)'  : 'rgba(255,175,97,0.55)';
   const borderSel   = isLight ? 'rgba(255,175,97,0.5)'  : 'rgba(255,175,97,0.35)';
-  const houseNumClr = isLight ? '#64748b'                : 'rgba(255,255,255,0.35)';
-  const rashiNameClr = isLight ? '#64748b'               : 'rgba(255,255,255,0.38)';
+  const houseNumClr = isLight ? '#334155'                : 'rgba(255,255,255,0.55)';
   const planetClr   = isLight ? '#1e293b'                : 'rgba(255,255,255,0.82)';
   const gridBorder  = isLight ? 'rgba(255,175,97,0.45)'  : 'rgba(255,175,97,0.3)';
   const gridShadow  = isLight ? '0 0 0 1px rgba(255,175,97,0.2), 0 4px 20px rgba(0,0,0,0.08)' : '0 0 30px rgba(255,175,97,0.08)';
@@ -63,8 +62,8 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         return (
           <div className="flex items-center justify-center h-full" style={{ background: lagnaBg, borderRight: `1px solid ${borderBase}`, borderBottom: `1px solid ${borderBase}` }}>
             <div className="text-center p-2">
-              <div className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: ACCENT }}>Lagna</div>
-              <div className="text-sm font-bold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{RASHIS[ascendantRashi]}</div>
+              <div className="text-xs font-mono uppercase tracking-wider font-extrabold" style={{ color: ACCENT }}>Lagna</div>
+              <div className="text-base font-extrabold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{RASHIS[ascendantRashi]}</div>
             </div>
           </div>
         );
@@ -101,14 +100,14 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         title={`House ${houseNum} — ${RASHIS[rashiIndex]} (${RASHI_ENGLISH[rashiIndex]})`}
       >
         {/* House number top-left */}
-        <div className="absolute top-0.5 left-1 text-[9px] font-mono font-bold"
+        <div className="absolute top-0.5 left-1 text-xs font-mono font-extrabold"
           style={{ color: isAscendant ? ACCENT : houseNumClr }}>
           {houseNum}
         </div>
 
         {/* Ascendant marker */}
         {isAscendant && (
-          <div className="absolute top-0.5 right-1 text-[9px] font-bold" style={{ color: ACCENT }}>↑</div>
+          <div className="absolute top-0.5 right-1 text-xs font-extrabold" style={{ color: ACCENT }}>↑</div>
         )}
 
         {/* Planets */}
@@ -119,19 +118,19 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + idx * 0.08 }}
-              className="text-xs font-semibold px-0.5 rounded"
-              style={{ color: planet.isRetrograde ? '#e11d48' : planetClr }}
+              className="text-[15px] font-extrabold px-0.5 rounded"
+              style={{ color: planet.isRetrograde ? '#e11d48' : planetClr, textShadow: '0 0 5px rgba(0,0,0,0.35)' }}
               title={`${planet.planet}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
             >
               {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
-              {planet.isRetrograde && <span className="text-[7px]">℞</span>}
+              {planet.isRetrograde && <span className="text-[8px] font-bold">℞</span>}
             </motion.div>
           ))}
         </div>
 
         {/* Rashi name bottom */}
-        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[8px] truncate px-1 font-mono"
-          style={{ color: rashiNameClr }}>
+        <div className="absolute bottom-0.5 left-0 right-0 text-center text-[10px] truncate px-1 font-mono font-bold"
+          style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.55)' }}>
           {RASHIS[rashiIndex]}
         </div>
       </motion.div>
@@ -141,8 +140,8 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
   return (
     <div className="w-full max-w-md mx-auto">
       <p
-        className="text-[11px] font-mono font-bold mb-3 text-center"
-        style={{ color: isLight ? '#334155' : '#ffffff' }}
+        className="text-sm font-bold mb-4 text-center tracking-wide"
+        style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
         Click any house to see its reading and planets
       </p>
@@ -160,11 +159,11 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs" style={{ color: isLight ? '#64748b' : '#64748b' }}>
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
-          <div key={planet} className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: ACCENT }}>{symbol}</span>
-            <span>{planet}</span>
+          <div key={planet} className="flex items-center gap-1.5">
+            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px ${ACCENT}44` }}>{symbol}</span>
+            <span className="font-bold">{planet}</span>
           </div>
         ))}
       </div>
