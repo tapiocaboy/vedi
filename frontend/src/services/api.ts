@@ -20,6 +20,11 @@ import type { AshtakavargaResult } from '../lib/core/ashtakavarga';
 import { getPeriodSnapshot, type PeriodSnapshot } from '../lib/services/periodService';
 import type { CurrentLocation } from '../lib/core/transits';
 import { runMatching, type MatchSummary } from '../lib/services/matchingService';
+import { getVargaReport, type VargaReport, type VargaInsight } from '../lib/services/vargaService';
+import { getPanchangaReport, type PanchangaReport, type ChoghadiyaPeriod } from '../lib/services/panchangaService';
+
+export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod };
+export type { VargaChart, VargaPlanet } from '../lib/core/vargas';
 
 export type { PeriodSnapshot, CurrentLocation, MatchSummary };
 export type { MatchReport, KootaScore, DoshaResult } from '../lib/core/matching';
@@ -39,6 +44,21 @@ export interface AreaPrediction {
   keywords: string[];
 }
 
+/** Natal-condition summary of a dasha lord (dignity, lordship, combustion…). */
+export interface LordStrengthData {
+  planet: string;
+  role: 'mahadasha' | 'antardasha';
+  dignity: string | null;
+  neechaBhanga: boolean;
+  isCombust: boolean;
+  isRetrograde: boolean;
+  functionalNature: string | null;
+  lordedHouses: number[];
+  natalHouse: number | null;
+  strengthScore: number;
+  notes: string[];
+}
+
 export interface DashaPredictionData {
   dashaLord: string;
   antardasha?: string;
@@ -56,6 +76,8 @@ export interface DashaPredictionData {
   };
   favorableActivities: string[];
   unfavorableActivities: string[];
+  importantTransits?: string[];
+  lordStrengths?: LordStrengthData[];
   remedies: {
     gemstone: string | null;
     mantra: string | null;
@@ -140,6 +162,16 @@ export async function getCurrentPeriodSnapshot(
 
 export async function getSookshmaPeriods(birthData: BirthData): Promise<SookshmaPeriodList | null> {
   return getSookshmaPeriodsForCurrent(birthData);
+}
+
+/** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */
+export async function getVargas(birthData: BirthData): Promise<VargaReport> {
+  return getVargaReport(birthData);
+}
+
+/** Today's Panchanga + Muhurta timings for the birth location. */
+export async function getPanchanga(birthData: BirthData, asOf?: Date): Promise<PanchangaReport> {
+  return getPanchangaReport(birthData, asOf);
 }
 
 export async function getTimelineWithPredictions(birthData: BirthData, yearsAhead = 80): Promise<unknown[]> {

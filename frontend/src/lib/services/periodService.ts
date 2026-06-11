@@ -10,7 +10,7 @@
 import { VimshottariDasha } from '../core/dasha';
 import { DashaPredictionEngine, type ChartContext } from '../core/predictions';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
-import { getCurrentTransits, type GocharaSnapshot, type CurrentLocation } from '../core/transits';
+import { getCurrentTransits, summarizeGocharaForPrediction, type GocharaSnapshot, type CurrentLocation } from '../core/transits';
 import { relocateChart, type RelocatedChart } from '../core/relocation';
 import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
 import { formatPrediction } from './predictionService';
@@ -104,11 +104,27 @@ function buildChartContext(positions: Record<string, PlanetPosition>): ChartCont
 
   const ascRashi = positions['ASCENDANT'].rashi;
   const planetHouses: Record<string, number> = {};
+  const planetRashis: Record<string, number> = {};
+  const planetLongitudes: Record<string, number> = {};
+  const planetRetro: Record<string, boolean> = {};
   for (const k of PLANET_KEYS) {
-    planetHouses[toName(k)] = ((positions[k].rashi - ascRashi + 12) % 12) + 1;
+    const name = toName(k);
+    const p = positions[k];
+    planetHouses[name] = ((p.rashi - ascRashi + 12) % 12) + 1;
+    planetRashis[name] = p.rashi;
+    planetLongitudes[name] = p.longitude;
+    planetRetro[name] = p.isRetrograde;
   }
 
-  return { ashtakavarga: computeAshtakavarga(rashis), planetHouses, ascendantRashi: ascRashi };
+  return {
+    ashtakavarga: computeAshtakavarga(rashis),
+    planetHouses,
+    ascendantRashi: ascRashi,
+    planetRashis,
+    planetLongitudes,
+    planetRetro,
+    moonRashi: positions['MOON'].rashi,
+  };
 }
 
 function daysBetween(a: Date, b: Date): number {
@@ -175,6 +191,14 @@ export async function getPeriodSnapshot(
   const periodsRaw = calc.getCurrentPeriods(td);
   if ('error' in periodsRaw) throw new Error(periodsRaw.error);
 
+  // Gochara / current transits — computed first so the prediction can use them.
+  const natalMoonRashi = positions['MOON'].rashi;
+  const natalLagnaRashi = positions['ASCENDANT'].rashi;
+  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation);
+  const transitSummary = summarizeGocharaForPrediction(gochara);
+  ctx.transitNotes = transitSummary.notes;
+  ctx.transitScoreMod = transitSummary.scoreMod;
+
   // Chart-aware prediction.
   const engine = new DashaPredictionEngine();
   const predRaw = engine.generateCompletePrediction(
@@ -191,11 +215,6 @@ export async function getPeriodSnapshot(
     ...(periodsRaw.pratyantardasha ? { pratyantardasha: { lord: periodsRaw.pratyantardasha.lord, start: periodsRaw.pratyantardasha.start.toISOString(), end: periodsRaw.pratyantardasha.end.toISOString() } } : {}),
     ...(periodsRaw.sookshmaDasha   ? { sookshmaDasha:   { lord: periodsRaw.sookshmaDasha.lord,   start: periodsRaw.sookshmaDasha.start.toISOString(),   end: periodsRaw.sookshmaDasha.end.toISOString() } }     : {}),
   };
-
-  // Gochara / current transits.
-  const natalMoonRashi = positions['MOON'].rashi;
-  const natalLagnaRashi = positions['ASCENDANT'].rashi;
-  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation);
 
   // Optional relocation.
   let relocation: PeriodSnapshot['relocation'] = null;

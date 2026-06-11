@@ -47,19 +47,19 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
           Click any row to see planetary effects, house placement, and predictions
         </p>
         <motion.table
-          className="w-full text-sm"
+          className="w-full text-xs sm:text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
           <thead>
             <tr style={{ background: headerBg }}>
-              <th className="px-4 py-3 text-left rounded-tl-lg font-bold text-white">Planet</th>
-              <th className="px-4 py-3 text-left font-bold text-white">Rashi</th>
-              <th className="px-4 py-3 text-left font-bold text-white">Degree</th>
-              <th className="px-4 py-3 text-left font-bold text-white">Nakshatra</th>
-              <th className="px-4 py-3 text-left font-bold text-white">Pada</th>
-              <th className="px-4 py-3 text-center rounded-tr-lg font-bold text-white">℞</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left rounded-tl-lg font-bold text-white">Planet</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Rashi</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Degree</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white hidden sm:table-cell">Nakshatra</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Pada</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center rounded-tr-lg font-bold text-white">℞</th>
             </tr>
           </thead>
           <tbody>
@@ -80,35 +80,35 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                   onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = rowHover; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd; }}
                 >
-                  <td className="px-4 py-3 font-bold">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xl font-bold" style={{ color: PLANET_COLORS[planet.planet], textShadow: `0 0 8px ${PLANET_COLORS[planet.planet]}55` }}>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 font-bold">
+                    <div className="flex items-center gap-1.5 sm:gap-2.5">
+                      <span className="text-lg sm:text-xl font-bold" style={{ color: PLANET_COLORS[planet.planet], textShadow: `0 0 8px ${PLANET_COLORS[planet.planet]}55` }}>
                         {PLANET_SYMBOLS[planet.planet]}
                       </span>
-                      <span className="text-[15px] font-bold" style={{ color: cellTxt }}>{planet.planet}</span>
+                      <span className="text-xs sm:text-[15px] font-bold" style={{ color: cellTxt }}>{planet.planet}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-semibold" style={{ color: cellTxt }}>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold" style={{ color: cellTxt }}>
                     {planet.rashi}
-                    <span className="text-xs ml-1 font-mono font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
+                    <span className="text-[10px] sm:text-xs ml-1 font-mono font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
                       ({planet.rashiIndex + 1})
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-mono font-semibold" style={{ color: degreeTxt }}>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 font-mono font-semibold" style={{ color: degreeTxt }}>
                     {formatDegree(planet.rashiDegree)}
                   </td>
-                  <td className="px-4 py-3 font-semibold" style={{ color: cellTxt }}>{planet.nakshatra}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold hidden sm:table-cell" style={{ color: cellTxt }}>{planet.nakshatra}</td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3">
                     <span
-                      className="inline-flex items-center justify-center w-6 h-6 rounded-full font-semibold text-xs"
+                      className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full font-semibold text-[10px] sm:text-xs"
                       style={{ background: padaBg, color: padaTxt, border: `1px solid ${padaBorder}` }}
                     >
                       {planet.nakshatraPada}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 text-center">
                     {planet.isRetrograde && (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-pink-500/20 text-pink-400 font-bold text-xs border border-pink-500/30">
+                      <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-pink-500/20 text-pink-400 font-bold text-[10px] sm:text-xs border border-pink-500/30">
                         ℞
                       </span>
                     )}

@@ -7,11 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
   Loader2, Layers, ChevronRight, AlertTriangle, Sparkles,
-  Heart, Briefcase, Wallet, Users, Star, Zap, Info,
+  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit,
 } from 'lucide-react';
 import { getSookshmaPeriods, getCurrentPrediction } from '../../services/api';
-import type { BirthData, DashaPredictionData } from '../../services/api';
-import { BAR_PALETTE, DashaBarRow, ProgressBar, TREND_HEX } from '../shared/BarCharts';
+import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
+import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
 
 interface Props {
   birthData: BirthData;
@@ -116,6 +116,171 @@ function CombinationEffects({ prediction }: { prediction: DashaPredictionData })
           <p className="text-sm text-red-200/70">{prediction.combinationWarning}</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Dasha Lord Strength ───────────────────────────────────────────────────────
+
+const DIGNITY_BADGE: Record<string, { label: string; cls: string }> = {
+  'exalted':      { label: 'Exalted',      cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
+  'own-sign':     { label: 'Own Sign',     cls: 'bg-violet-500/15 text-violet-300 border-violet-400/30' },
+  'friend-sign':  { label: 'Friendly Sign',cls: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
+  'neutral-sign': { label: 'Neutral Sign', cls: 'bg-white/8 text-white/60 border-white/15' },
+  'enemy-sign':   { label: 'Enemy Sign',   cls: 'bg-amber-500/15 text-amber-300 border-amber-400/30' },
+  'debilitated':  { label: 'Debilitated',  cls: 'bg-rose-500/15 text-rose-300 border-rose-400/30' },
+};
+
+const FUNCTIONAL_BADGE: Record<string, { label: string; cls: string }> = {
+  'yogakaraka':         { label: 'Yogakaraka ★',      cls: 'bg-yellow-500/15 text-yellow-300 border-yellow-400/35' },
+  'functional-benefic': { label: 'Functional Benefic', cls: 'bg-emerald-500/12 text-emerald-300 border-emerald-400/25' },
+  'functional-malefic': { label: 'Functional Malefic', cls: 'bg-red-500/12 text-red-300 border-red-400/25' },
+};
+
+const ORDINAL = (n: number): string => {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+};
+
+function strengthBarColor(score: number): string {
+  if (score >= 1) return '#34d399';   // strong — emerald
+  if (score >= 0) return BAR_PALETTE.gold;
+  if (score >= -1) return '#fb923c';  // weak — orange
+  return '#f43f5e';                   // very weak — rose
+}
+
+function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: number }) {
+  const dignity = lord.dignity ? DIGNITY_BADGE[lord.dignity] : null;
+  const functional = lord.functionalNature ? FUNCTIONAL_BADGE[lord.functionalNature] : null;
+  // Normalize −2.5…+2.5 → 0…100
+  const pct = ((lord.strengthScore + 2.5) / 5) * 100;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08 }}
+      className="rounded-xl border border-white/6 p-4 space-y-3"
+    >
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <span
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: LORD_HEX[lord.planet] ?? '#FF2E51' }}
+        />
+        <span className="text-sm font-bold text-white">{lord.planet}</span>
+        <span className="text-[10px] font-mono uppercase text-white/35">
+          {lord.role === 'mahadasha' ? 'Mahadasha Lord' : 'Antardasha Lord'}
+        </span>
+        <span className="ml-auto text-sm font-bold text-white">
+          {lord.strengthScore > 0 ? '+' : ''}{lord.strengthScore.toFixed(1)}
+          <span className="text-white/30 font-normal text-xs"> / ±2.5</span>
+        </span>
+      </div>
+
+      <ProgressBar pct={pct} color={strengthBarColor(lord.strengthScore)} height="sm" index={index} />
+
+      <div className="flex flex-wrap gap-1.5">
+        {dignity && (
+          <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${dignity.cls}`}>
+            {dignity.label}
+          </span>
+        )}
+        {lord.neechaBhanga && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-cyan-500/12 text-cyan-300 border-cyan-400/25">
+            Neecha Bhanga ✓
+          </span>
+        )}
+        {functional && (
+          <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${functional.cls}`}>
+            {functional.label}
+          </span>
+        )}
+        {lord.isCombust && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-orange-500/12 text-orange-300 border-orange-400/25">
+            Combust ☉
+          </span>
+        )}
+        {lord.isRetrograde && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-pink-500/12 text-pink-300 border-pink-400/25">
+            Retrograde ℞
+          </span>
+        )}
+        {lord.natalHouse != null && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-white/6 text-white/55 border-white/12">
+            In {ORDINAL(lord.natalHouse)} house
+          </span>
+        )}
+        {lord.lordedHouses.length > 0 && (
+          <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-white/6 text-white/55 border-white/12">
+            Rules {lord.lordedHouses.map(ORDINAL).join(' & ')}
+          </span>
+        )}
+      </div>
+
+      {lord.notes.length > 0 && (
+        <p className="text-xs text-white/45 leading-relaxed">{lord.notes[0]}</p>
+      )}
+    </motion.div>
+  );
+}
+
+function LordStrengthCard({ prediction }: { prediction: DashaPredictionData }) {
+  const lords = prediction.lordStrengths ?? [];
+  if (!lords.length) return null;
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Star className="w-4 h-4 text-violet-400" />
+        <span className="text-sm font-semibold text-white">Dasha Lord Chart Strength</span>
+      </div>
+      <p className="text-[11px] text-white/30 font-mono mb-4">
+        Dignity · house lordship · combustion · retrogression — from your natal chart
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {lords.map((lord, i) => (
+          <LordStrengthRow key={lord.planet + lord.role} lord={lord} index={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Current Transits ──────────────────────────────────────────────────────────
+
+function CurrentTransitsCard({ prediction }: { prediction: DashaPredictionData }) {
+  const transits = prediction.importantTransits ?? [];
+  if (!transits.length) return null;
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Orbit className="w-4 h-4 text-violet-400" />
+        <span className="text-sm font-semibold text-white">Current Transits (Gochara)</span>
+      </div>
+      <p className="text-[11px] text-white/30 font-mono mb-4">
+        Live planetary movements colouring this dasha period
+      </p>
+      <ul className="space-y-2">
+        {transits.map((t, i) => (
+          <motion.li
+            key={i}
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="flex items-start gap-2.5 text-sm text-white/70 leading-relaxed"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400/60 mt-2 shrink-0" />
+            {t}
+          </motion.li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -424,8 +589,14 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
       {/* 4-level hierarchy + strength */}
       <HierarchyCard prediction={prediction} />
 
+      {/* Dasha lord natal strength */}
+      <LordStrengthCard prediction={prediction} />
+
       {/* Combination alerts */}
       <CombinationEffects prediction={prediction} />
+
+      {/* Live transits feeding the prediction */}
+      <CurrentTransitsCard prediction={prediction} />
 
       {/* Sookshma timeline */}
       <SookshmaTimeline birthData={birthData} />

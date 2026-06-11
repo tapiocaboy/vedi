@@ -118,6 +118,53 @@ export interface CurrentLocation {
   timezone: string;
 }
 
+// ─── Prediction-engine integration ──────────────────────────────────────────
+
+export interface GocharaPredictionSummary {
+  /** Headline transit notes worth showing alongside a dasha prediction. */
+  notes: string[];
+  /** Aggregate auspiciousness modifier, clamped to [−1.5, +1]. */
+  scoreMod: number;
+}
+
+function titleCase(key: string): string {
+  return key.charAt(0) + key.slice(1).toLowerCase();
+}
+
+/**
+ * Distil a Gochara snapshot into the handful of signals that should colour
+ * a dasha prediction: Sade Sati, Saturn 4th/8th, Jupiter's blessing, and any
+ * other flagged transits.
+ */
+export function summarizeGocharaForPrediction(g: GocharaSnapshot): GocharaPredictionSummary {
+  const notes: string[] = [];
+  let mod = 0;
+
+  if (g.sadeSati.active) {
+    notes.push(g.sadeSati.description);
+    mod -= 0.75;
+  }
+
+  const saturn = g.transits.find(t => t.planet === 'SATURN');
+  if (saturn && !g.sadeSati.active) {
+    if (saturn.houseFromMoon === 8) mod -= 0.5;
+    else if (saturn.houseFromMoon === 4) mod -= 0.25;
+    else if ([3, 6, 11].includes(saturn.houseFromMoon)) mod += 0.25;
+    if (saturn.note) notes.push(`Saturn: ${saturn.note}`);
+  }
+
+  notes.push(g.jupiterBlessing.reason);
+  mod += g.jupiterBlessing.auspicious ? 0.5 : -0.25;
+
+  for (const t of g.transits) {
+    if (t.note && t.planet !== 'SATURN' && t.planet !== 'JUPITER') {
+      notes.push(`${titleCase(t.planet)}: ${t.note}`);
+    }
+  }
+
+  return { notes, scoreMod: Math.max(-1.5, Math.min(1, mod)) };
+}
+
 /** Sample current planetary positions for Gochara analysis. */
 export async function getCurrentTransits(
   ayanamsa: AyanamsaSystem,

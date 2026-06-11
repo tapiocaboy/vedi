@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart } from 'lucide-react';
+import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays } from 'lucide-react';
 
 const ACCENT = '#FF2E51';
 
@@ -17,6 +17,8 @@ import { NakshatraInfo } from './components/Dasha/NakshatraInfo';
 import { DeepInsights } from './components/Insights/DeepInsights';
 import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
+import { VargaTab } from './components/Varga/VargaTab';
+import { PanchangaTab } from './components/Panchanga/PanchangaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -30,7 +32,7 @@ const queryClient = new QueryClient({
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'panchanga';
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
@@ -111,7 +113,7 @@ function AppContent() {
   }: { id: ViewTab; label: string; icon: React.ElementType }) => (
     <button
       onClick={() => handleTabClick(id)}
-      className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-semibold tracking-wide transition-all duration-200 ${
+      className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-all duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
         activeTab === id
           ? isLight
             ? 'text-white shadow-sm'
@@ -122,8 +124,8 @@ function AppContent() {
       }`}
       style={activeTab === id ? { backgroundColor: ACCENT } : undefined}
     >
-      <Icon className="w-3.5 h-3.5" />
-      <span className="hidden sm:inline">{label}</span>
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      <span className="hidden xs:inline sm:inline">{label}</span>
     </button>
   );
 
@@ -151,7 +153,7 @@ function AppContent() {
       <ParticleField isLight={isLight} />
 
       {/* Ambient color orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden>
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 ambient-orbs" aria-hidden>
         <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[180px]"
           style={{ background: isLight
             ? 'radial-gradient(circle, rgba(255,46,81,0.06) 0%, transparent 70%)'
@@ -176,20 +178,20 @@ function AppContent() {
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="relative z-10 border-b app-header sticky top-0">
-        <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Logo size={40} className="shrink-0" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Logo size={32} className="shrink-0 sm:w-10 sm:h-10" />
             <BrandTitle isLight={isLight} />
           </div>
 
           {/* Right side: status + theme toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isHealthError ? (
-              <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400">
+              <span className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400">
                 <AlertCircle className="w-3 h-3" /> Offline
               </span>
             ) : health ? (
-              <span className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
+              <span className={`hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
                 isLight
                   ? 'bg-gray-100 border border-gray-200 text-gray-500'
                   : 'bg-white/4 border border-white/8 text-white/45'
@@ -203,7 +205,7 @@ function AppContent() {
             <button
               onClick={toggleTheme}
               title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
                 isLight
                   ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
                   : 'bg-white/5 border border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
@@ -216,18 +218,18 @@ function AppContent() {
       </header>
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
           {/* Left — Birth form */}
           <div className="lg:col-span-1">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-2xl p-6 relative overflow-hidden"
+              className="glass-card rounded-2xl p-4 sm:p-6 relative overflow-hidden"
             >
               {/* Animated background — vivid color wash + fast particles */}
-              <div className="absolute inset-0 pointer-events-none z-0">
+              <div className="absolute inset-0 pointer-events-none z-0 form-bg-particles">
                 {/* Fast shifting multi-color gradient */}
                 <motion.div
                   className="absolute inset-0"
@@ -342,7 +344,7 @@ function AppContent() {
                   className="space-y-4"
                 >
                   {/* Tab bar */}
-                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border ${
+                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border overflow-x-auto tab-bar-mobile ${
                     isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
                   }`}>
                     <TabBtn id="chart"    label="Chart"    icon={LayoutGrid} />
@@ -350,6 +352,8 @@ function AppContent() {
                     <TabBtn id="now"      label="Now"      icon={Compass}    />
                     <TabBtn id="match"    label="Match"    icon={Heart}      />
                     <TabBtn id="yogas"    label="Patterns" icon={Stars}      />
+                    <TabBtn id="vargas"   label="Vargas"   icon={Layers}     />
+                    <TabBtn id="panchanga" label="Panchanga" icon={CalendarDays} />
                     <TabBtn id="insights" label="Insights" icon={Zap}        />
                   </div>
 
@@ -375,7 +379,7 @@ function AppContent() {
                         ))}
                       </div>
 
-                      <div className="glass-card rounded-2xl p-6">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
                         {chartStyle === 'south'
                           ? <SouthIndianChart planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
                           : <NorthIndianChart  planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
@@ -384,7 +388,7 @@ function AppContent() {
 
                       <NakshatraInfo nakshatra={chartData.moonNakshatra} />
 
-                      <div className="glass-card rounded-2xl p-6">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                           <Sun className="w-4 h-4" style={{ color: '#FF2E51' }} />
                           Planetary Positions
@@ -405,10 +409,10 @@ function AppContent() {
                   {/* ── Dasha ─────────────────────────────────────── */}
                   {activeTab === 'dasha' && (
                     <motion.div key="dasha" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                      <div className="glass-card rounded-2xl p-6">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <CurrentDasha currentDasha={chartData.currentDasha} />
                       </div>
-                      <div className="glass-card rounded-2xl p-6">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
                         {isDashaLoading ? (
                           <div className="text-center py-10">
                             <div className="spinner mx-auto mb-3" />
@@ -440,7 +444,7 @@ function AppContent() {
                   {/* ── Patterns (Yogas) ──────────────────────────── */}
                   {activeTab === 'yogas' && birthData && (
                     <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <div className="glass-card rounded-2xl p-6">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <div className="flex items-center gap-2.5 mb-1">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                             style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}
@@ -454,6 +458,20 @@ function AppContent() {
                         </p>
                         <YogasDisplay birthData={birthData} />
                       </div>
+                    </motion.div>
+                  )}
+
+                  {/* ── Vargas (divisional charts D9/D10) ─────────── */}
+                  {activeTab === 'vargas' && birthData && (
+                    <motion.div key="vargas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <VargaTab birthData={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Panchanga (today's almanac + muhurta) ─────── */}
+                  {activeTab === 'panchanga' && birthData && (
+                    <motion.div key="panchanga" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <PanchangaTab birthData={birthData} />
                     </motion.div>
                   )}
 
@@ -471,7 +489,7 @@ function AppContent() {
                   initial={{ opacity: 0, y: 20, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="glass-card rounded-2xl p-16 text-center relative overflow-hidden"
+                  className="glass-card rounded-2xl p-6 sm:p-16 text-center relative overflow-hidden"
                 >
                   {/* Animated gradient border glow */}
                   <motion.div
@@ -504,7 +522,7 @@ function AppContent() {
 
                     {/* Animated floating icons */}
                     <motion.div
-                      className="flex items-center justify-center gap-5 mt-8"
+                      className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-6 sm:mt-8"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.6 }}
@@ -537,8 +555,8 @@ function AppContent() {
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className={`relative z-10 mt-16 py-4 border-t ${isLight ? 'border-slate-200' : 'border-white/4'}`}>
-        <div className={`max-w-7xl mx-auto px-5 flex items-center justify-between text-[10px] font-mono ${
+      <footer className={`relative z-10 mt-8 sm:mt-16 py-3 sm:py-4 border-t ${isLight ? 'border-slate-200' : 'border-white/4'}`}>
+        <div className={`max-w-7xl mx-auto px-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-0 text-[9px] sm:text-[10px] font-mono ${
           isLight ? 'text-slate-500' : 'text-white/18'
         }`}>
           <span>trytellme.xyz · Astrology predictions</span>

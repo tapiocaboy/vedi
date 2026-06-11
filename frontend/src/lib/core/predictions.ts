@@ -1,6 +1,7 @@
 /** Dasha Prediction Engine — enhanced with planet-pair combinations and sookshma-level awareness */
 
 import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Planet as AVPlanet, PLANETS as AV_PLANETS } from './ashtakavarga';
+import { assessPlanetStrength, type PlanetStrength } from './dashaStrength';
 
 /** Birth-chart context passed into the engine for chart-specific scoring. */
 export interface ChartContext {
@@ -9,6 +10,18 @@ export interface ChartContext {
   planetHouses?: Record<string, number>;
   /** Natal ascendant rashi (0–11). */
   ascendantRashi?: number;
+  /** Natal rashi (0–11) per planet — enables dignity / functional-nature scoring. */
+  planetRashis?: Record<string, number>;
+  /** Sidereal longitudes (0–360) per planet — enables combustion detection. */
+  planetLongitudes?: Record<string, number>;
+  /** Natal retrograde flags per planet. */
+  planetRetro?: Record<string, boolean>;
+  /** Natal Moon rashi (0–11) — used for neecha bhanga checks. */
+  moonRashi?: number;
+  /** Current transit highlights (Sade Sati, Guru transit, nodal axis…). */
+  transitNotes?: string[];
+  /** Aggregate transit auspiciousness modifier (≈ −1.5 … +1). */
+  transitScoreMod?: number;
 }
 
 // Compact house themes used to colour predictions with the dasha lord's natal placement.
@@ -45,6 +58,22 @@ export interface PredictionResult {
   keywords: string[];
 }
 
+/** Structured natal-condition summary for a dasha lord, for UI display. */
+export interface LordStrengthSummary {
+  planet: string;
+  role: 'mahadasha' | 'antardasha';
+  dignity: string | null;
+  neechaBhanga: boolean;
+  isCombust: boolean;
+  isRetrograde: boolean;
+  functionalNature: string | null;
+  lordedHouses: number[];
+  natalHouse: number | null;
+  /** Composite chart-strength modifier, −2.5 … +2.5. */
+  strengthScore: number;
+  notes: string[];
+}
+
 export interface DashaPrediction {
   dashaLord: string;
   antardasha?: string;
@@ -57,6 +86,7 @@ export interface DashaPrediction {
   favorableActivities: string[];
   unfavorableActivities: string[];
   importantTransits: string[];
+  lordStrengths?: LordStrengthSummary[];
   gemstone: string | null;
   mantra: string | null;
   deity: string | null;
@@ -295,6 +325,7 @@ export class DashaPredictionEngine {
   // Set per-call by generateCompletePrediction so all internal score lookups
   // can pick up bindu strength without changing every method signature.
   private _ctx: ChartContext | null = null;
+  private _strengthCache = new Map<string, PlanetStrength | null>();
 
   getPlanetData(planet: string) { return PLANET_SIGNIFICATIONS[planet] ?? {}; }
 
@@ -316,6 +347,15 @@ export class DashaPredictionEngine {
     return this._ctx?.planetHouses?.[planet] ?? null;
   }
 
+  /** Full chart-aware strength assessment for a planet (cached per prediction call). */
+  private _strengthFor(planet: string): PlanetStrength | null {
+    if (!this._ctx?.planetRashis) return null;
+    if (this._strengthCache.has(planet)) return this._strengthCache.get(planet)!;
+    const s = assessPlanetStrength(planet, this._ctx);
+    this._strengthCache.set(planet, s);
+    return s;
+  }
+
   /** Compact one-liner that places the dasha lord in its natal house. */
   private _houseAnnotation(planet: string): string | null {
     const house = this._natalHouseFor(planet);
@@ -324,13 +364,52 @@ export class DashaPredictionEngine {
     return `${planet} natally occupies your ${house}${ordinalSuffix(house)} house (${h.theme}). ${QUALITY_NOTE[h.quality]} Period emphasis: ${h.emphasis}.`;
   }
 
+  /** One-liner describing which houses the dasha lord rules and so activates. */
+  private _lordshipAnnotation(planet: string): string | null {
+    const s = this._strengthFor(planet);
+    if (!s || s.lordedHouses.length === 0) return null;
+    const parts = s.lordedHouses.map(h => `${h}${ordinalSuffix(h)} house (${HOUSE_THEMES[h].theme})`);
+    return `${planet} rules your ${parts.join(' and ')} — this period directly activates ${s.lordedHouses.length > 1 ? 'those life areas' : 'that life area'}.`;
+  }
+
+  /**
+   * Area-specific adjustment from the houses a planet rules — e.g. the lord
+   * of the 10th activates career during its dasha, the lord of the 7th
+   * activates partnerships, dusthana lords bring friction to their areas.
+   */
+  private _lordshipAreaMod(planet: string, area: string): number {
+    const s = this._strengthFor(planet);
+    if (!s) return 0;
+    const has = (...hs: number[]) => hs.some(h => s.lordedHouses.includes(h));
+    switch (area) {
+      case 'career':
+        return (has(10) ? 0.75 : 0) + (has(6) ? 0.25 : 0) - (has(8) ? 0.5 : 0) - (has(12) ? 0.25 : 0);
+      case 'wealth':
+        return (has(11) ? 0.75 : 0) + (has(2) ? 0.5 : 0) - (has(12) ? 0.5 : 0) - (has(8) ? 0.25 : 0);
+      case 'relationship':
+        return (has(7) ? 0.75 : 0) + (has(5) ? 0.25 : 0) - (has(6) ? 0.5 : 0) - (has(8) ? 0.25 : 0);
+      case 'health':
+        return (has(1) ? 0.5 : 0) - (has(6) ? 0.5 : 0) - (has(8) ? 0.5 : 0) - (has(12) ? 0.25 : 0);
+      default:
+        return 0;
+    }
+  }
+
   private _planetScore(planet: string, area: string): number {
     const pd = PLANET_SIGNIFICATIONS[planet] ?? {};
     const base = (pd[area + 'Score'] as number) ?? 5;
+    let adjusted = base;
+
+    // Ashtakavarga self-strength (half weight — dignity & lordship carry more signal).
     const bindus = this._bindusForLord(planet);
-    if (bindus == null) return base;
-    // Apply ±2 strength modifier, clamped to [1, 10].
-    const adjusted = base + bindusToScoreModifier(bindus);
+    if (bindus != null) adjusted += bindusToScoreModifier(bindus) * 0.5;
+
+    // Chart-aware strength: dignity, combustion, retro, house, functional nature.
+    const strength = this._strengthFor(planet);
+    if (strength) {
+      adjusted += strength.total + this._lordshipAreaMod(planet, area);
+    }
+
     return Math.max(1, Math.min(10, adjusted));
   }
 
@@ -401,6 +480,12 @@ export class DashaPredictionEngine {
       }
     }
 
+    if (antardasha) {
+      // The sub-lord's own natal condition colours how it delivers within the MD.
+      const adStrength = this._strengthFor(antardasha);
+      if (adStrength) score = Math.max(1, Math.min(10, score + adStrength.total * 0.25));
+    }
+
     if (pratyantardasha) {
       const pdRel = this.getRelationship(antardasha ?? mahadasha, pratyantardasha);
       if (pdRel === 'enemy') {
@@ -458,6 +543,11 @@ export class DashaPredictionEngine {
       }
     }
 
+    if (antardasha) {
+      const adStrength = this._strengthFor(antardasha);
+      if (adStrength) score = Math.max(1, Math.min(10, score + adStrength.total * 0.25));
+    }
+
     if (pratyantardasha) {
       const pdScore = this._planetScore(pratyantardasha, 'wealth');
       score = (score * 0.7) + (pdScore * 0.3);
@@ -510,6 +600,11 @@ export class DashaPredictionEngine {
         if (rel === 'friend') { details.push(`${antardasha} sub-period accelerates career growth and professional recognition`); score = Math.min(10, score + 1); }
         else if (rel === 'enemy') { details.push(`${antardasha} sub-period may bring workplace friction and professional challenges`); score = Math.max(1, score - 1); }
       }
+    }
+
+    if (antardasha) {
+      const adStrength = this._strengthFor(antardasha);
+      if (adStrength) score = Math.max(1, Math.min(10, score + adStrength.total * 0.25));
     }
 
     if (pratyantardasha) {
@@ -565,6 +660,11 @@ export class DashaPredictionEngine {
         if (rel === 'friend') { details.push(`${antardasha} sub-period enhances relationship harmony and deepens emotional bonds`); score = Math.min(10, score + 1); }
         else if (rel === 'enemy') { details.push(`${antardasha} sub-period may bring relationship friction, conflicts, or misunderstandings`); score = Math.max(1, score - 1); }
       }
+    }
+
+    if (antardasha) {
+      const adStrength = this._strengthFor(antardasha);
+      if (adStrength) score = Math.max(1, Math.min(10, score + adStrength.total * 0.25));
     }
 
     if (pratyantardasha) {
@@ -646,6 +746,7 @@ export class DashaPredictionEngine {
     chartCtx?: ChartContext,
   ): DashaPrediction {
     this._ctx = chartCtx ?? null;
+    this._strengthCache.clear();
     try {
     const pd = this.getPlanetData(mahadasha);
     const periodType = sookshmaDasha ? 'sookshma'
@@ -665,6 +766,10 @@ export class DashaPredictionEngine {
 
     const pairEff = antardasha ? getPairEffect(mahadasha, antardasha) : null;
     if (pairEff) weightedAvg = Math.min(10, Math.max(1, weightedAvg + pairEff.ratingMod));
+
+    // Current transits (Sade Sati, Guru blessing…) shift the overall outlook.
+    const transitMod = this._ctx?.transitScoreMod ?? 0;
+    if (transitMod !== 0) weightedAvg = Math.min(10, Math.max(1, weightedAvg + transitMod));
 
     const overallRating = Math.min(10, Math.max(1, Math.round(weightedAvg)));
     const nature = (pd.nature as string) ?? 'neutral';
@@ -705,13 +810,65 @@ export class DashaPredictionEngine {
       }
     }
 
+    // Chart-aware strength annotations: dignity, combustion, retrogression,
+    // functional nature — these are what make the prediction personal.
+    const mdStrength = this._strengthFor(mahadasha);
+    if (mdStrength) {
+      const lordshipNote = this._lordshipAnnotation(mahadasha);
+      if (lordshipNote) general.details.unshift(lordshipNote);
+      general.details.unshift(...mdStrength.notes.slice(0, 3));
+
+      // Headline the most decisive natal condition in the theme.
+      if (mdStrength.dignity === 'exalted') {
+        overallTheme += `. ${mahadasha} is exalted in your natal chart — this period operates near its highest potential`;
+      } else if (mdStrength.dignity === 'debilitated' && mdStrength.neechaBhanga) {
+        overallTheme += `. ${mahadasha} is debilitated but cancelled (Neecha Bhanga) — struggle early, exceptional strength later`;
+      } else if (mdStrength.dignity === 'debilitated') {
+        overallTheme += `. ${mahadasha} is debilitated natally — remedies and patience are essential this period`;
+      } else if (mdStrength.functionalNature === 'yogakaraka') {
+        overallTheme += `. ${mahadasha} is your yogakaraka — one of the most productive periods of your life`;
+      }
+    }
+    if (antardasha) {
+      const adStrength = this._strengthFor(antardasha);
+      if (adStrength && adStrength.notes.length) {
+        general.details.push(`Sub-period lord: ${adStrength.notes[0]}`);
+      }
+    }
+
+    // Structured strength summaries for UI display.
+    const lordStrengths: LordStrengthSummary[] = [];
+    const toSummary = (planet: string, role: LordStrengthSummary['role']): LordStrengthSummary | null => {
+      const s = this._strengthFor(planet);
+      if (!s) return null;
+      return {
+        planet, role,
+        dignity: s.dignity,
+        neechaBhanga: s.neechaBhanga,
+        isCombust: s.isCombust,
+        isRetrograde: s.isRetrograde,
+        functionalNature: s.functionalNature,
+        lordedHouses: s.lordedHouses,
+        natalHouse: s.natalHouse,
+        strengthScore: s.total,
+        notes: s.notes,
+      };
+    };
+    const mdSummary = toSummary(mahadasha, 'mahadasha');
+    if (mdSummary) lordStrengths.push(mdSummary);
+    if (antardasha && antardasha !== mahadasha) {
+      const adSummary = toSummary(antardasha, 'antardasha');
+      if (adSummary) lordStrengths.push(adSummary);
+    }
+
     return {
       dashaLord: mahadasha, antardasha, pratyantardasha, sookshmaDasha,
       periodType, overallTheme, overallRating,
       predictions: { health, wealth, career, relationships, general },
       favorableActivities: this._favorable(mahadasha),
       unfavorableActivities: this._unfavorable(mahadasha),
-      importantTransits: [],
+      importantTransits: this._ctx?.transitNotes ?? [],
+      lordStrengths: lordStrengths.length ? lordStrengths : undefined,
       gemstone: (pd.gemstone as string) ?? null,
       mantra: (pd.mantra as string) ?? null,
       deity: (pd.deity as string) ?? null,
@@ -720,6 +877,7 @@ export class DashaPredictionEngine {
     };
     } finally {
       this._ctx = null;
+      this._strengthCache.clear();
     }
   }
 

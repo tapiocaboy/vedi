@@ -69,7 +69,12 @@
    BASE
    ══════════════════════════════════════════════════════════════════════════ */
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -668,4 +673,46 @@ input:focus, select:focus, textarea:focus {
   letter-spacing: -0.03em;
   line-height: 1.1;
   white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  body { overflow-x: hidden; }
+
+  .glass-card { border-radius: 1rem; }
+
+  .app-header { padding-left: 0.75rem; padding-right: 0.75rem; }
+
+  /* Scrollable tab bar on mobile */
+  .tab-bar-mobile {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar-mobile::-webkit-scrollbar { display: none; }
+}
+
+/* Reduce heavy animations on mobile and when user prefers reduced motion */
+@media (max-width: 640px), (prefers-reduced-motion: reduce) {
+  .particle-field-canvas {
+    display: none !important;
+  }
+  .form-bg-particles {
+    display: none !important;
+  }
+}
+
+/* Reduce ambient orbs on mobile */
+@media (max-width: 640px) {
+  .ambient-orbs {
+    opacity: 0.4;
+  }
+  .ambient-orbs > div {
+    width: 200px !important;
+    height: 200px !important;
+    blur: 80px;
+  }
 }

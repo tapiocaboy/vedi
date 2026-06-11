@@ -199,7 +199,7 @@ export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
   return (
     <canvas
       ref={ref}
-      className="fixed inset-0 pointer-events-none z-0"
+      className="fixed inset-0 pointer-events-none z-0 particle-field-canvas"
       aria-hidden
     />
   );

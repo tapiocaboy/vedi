@@ -6,6 +6,7 @@ import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
 import { VimshottariDasha } from '../core/dasha';
 import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '../core/predictions';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
+import { getCurrentTransits, summarizeGocharaForPrediction } from '../core/transits';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
 
@@ -30,6 +31,8 @@ export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
     predictions,
     favorableActivities: pred.favorableActivities,
     unfavorableActivities: pred.unfavorableActivities,
+    importantTransits: pred.importantTransits,
+    lordStrengths: pred.lordStrengths,
     remedies: { gemstone: pred.gemstone, mantra: pred.mantra, deity: pred.deity },
     combinationWarning: pred.combinationWarning,
     combinationBonus: pred.combinationBonus,
@@ -52,18 +55,29 @@ function buildChartContext(positions: Record<string, PlanetPosition>): ChartCont
     rashis[v] = positions[k].rashi;
   }
   const ascRashi = positions['ASCENDANT'].rashi;
-  // Whole-sign natal house for every body (including the nodes, which Ashtakavarga skips).
+  // Whole-sign natal house + full natal condition for every body
+  // (including the nodes, which Ashtakavarga skips).
   const planetHouses: Record<string, number> = {};
+  const planetRashis: Record<string, number> = {};
+  const planetLongitudes: Record<string, number> = {};
+  const planetRetro: Record<string, boolean> = {};
   for (const key of ['SUN','MOON','MARS','MERCURY','JUPITER','VENUS','SATURN','RAHU','KETU']) {
-    const r = positions[key]?.rashi;
-    if (r == null) continue;
+    const p = positions[key];
+    if (p == null) continue;
     const name = key.charAt(0) + key.slice(1).toLowerCase(); // SUN -> Sun
-    planetHouses[name] = ((r - ascRashi + 12) % 12) + 1;
+    planetHouses[name] = ((p.rashi - ascRashi + 12) % 12) + 1;
+    planetRashis[name] = p.rashi;
+    planetLongitudes[name] = p.longitude;
+    planetRetro[name] = p.isRetrograde;
   }
   return {
     ashtakavarga: computeAshtakavarga(rashis),
     planetHouses,
     ascendantRashi: ascRashi,
+    planetRashis,
+    planetLongitudes,
+    planetRetro,
+    moonRashi: positions['MOON'].rashi,
   };
 }
 
@@ -117,6 +131,16 @@ export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Dat
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
   if ('error' in current) throw new Error(current.error);
+
+  // Fold current transits (Sade Sati, Guru blessing…) into the prediction.
+  try {
+    const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td);
+    const transitSummary = summarizeGocharaForPrediction(gochara);
+    ctx.transitNotes = transitSummary.notes;
+    ctx.transitScoreMod = transitSummary.scoreMod;
+  } catch {
+    // Transits are an enhancement — never block the core prediction.
+  }
 
   const pred = engine.generateCompletePrediction(
     current.mahadasha.lord,
