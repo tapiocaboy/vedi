@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, MapPin, Clock, Settings } from 'lucide-react';
+import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 
 interface Props {
@@ -128,6 +129,7 @@ function loadSaved(): { latitude: string; longitude: string; timezone: string; a
 }
 
 export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) => {
+  const { t } = useLang();
   const saved = useRef(loadSaved());
 
   const [formData, setFormData] = useState({
@@ -197,7 +199,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         <div>
           <label className={labelClasses}>
             <Calendar className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-            Birth Date
+            {t('form.birthDate')}
           </label>
           <input
             type="date"
@@ -211,7 +213,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         <div>
           <label className={labelClasses}>
             <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-            Birth Time
+            {t('form.birthTime')}
           </label>
           <input
             type="time"
@@ -227,7 +229,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Quick Location Presets */}
       <div>
         <label className={labelClasses}>
-          Quick Locations
+          {t('form.quickLocations')}
         </label>
         <div className="flex flex-wrap gap-2">
           {presetLocations.map(preset => (
@@ -248,7 +250,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         <div>
           <label className={labelClasses}>
             <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-            Latitude
+            {t('form.latitude')}
           </label>
           <input
             type="number"
@@ -266,7 +268,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         <div>
           <label className={labelClasses}>
             <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-            Longitude
+            {t('form.longitude')}
           </label>
           <input
             type="number"
@@ -287,7 +289,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div>
         <label className={labelClasses}>
           <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-          Timezone
+          {t('form.timezone')}
         </label>
         <select
           name="timezone"
@@ -305,7 +307,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div>
         <label className={labelClasses}>
           <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
-          Ayanamsa
+          {t('form.ayanamsa')}
         </label>
         <select
           name="ayanamsa"
@@ -334,10 +336,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            Analyzing...
+            {t('form.analyzing')}
           </span>
         ) : (
-          'Generate Chart'
+          t('form.generate')
         )}
       </button>
     </form>

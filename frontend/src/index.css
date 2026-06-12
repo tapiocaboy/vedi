@@ -716,3 +716,9 @@ input:focus, select:focus, textarea:focus {
     blur: 80px;
   }
 }
+
+/* Sinhala (සිංහල) — letter-spacing breaks complex-script ligature shaping,
+   so neutralise tracking utilities whenever the UI language is Sinhala */
+html[lang='si'] * {
+  letter-spacing: normal !important;
+}

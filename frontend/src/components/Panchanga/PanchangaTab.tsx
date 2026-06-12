@@ -5,6 +5,7 @@ import { CalendarDays, Loader2, Sunrise, Sunset, Clock, ShieldAlert, Star } from
 import { getPanchanga } from '../../services/api';
 import type { BirthData } from '../../services/api';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
 
 const ACCENT = '#FF2E51';
 
@@ -61,6 +62,7 @@ function TimingRow({
 
 export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const isLight = useTheme();
+  const { lang, t } = useLang();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['panchanga', birthData.latitude, birthData.longitude],
     queryFn: () => getPanchanga(birthData),
@@ -72,7 +74,7 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
       <div className="glass-card rounded-2xl p-10 text-center">
         <Loader2 className="w-6 h-6 mx-auto animate-spin mb-3" style={{ color: ACCENT }} />
         <span className={`font-mono text-sm ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
-          Computing today's Panchanga…
+          {t('panchanga.computing')}
         </span>
       </div>
     );
@@ -80,14 +82,14 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
   if (isError || !data) {
     return (
       <div className="glass-card rounded-2xl p-8 text-center text-rose-400 text-sm">
-        Failed to compute Panchanga.
+        {t('panchanga.failed')}
       </div>
     );
   }
 
   const { panchanga, moonNakshatra } = data;
   const tz = birthData.timezone;
-  const dateLabel = new Date(data.asOf).toLocaleDateString('en-US', {
+  const dateLabel = new Date(data.asOf).toLocaleDateString(lang === 'si' ? 'si-LK' : 'en-US', {
     timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
@@ -100,10 +102,10 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
             style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
             <CalendarDays className="w-4 h-4" style={{ color: '#ff6b81' }} />
           </div>
-          <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>Today's Panchanga</h3>
+          <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('panchanga.title')}</h3>
         </div>
         <p className={`text-xs mb-4 ml-[2.625rem] ${isLight ? 'text-slate-500' : 'text-white/30'}`}>
-          {dateLabel} · computed for birth location ({data.location.latitude.toFixed(2)}°, {data.location.longitude.toFixed(2)}°)
+          {dateLabel} · {t('panchanga.computedFor')} ({data.location.latitude.toFixed(2)}°, {data.location.longitude.toFixed(2)}°)
         </p>
 
         {/* Auspiciousness banner */}
@@ -114,29 +116,27 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
             color: panchanga.isAuspicious ? '#10b981' : '#fb7185',
           }}>
           <Star className="w-3.5 h-3.5" />
-          {panchanga.isAuspicious
-            ? 'Overall auspicious day — favourable for new beginnings'
-            : 'Mixed day — schedule important activities within the good muhurtas below'}
+          {panchanga.isAuspicious ? t('panchanga.auspicious') : t('panchanga.mixed')}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
-          <LimbCard label="Tithi" delay={0}
+          <LimbCard label={t('panchanga.tithi')} delay={0}
             value={`${panchanga.tithi.name}`}
             sub={`${panchanga.tithi.paksha} Paksha · lord ${panchanga.tithi.lord}`}
             accent="#f59e0b" isLight={isLight} />
-          <LimbCard label="Vara" delay={0.05}
+          <LimbCard label={t('panchanga.vara')} delay={0.05}
             value={panchanga.vara.sanskritName}
             sub={`${panchanga.vara.name} · lord ${panchanga.vara.lord}`}
             accent="#38bdf8" isLight={isLight} />
-          <LimbCard label="Nakshatra" delay={0.1}
+          <LimbCard label={t('panchanga.nakshatra')} delay={0.1}
             value={`${moonNakshatra.name}`}
             sub={`Pada ${moonNakshatra.pada} · lord ${moonNakshatra.lord} · ${moonNakshatra.gana} gana`}
             accent="#a78bfa" isLight={isLight} />
-          <LimbCard label="Yoga" delay={0.15}
+          <LimbCard label={t('panchanga.yoga')} delay={0.15}
             value={panchanga.yoga.name}
             sub={panchanga.yoga.nature === 'benefic' ? 'Benefic yoga' : 'Malefic yoga — act with care'}
             accent={panchanga.yoga.nature === 'benefic' ? '#10b981' : '#f43f5e'} isLight={isLight} />
-          <LimbCard label="Karana" delay={0.2}
+          <LimbCard label={t('panchanga.karana')} delay={0.2}
             value={panchanga.karana.name}
             sub={`${panchanga.karana.type} karana`}
             accent="#fb923c" isLight={isLight} />
@@ -158,23 +158,23 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
         {/* Timings */}
         <div className="glass-card rounded-2xl p-3 sm:p-5">
           <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${isLight ? 'text-gray-800' : 'text-white'}`}>
-            <Clock className="w-4 h-4" style={{ color: ACCENT }} /> Key Timings
+            <Clock className="w-4 h-4" style={{ color: ACCENT }} /> {t('panchanga.keyTimings')}
             <span className={`text-[9px] font-mono font-normal ${isLight ? 'text-slate-400' : 'text-white/25'}`}>({tz})</span>
           </h3>
-          <TimingRow icon={Sunrise} label="Sunrise" tone="plain" isLight={isLight}
+          <TimingRow icon={Sunrise} label={t('panchanga.sunrise')} tone="plain" isLight={isLight}
             value={fmtTime(data.sunrise, tz)} />
-          <TimingRow icon={Sunset} label="Sunset" tone="plain" isLight={isLight}
+          <TimingRow icon={Sunset} label={t('panchanga.sunset')} tone="plain" isLight={isLight}
             value={fmtTime(data.sunset, tz)} />
           {data.abhijitMuhurta && (
-            <TimingRow icon={Star} label="Abhijit Muhurta (best)" tone="good" isLight={isLight}
+            <TimingRow icon={Star} label={t('panchanga.abhijit')} tone="good" isLight={isLight}
               value={`${fmtTime(data.abhijitMuhurta.start, tz)} – ${fmtTime(data.abhijitMuhurta.end, tz)}`} />
           )}
           {data.rahuKaal && (
-            <TimingRow icon={ShieldAlert} label="Rahu Kaal (avoid)" tone="bad" isLight={isLight}
+            <TimingRow icon={ShieldAlert} label={t('panchanga.rahuKaal')} tone="bad" isLight={isLight}
               value={`${fmtTime(data.rahuKaal.start, tz)} – ${fmtTime(data.rahuKaal.end, tz)}`} />
           )}
           {data.gulikaKaal && (
-            <TimingRow icon={ShieldAlert} label="Gulika Kaal (avoid)" tone="bad" isLight={isLight}
+            <TimingRow icon={ShieldAlert} label={t('panchanga.gulikaKaal')} tone="bad" isLight={isLight}
               value={`${fmtTime(data.gulikaKaal.start, tz)} – ${fmtTime(data.gulikaKaal.end, tz)}`} />
           )}
         </div>
@@ -182,11 +182,11 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
         {/* Choghadiya */}
         <div className="glass-card rounded-2xl p-3 sm:p-5">
           <h3 className={`text-sm font-bold mb-3 flex items-center gap-2 ${isLight ? 'text-gray-800' : 'text-white'}`}>
-            <CalendarDays className="w-4 h-4" style={{ color: ACCENT }} /> Day Choghadiya
+            <CalendarDays className="w-4 h-4" style={{ color: ACCENT }} /> {t('panchanga.choghadiya')}
           </h3>
           {data.choghadiya.length === 0 ? (
             <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
-              Not available for this location.
+              {t('panchanga.notAvailable')}
             </p>
           ) : (
             <div className="space-y-1.5">

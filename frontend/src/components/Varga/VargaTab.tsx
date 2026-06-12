@@ -7,6 +7,7 @@ import type { BirthData } from '../../services/api';
 import type { VargaPlanet, VargaInsight } from '../../services/api';
 import { RASHIS } from '../../lib/core/rashi';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
 import { VargaHouseDetailPanel } from './VargaHouseDetailPanel';
 import type { VargaVariant } from '../../lib/core/vargaAnalysis';
 
@@ -186,6 +187,7 @@ function InsightCard({
 
 export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const isLight = useTheme();
+  const { t } = useLang();
   const [selected, setSelected] = useState<{ variant: VargaVariant; rashi: number } | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vargas', birthData],
@@ -198,7 +200,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
       <div className="glass-card rounded-2xl p-10 text-center">
         <Loader2 className="w-6 h-6 mx-auto animate-spin mb-3" style={{ color: ACCENT }} />
         <span className={`font-mono text-sm ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
-          Computing divisional charts…
+          {t('varga.computing')}
         </span>
       </div>
     );
@@ -206,7 +208,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   if (isError || !data) {
     return (
       <div className="glass-card rounded-2xl p-8 text-center text-rose-400 text-sm">
-        Failed to compute divisional charts.
+        {t('varga.failed')}
       </div>
     );
   }
@@ -227,26 +229,26 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
             style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
             <Layers className="w-4 h-4" style={{ color: '#ff6b81' }} />
           </div>
-          <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>Divisional Charts (Vargas)</h3>
+          <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('varga.title')}</h3>
         </div>
         <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-slate-500' : 'text-white/30'}`}>
-          Navamsa (D9) reveals marriage and inner strength · Dasamsa (D10) reveals career and public standing
+          {t('varga.subtitle')}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <VargaGrid
-            title="Navamsa D9"
-            subtitle={`Lagna: ${data.d9AscendantName} — marriage, dharma, inner self`}
-            hint="Click any section for its marriage reading"
+            title={t('varga.d9Title')}
+            subtitle={`${t('varga.lagna')}: ${data.d9AscendantName} — ${t('varga.d9Subtitle')}`}
+            hint={t('varga.d9Hint')}
             ascRashi={data.chart.d9Ascendant}
             planetsByRashi={d9ByRashi}
             isLight={isLight}
             onCellClick={rashi => setSelected({ variant: 'D9', rashi })}
           />
           <VargaGrid
-            title="Dasamsa D10"
-            subtitle={`Lagna: ${data.d10AscendantName} — career, status, karma`}
-            hint="Click any section for its career reading"
+            title={t('varga.d10Title')}
+            subtitle={`${t('varga.lagna')}: ${data.d10AscendantName} — ${t('varga.d10Subtitle')}`}
+            hint={t('varga.d10Hint')}
             ascRashi={data.chart.d10Ascendant}
             planetsByRashi={d10ByRashi}
             isLight={isLight}
@@ -259,10 +261,10 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
           <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className={`text-left text-[10px] uppercase tracking-wider font-bold ${isLight ? 'text-slate-500' : 'text-white/35'}`}>
-                <th className="px-2 py-2">Planet</th>
-                <th className="px-2 py-2">D1 Rashi</th>
-                <th className="px-2 py-2">D9 Navamsa</th>
-                <th className="px-2 py-2">D10 Dasamsa</th>
+                <th className="px-2 py-2">{t('varga.colPlanet')}</th>
+                <th className="px-2 py-2">{t('varga.colD1')}</th>
+                <th className="px-2 py-2">{t('varga.colD9')}</th>
+                <th className="px-2 py-2">{t('varga.colD10')}</th>
                 <th className="px-2 py-2"></th>
               </tr>
             </thead>
@@ -301,9 +303,9 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
 
       {/* Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <InsightCard title="Marriage & Partnership — from Navamsa" icon={Heart} color="#f472b6"
+        <InsightCard title={t('varga.marriageTitle')} icon={Heart} color="#f472b6"
           insights={data.marriageInsights} isLight={isLight} />
-        <InsightCard title="Career & Public Life — from Dasamsa" icon={Briefcase} color="#38bdf8"
+        <InsightCard title={t('varga.careerTitle')} icon={Briefcase} color="#38bdf8"
           insights={data.careerInsights} isLight={isLight} />
       </div>
 

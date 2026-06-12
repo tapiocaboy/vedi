@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { useLang } from '../i18n/LanguageContext';
 
 const PINK = '#FF2E51';
 
@@ -56,25 +57,29 @@ interface BrandTitleProps {
   compact?: boolean;
 }
 
-export const BrandTitle: React.FC<BrandTitleProps> = ({ isLight = false, compact = false }) => (
-  <div>
-    <h1
-      className={`brand-wordmark ${compact ? 'text-base' : 'text-lg sm:text-xl'}`}
-      style={{ color: isLight ? '#0f172a' : '#ffffff' }}
-    >
-      trytellme
-      <span style={{ color: PINK }}>.xyz</span>
-    </h1>
-    {!compact && (
-      <p
-        className="text-[10px] font-mono uppercase tracking-[0.22em]"
-        style={{ color: isLight ? 'rgba(255,46,81,0.70)' : 'rgba(255,255,255,0.45)' }}
+export const BrandTitle: React.FC<BrandTitleProps> = ({ isLight = false, compact = false }) => {
+  const { lang, t } = useLang();
+  return (
+    <div>
+      <h1
+        className={`brand-wordmark ${compact ? 'text-base' : 'text-lg sm:text-xl'}`}
+        style={{ color: isLight ? '#0f172a' : '#ffffff' }}
       >
-        Astrology predictions
-      </p>
-    )}
-  </div>
-);
+        trytellme
+        <span style={{ color: PINK }}>.xyz</span>
+      </h1>
+      {!compact && (
+        <p
+          // Letter-spacing breaks Sinhala ligatures, so only track the Latin text
+          className={`text-[10px] font-mono ${lang === 'si' ? 'text-[11px]' : 'uppercase tracking-[0.22em]'}`}
+          style={{ color: isLight ? 'rgba(255,46,81,0.70)' : 'rgba(255,255,255,0.45)' }}
+        >
+          {t('footer.tagline')}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const LogoFull: React.FC<{ iconSize?: number; className?: string }> = ({
   iconSize = 48,

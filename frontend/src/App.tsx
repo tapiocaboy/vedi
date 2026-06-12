@@ -25,6 +25,8 @@ import { PrivacyBanner } from './components/PrivacyBanner';
 import { Logo, BrandTitle } from './components/Logo';
 import { ParticleField } from './components/ParticleField';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
+import { LanguageProvider, useLang } from './i18n/LanguageContext';
+import type { Lang } from './i18n/translations';
 import type { BirthData, Chart } from './types/astrology';
 
 const queryClient = new QueryClient({
@@ -52,6 +54,7 @@ function AppContent() {
   const generateChart = useGenerateChart();
   const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(birthData, 80);
   const { data: health, isError: isHealthError } = useHealthCheck();
+  const { lang, setLang, t } = useLang();
 
 
   // Apply theme class to <html> so body background responds
@@ -184,11 +187,11 @@ function AppContent() {
             <BrandTitle isLight={isLight} />
           </div>
 
-          {/* Right side: status + theme toggle */}
+          {/* Right side: status + language + theme toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isHealthError ? (
               <span className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400">
-                <AlertCircle className="w-3 h-3" /> Offline
+                <AlertCircle className="w-3 h-3" /> {t('header.offline')}
               </span>
             ) : health ? (
               <span className={`hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
@@ -201,10 +204,33 @@ function AppContent() {
               </span>
             ) : null}
 
+            {/* Language switch: English / Sinhala */}
+            <div className={`flex items-center rounded-xl p-0.5 border ${
+              isLight ? 'bg-gray-100 border-gray-200' : 'bg-white/5 border-white/8'
+            }`}>
+              {([['en', 'EN'], ['si', 'සිං']] as [Lang, string][]).map(([code, label]) => (
+                <button
+                  key={code}
+                  onClick={() => setLang(code)}
+                  title={code === 'en' ? 'English' : 'සිංහල (Sinhala)'}
+                  className={`px-2 sm:px-2.5 h-7 sm:h-8 rounded-[10px] text-[11px] sm:text-xs font-bold transition-all duration-200 ${
+                    lang === code
+                      ? 'text-white shadow-sm'
+                      : isLight
+                        ? 'text-gray-500 hover:text-gray-800'
+                        : 'text-white/40 hover:text-white/70'
+                  }`}
+                  style={lang === code ? { backgroundColor: ACCENT } : undefined}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+              title={isLight ? t('header.themeToDark') : t('header.themeToLight')}
               className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
                 isLight
                   ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
@@ -312,7 +338,7 @@ function AppContent() {
                     <Moon className="w-4 h-4" style={{ color: ACCENT }} />
                   </motion.div>
                   <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
-                    Birth Details
+                    {t('form.birthDetails')}
                   </h2>
                 </div>
 
@@ -325,7 +351,7 @@ function AppContent() {
                     className="mt-4 p-3 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-2"
                   >
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    {generateChart.error?.message || 'Failed to generate chart'}
+                    {generateChart.error?.message || t('form.error')}
                   </motion.div>
                 )}
               </div>
@@ -347,14 +373,14 @@ function AppContent() {
                   <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border overflow-x-auto tab-bar-mobile ${
                     isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
                   }`}>
-                    <TabBtn id="chart"    label="Chart"    icon={LayoutGrid} />
-                    <TabBtn id="dasha"    label="Timeline" icon={List}       />
-                    <TabBtn id="now"      label="Now"      icon={Compass}    />
-                    <TabBtn id="match"    label="Match"    icon={Heart}      />
-                    <TabBtn id="yogas"    label="Patterns" icon={Stars}      />
-                    <TabBtn id="vargas"   label="Vargas"   icon={Layers}     />
-                    <TabBtn id="panchanga" label="Panchanga" icon={CalendarDays} />
-                    <TabBtn id="insights" label="Insights" icon={Zap}        />
+                    <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
+                    <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
+                    <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
+                    <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
+                    <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
+                    <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
+                    <TabBtn id="panchanga" label={t('tab.panchanga')} icon={CalendarDays} />
+                    <TabBtn id="insights" label={t('tab.insights')} icon={Zap}        />
                   </div>
 
                   {/* ── Chart ─────────────────────────────────────── */}
@@ -374,7 +400,7 @@ function AppContent() {
                             }`}
                             style={chartStyle === style ? { backgroundColor: ACCENT } : undefined}
                           >
-                            {style === 'south' ? 'South Indian' : 'North Indian'}
+                            {style === 'south' ? t('chart.southIndian') : t('chart.northIndian')}
                           </button>
                         ))}
                       </div>
@@ -391,13 +417,13 @@ function AppContent() {
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
                           <Sun className="w-4 h-4" style={{ color: '#FF2E51' }} />
-                          Planetary Positions
+                          {t('chart.planetaryPositions')}
                         </h3>
                         <PlanetTable planets={chartData.planets} ascendant={chartData.ascendant} />
                         <div className={`mt-4 pt-3 border-t flex justify-between items-center text-[10px] font-mono ${
                           isLight ? 'border-slate-200 text-slate-400' : 'border-white/5 text-white/20'
                         }`}>
-                          <span>Ayanamsa: {chartData.birthData.ayanamsa}</span>
+                          <span>{t('chart.ayanamsaLabel')}: {chartData.birthData.ayanamsa}</span>
                           <span>{chartData.ayanamsaValue.toFixed(4)}°</span>
                         </div>
                       </div>
@@ -417,7 +443,7 @@ function AppContent() {
                           <div className="text-center py-10">
                             <div className="spinner mx-auto mb-3" />
                             <span className={`font-mono text-sm ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
-                              Loading timeline…
+                              {t('timeline.loading')}
                             </span>
                           </div>
                         ) : dashaTimeline ? (
@@ -451,10 +477,10 @@ function AppContent() {
                           >
                             <Stars className="w-4 h-4" style={{ color: '#ff6b81' }} />
                           </div>
-                          <h3 className="text-sm font-semibold text-white">Planetary Patterns</h3>
+                          <h3 className="text-sm font-semibold text-white">{t('patterns.title')}</h3>
                         </div>
                         <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-slate-400' : 'text-white/25'}`}>
-                          Significant combinations detected in this birth chart
+                          {t('patterns.subtitle')}
                         </p>
                         <YogasDisplay birthData={birthData} />
                       </div>
@@ -509,7 +535,7 @@ function AppContent() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2, duration: 0.5 }}
                     >
-                      Ready to Analyse Your Chart
+                      {t('empty.title')}
                     </motion.h3>
                     <motion.p
                       className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/50'}`}
@@ -517,7 +543,7 @@ function AppContent() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4, duration: 0.5 }}
                     >
-                      Enter your birth details to generate a complete birth chart with planetary period analysis, combination patterns, and detailed life predictions.
+                      {t('empty.body')}
                     </motion.p>
 
                     {/* Animated floating icons */}
@@ -559,9 +585,9 @@ function AppContent() {
         <div className={`max-w-7xl mx-auto px-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-0 text-[9px] sm:text-[10px] font-mono ${
           isLight ? 'text-slate-500' : 'text-white/18'
         }`}>
-          <span>trytellme.xyz · Astrology predictions</span>
-          <span>Non-Commercial Use Only</span>
-          <span>Meeus algorithms · Lahiri ayanamsa</span>
+          <span>trytellme.xyz · {t('footer.tagline')}</span>
+          <span>{t('footer.nonCommercial')}</span>
+          <span>{t('footer.algorithms')}</span>
         </div>
       </footer>
     </div>
@@ -571,7 +597,9 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }
