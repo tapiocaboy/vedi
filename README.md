@@ -202,7 +202,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 <p align="center">
-  <strong>ॐ</strong><br>
+  <strong>✶</strong><br>
   <em>Made with devotion for Jyotish</em>
 </p>
 

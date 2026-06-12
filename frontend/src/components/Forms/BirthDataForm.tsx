@@ -189,8 +189,11 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     }));
   };
 
-  const inputClasses = "w-full px-4 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-[15px] placeholder-white/30 focus:border-[#FF2E51]/60 focus:ring-1 focus:ring-[#FF2E51]/20 outline-none transition-all";
-  const labelClasses = "block text-sm font-bold text-white/70 mb-2 uppercase tracking-wide";
+  // Colour/size/background + native date-time legibility live in `.form-field`
+  // (see index.css) so the date/time pickers render correctly on mobile and in
+  // both themes; Tailwind here only handles layout + focus ring.
+  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-bold focus:border-[#FF2E51]/60 focus:ring-1 focus:ring-[#FF2E51]/20 outline-none transition-all";
+  const labelClasses = "form-label block text-sm font-bold mb-2 uppercase tracking-wide";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -237,7 +240,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="px-3.5 py-2 text-sm font-bold rounded-lg bg-white/5 text-white/60 border border-white/10 hover:border-[#FF2E51]/40 hover:text-[#FF2E51] transition-all"
+              className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[#FF2E51]/40 hover:text-[#FF2E51] transition-all"
             >
               {preset.name}
             </button>
@@ -320,6 +323,28 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           ))}
         </select>
       </div>
+
+      {/* Submit */}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full py-3.5 px-6 text-white text-base font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ backgroundColor: '#FF2E51' }}
+        onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e01f3d')}
+        onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FF2E51')}
+      >
+        {isLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            {t('form.analyzing')}
+          </span>
+        ) : (
+          t('form.generate')
+        )}
+      </button>
     </form>
   );
 };

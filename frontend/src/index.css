@@ -676,6 +676,60 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   FORM FIELDS — native date/time friendly, theme-aware, mobile-safe
+   In @layer components so Tailwind focus:/hover: utilities still win the cascade.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@layer components {
+  .form-field {
+    /* Render native <input type="date|time"> and <select> internals
+       (placeholder, value, calendar/clock glyph) light-on-dark. Without this the
+       OS defaults to its light scheme → dark text on the dark field = invisible
+       on phones, which made the date pickers look broken. */
+    color-scheme: dark;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+    /* 16px floor stops iOS Safari auto-zooming (the page "jump") on focus. */
+    font-size: 16px;
+  }
+  .form-field::placeholder { color: rgba(255, 255, 255, 0.30); }
+
+  /* Native date/time: never overflow a narrow grid column on small phones,
+     keep a comfortable tap target, and left-align the value. */
+  .form-field[type='date'],
+  .form-field[type='time'] {
+    min-width: 0;
+    min-height: 3.25rem;
+  }
+  .form-field::-webkit-date-and-time-value { text-align: left; }
+  .form-field::-webkit-calendar-picker-indicator { opacity: 0.75; cursor: pointer; }
+
+  .form-label { color: rgba(255, 255, 255, 0.70); }
+
+  .preset-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.60);
+  }
+
+  /* Light theme — readable dark text on light fields, light native pickers. */
+  .theme-light .form-field {
+    color-scheme: light;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #0f172a;
+  }
+  .theme-light .form-field::placeholder { color: rgba(15, 23, 42, 0.35); }
+  .theme-light .form-label { color: rgba(15, 23, 42, 0.70); }
+  .theme-light .preset-btn {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    color: rgba(15, 23, 42, 0.65);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE
    ══════════════════════════════════════════════════════════════════════════ */
 

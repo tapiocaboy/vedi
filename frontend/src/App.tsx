@@ -21,6 +21,7 @@ import { VargaTab } from './components/Varga/VargaTab';
 import { PanchangaTab } from './components/Panchanga/PanchangaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { DisclaimerModal } from './components/DisclaimerModal';
+import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
 import { Logo, BrandTitle } from './components/Logo';
 import { ParticleField } from './components/ParticleField';
@@ -45,6 +46,8 @@ function AppContent() {
     const saved = localStorage.getItem('trytellme_theme') ?? localStorage.getItem('predictor_theme');
     return saved === 'light';
   });
+  // Legal gate — shown on every site load / refresh / first visit
+  const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(true);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
@@ -136,6 +139,9 @@ function AppContent() {
     <div className={`min-h-screen tech-grid transition-colors duration-300 ${isLight ? 'theme-light' : ''}`}
       style={{ backgroundColor: 'var(--bg-page)' }}
     >
+      {/* Legal gate — shown on every site load / refresh / first visit */}
+      <WelcomeLegalModal visible={welcomeLegalVisible} onAccept={() => setWelcomeLegalVisible(false)} />
+
       {/* Disclaimer — shown on every Generate Chart press */}
       <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />
 
