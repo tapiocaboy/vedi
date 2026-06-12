@@ -174,8 +174,6 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
 
   // Preset locations
   const presetLocations = [
-    { name: 'Kandy', lat: 7.2906, lng: 80.6337, tz: 'Asia/Colombo' },
-    { name: 'Kalthota', lat: 6.6594, lng: 80.8860, tz: 'Asia/Colombo' },
     { name: 'Los Angeles', lat: 34.0522, lng: -118.2437, tz: 'America/Los_Angeles' },
     { name: 'London', lat: 51.5074, lng: -0.1278, tz: 'Europe/London' },
     { name: 'Helsinki', lat: 60.1699, lng: 24.9384, tz: 'Europe/Helsinki' },
