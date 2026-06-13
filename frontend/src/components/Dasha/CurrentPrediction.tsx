@@ -8,12 +8,15 @@ import { motion } from 'framer-motion';
 import { getCurrentPrediction, type BirthData } from '../../services/api';
 import DashaPrediction from './DashaPrediction';
 import { Loader2, Calendar, Moon, Star } from 'lucide-react';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
   birthData: BirthData;
 }
 
 export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
+  const { lang, t } = useLang();
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['currentPrediction', birthData],
     queryFn: () => getCurrentPrediction(birthData),
@@ -25,7 +28,7 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
     return (
       <div className="flex items-center justify-center p-12 glass-card rounded-xl">
         <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
-        <span className="ml-3 text-white/50 font-mono text-sm">Loading predictions...</span>
+        <span className="ml-3 text-white/50 font-mono text-sm">{t('dasha.loadingPredictions')}</span>
       </div>
     );
   }
@@ -33,7 +36,7 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
   if (error) {
     return (
       <div className="p-6 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
-        <p>Failed to load predictions. Please try again.</p>
+        <p>{t('dasha.loadFailed')}</p>
       </div>
     );
   }
@@ -69,7 +72,7 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
         <div className="glass-card rounded-xl p-4 border border-violet-600/30">
           <h3 className="text-lg font-display font-semibold mb-4 flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5 text-violet-400" />
-            Currently Running Periods
+            {t('dasha.currentPeriodsTitle')}
           </h3>
           
           <div className="grid md:grid-cols-3 gap-4">
@@ -77,13 +80,13 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
             <div className="bg-white/3 rounded-lg p-3 border border-white/6">
               <div className="flex items-center gap-2 mb-2">
                 <Star className="w-4 h-4 text-violet-300" />
-                <span className="text-sm text-white/50">Mahadasha</span>
+                <span className="text-sm text-white/50">{labelDashaLevel('Mahadasha', lang)}</span>
               </div>
               <div className="text-xl font-bold text-white">
-                {prediction.currentPeriods.mahadasha?.lord}
+                {labelPlanet(prediction.currentPeriods.mahadasha?.lord ?? '', lang)}
               </div>
               <div className="text-xs text-white/25 mt-1 font-mono">
-                {prediction.currentPeriods.mahadasha?.start?.split('T')[0]} to{' '}
+                {prediction.currentPeriods.mahadasha?.start?.split('T')[0]} {t('common.dateTo')}{' '}
                 {prediction.currentPeriods.mahadasha?.end?.split('T')[0]}
               </div>
             </div>
@@ -93,13 +96,13 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
               <div className="bg-white/3 rounded-lg p-3 border border-white/6">
                 <div className="flex items-center gap-2 mb-2">
                   <Moon className="w-4 h-4 text-violet-400" />
-                  <span className="text-sm text-white/50">Antardasha</span>
+                  <span className="text-sm text-white/50">{labelDashaLevel('Antardasha', lang)}</span>
                 </div>
                 <div className="text-xl font-bold text-white">
-                  {prediction.currentPeriods.antardasha?.lord}
+                  {labelPlanet(prediction.currentPeriods.antardasha?.lord ?? '', lang)}
                 </div>
                 <div className="text-xs text-white/25 mt-1 font-mono">
-                  {prediction.currentPeriods.antardasha?.start?.split('T')[0]} to{' '}
+                  {prediction.currentPeriods.antardasha?.start?.split('T')[0]} {t('common.dateTo')}{' '}
                   {prediction.currentPeriods.antardasha?.end?.split('T')[0]}
                 </div>
               </div>
@@ -110,13 +113,13 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
               <div className="bg-white/3 rounded-lg p-3 border border-white/6">
                 <div className="flex items-center gap-2 mb-2">
                   <Star className="w-4 h-4 text-violet-300" />
-                  <span className="text-sm text-white/50">Pratyantardasha</span>
+                  <span className="text-sm text-white/50">{labelDashaLevel('Pratyantardasha', lang)}</span>
                 </div>
                 <div className="text-xl font-bold text-white">
-                  {prediction.currentPeriods.pratyantardasha?.lord}
+                  {labelPlanet(prediction.currentPeriods.pratyantardasha?.lord ?? '', lang)}
                 </div>
                 <div className="text-xs text-white/25 mt-1 font-mono">
-                  {prediction.currentPeriods.pratyantardasha?.start?.split('T')[0]} to{' '}
+                  {prediction.currentPeriods.pratyantardasha?.start?.split('T')[0]} {t('common.dateTo')}{' '}
                   {prediction.currentPeriods.pratyantardasha?.end?.split('T')[0]}
                 </div>
               </div>

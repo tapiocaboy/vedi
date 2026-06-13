@@ -26,6 +26,8 @@ import { DASHA_COLORS } from '../../types/astrology';
 import { formatDate, formatYears, formatDays } from '../../utils/dateUtils';
 import { parseISO, isWithinInterval } from 'date-fns';
 import { getAntardashaPrediction, type DashaPredictionData } from '../../services/api';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelArea, labelTrend, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
   timeline: DashaWithAntardashas[];
@@ -33,19 +35,19 @@ interface Props {
   currentDate?: Date;
 }
 
-const TREND_CONFIG = {
-  positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Favorable' },
-  negative: { icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', label: 'Challenging' },
-  mixed: { icon: MinusCircle, color: 'text-violet-300', bg: 'bg-violet-400/10', border: 'border-violet-400/30', label: 'Mixed' },
-  neutral: { icon: MinusCircle, color: 'text-white/50', bg: 'bg-slate-500/10', border: 'border-slate-500/30', label: 'Neutral' },
+const TREND_ICONS = {
+  positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  negative: { icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30' },
+  mixed: { icon: MinusCircle, color: 'text-violet-300', bg: 'bg-violet-400/10', border: 'border-violet-400/30' },
+  neutral: { icon: MinusCircle, color: 'text-white/50', bg: 'bg-slate-500/10', border: 'border-slate-500/30' },
 };
 
 const AREA_CONFIG = {
-  health: { icon: Heart, color: 'text-rose-400', bgColor: 'bg-rose-500/10', label: 'Health' },
-  wealth: { icon: Wallet, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10', label: 'Wealth' },
-  career: { icon: Briefcase, color: 'text-violet-400', bgColor: 'bg-violet-500/10', label: 'Career' },
-  relationships: { icon: Users, color: 'text-pink-400', bgColor: 'bg-pink-500/10', label: 'Relationships' },
-  general: { icon: Sparkles, color: 'text-purple-400', bgColor: 'bg-purple-500/10', label: 'General' },
+  health: { icon: Heart, color: 'text-rose-400', bgColor: 'bg-rose-500/10' },
+  wealth: { icon: Wallet, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
+  career: { icon: Briefcase, color: 'text-violet-400', bgColor: 'bg-violet-500/10' },
+  relationships: { icon: Users, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
+  general: { icon: Sparkles, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
 };
 
 interface PredictionDisplayProps {
@@ -55,16 +57,17 @@ interface PredictionDisplayProps {
 }
 
 const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahadashaLord, antardashaLord }) => {
+  const { lang, t } = useLang();
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
   const [showActivities, setShowActivities] = useState(false);
 
   const renderTrendBadge = (trend: string) => {
-    const config = TREND_CONFIG[trend as keyof typeof TREND_CONFIG] || TREND_CONFIG.neutral;
+    const config = TREND_ICONS[trend as keyof typeof TREND_ICONS] || TREND_ICONS.neutral;
     const Icon = config.icon;
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color} border ${config.border}`}>
         <Icon className="w-3 h-3" />
-        {config.label}
+        {labelTrend(trend, lang)}
       </span>
     );
   };
@@ -80,14 +83,14 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
         <div className="flex items-center justify-between">
           <div>
             <h4 className="font-display font-semibold text-lg text-white">
-              {mahadashaLord} - {antardashaLord} Predictions
+              {t('dasha.predictionsFor', { md: labelPlanet(mahadashaLord, lang), ad: labelPlanet(antardashaLord, lang) })}
             </h4>
             <p className="text-white/70 text-sm mt-1 line-clamp-2">
               {prediction.overallTheme}
             </p>
           </div>
           <div className="text-right">
-            <div className="text-white/70 text-xs">Rating</div>
+            <div className="text-white/70 text-xs">{t('dasha.rating')}</div>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 text-violet-300 fill-violet-300" />
               <span className="font-bold text-lg text-white">{prediction.overallRating}/10</span>
@@ -98,7 +101,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
 
       {/* Life Areas Grid */}
       <div className="p-4 space-y-2">
-        <h5 className="text-sm font-semibold text-white/70 mb-3">Life Area Outlook</h5>
+        <h5 className="text-sm font-semibold text-white/70 mb-3">{t('dasha.lifeAreaOutlook')}</h5>
         
         {Object.entries(prediction.predictions).map(([area, data]) => {
           const config = AREA_CONFIG[area as keyof typeof AREA_CONFIG];
@@ -118,7 +121,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
                     <Icon className={`w-4 h-4 ${config.color}`} />
                   </div>
                   <div className="text-left">
-                    <div className="font-medium text-white text-sm">{config.label}</div>
+                    <div className="font-medium text-white text-sm">{labelArea(area, lang)}</div>
                     <div className="text-xs text-white/50 line-clamp-1 max-w-xs">{data.summary}</div>
                   </div>
                 </div>
@@ -143,7 +146,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
                     <div className="p-4 bg-white/3 space-y-4">
                       {/* Details */}
                       <div>
-                        <h6 className="font-medium text-white/70 text-sm mb-2">Details</h6>
+                        <h6 className="font-medium text-white/70 text-sm mb-2">{t('common.details')}</h6>
                         <ul className="space-y-1">
                           {data.details.slice(0, 5).map((detail, i) => (
                             <li key={i} className="flex items-start gap-2 text-xs text-white/50">
@@ -157,7 +160,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
                       {/* Remedies */}
                       {data.remedies.length > 0 && (
                         <div>
-                          <h6 className="font-medium text-white/70 text-sm mb-2">Remedies</h6>
+                          <h6 className="font-medium text-white/70 text-sm mb-2">{t('common.remedies')}</h6>
                           <ul className="space-y-1">
                             {data.remedies.slice(0, 3).map((remedy, i) => (
                               <li key={i} className="flex items-start gap-2 text-xs text-white/50">
@@ -183,24 +186,24 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
         <div className="p-3 bg-white/3 rounded-lg border border-white/6">
           <h5 className="text-sm font-semibold text-white/70 mb-2 flex items-center gap-2">
             <Gem className="w-4 h-4 text-purple-400" />
-            Recommended Remedies
+            {t('dasha.recommendedRemedies')}
           </h5>
           <div className="grid grid-cols-3 gap-2 text-xs">
             {prediction.remedies.gemstone && (
               <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                <div className="text-purple-400 font-medium">Gemstone</div>
+                <div className="text-purple-400 font-medium">{t('remedy.gemstone')}</div>
                 <div className="text-white/70">{prediction.remedies.gemstone}</div>
               </div>
             )}
             {prediction.remedies.mantra && (
               <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-                <div className="text-violet-400 font-medium">Affirmation</div>
+                <div className="text-violet-400 font-medium">{t('remedy.affirmation')}</div>
                 <div className="text-white/70 truncate">{prediction.remedies.mantra}</div>
               </div>
             )}
             {prediction.remedies.deity && (
               <div className="p-2 bg-violet-400/10 rounded-lg border border-violet-400/20">
-                <div className="text-violet-300 font-medium">Focus</div>
+                <div className="text-violet-300 font-medium">{t('remedy.focus')}</div>
                 <div className="text-white/70">{prediction.remedies.deity}</div>
               </div>
             )}
@@ -214,7 +217,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
         >
           <span className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            Activities Guide
+            {t('dasha.activitiesGuide')}
           </span>
           {showActivities ? <ChevronUp className="w-4 h-4 text-white/25" /> : <ChevronDown className="w-4 h-4 text-white/25" />}
         </button>
@@ -229,7 +232,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
             >
               <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
                 <h6 className="font-medium text-emerald-400 text-xs mb-2 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> Favorable
+                  <CheckCircle className="w-3 h-3" /> {t('dasha.favorable')}
                 </h6>
                 <ul className="space-y-1">
                   {prediction.favorableActivities.slice(0, 4).map((activity, i) => (
@@ -242,7 +245,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
               </div>
               <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/30">
                 <h6 className="font-medium text-rose-400 text-xs mb-2 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> Avoid
+                  <AlertTriangle className="w-3 h-3" /> {t('dasha.avoid')}
                 </h6>
                 <ul className="space-y-1">
                   {prediction.unfavorableActivities.slice(0, 4).map((activity, i) => (
@@ -262,6 +265,7 @@ const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahad
 };
 
 export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDate = new Date() }) => {
+  const { lang, t } = useLang();
   const [expandedDasha, setExpandedDasha] = useState<string | null>(null);
   const [selectedAntardasha, setSelectedAntardasha] = useState<{
     mahadasha: string;
@@ -318,9 +322,9 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-display font-semibold text-white">
-          Mahadasha Timeline
+          {t('dasha.timelineTitle')}
         </h3>
-        <p className="text-xs text-white/25 font-mono">Click any period to view predictions</p>
+        <p className="text-xs text-white/25 font-mono">{t('dasha.timelineHint')}</p>
       </div>
 
       {timeline.map((item, idx) => {
@@ -349,16 +353,16 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
             >
               <div className="flex items-center gap-3">
                 <span className="text-white font-bold text-lg">
-                  {mahadasha.lord}
+                  {labelPlanet(mahadasha.lord, lang)}
                 </span>
                 {mahadasha.isBirthDasha && (
                   <span className="px-2 py-0.5 bg-white/20 rounded text-xs text-white font-mono">
-                    Birth
+                    {t('dasha.birthBadge')}
                   </span>
                 )}
                 {isMdCurrent && (
                   <span className="px-2 py-0.5 bg-violet-500 rounded text-xs text-white font-semibold">
-                    Current
+                    {t('dasha.currentBadge')}
                   </span>
                 )}
               </div>
@@ -419,11 +423,11 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                                 `}
                               />
                               <span className="font-medium text-white">
-                                {mahadasha.lord} - {ad.lord}
+                                {labelPlanet(mahadasha.lord, lang)} - {labelPlanet(ad.lord, lang)}
                               </span>
                               {isAdCurrent && (
                                 <span className="px-2 py-0.5 bg-violet-500 rounded text-xs text-white">
-                                  Now
+                                  {t('dasha.nowBadge')}
                                 </span>
                               )}
                               {birthData && (
@@ -448,7 +452,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                                 {isPredictionLoading ? (
                                   <div className="mt-3 p-6 glass-card rounded-lg flex items-center justify-center">
                                     <Loader2 className="w-5 h-5 animate-spin text-violet-500 mr-2" />
-                                    <span className="text-sm text-white/50 font-mono">Loading predictions...</span>
+                                    <span className="text-sm text-white/50 font-mono">{t('dasha.loadingPredictions')}</span>
                                   </div>
                                 ) : prediction ? (
                                   <PredictionDisplay 

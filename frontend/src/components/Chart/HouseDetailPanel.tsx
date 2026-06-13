@@ -4,6 +4,8 @@ import type { PlanetPosition } from '../../types/astrology';
 import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { analyzeHouse } from '../../lib/core/houseAnalysis';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelPlanet, labelRashi, labelRashiWestern, labelDignity, labelOrdinalHouse } from '../../i18n/astroLabels';
 
 interface Props {
   houseNumber: number | null;
@@ -28,14 +30,6 @@ const DIGNITY_COLOR_LIGHT: Record<string, string> = {
   'enemy-sign':   '#d97706',
   'debilitated':  '#dc2626',
 };
-const DIGNITY_LABEL: Record<string, string> = {
-  'exalted':      'Exalted',
-  'own-sign':     'Own Sign',
-  'friend-sign':  'Friendly',
-  'neutral-sign': 'Neutral',
-  'enemy-sign':   'Enemy Sign',
-  'debilitated':  'Debilitated',
-};
 
 const ACCENT = '#FF2E51';
 
@@ -43,6 +37,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
   houseNumber, ascendantRashiIndex, planets, onClose,
 }) => {
   const isLight = useTheme();
+  const { lang, t } = useLang();
 
   const allPlanetRashiMap: Record<string, number> = {};
   planets.forEach(p => { allPlanetRashiMap[p.planet] = p.rashiIndex; });
@@ -50,8 +45,6 @@ export const HouseDetailPanel: React.FC<Props> = ({
   const analysis = houseNumber
     ? analyzeHouse(houseNumber, ascendantRashiIndex, planets, allPlanetRashiMap)
     : null;
-
-  const ordinals = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
 
   // Panel theme tokens
   const panelBg    = isLight ? '#ffffff'               : 'rgba(8,8,16,0.98)';
@@ -72,6 +65,8 @@ export const HouseDetailPanel: React.FC<Props> = ({
   const dignityClr = isLight ? DIGNITY_COLOR_LIGHT     : DIGNITY_COLOR_DARK;
   const divClr     = isLight ? '#E2E8F0'               : 'rgba(255,255,255,0.05)';
   const bulletClr  = isLight ? ACCENT                  : 'rgba(139,92,246,0.60)';
+
+  const rashiIdx = analysis ? (ascendantRashiIndex + (houseNumber! - 1)) % 12 : 0;
 
   return (
     <AnimatePresence>
@@ -104,10 +99,10 @@ export const HouseDetailPanel: React.FC<Props> = ({
                 </div>
                 <div>
                   <h2 className="text-lg font-display font-bold" style={{ color: titleClr }}>
-                    {ordinals[houseNumber]} House — {analysis.houseData.theme}
+                    {labelOrdinalHouse(houseNumber, lang)} — {analysis.houseData.theme}
                   </h2>
                   <p className="text-xs font-mono" style={{ color: subClr }}>
-                    {analysis.rashiName} ({analysis.rashiEnglish}) · Lord: {analysis.rashiLord}
+                    {labelRashi(rashiIdx, lang, analysis.rashiName)} ({labelRashiWestern(rashiIdx, lang, analysis.rashiEnglish)}) · {t('house.lordOf', { lord: labelPlanet(analysis.rashiLord, lang) })}
                   </p>
                 </div>
               </div>
@@ -139,7 +134,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
                   style={{ background: 'rgba(255,175,97,0.10)', border: `1px solid rgba(255,175,97,0.30)` }}>
                   <Home className="w-4 h-4" style={{ color: ACCENT }} />
                   <p className="text-sm font-semibold" style={{ color: isLight ? '#92400e' : ACCENT }}>
-                    Ascendant (Lagna) — this is your rising sign and the foundation of the entire chart
+                    {t('house.ascendantBadge')}
                   </p>
                 </div>
               )}
@@ -147,14 +142,14 @@ export const HouseDetailPanel: React.FC<Props> = ({
               {/* House lord placement */}
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${sectionBdr}` }}>
                 <div className="px-4 py-3 flex items-center justify-between" style={{ background: sectionBg }}>
-                  <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>House Lord Placement</span>
+                  <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>{t('house.lordPlacement')}</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold" style={{ color: titleClr }}>{analysis.rashiLord}</span>
+                    <span className="text-sm font-bold" style={{ color: titleClr }}>{labelPlanet(analysis.rashiLord, lang)}</span>
                     {analysis.lordHouse > 0 && (
-                      <span className="text-xs font-mono" style={{ color: mutedClr }}>→ {ordinals[analysis.lordHouse]}</span>
+                      <span className="text-xs font-mono" style={{ color: mutedClr }}>{t('house.lordInHouse', { house: labelOrdinalHouse(analysis.lordHouse, lang) })}</span>
                     )}
                     <span className="text-xs font-semibold" style={{ color: dignityClr[analysis.lordDignity] }}>
-                      {DIGNITY_LABEL[analysis.lordDignity]}
+                      {labelDignity(analysis.lordDignity, lang)}
                     </span>
                   </div>
                 </div>
@@ -168,7 +163,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
                 <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${sectionBdr}` }}>
                   <div className="px-4 py-3" style={{ background: sectionBg }}>
                     <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>
-                      {analysis.planetEffects.length} Planet{analysis.planetEffects.length > 1 ? 's' : ''} in This House
+                      {t('house.planetsCount', { n: analysis.planetEffects.length })}
                     </span>
                   </div>
                   <div style={{ borderTop: `1px solid ${divClr}` }}>
@@ -180,11 +175,11 @@ export const HouseDetailPanel: React.FC<Props> = ({
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold" style={{ color: titleClr }}>{planet}</span>
+                            <span className="text-sm font-bold" style={{ color: titleClr }}>{labelPlanet(planet, lang)}</span>
                             {isRetrograde && (
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-pink-500"
                                 style={{ background: 'rgba(244,114,182,0.10)', border: '1px solid rgba(244,114,182,0.25)' }}>
-                                <RotateCcw className="w-2.5 h-2.5" />℞ Retrograde
+                                <RotateCcw className="w-2.5 h-2.5" />{t('planet.retrograde')}
                               </span>
                             )}
                           </div>
@@ -199,10 +194,9 @@ export const HouseDetailPanel: React.FC<Props> = ({
                   style={{ background: cardBg, border: `1px solid ${cardBdr}` }}>
                   <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: mutedClr }} />
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: bodyClr }}>Empty house</p>
+                    <p className="text-sm font-semibold" style={{ color: bodyClr }}>{t('house.emptyTitle')}</p>
                     <p className="text-xs mt-1 leading-relaxed" style={{ color: mutedClr }}>
-                      No planets occupy this house. The house lord ({analysis.rashiLord}) placed in the {ordinals[analysis.lordHouse]} house
-                      carries the full responsibility for activating this house's themes.
+                      {t('house.emptyBody')}
                     </p>
                   </div>
                 </div>
@@ -214,7 +208,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
                   style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.20)' }}>
                   <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-xs font-mono uppercase mb-1 text-yellow-600">Planetary Combination</p>
+                    <p className="text-xs font-mono uppercase mb-1 text-yellow-600">{t('house.combination')}</p>
                     <p className="text-sm leading-relaxed" style={{ color: bodyClr }}>{analysis.combinationEffect}</p>
                   </div>
                 </div>
@@ -223,7 +217,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
               {/* Life areas governed */}
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${sectionBdr}` }}>
                 <div className="px-4 py-3" style={{ background: sectionBg }}>
-                  <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>Areas Governed by This House</span>
+                  <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>{t('house.areasGoverned')}</span>
                 </div>
                 <div className="px-4 py-3" style={{ background: panelBg }}>
                   <ul className="space-y-2">
@@ -240,7 +234,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
               {/* Body part */}
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
                 style={{ background: cardBg, border: `1px solid ${cardBdr}` }}>
-                <span className="text-[10px] font-mono uppercase" style={{ color: mutedClr }}>Body Correspondence</span>
+                <span className="text-[10px] font-mono uppercase" style={{ color: mutedClr }}>{t('house.bodyCorrespondence')}</span>
                 <span className="text-xs ml-auto font-semibold" style={{ color: bodyClr }}>{analysis.houseData.bodyPart}</span>
               </div>
 

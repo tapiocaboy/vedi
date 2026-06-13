@@ -4,6 +4,10 @@ import { X, Home, Sparkles, RotateCcw, Heart, Briefcase } from 'lucide-react';
 import { analyzeVargaHouse, type VargaVariant } from '../../lib/core/vargaAnalysis';
 import type { VargaPlanet } from '../../services/api';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
+import {
+  labelPlanet, labelRashi, labelRashiWestern, labelDignity, labelOrdinalHouse,
+} from '../../i18n/astroLabels';
 
 const ACCENT = '#FF2E51';
 
@@ -24,10 +28,6 @@ const DIGNITY_COLOR_LIGHT: Record<string, string> = {
   'exalted': '#059669', 'own-sign': '#7c3aed', 'friend-sign': '#2563eb',
   'neutral-sign': '#64748b', 'enemy-sign': '#d97706', 'debilitated': '#dc2626',
 };
-const DIGNITY_LABEL: Record<string, string> = {
-  'exalted': 'Exalted', 'own-sign': 'Own Sign', 'friend-sign': 'Friendly',
-  'neutral-sign': 'Neutral', 'enemy-sign': 'Enemy Sign', 'debilitated': 'Debilitated',
-};
 
 interface Props {
   variant: VargaVariant;
@@ -41,16 +41,17 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
   variant, rashiIndex, vargaAscendant, planets, onClose,
 }) => {
   const isLight = useTheme();
+  const { lang, t } = useLang();
 
   const analysis = rashiIndex !== null
     ? analyzeVargaHouse(variant, rashiIndex, vargaAscendant, planets)
     : null;
 
-  const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
   const isD9 = variant === 'D9';
   const VariantIcon = isD9 ? Heart : Briefcase;
   const variantColor = isD9 ? '#f472b6' : '#38bdf8';
-  const variantLabel = isD9 ? 'Navamsa · Marriage & Dharma' : 'Dasamsa · Career & Status';
+  const variantLabel = isD9 ? t('varga.navamsaChartLabel') : t('varga.dasamsaChartLabel');
+  const chartName = isD9 ? 'navamsa' : 'dasamsa';
 
   const panelBg = isLight ? '#ffffff' : 'rgba(8,8,16,0.98)';
   const panelBdr = isLight ? '#D1DCE5' : 'rgba(139,92,246,0.2)';
@@ -66,6 +67,8 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
   const sectionBdr = isLight ? '#D1DCE5' : 'rgba(255,255,255,0.07)';
   const divClr = isLight ? '#E2E8F0' : 'rgba(255,255,255,0.05)';
   const dignityClr = isLight ? DIGNITY_COLOR_LIGHT : DIGNITY_COLOR_DARK;
+
+  const rashiIdx = rashiIndex ?? 0;
 
   return (
     <AnimatePresence>
@@ -98,11 +101,11 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                 </div>
                 <div>
                   <h2 className="text-lg font-display font-bold" style={{ color: titleClr }}>
-                    {ordinals[analysis.houseNumber]} House — {analysis.theme}
+                    {labelOrdinalHouse(analysis.houseNumber, lang)} — {analysis.theme}
                   </h2>
                   <p className="text-xs font-mono flex items-center gap-1.5" style={{ color: subClr }}>
                     <VariantIcon className="w-3 h-3" style={{ color: variantColor }} />
-                    {variantLabel} · {analysis.rashiName} ({analysis.rashiEnglish}) · Lord: {analysis.rashiLord}
+                    {variantLabel} · {labelRashi(rashiIdx, lang, analysis.rashiName)} ({labelRashiWestern(rashiIdx, lang, analysis.rashiEnglish)}) · {t('house.lordOf', { lord: labelPlanet(analysis.rashiLord, lang) })}
                   </p>
                 </div>
               </div>
@@ -138,7 +141,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                   style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.25)' }}>
                   <Home className="w-4 h-4" style={{ color: ACCENT }} />
                   <p className="text-sm font-semibold" style={{ color: isLight ? '#9f1239' : ACCENT }}>
-                    {isD9 ? 'Navamsa Lagna — the foundation of your marriage chart' : 'Dasamsa Lagna — the foundation of your career chart'}
+                    {isD9 ? t('varga.navamsaLagnaBadge') : t('varga.dasamsaLagnaBadge')}
                   </p>
                 </div>
               )}
@@ -147,7 +150,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
               <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${sectionBdr}` }}>
                 <div className="px-4 py-3" style={{ background: sectionBg }}>
                   <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>
-                    {isD9 ? 'Marriage Reading' : 'Career Reading'}
+                    {isD9 ? t('varga.marriageReading') : t('varga.careerReading')}
                   </span>
                 </div>
                 <div className="px-4 py-3" style={{ background: panelBg }}>
@@ -158,12 +161,12 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
               {/* House lord placement */}
               <div className="rounded-xl px-4 py-3 flex items-center justify-between"
                 style={{ background: cardBg, border: `1px solid ${cardBdr}` }}>
-                <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>House Lord</span>
+                <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>{t('varga.houseLord')}</span>
                 <span className="text-sm font-bold" style={{ color: titleClr }}>
-                  {analysis.rashiLord}
+                  {labelPlanet(analysis.rashiLord, lang)}
                   {analysis.lordHouse > 0 && (
                     <span className="text-xs font-mono font-normal ml-2" style={{ color: mutedClr }}>
-                      → sits in the {ordinals[analysis.lordHouse]} house of this chart
+                      {t('varga.lordSitsIn', { house: labelOrdinalHouse(analysis.lordHouse, lang) })}
                     </span>
                   )}
                 </span>
@@ -174,7 +177,9 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                 <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${sectionBdr}` }}>
                   <div className="px-4 py-3" style={{ background: sectionBg }}>
                     <span className="text-xs font-mono uppercase" style={{ color: mutedClr }}>
-                      {analysis.planetEffects.length} Planet{analysis.planetEffects.length > 1 ? 's' : ''} Here — {isD9 ? 'effect on marriage' : 'effect on career'}
+                      {isD9
+                        ? t('varga.planetsHereMarriage', { n: analysis.planetEffects.length })
+                        : t('varga.planetsHereCareer', { n: analysis.planetEffects.length })}
                     </span>
                   </div>
                   <div style={{ borderTop: `1px solid ${divClr}` }}>
@@ -187,20 +192,20 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="text-sm font-bold" style={{ color: titleClr }}>{planet}</span>
+                            <span className="text-sm font-bold" style={{ color: titleClr }}>{labelPlanet(planet, lang)}</span>
                             <span className="text-xs font-semibold" style={{ color: dignityClr[dignity] }}>
-                              {DIGNITY_LABEL[dignity]}
+                              {labelDignity(dignity, lang)}
                             </span>
                             {isVargottama && (
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
                                 style={{ color: ACCENT, background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.25)' }}>
-                                <Sparkles className="w-2.5 h-2.5" /> Vargottama
+                                <Sparkles className="w-2.5 h-2.5" /> {t('varga.vargottama')}
                               </span>
                             )}
                             {isRetrograde && (
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-pink-500"
                                 style={{ background: 'rgba(244,114,182,0.10)', border: '1px solid rgba(244,114,182,0.25)' }}>
-                                <RotateCcw className="w-2.5 h-2.5" />℞ Retrograde
+                                <RotateCcw className="w-2.5 h-2.5" />{t('planet.retrograde')}
                               </span>
                             )}
                           </div>
@@ -215,11 +220,15 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                   style={{ background: cardBg, border: `1px solid ${cardBdr}` }}>
                   <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: mutedClr }} />
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: bodyClr }}>Empty house</p>
+                    <p className="text-sm font-semibold" style={{ color: bodyClr }}>{t('house.emptyTitle')}</p>
                     <p className="text-xs mt-1 leading-relaxed" style={{ color: mutedClr }}>
-                      No planets occupy this house in the {isD9 ? 'navamsa' : 'dasamsa'}. Its themes are delivered
-                      through the lord {analysis.rashiLord}
-                      {analysis.lordHouse > 0 ? `, placed in the ${ordinals[analysis.lordHouse]} house of this chart` : ''}.
+                      {t('varga.emptyBody', {
+                        chart: chartName,
+                        lord: labelPlanet(analysis.rashiLord, lang),
+                        placement: analysis.lordHouse > 0
+                          ? t('varga.emptyPlacement', { house: labelOrdinalHouse(analysis.lordHouse, lang) })
+                          : '',
+                      })}
                     </p>
                   </div>
                 </div>

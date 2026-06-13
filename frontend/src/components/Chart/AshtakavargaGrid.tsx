@@ -7,6 +7,8 @@ import type { BirthData } from '../../services/api';
 import { PLANETS, bindusToLabel, sarvaToLabel, type Planet } from '../../lib/core/ashtakavarga';
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelPlanet, labelRashiWestern } from '../../i18n/astroLabels';
 
 const ACCENT = '#FF2E51';
 
@@ -58,9 +60,11 @@ interface MiniGridProps {
   row: number[];
   selfRashi: number;
   isLight: boolean;
+  lang: ReturnType<typeof useLang>['lang'];
+  t: ReturnType<typeof useLang>['t'];
 }
 
-const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLight }) => {
+const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLight, lang, t }) => {
   const total = row.reduce((a, b) => a + b, 0);
   const selfBindus = row[selfRashi];
   const cellClass = isLight ? bhinnaCellClassLight : bhinnaCellClassDark;
@@ -79,11 +83,11 @@ const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLig
         <div className="flex items-center gap-2">
           <span className="text-base leading-none" style={{ color: ACCENT }}>{PLANET_GLYPH[planet]}</span>
           <span className="text-xs font-semibold" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
-            {planet}
+            {labelPlanet(planet, lang)}
           </span>
         </div>
         <div className="text-[10px] font-mono" style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.70)' }}>
-          Σ {total} · self{' '}
+          Σ {total} · {t('ashtakavarga.self')}{' '}
           <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{selfBindus}</span>
         </div>
       </div>
@@ -91,7 +95,7 @@ const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLig
         {row.map((b, idx) => (
           <div
             key={idx}
-            title={`${RASHI_ENGLISH[idx]}: ${b} bindus (${bindusToLabel(b)})${idx === selfRashi ? ' — natal position' : ''}`}
+            title={`${labelRashiWestern(idx, lang, RASHI_ENGLISH[idx])}: ${b} bindus (${bindusToLabel(b)})${idx === selfRashi ? ' — natal position' : ''}`}
             className={`aspect-square rounded-sm border text-[10px] font-mono leading-none flex items-center justify-center ${cellClass(b)} ${idx === selfRashi ? 'ring-1' : ''}`}
             style={idx === selfRashi ? { outline: `1.5px solid ${ACCENT}` } : undefined}
           >
@@ -105,6 +109,7 @@ const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLig
 
 export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
   const isLight = useTheme();
+  const { lang, t } = useLang();
   const { data, isLoading, error } = useQuery({
     queryKey: ['ashtakavarga', birthData],
     queryFn: () => getAshtakavarga(birthData),
@@ -119,12 +124,12 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-sm py-6 justify-center" style={{ color: mutedClr }}>
-        <Loader2 className="w-4 h-4 animate-spin" /> Computing Ashtakavarga…
+        <Loader2 className="w-4 h-4 animate-spin" /> {t('ashtakavarga.computing')}
       </div>
     );
   }
   if (error || !data) {
-    return <div className="text-rose-400 text-sm py-4">Failed to compute Ashtakavarga.</div>;
+    return <div className="text-rose-400 text-sm py-4">{t('ashtakavarga.failed')}</div>;
   }
 
   const sarvaTotal = data.sarva.reduce((a, b) => a + b, 0);
@@ -138,14 +143,14 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
-            Ashtakavarga
+            {t('ashtakavarga.title')}
           </h3>
           <p className="text-[11px]" style={{ color: mutedClr }}>
-            Benefic-point grid (0–8 per planet, 0–56 sarva). Higher = stronger.
+            {t('ashtakavarga.subtitle')}
           </p>
         </div>
         <div className="text-[10px] font-mono text-right" style={{ color: mutedClr }}>
-          Total bindus: <span style={{ color: strongClr }}>{sarvaTotal}</span>
+          {t('ashtakavarga.totalBindus')}: <span style={{ color: strongClr }}>{sarvaTotal}</span>
           <span style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.50)' }}> / 337</span>
         </div>
       </div>
@@ -153,13 +158,13 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
       {/* Sarvashtakavarga */}
       <div>
         <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: labelClr }}>
-          Sarvashtakavarga (sum of 7)
+          {t('ashtakavarga.sarvaTitle')}
         </div>
         <div className="grid grid-cols-12 gap-1">
           {data.sarva.map((s, idx) => (
             <div
               key={idx}
-              title={`${RASHI_ENGLISH[idx]}: ${s} bindus (${sarvaToLabel(s)})`}
+              title={`${labelRashiWestern(idx, lang, RASHI_ENGLISH[idx])}: ${s} bindus (${sarvaToLabel(s)})`}
               className={`rounded border text-[11px] font-mono py-1.5 text-center ${sarvaCell(s)}`}
             >
               {s}
@@ -168,8 +173,8 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
         </div>
         <div className="grid grid-cols-12 gap-1 mt-1">
           {RASHI_ENGLISH.map((r, idx) => (
-            <div key={idx} className="text-[9px] font-semibold text-center truncate" style={{ color: labelClr }} title={r}>
-              {r.slice(0, 3)}
+            <div key={idx} className="text-[9px] font-semibold text-center truncate" style={{ color: labelClr }} title={labelRashiWestern(idx, lang, r)}>
+              {labelRashiWestern(idx, lang, r).slice(0, 3)}
             </div>
           ))}
         </div>
@@ -178,7 +183,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
       {/* Bhinnashtakavargas */}
       <div>
         <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: labelClr }}>
-          Bhinnashtakavargas
+          {t('ashtakavarga.bhinnaTitle')}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {PLANETS.map(p => (
@@ -187,15 +192,15 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
               row={data.bhinna[p]}
               selfRashi={data.natalRashi[p]}
               isLight={isLight}
+              lang={lang}
+              t={t}
             />
           ))}
         </div>
       </div>
 
       <p className="text-[10px] font-medium leading-relaxed" style={{ color: labelClr }}>
-        The highlighted cell in each planet's row marks its natal rashi (self-strength).
-        Planets with 5+ bindus in their own rashi are strong; ≤3 bindus indicates weakness.
-        Sarva ≥30 in a rashi marks a flourishing house.
+        {t('ashtakavarga.footer')}
       </p>
     </div>
   );

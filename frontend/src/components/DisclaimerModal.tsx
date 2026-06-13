@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, ChevronRight } from 'lucide-react';
+import { useLang } from '../i18n/LanguageContext';
 
 interface Props {
   visible: boolean;
@@ -8,15 +9,18 @@ interface Props {
 }
 
 export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
-  const accept = () => {
-    onAccept();
-  };
+  const { t } = useLang();
+
+  const points = [
+    { label: t('disclaimer.point1.label'), body: t('disclaimer.point1.body') },
+    { label: t('disclaimer.point2.label'), body: t('disclaimer.point2.body') },
+    { label: t('disclaimer.point3.label'), body: t('disclaimer.point3.body') },
+  ];
 
   return (
     <AnimatePresence>
       {visible && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="bd"
             initial={{ opacity: 0 }}
@@ -25,7 +29,6 @@ export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Modal */}
           <motion.div
             key="modal"
             initial={{ opacity: 0, scale: 0.97, y: 12 }}
@@ -35,11 +38,8 @@ export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
             <div className="disclaimer-modal w-full max-w-md rounded-2xl overflow-hidden">
-
-              {/* Top stripe — thin, neutral */}
               <div className="h-[3px] bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 dark-stripe" />
 
-              {/* Header */}
               <div className="px-7 pt-7 pb-5">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="w-9 h-9 rounded-xl disclaimer-icon-wrap flex items-center justify-center shrink-0">
@@ -47,7 +47,7 @@ export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
                   </div>
                   <div>
                     <h2 className="text-lg font-display font-bold disclaimer-text-primary">
-                      Before You Continue
+                      {t('disclaimer.title')}
                     </h2>
                   </div>
                 </div>
@@ -55,26 +55,18 @@ export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
 
               <div className="mx-7 h-px disclaimer-divider" />
 
-              {/* Body */}
               <div className="px-7 py-5 space-y-4">
-
-                {/* Hero message */}
                 <div className="disclaimer-hero rounded-xl px-5 py-4">
                   <p className="text-sm font-semibold disclaimer-text-primary leading-snug">
-                    Your future is not written in the stars.
+                    {t('disclaimer.heroTitle')}
                   </p>
                   <p className="text-sm disclaimer-text-secondary mt-1.5 leading-relaxed">
-                    You are the author of your own life. No prediction system — including this one — can determine who you are or what you will become.
+                    {t('disclaimer.heroBody')}
                   </p>
                 </div>
 
-                {/* Points */}
                 <ul className="space-y-3">
-                  {[
-                    { label: 'For curiosity & self-reflection only', body: 'These charts are based on astronomical calculations. They are not guidance for real decisions.' },
-                    { label: 'Your choices define your path', body: 'Hard work, relationships, and resilience shape your life — not planetary periods.' },
-                    { label: 'Not professional advice', body: 'Nothing here replaces medical, financial, psychological, or legal counsel.' },
-                  ].map(({ label, body }) => (
+                  {points.map(({ label, body }) => (
                     <li key={label} className="flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full mt-2 shrink-0 disclaimer-dot" />
                       <div>
@@ -86,17 +78,16 @@ export const DisclaimerModal: React.FC<Props> = ({ visible, onAccept }) => {
                 </ul>
               </div>
 
-              {/* Footer */}
               <div className="px-7 pb-7">
                 <button
-                  onClick={accept}
+                  onClick={onAccept}
                   className="w-full flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-semibold text-sm transition-all duration-150 disclaimer-cta"
                 >
-                  I understand — continue
+                  {t('disclaimer.accept')}
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 <p className="text-center text-xs disclaimer-text-muted mt-3">
-                  This notice will not appear again on this device.
+                  {t('disclaimer.acceptNote')}
                 </p>
               </div>
             </div>

@@ -12,6 +12,10 @@ import {
 import { getSookshmaPeriods, getCurrentPrediction } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
+import { useLang } from '../../i18n/LanguageContext';
+import {
+  labelArea, labelTrend, labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse,
+} from '../../i18n/astroLabels';
 
 interface Props {
   birthData: BirthData;
@@ -42,52 +46,53 @@ const PLANET_LIGHT: Record<string, string> = {
 };
 
 const TREND_STYLES = {
-  positive: { color: TREND_HEX.positive, label: 'Favorable', text: 'text-green-400' },
-  negative: { color: TREND_HEX.negative, label: 'Challenging', text: 'text-red-400' },
-  mixed:    { color: TREND_HEX.mixed,    label: 'Mixed', text: 'text-amber-300' },
-  neutral:  { color: TREND_HEX.neutral,  label: 'Neutral', text: 'text-white/50' },
+  positive: { color: TREND_HEX.positive, text: 'text-green-400' },
+  negative: { color: TREND_HEX.negative, text: 'text-red-400' },
+  mixed:    { color: TREND_HEX.mixed,    text: 'text-amber-300' },
+  neutral:  { color: TREND_HEX.neutral,  text: 'text-white/50' },
 };
 
 const AREA_META = {
-  health:        { icon: Heart,    label: 'Health',        weight: 15 },
-  wealth:        { icon: Wallet,   label: 'Wealth',        weight: 25 },
-  career:        { icon: Briefcase,label: 'Career',        weight: 30 },
-  relationships: { icon: Users,    label: 'Relationships', weight: 20 },
-  general:       { icon: Sparkles, label: 'General',       weight: 10 },
+  health:        { icon: Heart,    weight: 15 },
+  wealth:        { icon: Wallet,   weight: 25 },
+  career:        { icon: Briefcase,weight: 30 },
+  relationships: { icon: Users,    weight: 20 },
+  general:       { icon: Sparkles, weight: 10 },
 };
 
 // ── Dasha Hierarchy Card (bar chart) ─────────────────────────────────────────
 
 function HierarchyCard({ prediction }: { prediction: DashaPredictionData }) {
+  const { lang, t } = useLang();
   const p = prediction.currentPeriods;
   if (!p) return null;
 
   const nowMs = Date.now();
 
   const rows = [
-    { label: 'Mahadasha',      lord: p.mahadasha.lord,      start: p.mahadasha.start,      end: p.mahadasha.end      },
-    ...(p.antardasha      ? [{ label: 'Antardasha',     lord: p.antardasha.lord,     start: p.antardasha.start,     end: p.antardasha.end     }] : []),
-    ...(p.pratyantardasha ? [{ label: 'Pratyantardasha',lord: p.pratyantardasha.lord,start: p.pratyantardasha.start,end: p.pratyantardasha.end }] : []),
-    ...(p.sookshmaDasha   ? [{ label: 'Sookshma Dasha', lord: p.sookshmaDasha.lord,  start: p.sookshmaDasha.start,  end: p.sookshmaDasha.end  }] : []),
+    { label: labelDashaLevel('Mahadasha', lang),      lord: p.mahadasha.lord,      start: p.mahadasha.start,      end: p.mahadasha.end      },
+    ...(p.antardasha      ? [{ label: labelDashaLevel('Antardasha', lang),     lord: p.antardasha.lord,     start: p.antardasha.start,     end: p.antardasha.end     }] : []),
+    ...(p.pratyantardasha ? [{ label: labelDashaLevel('Pratyantardasha',lang), lord: p.pratyantardasha.lord,start: p.pratyantardasha.start,end: p.pratyantardasha.end }] : []),
+    ...(p.sookshmaDasha   ? [{ label: labelDashaLevel('Sookshma Dasha', lang), lord: p.sookshmaDasha.lord,  start: p.sookshmaDasha.start,  end: p.sookshmaDasha.end  }] : []),
   ];
 
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-5">
         <Layers className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">Active Dasha Periods</span>
-        <span className="ml-auto text-[10px] text-white/30 font-mono">4-level Vimshottari</span>
+        <span className="text-sm font-semibold text-white">{t('dasha.activeTitle')}</span>
+        <span className="ml-auto text-[10px] text-white/30 font-mono">{t('insights.vimshottariNote')}</span>
       </div>
 
       <div className="space-y-5">
         {rows.map((r, i) => (
-          <DashaBarRow key={r.label} {...r} nowMs={nowMs} index={i} />
+          <DashaBarRow key={r.label} {...r} lord={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
         ))}
       </div>
 
       <div className="mt-5 pt-4 border-t border-white/5">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-white/40">Period Strength</span>
+          <span className="text-xs text-white/40">{t('insights.periodStrength')}</span>
           <span className="text-sm font-bold text-white">{prediction.overallRating}<span className="text-white/30 font-normal">/10</span></span>
         </div>
         <ProgressBar pct={prediction.overallRating * 10} color={BAR_PALETTE.gold} index={rows.length} />
@@ -122,31 +127,21 @@ function CombinationEffects({ prediction }: { prediction: DashaPredictionData })
 
 // ── Dasha Lord Strength ───────────────────────────────────────────────────────
 
-const DIGNITY_BADGE: Record<string, { label: string; cls: string }> = {
-  'exalted':      { label: 'Exalted',      cls: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30' },
-  'own-sign':     { label: 'Own Sign',     cls: 'bg-violet-500/15 text-violet-300 border-violet-400/30' },
-  'friend-sign':  { label: 'Friendly Sign',cls: 'bg-sky-500/15 text-sky-300 border-sky-400/30' },
-  'neutral-sign': { label: 'Neutral Sign', cls: 'bg-white/8 text-white/60 border-white/15' },
-  'enemy-sign':   { label: 'Enemy Sign',   cls: 'bg-amber-500/15 text-amber-300 border-amber-400/30' },
-  'debilitated':  { label: 'Debilitated',  cls: 'bg-rose-500/15 text-rose-300 border-rose-400/30' },
+const DIGNITY_BADGE_CLS: Record<string, string> = {
+  'exalted':      'bg-emerald-500/15 text-emerald-300 border-emerald-400/30',
+  'own-sign':     'bg-violet-500/15 text-violet-300 border-violet-400/30',
+  'friend-sign':  'bg-sky-500/15 text-sky-300 border-sky-400/30',
+  'neutral-sign': 'bg-white/8 text-white/60 border-white/15',
+  'enemy-sign':   'bg-amber-500/15 text-amber-300 border-amber-400/30',
+  'debilitated':  'bg-rose-500/15 text-rose-300 border-rose-400/30',
 };
 
-const FUNCTIONAL_BADGE: Record<string, { label: string; cls: string }> = {
-  'yogakaraka':         { label: 'Yogakaraka ★',      cls: 'bg-yellow-500/15 text-yellow-300 border-yellow-400/35' },
-  'functional-benefic': { label: 'Functional Benefic', cls: 'bg-emerald-500/12 text-emerald-300 border-emerald-400/25' },
-  'functional-malefic': { label: 'Functional Malefic', cls: 'bg-red-500/12 text-red-300 border-red-400/25' },
+const FUNCTIONAL_BADGE: Record<string, { key: 'insights.functional.yogakaraka' | 'insights.functional.benefic' | 'insights.functional.malefic'; cls: string }> = {
+  'yogakaraka':         { key: 'insights.functional.yogakaraka',      cls: 'bg-yellow-500/15 text-yellow-300 border-yellow-400/35' },
+  'functional-benefic': { key: 'insights.functional.benefic', cls: 'bg-emerald-500/12 text-emerald-300 border-emerald-400/25' },
+  'functional-malefic': { key: 'insights.functional.malefic', cls: 'bg-red-500/12 text-red-300 border-red-400/25' },
 };
 
-const ORDINAL = (n: number): string => {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
-  }
-};
 
 function strengthBarColor(score: number): string {
   if (score >= 1) return '#34d399';   // strong — emerald
@@ -156,7 +151,8 @@ function strengthBarColor(score: number): string {
 }
 
 function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: number }) {
-  const dignity = lord.dignity ? DIGNITY_BADGE[lord.dignity] : null;
+  const { lang, t } = useLang();
+  const dignityCls = lord.dignity ? DIGNITY_BADGE_CLS[lord.dignity] : null;
   const functional = lord.functionalNature ? FUNCTIONAL_BADGE[lord.functionalNature] : null;
   // Normalize −2.5…+2.5 → 0…100
   const pct = ((lord.strengthScore + 2.5) / 5) * 100;
@@ -173,9 +169,9 @@ function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: numbe
           className="w-2.5 h-2.5 rounded-full shrink-0"
           style={{ backgroundColor: LORD_HEX[lord.planet] ?? '#FF2E51' }}
         />
-        <span className="text-sm font-bold text-white">{lord.planet}</span>
+        <span className="text-sm font-bold text-white">{labelPlanet(lord.planet, lang)}</span>
         <span className="text-[10px] font-mono uppercase text-white/35">
-          {lord.role === 'mahadasha' ? 'Mahadasha Lord' : 'Antardasha Lord'}
+          {lord.role === 'mahadasha' ? t('insights.lordRole.mahadasha') : t('insights.lordRole.antardasha')}
         </span>
         <span className="ml-auto text-sm font-bold text-white">
           {lord.strengthScore > 0 ? '+' : ''}{lord.strengthScore.toFixed(1)}
@@ -186,39 +182,39 @@ function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: numbe
       <ProgressBar pct={pct} color={strengthBarColor(lord.strengthScore)} height="sm" index={index} />
 
       <div className="flex flex-wrap gap-1.5">
-        {dignity && (
-          <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${dignity.cls}`}>
-            {dignity.label}
+        {lord.dignity && dignityCls && (
+          <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${dignityCls}`}>
+            {labelDignity(lord.dignity, lang)}
           </span>
         )}
         {lord.neechaBhanga && (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-cyan-500/12 text-cyan-300 border-cyan-400/25">
-            Neecha Bhanga ✓
+            {t('insights.neechaBhanga')}
           </span>
         )}
         {functional && (
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${functional.cls}`}>
-            {functional.label}
+            {t(functional.key)}
           </span>
         )}
         {lord.isCombust && (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-orange-500/12 text-orange-300 border-orange-400/25">
-            Combust ☉
+            {t('insights.combust')}
           </span>
         )}
         {lord.isRetrograde && (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-pink-500/12 text-pink-300 border-pink-400/25">
-            Retrograde ℞
+            {t('planet.retrograde')}
           </span>
         )}
         {lord.natalHouse != null && (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-white/6 text-white/55 border-white/12">
-            In {ORDINAL(lord.natalHouse)} house
+            {t('insights.inHouse', { n: lord.natalHouse })}
           </span>
         )}
         {lord.lordedHouses.length > 0 && (
           <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold border bg-white/6 text-white/55 border-white/12">
-            Rules {lord.lordedHouses.map(ORDINAL).join(' & ')}
+            {t('insights.rulesHouses', { houses: lord.lordedHouses.map(h => labelOrdinalHouse(h, lang)).join(' & ') })}
           </span>
         )}
       </div>
@@ -231,6 +227,7 @@ function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: numbe
 }
 
 function LordStrengthCard({ prediction }: { prediction: DashaPredictionData }) {
+  const { t } = useLang();
   const lords = prediction.lordStrengths ?? [];
   if (!lords.length) return null;
 
@@ -238,10 +235,10 @@ function LordStrengthCard({ prediction }: { prediction: DashaPredictionData }) {
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <Star className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">Dasha Lord Chart Strength</span>
+        <span className="text-sm font-semibold text-white">{t('insights.lordStrengthTitle')}</span>
       </div>
       <p className="text-[11px] text-white/30 font-mono mb-4">
-        Dignity · house lordship · combustion · retrogression — from your natal chart
+        {t('insights.lordStrengthSubtitle')}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {lords.map((lord, i) => (
@@ -255,6 +252,7 @@ function LordStrengthCard({ prediction }: { prediction: DashaPredictionData }) {
 // ── Current Transits ──────────────────────────────────────────────────────────
 
 function CurrentTransitsCard({ prediction }: { prediction: DashaPredictionData }) {
+  const { t } = useLang();
   const transits = prediction.importantTransits ?? [];
   if (!transits.length) return null;
 
@@ -262,10 +260,10 @@ function CurrentTransitsCard({ prediction }: { prediction: DashaPredictionData }
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <Orbit className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">Current Transits (Gochara)</span>
+        <span className="text-sm font-semibold text-white">{t('now.transitsTitle')}</span>
       </div>
       <p className="text-[11px] text-white/30 font-mono mb-4">
-        Live planetary movements colouring this dasha period
+        {t('insights.transitsSubtitle')}
       </p>
       <ul className="space-y-2">
         {transits.map((t, i) => (
@@ -288,13 +286,14 @@ function CurrentTransitsCard({ prediction }: { prediction: DashaPredictionData }
 // ── Area Breakdown ────────────────────────────────────────────────────────────
 
 function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
+  const { lang, t } = useLang();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Star className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">Life Area Insights</span>
+        <span className="text-sm font-semibold text-white">{t('insights.lifeAreaTitle')}</span>
       </div>
 
       <div className="space-y-2">
@@ -314,8 +313,8 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
                 <Icon className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-medium text-white/80">{meta.label}</span>
-                    <span className={`text-xs font-mono ${ts.text}`}>{ts.label}</span>
+                    <span className="text-sm font-medium text-white/80">{labelArea(area, lang)}</span>
+                    <span className={`text-xs font-mono ${ts.text}`}>{labelTrend(data.trend, lang)}</span>
                   </div>
                   <ProgressBar pct={meta.weight * 3} color={ts.color} height="sm" index={0} animate={false} />
                 </div>
@@ -357,7 +356,7 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
 
                       {data.remedies.length > 0 && (
                         <div className="pt-1 border-t border-white/5">
-                          <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1.5">Remedies</p>
+                          <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1.5">{t('common.remedies')}</p>
                           <ul className="space-y-1">
                             {data.remedies.map((r, i) => (
                               <li key={i} className="flex items-start gap-2 text-xs text-green-300/60">
@@ -383,6 +382,7 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
 // ── Sookshma Timeline ─────────────────────────────────────────────────────────
 
 function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
+  const { lang, t } = useLang();
   const { data, isLoading, error } = useQuery({
     queryKey: ['sookshma', birthData],
     queryFn: () => getSookshmaPeriods(birthData),
@@ -394,7 +394,7 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
     return (
       <div className="glass-card rounded-2xl p-5 flex items-center gap-3">
         <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-        <span className="text-sm text-white/40 font-mono">Calculating Sookshma periods…</span>
+        <span className="text-sm text-white/40 font-mono">{t('insights.sookshmaLoading')}</span>
       </div>
     );
   }
@@ -402,7 +402,7 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
   if (error || !data) {
     return (
       <div className="glass-card rounded-2xl p-5">
-        <p className="text-sm text-white/30">Sookshma data unavailable.</p>
+        <p className="text-sm text-white/30">{t('insights.sookshmaUnavailable')}</p>
       </div>
     );
   }
@@ -413,10 +413,10 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <Zap className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">Sookshma Dasha Timeline</span>
+        <span className="text-sm font-semibold text-white">{t('insights.sookshmaTitle')}</span>
       </div>
       <p className="text-[11px] text-white/30 font-mono mb-4">
-        {data.mahadasha} · {data.antardasha} · {data.pratyantardasha} Pratyantardasha
+        {labelPlanet(data.mahadasha, lang)} · {labelPlanet(data.antardasha, lang)} · {labelPlanet(data.pratyantardasha, lang)} {labelDashaLevel('Pratyantardasha', lang)}
       </p>
 
       <div className="space-y-1.5">
@@ -452,11 +452,11 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm font-semibold ${isCurrent ? col : 'text-white/70'}`}>{sd.lord}</span>
+                  <span className={`text-sm font-semibold ${isCurrent ? col : 'text-white/70'}`}>{labelPlanet(sd.lord, lang)}</span>
                   {isCurrent && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-mono">NOW</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-mono">{t('dasha.nowBadge').toUpperCase()}</span>
                   )}
-                  {isPast && <span className="text-[10px] text-white/20">past</span>}
+                  {isPast && <span className="text-[10px] text-white/20">{t('insights.past')}</span>}
                 </div>
                 <div className="text-[10px] text-white/25 font-mono mt-0.5">
                   {startStr} → {endStr}
@@ -474,7 +474,7 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
       <div className="mt-4 pt-3 border-t border-white/5 flex items-start gap-2">
         <Info className="w-3 h-3 text-white/20 shrink-0 mt-0.5" />
         <p className="text-[10px] text-white/25 leading-relaxed">
-          Sookshma Dasha is the 4th and finest level of Vimshottari. Each period lasts only a few days and indicates the micro-influence of planets on daily life.
+          {t('insights.sookshmaNote')}
         </p>
       </div>
     </div>
@@ -484,6 +484,7 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
 // ── Remedies Summary ──────────────────────────────────────────────────────────
 
 function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
+  const { t } = useLang();
   const { remedies, favorableActivities, unfavorableActivities } = prediction;
   const hasRemedies = !!remedies.gemstone || !!remedies.mantra;
   if (!hasRemedies && !favorableActivities.length) return null;
@@ -492,20 +493,20 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-4 h-4 text-violet-300" />
-        <span className="text-sm font-semibold text-white">Guidance</span>
+        <span className="text-sm font-semibold text-white">{t('insights.guidanceTitle')}</span>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         {hasRemedies && (
           <div className="space-y-3">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">Recommendations</p>
+            <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{t('insights.recommendations')}</p>
             {remedies.gemstone && (
               <div className="flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded bg-violet-500/15 border border-violet-500/25 flex items-center justify-center shrink-0 mt-0.5">
                   <div className="w-2 h-2 rounded-sm bg-violet-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Gemstone</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">{t('remedy.gemstone')}</p>
                   <p className="text-sm text-white/80">{remedies.gemstone}</p>
                 </div>
               </div>
@@ -516,7 +517,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
                   <div className="w-2 h-2 rounded-full bg-violet-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Affirmation</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">{t('remedy.affirmation')}</p>
                   <p className="text-sm text-white/80">{remedies.mantra}</p>
                 </div>
               </div>
@@ -527,7 +528,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
         <div className="space-y-3">
           {favorableActivities.length > 0 && (
             <div>
-              <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mb-2">Favorable Now</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mb-2">{t('insights.favorableNow')}</p>
               <ul className="space-y-1">
                 {favorableActivities.slice(0, 5).map((a, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-green-300/60">
@@ -540,7 +541,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
           )}
           {unfavorableActivities.length > 0 && (
             <div>
-              <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mb-2">Avoid</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono mb-2">{t('dasha.avoid')}</p>
               <ul className="space-y-1">
                 {unfavorableActivities.slice(0, 4).map((a, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-red-300/50">
@@ -560,6 +561,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export const DeepInsights: React.FC<Props> = ({ birthData }) => {
+  const { t } = useLang();
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['currentPrediction', birthData],
     queryFn: () => getCurrentPrediction(birthData),
@@ -571,7 +573,7 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
     return (
       <div className="flex items-center justify-center p-16">
         <Loader2 className="w-5 h-5 animate-spin text-violet-400 mr-3" />
-        <span className="text-sm text-white/40 font-mono">Loading deep insights…</span>
+        <span className="text-sm text-white/40 font-mono">{t('insights.loading')}</span>
       </div>
     );
   }
@@ -579,7 +581,7 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
   if (error || !prediction) {
     return (
       <div className="p-5 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm">
-        Failed to load insights.
+        {t('insights.failed')}
       </div>
     );
   }

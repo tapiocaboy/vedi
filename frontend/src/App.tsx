@@ -218,7 +218,7 @@ function AppContent() {
                 <button
                   key={code}
                   onClick={() => setLang(code)}
-                  title={code === 'en' ? 'English' : 'සිංහල (Sinhala)'}
+                  title={code === 'en' ? t('lang.englishTitle') : t('lang.sinhalaTitle')}
                   className={`px-2 sm:px-2.5 h-7 sm:h-8 rounded-[10px] text-[11px] sm:text-xs font-bold transition-all duration-200 ${
                     lang === code
                       ? 'text-white shadow-sm'
@@ -560,21 +560,21 @@ function AppContent() {
                       transition={{ delay: 0.6 }}
                     >
                       {[
-                        { symbol: '☉', color: '#f59e0b', label: 'Sun' },
-                        { symbol: '☽', color: '#94a3b8', label: 'Moon' },
-                        { symbol: '♂', color: '#ef4444', label: 'Mars' },
-                        { symbol: '♃', color: '#eab308', label: 'Jupiter' },
-                        { symbol: '♀', color: '#f472b6', label: 'Venus' },
-                        { symbol: '♄', color: '#38bdf8', label: 'Saturn' },
+                        { symbol: '☉', color: '#f59e0b', labelKey: 'planet.sun' as const },
+                        { symbol: '☽', color: '#94a3b8', labelKey: 'planet.moon' as const },
+                        { symbol: '♂', color: '#ef4444', labelKey: 'planet.mars' as const },
+                        { symbol: '♃', color: '#eab308', labelKey: 'planet.jupiter' as const },
+                        { symbol: '♀', color: '#f472b6', labelKey: 'planet.venus' as const },
+                        { symbol: '♄', color: '#38bdf8', labelKey: 'planet.saturn' as const },
                       ].map((p, i) => (
                         <motion.div
-                          key={p.label}
+                          key={p.labelKey}
                           className="flex flex-col items-center gap-1"
                           animate={{ y: [0, -6, 0] }}
                           transition={{ duration: 2.5 + i * 0.3, delay: i * 0.15, repeat: Infinity, ease: 'easeInOut' }}
                         >
                           <span className="text-2xl" style={{ color: p.color, textShadow: `0 0 12px ${p.color}44` }}>{p.symbol}</span>
-                          <span className={`text-[9px] font-mono ${isLight ? 'text-slate-400' : 'text-white/25'}`}>{p.label}</span>
+                          <span className={`text-[9px] font-mono ${isLight ? 'text-slate-400' : 'text-white/25'}`}>{t(p.labelKey)}</span>
                         </motion.div>
                       ))}
                     </motion.div>

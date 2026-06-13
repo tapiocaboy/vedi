@@ -8,6 +8,7 @@ import type { VargaPlanet, VargaInsight } from '../../services/api';
 import { RASHIS } from '../../lib/core/rashi';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
 import { VargaHouseDetailPanel } from './VargaHouseDetailPanel';
 import type { VargaVariant } from '../../lib/core/vargaAnalysis';
 
@@ -26,13 +27,13 @@ const SI_LAYOUT: (number | null)[] = [
   8, 7, 6, 5,
 ];
 
-const DIGNITY_STYLE: Record<string, { dark: string; light: string; label: string }> = {
-  'exalted':      { dark: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30', light: 'bg-emerald-100 text-emerald-800 border-emerald-300', label: 'Exalted' },
-  'own-sign':     { dark: 'bg-violet-500/15 text-violet-300 border-violet-400/30',    light: 'bg-violet-100 text-violet-800 border-violet-300',    label: 'Own' },
-  'friend-sign':  { dark: 'bg-blue-500/15 text-blue-300 border-blue-400/30',          light: 'bg-blue-100 text-blue-800 border-blue-300',          label: 'Friend' },
-  'neutral-sign': { dark: 'bg-white/8 text-white/60 border-white/15',                 light: 'bg-slate-100 text-slate-600 border-slate-300',       label: 'Neutral' },
-  'enemy-sign':   { dark: 'bg-amber-500/15 text-amber-300 border-amber-400/30',       light: 'bg-amber-100 text-amber-800 border-amber-300',       label: 'Enemy' },
-  'debilitated':  { dark: 'bg-rose-500/15 text-rose-300 border-rose-400/30',          light: 'bg-rose-100 text-rose-800 border-rose-300',          label: 'Debilitated' },
+const DIGNITY_STYLE: Record<string, { dark: string; light: string }> = {
+  'exalted':      { dark: 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30', light: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+  'own-sign':     { dark: 'bg-violet-500/15 text-violet-300 border-violet-400/30',    light: 'bg-violet-100 text-violet-800 border-violet-300' },
+  'friend-sign':  { dark: 'bg-blue-500/15 text-blue-300 border-blue-400/30',          light: 'bg-blue-100 text-blue-800 border-blue-300' },
+  'neutral-sign': { dark: 'bg-white/8 text-white/60 border-white/15',                 light: 'bg-slate-100 text-slate-600 border-slate-300' },
+  'enemy-sign':   { dark: 'bg-amber-500/15 text-amber-300 border-amber-400/30',       light: 'bg-amber-100 text-amber-800 border-amber-300' },
+  'debilitated':  { dark: 'bg-rose-500/15 text-rose-300 border-rose-400/30',          light: 'bg-rose-100 text-rose-800 border-rose-300' },
 };
 
 const TONE_BORDER: Record<VargaInsight['tone'], string> = {
@@ -41,17 +42,17 @@ const TONE_BORDER: Record<VargaInsight['tone'], string> = {
   challenging: 'rgba(244,63,94,0.35)',
 };
 
-function DignityBadge({ dignity, isLight }: { dignity: string; isLight: boolean }) {
+function DignityBadge({ dignity, isLight, lang }: { dignity: string; isLight: boolean; lang: ReturnType<typeof useLang>['lang'] }) {
   const s = DIGNITY_STYLE[dignity] ?? DIGNITY_STYLE['neutral-sign'];
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold border ${isLight ? s.light : s.dark}`}>
-      {s.label}
+      {labelDignity(dignity, lang)}
     </span>
   );
 }
 
 function VargaGrid({
-  title, subtitle, hint, ascRashi, planetsByRashi, isLight, onCellClick,
+  title, subtitle, hint, ascRashi, planetsByRashi, isLight, onCellClick, ascMarker,
 }: {
   title: string;
   subtitle: string;
@@ -60,6 +61,7 @@ function VargaGrid({
   planetsByRashi: Record<number, VargaPlanet[]>;
   isLight: boolean;
   onCellClick: (rashi: number) => void;
+  ascMarker: string;
 }) {
   return (
     <div className="rounded-xl p-3 sm:p-4" style={{
@@ -116,7 +118,7 @@ function VargaGrid({
             >
               <span className={`text-[8px] font-bold leading-none ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
                 {RASHIS[rashi].slice(0, 3)}
-                {isAsc && <span style={{ color: ACCENT }}> ·As</span>}
+                {isAsc && <span style={{ color: ACCENT }}> ·{ascMarker}</span>}
               </span>
               <div className="flex flex-wrap gap-x-1 items-start content-start flex-1 mt-0.5">
                 {occupants.map(p => (
@@ -187,7 +189,7 @@ function InsightCard({
 
 export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const isLight = useTheme();
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [selected, setSelected] = useState<{ variant: VargaVariant; rashi: number } | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vargas', birthData],
@@ -244,6 +246,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
             planetsByRashi={d9ByRashi}
             isLight={isLight}
             onCellClick={rashi => setSelected({ variant: 'D9', rashi })}
+            ascMarker={t('varga.ascMarker')}
           />
           <VargaGrid
             title={t('varga.d10Title')}
@@ -253,6 +256,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
             planetsByRashi={d10ByRashi}
             isLight={isLight}
             onCellClick={rashi => setSelected({ variant: 'D10', rashi })}
+            ascMarker={t('varga.ascMarker')}
           />
         </div>
 
@@ -274,23 +278,23 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
                   <td className="px-2 py-2">
                     <span className="font-bold mr-1.5" style={{ color: ACCENT }}>{GLYPH[p.planet]}</span>
                     <span className={`font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>
-                      {p.planet}{p.isRetrograde ? ' ℞' : ''}
+                      {labelPlanet(p.planet, lang)}{p.isRetrograde ? ' ℞' : ''}
                     </span>
                   </td>
                   <td className={`px-2 py-2 font-semibold ${isLight ? 'text-slate-600' : 'text-white/60'}`}>{p.d1RashiName}</td>
                   <td className="px-2 py-2">
                     <span className={`font-semibold mr-1.5 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>{p.d9RashiName}</span>
-                    <DignityBadge dignity={p.d9Dignity} isLight={isLight} />
+                    <DignityBadge dignity={p.d9Dignity} isLight={isLight} lang={lang} />
                   </td>
                   <td className="px-2 py-2">
                     <span className={`font-semibold mr-1.5 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>{p.d10RashiName}</span>
-                    <DignityBadge dignity={p.d10Dignity} isLight={isLight} />
+                    <DignityBadge dignity={p.d10Dignity} isLight={isLight} lang={lang} />
                   </td>
                   <td className="px-2 py-2">
                     {p.isVargottama && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border"
                         style={{ color: ACCENT, borderColor: `${ACCENT}50`, background: `${ACCENT}10` }}>
-                        <Sparkles className="w-2.5 h-2.5" /> Vargottama
+                        <Sparkles className="w-2.5 h-2.5" /> {t('varga.vargottama')}
                       </span>
                     )}
                   </td>

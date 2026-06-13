@@ -4,6 +4,8 @@ import type { PlanetPosition } from '../../types/astrology';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelPlanet, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
 
 const ACCENT = '#FF2E51';
 
@@ -33,6 +35,7 @@ function getRashiForPosition(row: number, col: number): number | null {
 export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) => {
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
   const isLight = useTheme();
+  const { lang, t } = useLang();
 
   const planetsByRashi: Record<number, PlanetPosition[]> = {};
   for (let i = 0; i < 12; i++) planetsByRashi[i] = [];
@@ -62,8 +65,8 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         return (
           <div className="flex items-center justify-center h-full" style={{ background: lagnaBg, borderRight: `1px solid ${borderBase}`, borderBottom: `1px solid ${borderBase}` }}>
             <div className="text-center p-2">
-              <div className="text-xs font-mono uppercase tracking-wider font-extrabold" style={{ color: ACCENT }}>Lagna</div>
-              <div className="text-base font-extrabold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{RASHIS[ascendantRashi]}</div>
+              <div className="text-xs font-mono uppercase tracking-wider font-extrabold" style={{ color: ACCENT }}>{t('chart.lagna')}</div>
+              <div className="text-base font-extrabold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{labelRashi(ascendantRashi, lang, RASHIS[ascendantRashi])}</div>
             </div>
           </div>
         );
@@ -97,7 +100,11 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
             ? cellBgSel
             : cellBgBase,
         }}
-        title={`House ${houseNum} — ${RASHIS[rashiIndex]} (${RASHI_ENGLISH[rashiIndex]})`}
+        title={t('chart.houseTooltip', {
+          n: houseNum,
+          rashi: labelRashi(rashiIndex, lang, RASHIS[rashiIndex]),
+          english: labelRashiWestern(rashiIndex, lang, RASHI_ENGLISH[rashiIndex]),
+        })}
       >
         {/* House number top-left */}
         <div className="absolute top-0.5 left-1 text-xs font-mono font-extrabold"
@@ -120,7 +127,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
               transition={{ delay: 0.3 + idx * 0.08 }}
               className="text-[15px] font-extrabold px-0.5 rounded"
               style={{ color: planet.isRetrograde ? '#e11d48' : planetClr, textShadow: '0 0 5px rgba(0,0,0,0.35)' }}
-              title={`${planet.planet}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
+              title={`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
             >
               {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
               {planet.isRetrograde && <span className="text-[8px] font-bold">℞</span>}
@@ -131,7 +138,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         {/* Rashi name bottom */}
         <div className="absolute bottom-0.5 left-0 right-0 text-center text-[10px] truncate px-1 font-mono font-bold"
           style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.55)' }}>
-          {RASHIS[rashiIndex]}
+          {labelRashi(rashiIndex, lang, RASHIS[rashiIndex])}
         </div>
       </motion.div>
     );
@@ -143,7 +150,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         className="text-sm font-bold mb-4 text-center tracking-wide"
         style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
-        Click any house to see its reading and planets
+        {t('chart.clickHouseHint')}
       </p>
       <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden aspect-square"
         style={{ border: `1px solid ${gridBorder}`, boxShadow: gridShadow }}>
@@ -163,7 +170,7 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1.5">
             <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px ${ACCENT}44` }}>{symbol}</span>
-            <span className="font-bold">{planet}</span>
+            <span className="font-bold">{labelPlanet(planet, lang)}</span>
           </div>
         ))}
       </div>

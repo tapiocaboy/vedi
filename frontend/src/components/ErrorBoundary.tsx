@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { translate } from '../i18n/translations';
 
 interface Props {
   children: ReactNode;
@@ -40,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
             padding: '2rem',
           }}>
             <h2 style={{ color: '#a78bfa', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
-              Something went wrong
+              {translate('error.title')}
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
               {this.state.error.message}
@@ -58,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 cursor: 'pointer',
               }}
             >
-              Reload page
+              {translate('error.reload')}
             </button>
           </div>
         </div>

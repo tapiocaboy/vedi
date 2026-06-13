@@ -113,9 +113,9 @@ const TIMEZONES = [
 ];
 
 const AYANAMSAS = [
-  { value: 'LAHIRI', label: 'Lahiri (Chitrapaksha)' },
-  { value: 'KRISHNAMURTI', label: 'Krishnamurti (KP)' },
-  { value: 'RAMAN', label: 'Raman' },
+  { value: 'LAHIRI', labelKey: 'form.ayanamsa.lahiri' as const },
+  { value: 'KRISHNAMURTI', labelKey: 'form.ayanamsa.kp' as const },
+  { value: 'RAMAN', labelKey: 'form.ayanamsa.raman' as const },
 ] as const;
 
 const LOCATION_KEY = 'vedi_location_prefs';
@@ -263,7 +263,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             step="any"
             min="-90"
             max="90"
-            placeholder="e.g., 40.7128"
+            placeholder={t('form.latitudePlaceholder')}
             className={inputClasses}
           />
         </div>
@@ -281,7 +281,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             step="any"
             min="-180"
             max="180"
-            placeholder="e.g., -74.0060"
+            placeholder={t('form.longitudePlaceholder')}
             className={inputClasses}
           />
         </div>
@@ -318,7 +318,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           className={inputClasses}
         >
           {AYANAMSAS.map(ay => (
-            <option key={ay.value} value={ay.value}>{ay.label}</option>
+            <option key={ay.value} value={ay.value}>{t(ay.labelKey)}</option>
           ))}
         </select>
       </div>

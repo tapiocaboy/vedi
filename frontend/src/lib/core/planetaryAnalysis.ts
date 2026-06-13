@@ -75,6 +75,308 @@ const DIGNITY_LABELS: Record<DignityLevel, { label: string; strength: number; co
   'debilitated':  { label:'Debilitated',   strength:1,  color:'text-rose-400',    desc:'At minimum strength — planet has difficulty expressing its qualities; requires conscious remedial effort.' },
 };
 
+// ─── Moolatrikona, Dig Bala, Functional nature, Combined strength ───────────
+//
+// These add the classical strength factors that sign-dignity alone misses, so
+// the verdict reflects Sthana (positional), Dig (directional), functional
+// (lordship-from-Lagna) and Cheshta (motional/retrograde) balas together —
+// rather than dignity in isolation.
+
+// Moolatrikona: sign + the degree range (within the sign) where the planet sits
+// in its root-trine. Stronger than own-sign, just below exaltation. Requires the
+// planet's degree-in-sign; when that is unknown the bonus simply does not apply.
+const MOOLATRIKONA: Record<string, { sign: number; from: number; to: number }> = {
+  Sun:     { sign: 4,  from: 0,  to: 20 },  // Leo 0°–20°
+  Mars:    { sign: 0,  from: 0,  to: 12 },  // Aries 0°–12°
+  Mercury: { sign: 5,  from: 16, to: 20 },  // Virgo 16°–20°
+  Jupiter: { sign: 8,  from: 0,  to: 10 },  // Sagittarius 0°–10°
+  Venus:   { sign: 6,  from: 0,  to: 15 },  // Libra 0°–15°
+  Saturn:  { sign: 10, from: 0,  to: 20 },  // Aquarius 0°–20°
+  // Moon's Moolatrikona (Taurus) coincides with its exaltation sign, which takes
+  // precedence at sign level, so it is intentionally omitted here.
+};
+
+export function inMoolatrikona(planet: string, rashiIndex: number, degreeInSign: number, dignity: DignityLevel): boolean {
+  if (dignity === 'exalted') return false; // exaltation already outranks Moolatrikona
+  const m = MOOLATRIKONA[planet];
+  return !!m && m.sign === rashiIndex && degreeInSign >= m.from && degreeInSign < m.to;
+}
+
+// Dig Bala: a planet is at full directional strength in one specific house and
+// zero in the opposite house, scaling linearly in between. Shadow planets
+// (Rahu/Ketu) are not assigned Dig Bala classically.
+const DIG_BALA_STRONG: Record<string, number> = {
+  Sun: 10, Moon: 4, Mars: 10, Mercury: 1, Jupiter: 1, Venus: 4, Saturn: 7,
+};
+
+const ordinalHouse = (n: number): string => {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+};
+
+export interface DigBalaInfo {
+  score: number;                                   // 0..1
+  level: 'strong' | 'moderate' | 'weak' | 'na';
+  strongHouse: number | null;
+  desc: string;
+}
+
+export function getDigBala(planet: string, house: number): DigBalaInfo {
+  const strong = DIG_BALA_STRONG[planet];
+  if (!strong) {
+    return { score: 0.5, level: 'na', strongHouse: null,
+      desc: 'Directional strength (Dig Bala) is not assigned to shadow planets.' };
+  }
+  const weak = ((strong - 1 + 6) % 12) + 1;        // house opposite the strong one
+  let dist = Math.abs(house - weak);
+  dist = Math.min(dist, 12 - dist);                // 0 (at weak) .. 6 (at strong)
+  const score = dist / 6;
+  const level = score >= 0.66 ? 'strong' : score >= 0.34 ? 'moderate' : 'weak';
+  return { score, level, strongHouse: strong,
+    desc: `Fully directionally strong in the ${ordinalHouse(strong)} house. Here in the ${ordinalHouse(house)} house its Dig Bala is ${level}, so the planet's results come across as ${level === 'strong' ? 'prominent and effective' : level === 'weak' ? 'muted and easily overshadowed' : 'moderately expressed'}.` };
+}
+
+// Functional (lordship-based) nature — judged from the Ascendant, the single
+// biggest factor in whether a planet behaves as a benefic or a malefic.
+export type FunctionalNature = 'yogakaraka' | 'benefic' | 'neutral' | 'mixed' | 'malefic' | 'maraka';
+
+const FUNCTIONAL_LABELS: Record<FunctionalNature, string> = {
+  'yogakaraka': 'Yogakaraka',
+  'benefic':    'Functional Benefic',
+  'neutral':    'Neutral',
+  'mixed':      'Mixed',
+  'malefic':    'Functional Malefic',
+  'maraka':     'Maraka',
+};
+
+const FUNCTIONAL_SCORE: Record<FunctionalNature, number> = {
+  'yogakaraka': 1.0, 'benefic': 0.78, 'neutral': 0.5, 'mixed': 0.45, 'malefic': 0.22, 'maraka': 0.3,
+};
+
+export interface FunctionalInfo {
+  nature: FunctionalNature;
+  label: string;
+  rulesHouses: number[];
+  isYogakaraka: boolean;
+  score: number;        // 0..1 benefic weighting
+  desc: string;
+}
+
+function housesRuledFrom(planet: string, ascIndex: number): number[] {
+  const d = DIGNITY[planet];
+  if (!d || d.ownSigns.length === 0) return [];   // shadow planets own no sign
+  return d.ownSigns.map(sign => ((sign - ascIndex + 12) % 12) + 1).sort((a, b) => a - b);
+}
+
+export function getFunctionalNature(planet: string, ascIndex: number): FunctionalInfo {
+  const rules = housesRuledFrom(planet, ascIndex);
+  if (rules.length === 0) {
+    return { nature: 'neutral', label: FUNCTIONAL_LABELS.neutral, rulesHouses: [], isYogakaraka: false, score: 0.5,
+      desc: 'A shadow planet owns no sign, so it carries no rulership-based nature. It delivers the results of the house it occupies, of its dispositor (the lord of its sign), and of any planet it joins — read it through those.' };
+  }
+  const has = (...hs: number[]) => hs.some(h => rules.includes(h));
+  const trikona  = has(5, 9);
+  const kendra   = has(4, 7, 10);
+  const dusthana = has(6, 8, 12);
+  const maraka   = has(2, 7);
+  const lagna    = rules.includes(1);
+  const isYogakaraka = trikona && kendra;
+
+  let nature: FunctionalNature;
+  if (isYogakaraka)             nature = 'yogakaraka';
+  else if (trikona && dusthana) nature = 'mixed';
+  else if (lagna || trikona)    nature = 'benefic';
+  else if (dusthana)            nature = 'malefic';
+  else if (maraka)              nature = 'maraka';
+  else                          nature = 'neutral';
+
+  const hs = rules.map(ordinalHouse).join(' & ');
+  const plural = rules.length > 1 ? 'houses' : 'house';
+  const descMap: Record<FunctionalNature, string> = {
+    'yogakaraka': `Rules both a trine and an angle (the ${hs} houses) — a Yogakaraka for this Ascendant. This is among the most auspicious roles a planet can hold: its periods (dashas) tend to bring the chart's strongest rises in status, wealth, and success.`,
+    'benefic':    `Rules the ${hs} ${plural}, including a trine or the Ascendant — a functional benefic for this Lagna. Its dasha and transits generally support growth, fortune, and well-being.`,
+    'neutral':    `Rules the ${hs} ${plural} — a broadly neutral role for this Lagna. Its outcomes lean on dignity, house, and the company it keeps.`,
+    'mixed':      `Rules both a trine and a difficult house (the ${hs} houses) — a mixed functional nature. It can favour the trine's affairs while testing those of the harder house.`,
+    'malefic':    `Rules the ${hs} ${plural} — a dusthana (6/8/12) lordship for this Lagna, so it acts as a functional malefic. Its periods can bring obstacles, debt, or health and relationship strain unless well supported.`,
+    'maraka':     `Rules the ${hs} ${plural} (a 2nd/7th maraka lordship). Not malefic by nature, but classically tied to health-sensitive timing — its dashas warrant extra care with vitality.`,
+  };
+  return { nature, label: FUNCTIONAL_LABELS[nature], rulesHouses: rules, isYogakaraka, score: FUNCTIONAL_SCORE[nature], desc: descMap[nature] };
+}
+
+// Combined assessment — a lightweight Shadbala that folds the factors into one
+// 0–100 score and a plain-language verdict.
+export type StrengthVerdict = 'very-strong' | 'strong' | 'moderate' | 'weak' | 'very-weak';
+
+const VERDICT_LABELS: Record<StrengthVerdict, string> = {
+  'very-strong': 'Very Strong', 'strong': 'Strong', 'moderate': 'Moderate', 'weak': 'Weak', 'very-weak': 'Very Weak',
+};
+
+const CHESHTA_PLANETS = new Set(['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']);
+
+export interface StrengthFactor { label: string; value: number; }   // value 0..1
+export interface StrengthAssessment {
+  score: number;            // 0..100
+  verdict: StrengthVerdict;
+  verdictLabel: string;
+  summary: string;
+  factors: StrengthFactor[];
+}
+
+export function assessStrength(args: {
+  planet: string;
+  dignity: DignityLevel;
+  moolatrikona: boolean;
+  dig: DigBalaInfo;
+  functional: FunctionalInfo;
+  isRetrograde: boolean;
+  combust?: boolean;
+  neechaBhanga?: boolean;
+}): StrengthAssessment {
+  const { planet, dignity, moolatrikona, dig, functional, isRetrograde, combust = false, neechaBhanga = false } = args;
+
+  let sthana = DIGNITY_LABELS[dignity].strength / 10;          // 0.1 .. 1.0
+  if (moolatrikona) sthana = Math.min(1, sthana + 0.1);
+  if (neechaBhanga) sthana = Math.max(sthana, 0.85);          // cancellation lifts debilitation to Raja-Yoga grade
+  const cheshta = (isRetrograde && CHESHTA_PLANETS.has(planet)) ? 1 : 0;
+
+  let score = Math.round(
+    5 +                       // base
+    sthana * 40 +             // positional (sign dignity + Moolatrikona / Neecha Bhanga)
+    dig.score * 20 +          // directional
+    functional.score * 25 +   // functional (lordship from Lagna)
+    cheshta * 10,             // motional (retrograde Cheshta Bala)
+  );
+  if (combust) score = Math.max(8, score - 14);               // burnt significations
+
+  const verdict: StrengthVerdict =
+    score >= 75 ? 'very-strong' :
+    score >= 60 ? 'strong' :
+    score >= 45 ? 'moderate' :
+    score >= 30 ? 'weak' : 'very-weak';
+
+  const digPhrase = dig.level === 'na' ? 'no assigned directional strength'
+    : `${dig.level} directional strength`;
+  const summary = [
+    `Overall this planet is ${VERDICT_LABELS[verdict].toLowerCase()} in this chart.`,
+    `It is ${DIGNITY_LABELS[dignity].label.toLowerCase()}${moolatrikona ? ' (Moolatrikona)' : ''} by sign`,
+    neechaBhanga ? ', but its debilitation is cancelled (Neecha Bhanga), so it performs far above a debilitated planet' : '',
+    `, with ${digPhrase}`,
+    cheshta ? ', and extra motional strength from its retrograde motion' : '',
+    '. ',
+    combust ? 'It is combust — too close to the Sun — which burns its outward significations. ' : '',
+    `As a ${functional.label.toLowerCase()} for this Ascendant, it leans ${functional.score >= 0.7 ? 'strongly supportive' : functional.score >= 0.5 ? 'broadly neutral' : 'challenging'} over its periods.`,
+  ].join('');
+
+  const factors: StrengthFactor[] = [
+    { label: 'Sign Dignity', value: sthana },
+    { label: 'Direction',    value: dig.level === 'na' ? 0.5 : dig.score },
+    { label: 'Function',     value: functional.score },
+  ];
+  if (cheshta) factors.push({ label: 'Motion', value: 1 });
+
+  return { score, verdict, verdictLabel: VERDICT_LABELS[verdict], summary, factors };
+}
+
+// Combustion (Astangata) — a planet too close to the Sun is "burnt", weakening
+// its outward significations. Orbs are tighter for retrograde Mercury/Venus.
+const COMBUSTION_ORB: Record<string, number> = {
+  Moon: 12, Mars: 17, Mercury: 14, Jupiter: 11, Venus: 10, Saturn: 15,
+};
+const COMBUSTION_ORB_RETRO: Record<string, number> = { Mercury: 12, Venus: 8 };
+
+export interface CombustionInfo {
+  isCombust: boolean;
+  separation: number;   // degrees from the Sun
+  limit: number;
+  desc: string;
+}
+
+export function getCombustion(planet: string, planetLongitude: number, sunLongitude: number, isRetrograde: boolean): CombustionInfo | null {
+  const base = COMBUSTION_ORB[planet];
+  if (base === undefined) return null;             // Sun, Rahu, Ketu — never combust
+  let sep = Math.abs(planetLongitude - sunLongitude) % 360;
+  if (sep > 180) sep = 360 - sep;
+  const limit = (isRetrograde && COMBUSTION_ORB_RETRO[planet]) ? COMBUSTION_ORB_RETRO[planet] : base;
+  const isCombust = sep <= limit;
+  return {
+    isCombust, separation: sep, limit,
+    desc: isCombust
+      ? `Only ${sep.toFixed(1)}° from the Sun (within the ${limit}° combustion orb) — the planet is combust. Its outward results are partly burnt up even where its dignity is good, though its inner and spiritual side can intensify.`
+      : `${sep.toFixed(1)}° from the Sun, clear of the ${limit}° combustion orb — not burnt.`,
+  };
+}
+
+// Neecha Bhanga — cancellation of debilitation. When a debilitated planet meets
+// any of the classical conditions, its weakness is lifted (and often becomes a
+// Raja Yoga: a rise after early struggle).
+const isKendra = (sign: number, from: number) => [0, 3, 6, 9].includes(((sign - from + 12) % 12));
+
+export interface NeechaBhangaInfo {
+  applies: boolean;     // the planet is debilitated
+  cancelled: boolean;
+  statusLabel: string;
+  reasons: string[];
+  desc: string;
+}
+
+export function getNeechaBhanga(args: {
+  planet: string;
+  rashiIndex: number;                      // = the debilitation sign when debilitated
+  ascIndex: number;
+  isRetrograde: boolean;
+  signByPlanet: Record<string, number>;    // planet -> rashiIndex for all grahas
+}): NeechaBhangaInfo {
+  const { planet, rashiIndex, ascIndex, isRetrograde, signByPlanet } = args;
+  if (getDignity(planet, rashiIndex) !== 'debilitated') {
+    return { applies: false, cancelled: false, statusLabel: '', reasons: [], desc: '' };
+  }
+
+  const debilSign = rashiIndex;
+  const moonSign = signByPlanet['Moon'];
+  const dispositor = RASHI_LORDS[debilSign];                         // lord of the debilitation sign
+  const exaltedHere = Object.keys(DIGNITY).find(p => DIGNITY[p].exalted === debilSign); // planet exalted in this sign
+  const reasons: string[] = [];
+
+  const inKendraFromLagnaOrMoon = (sign: number | undefined) =>
+    sign !== undefined && (isKendra(sign, ascIndex) || (moonSign !== undefined && isKendra(sign, moonSign)));
+
+  // 1. Lord of the debilitation sign sits in a kendra from Lagna or Moon.
+  if (inKendraFromLagnaOrMoon(signByPlanet[dispositor])) {
+    reasons.push(`the lord of the debilitation sign (${dispositor}) is in a kendra from the Lagna or Moon`);
+  }
+  // 2. The planet exalted in this sign sits in a kendra from Lagna or Moon.
+  if (exaltedHere && inKendraFromLagnaOrMoon(signByPlanet[exaltedHere])) {
+    reasons.push(`${exaltedHere}, which is exalted in this sign, is in a kendra from the Lagna or Moon`);
+  }
+  // 3. The dispositor is itself exalted or in its own sign.
+  const dispSign = signByPlanet[dispositor];
+  if (dispSign !== undefined) {
+    const dd = getDignity(dispositor, dispSign);
+    if (dd === 'exalted' || dd === 'own-sign') {
+      reasons.push(`the dispositor ${dispositor} is itself ${dd === 'exalted' ? 'exalted' : 'in its own sign'}`);
+    }
+  }
+  // 4. The debilitated planet is conjunct or directly aspected (7th) by its dispositor.
+  if (dispSign !== undefined && (dispSign === debilSign || ((dispSign - debilSign + 12) % 12) === 6)) {
+    reasons.push(`its dispositor ${dispositor} ${dispSign === debilSign ? 'is conjunct it' : 'aspects it from the 7th'}`);
+  }
+  // 5. The debilitated planet is retrograde.
+  if (isRetrograde) {
+    reasons.push('the planet is retrograde');
+  }
+
+  const cancelled = reasons.length > 0;
+  return {
+    applies: true,
+    cancelled,
+    statusLabel: cancelled ? 'Cancelled' : 'Active',
+    reasons,
+    desc: cancelled
+      ? `Debilitation is cancelled because ${reasons[0]}${reasons.length > 1 ? `, and ${reasons.length - 1} further reason${reasons.length > 2 ? 's' : ''}` : ''}. The planet behaves far better than a raw debilitation — classically a Neecha Bhanga Raja Yoga, giving a strong rise after early struggle.`
+      : `The planet is debilitated and none of the classical cancellation (Neecha Bhanga) conditions are met, so its weakness stands. Remedial focus is advised for its significations.`,
+  };
+}
+
 // ─── Retrograde effects ────────────────────────────────────────────────────
 
 const RETROGRADE_EFFECTS: Record<string, {
@@ -245,10 +547,23 @@ export interface PlanetAnalysis {
   isRetrograde: boolean;
   retrogradeEffect: typeof RETROGRADE_EFFECTS[string] | null;
   placement: { effect: string; strengths: string[]; challenges: string[]; keynote: string } | null;
+  moolatrikona: boolean;
+  digBala: DigBalaInfo;
+  functional: FunctionalInfo;
+  combustion: CombustionInfo | null;
+  neechaBhanga: NeechaBhangaInfo | null;
+  strength: StrengthAssessment;
   keywords: string[];
   bodyParts: string[];
   gemstone: string | null;
   mantra: string | null;
+}
+
+/** Optional chart-wide context that unlocks combustion + Neecha Bhanga. */
+export interface ChartContext {
+  longitude?: number;                    // this planet's absolute longitude (0–360)
+  sunLongitude?: number;                 // the Sun's absolute longitude (0–360)
+  signByPlanet?: Record<string, number>; // every graha -> its rashiIndex
 }
 
 export function analyzePlanet(
@@ -256,6 +571,8 @@ export function analyzePlanet(
   rashiIndex: number,
   ascendantRashiIndex: number,
   isRetrograde: boolean,
+  degreeInSign?: number,
+  context?: ChartContext,
 ): PlanetAnalysis {
   const house = ((rashiIndex - ascendantRashiIndex + 12) % 12) + 1;
   const houseData = HOUSE_DATA[house] ?? HOUSE_DATA[1];
@@ -268,6 +585,25 @@ export function analyzePlanet(
   const retrogradeEffect = isRetrograde ? (RETROGRADE_EFFECTS[planetKey] ?? null) : null;
   const placement = PLANET_IN_HOUSE[planetKey]?.[house] ?? null;
 
+  const moolatrikona = degreeInSign !== undefined
+    ? inMoolatrikona(planetKey, rashiIndex, degreeInSign, dignity)
+    : false;
+  const digBala = getDigBala(planetKey, house);
+  const functional = getFunctionalNature(planetKey, ascendantRashiIndex);
+
+  const combustion = (context?.longitude !== undefined && context?.sunLongitude !== undefined)
+    ? getCombustion(planetKey, context.longitude, context.sunLongitude, isRetrograde)
+    : null;
+  const neechaBhanga = (dignity === 'debilitated' && context?.signByPlanet)
+    ? getNeechaBhanga({ planet: planetKey, rashiIndex, ascIndex: ascendantRashiIndex, isRetrograde, signByPlanet: context.signByPlanet })
+    : null;
+
+  const strength = assessStrength({
+    planet: planetKey, dignity, moolatrikona, dig: digBala, functional, isRetrograde,
+    combust: combustion?.isCombust ?? false,
+    neechaBhanga: neechaBhanga?.cancelled ?? false,
+  });
+
   return {
     planet,
     house,
@@ -277,6 +613,12 @@ export function analyzePlanet(
     isRetrograde,
     retrogradeEffect,
     placement,
+    moolatrikona,
+    digBala,
+    functional,
+    combustion,
+    neechaBhanga,
+    strength,
     keywords: (pd.keywords as string[]) ?? [],
     bodyParts: (pd.bodyParts as string[]) ?? [],
     gemstone: (pd.gemstone as string) ?? null,

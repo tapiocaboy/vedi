@@ -3,23 +3,26 @@ import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import type { CurrentDasha as CurrentDashaType } from '../../types/astrology';
 import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
   currentDasha: CurrentDashaType;
 }
 
 export const CurrentDasha: React.FC<Props> = ({ currentDasha }) => {
+  const { lang, t } = useLang();
   const { mahadasha, antardasha, pratyantardasha, sookshmaDasha, targetDate } = currentDasha;
   const nowMs = new Date(targetDate).getTime();
 
   const rows = [
-    { label: 'Mahadasha',      lord: mahadasha.lord,      start: mahadasha.start,      end: mahadasha.end      },
-    { label: 'Antardasha',     lord: antardasha.lord,     start: antardasha.start,     end: antardasha.end     },
+    { label: labelDashaLevel('Mahadasha', lang),      lord: mahadasha.lord,      start: mahadasha.start,      end: mahadasha.end      },
+    { label: labelDashaLevel('Antardasha', lang),     lord: antardasha.lord,     start: antardasha.start,     end: antardasha.end     },
     ...(pratyantardasha
-      ? [{ label: 'Pratyantardasha', lord: pratyantardasha.lord, start: pratyantardasha.start, end: pratyantardasha.end }]
+      ? [{ label: labelDashaLevel('Pratyantardasha', lang), lord: pratyantardasha.lord, start: pratyantardasha.start, end: pratyantardasha.end }]
       : []),
     ...(sookshmaDasha
-      ? [{ label: 'Sookshma Dasha',  lord: sookshmaDasha.lord,   start: sookshmaDasha.start,   end: sookshmaDasha.end   }]
+      ? [{ label: labelDashaLevel('Sookshma Dasha', lang),  lord: sookshmaDasha.lord,   start: sookshmaDasha.start,   end: sookshmaDasha.end   }]
       : []),
   ];
 
@@ -40,16 +43,16 @@ export const CurrentDasha: React.FC<Props> = ({ currentDasha }) => {
           <Clock className="w-3.5 h-3.5" style={{ color: BAR_PALETTE.gold }} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-white">Active Dasha Periods</h3>
+          <h3 className="text-sm font-semibold text-white">{t('dasha.activeTitle')}</h3>
           <p className="text-[11px] text-white/35">
-            {rows.map(r => r.lord).join(' · ')}
+            {rows.map(r => labelPlanet(r.lord, lang)).join(' · ')}
           </p>
         </div>
       </div>
 
       <div className="space-y-5">
         {rows.map((r, i) => (
-          <DashaBarRow key={r.label} {...r} nowMs={nowMs} index={i} />
+          <DashaBarRow key={r.label} {...r} lord={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
         ))}
       </div>
     </motion.div>

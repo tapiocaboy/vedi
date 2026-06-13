@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, X } from 'lucide-react';
+import { useLang } from '../i18n/LanguageContext';
 
 interface Props {
   visible: boolean;
@@ -14,6 +15,7 @@ export const PrivacyBanner: React.FC<Props> = ({
   onDismiss,
   trigger = 'load',
 }) => {
+  const { t } = useLang();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -41,16 +43,13 @@ export const PrivacyBanner: React.FC<Props> = ({
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold privacy-title">
-                Your data stays on your device
+                {t('privacy.title')}
               </p>
               <p className="text-xs privacy-body mt-0.5 leading-relaxed">
-                {trigger === 'generate'
-                  ? 'All calculations happen locally in your browser. Nothing you enter is sent to any server or stored anywhere.'
-                  : 'This tool runs entirely in your browser. We do not collect, store, or transmit any information you enter — ever.'}
+                {trigger === 'generate' ? t('privacy.bodyGenerate') : t('privacy.bodyLoad')}
               </p>
             </div>
 
-            {/* Progress bar */}
             <div className="absolute bottom-0 left-0 h-[2px] privacy-progress rounded-b-xl"
               style={{ animation: 'privacy-shrink 6s linear forwards' }}
             />
@@ -58,7 +57,7 @@ export const PrivacyBanner: React.FC<Props> = ({
             <button
               onClick={onDismiss}
               className="shrink-0 privacy-close rounded-lg p-1 transition-colors"
-              aria-label="Dismiss"
+              aria-label={t('privacy.dismiss')}
             >
               <X className="w-3.5 h-3.5" />
             </button>

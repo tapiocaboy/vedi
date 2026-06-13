@@ -4,6 +4,8 @@ import type { PlanetPosition } from '../../types/astrology';
 import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { formatDegree } from '../../utils/dateUtils';
 import { PlanetDetailPanel } from './PlanetDetailPanel';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
 import { useTheme } from '../../hooks/useTheme';
 
 const ACCENT = '#FF2E51';
@@ -16,6 +18,7 @@ interface Props {
 export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   const [selected, setSelected] = useState<PlanetPosition | null>(null);
   const isLight = useTheme();
+  const { lang, t } = useLang();
 
   const allPositions: PlanetPosition[] = [
     ...planets,
@@ -44,7 +47,7 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
     <>
       <div className="overflow-x-auto">
         <p className="text-sm font-bold mb-3 px-1 tracking-wide" style={{ color: mutedTxt }}>
-          Click any row to see planetary effects, house placement, and predictions
+          {t('chart.table.hint')}
         </p>
         <motion.table
           className="w-full text-xs sm:text-sm"
@@ -54,11 +57,11 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
         >
           <thead>
             <tr style={{ background: headerBg }}>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left rounded-tl-lg font-bold text-white">Planet</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Rashi</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Degree</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white hidden sm:table-cell">Nakshatra</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">Pada</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left rounded-tl-lg font-bold text-white">{t('chart.table.colPlanet')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colRashi')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colDegree')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white hidden sm:table-cell">{t('chart.table.colNakshatra')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colPada')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-center rounded-tr-lg font-bold text-white">℞</th>
             </tr>
           </thead>
@@ -85,11 +88,11 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                       <span className="text-lg sm:text-xl font-bold" style={{ color: PLANET_COLORS[planet.planet], textShadow: `0 0 8px ${PLANET_COLORS[planet.planet]}55` }}>
                         {PLANET_SYMBOLS[planet.planet]}
                       </span>
-                      <span className="text-xs sm:text-[15px] font-bold" style={{ color: cellTxt }}>{planet.planet}</span>
+                      <span className="text-xs sm:text-[15px] font-bold" style={{ color: cellTxt }}>{labelPlanet(planet.planet, lang)}</span>
                     </div>
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold" style={{ color: cellTxt }}>
-                    {planet.rashi}
+                    {labelRashi(planet.rashiIndex, lang, planet.rashi)}
                     <span className="text-[10px] sm:text-xs ml-1 font-mono font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
                       ({planet.rashiIndex + 1})
                     </span>
@@ -123,6 +126,7 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
       <PlanetDetailPanel
         planet={selected}
         ascendantRashiIndex={ascendantRashiIndex}
+        allPlanets={planets}
         onClose={() => setSelected(null)}
       />
     </>

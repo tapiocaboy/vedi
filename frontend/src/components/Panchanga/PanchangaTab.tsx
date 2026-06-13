@@ -122,23 +122,23 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
           <LimbCard label={t('panchanga.tithi')} delay={0}
             value={`${panchanga.tithi.name}`}
-            sub={`${panchanga.tithi.paksha} Paksha · lord ${panchanga.tithi.lord}`}
+            sub={t('panchanga.tithiSub', { paksha: panchanga.tithi.paksha, lord: panchanga.tithi.lord })}
             accent="#f59e0b" isLight={isLight} />
           <LimbCard label={t('panchanga.vara')} delay={0.05}
             value={panchanga.vara.sanskritName}
-            sub={`${panchanga.vara.name} · lord ${panchanga.vara.lord}`}
+            sub={t('panchanga.varaSub', { day: panchanga.vara.name, lord: panchanga.vara.lord })}
             accent="#38bdf8" isLight={isLight} />
           <LimbCard label={t('panchanga.nakshatra')} delay={0.1}
             value={`${moonNakshatra.name}`}
-            sub={`Pada ${moonNakshatra.pada} · lord ${moonNakshatra.lord} · ${moonNakshatra.gana} gana`}
+            sub={t('panchanga.nakshatraSub', { pada: moonNakshatra.pada, lord: moonNakshatra.lord, gana: moonNakshatra.gana })}
             accent="#a78bfa" isLight={isLight} />
           <LimbCard label={t('panchanga.yoga')} delay={0.15}
             value={panchanga.yoga.name}
-            sub={panchanga.yoga.nature === 'benefic' ? 'Benefic yoga' : 'Malefic yoga — act with care'}
+            sub={panchanga.yoga.nature === 'benefic' ? t('panchanga.yogaBenefic') : t('panchanga.yogaMalefic')}
             accent={panchanga.yoga.nature === 'benefic' ? '#10b981' : '#f43f5e'} isLight={isLight} />
           <LimbCard label={t('panchanga.karana')} delay={0.2}
             value={panchanga.karana.name}
-            sub={`${panchanga.karana.type} karana`}
+            sub={t('panchanga.karanaSub', { type: panchanga.karana.type })}
             accent="#fb923c" isLight={isLight} />
         </div>
 

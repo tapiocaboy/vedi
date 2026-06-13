@@ -4,6 +4,8 @@ import type { PlanetPosition } from '../../types/astrology';
 import { RASHIS, PLANET_SYMBOLS } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
 
 const ACCENT = '#FF2E51';
 
@@ -44,6 +46,7 @@ const PLANET_TEXT: Record<number, [number, number]> = {
 export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) => {
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
   const isLight = useTheme();
+  const { lang, t } = useLang();
 
   const planetsByHouse: Record<number, PlanetPosition[]> = {};
   for (let i = 1; i <= 12; i++) planetsByHouse[i] = [];
@@ -80,7 +83,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         className="text-sm font-bold mb-4 text-center tracking-wide"
         style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
-        Click any house to see its reading and planets
+        {t('chart.clickHouseHint')}
       </p>
 
       <svg viewBox="0 0 150 150" className="w-full h-auto"
@@ -169,11 +172,11 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         <text x="75" y="70" textAnchor="middle" fontSize="10"
           fill={ascLabelClr} fontFamily="monospace" fontWeight="900"
           className="pointer-events-none select-none">
-          ASC
+          {t('chart.ascAbbrev')}
         </text>
         <text x="75" y="84" textAnchor="middle" fontSize="11" fontWeight="900"
           fill={ascRashiClr} className="pointer-events-none select-none">
-          {RASHIS[ascendantRashi]}
+          {labelRashi(ascendantRashi, lang, RASHIS[ascendantRashi])}
         </text>
       </svg>
 
@@ -182,7 +185,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1.5">
             <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px ${ACCENT}44` }}>{symbol}</span>
-            <span className="font-bold">{planet}</span>
+            <span className="font-bold">{labelPlanet(planet, lang)}</span>
           </div>
         ))}
       </div>

@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { translations, type Lang, type TranslationKey } from './translations';
+import { translations, interpolate, type Lang, type TranslationKey } from './translations';
 
 const LANG_KEY = 'trytellme_lang';
 
 interface LanguageContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
@@ -32,7 +32,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [lang]);
 
   const t = useCallback(
-    (key: TranslationKey) => translations[lang][key] ?? translations.en[key],
+    (key: TranslationKey, vars?: Record<string, string | number>) => {
+      const raw = translations[lang][key] ?? translations.en[key];
+      return vars ? interpolate(raw, vars) : raw;
+    },
     [lang],
   );
 
