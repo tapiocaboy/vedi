@@ -191,7 +191,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
   // Colour/size/background + native date-time legibility live in `.form-field`
   // (see index.css) so the date/time pickers render correctly on mobile and in
   // both themes; Tailwind here only handles layout + focus ring.
-  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-bold focus:border-[#FF2E51]/60 focus:ring-1 focus:ring-[#FF2E51]/20 outline-none transition-all";
+  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-bold focus:border-[rgba(var(--c-accent-rgb),0.6)] focus:ring-1 focus:ring-[rgba(var(--c-accent-rgb),0.2)] outline-none transition-all";
   const labelClasses = "form-label block text-sm font-bold mb-2 uppercase tracking-wide";
 
   return (
@@ -200,7 +200,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <Calendar className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+            <Calendar className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
             {t('form.birthDate')}
           </label>
           <input
@@ -214,7 +214,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+            <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
             {t('form.birthTime')}
           </label>
           <input
@@ -239,7 +239,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
               key={preset.name}
               type="button"
               onClick={() => setPresetLocation(preset)}
-              className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[#FF2E51]/40 hover:text-[#FF2E51] transition-all"
+              className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
             >
               {preset.name}
             </button>
@@ -251,7 +251,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
             {t('form.latitude')}
           </label>
           <input
@@ -269,7 +269,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </div>
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
             {t('form.longitude')}
           </label>
           <input
@@ -290,7 +290,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Timezone */}
       <div>
         <label className={labelClasses}>
-          <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+          <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
           {t('form.timezone')}
         </label>
         <select
@@ -308,7 +308,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       {/* Ayanamsa */}
       <div>
         <label className={labelClasses}>
-          <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[#FF2E51]" />
+          <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
           {t('form.ayanamsa')}
         </label>
         <select
@@ -327,10 +327,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3.5 px-6 text-white text-base font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: '#FF2E51' }}
-        onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#e01f3d')}
-        onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = '#FF2E51')}
+        className="on-accent w-full py-3.5 px-6 text-white text-base font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ backgroundColor: 'var(--c-accent)' }}
+        onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--c-accent-dark)')}
+        onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--c-accent)')}
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

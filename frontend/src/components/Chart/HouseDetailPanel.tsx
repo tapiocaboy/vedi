@@ -31,7 +31,7 @@ const DIGNITY_COLOR_LIGHT: Record<string, string> = {
   'debilitated':  '#dc2626',
 };
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 export const HouseDetailPanel: React.FC<Props> = ({
   houseNumber, ascendantRashiIndex, planets, onClose,

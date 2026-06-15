@@ -82,8 +82,8 @@ const TransitsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-          <Compass className="w-4 h-4" style={{ color: '#ff6b81' }} />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+          <Compass className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">{t('now.transitsTitle')}</h3>
@@ -152,15 +152,15 @@ const LocationCard: React.FC<{
   return (
     <div className="glass-card rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-          <MapPin className="w-4 h-4" style={{ color: '#ff6b81' }} />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+          <MapPin className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">{t('now.relocationTitle')}</h3>
           <p className="text-[11px] text-white/40">{t('now.relocationSubtitle')}</p>
         </div>
         {!enabled ? (
-          <button onClick={() => setEnabled(true)} className="text-xs px-3 py-1.5 rounded-lg border text-white/70 hover:text-white" style={{ background: 'rgba(255,46,81,0.12)', borderColor: 'rgba(255,46,81,0.25)' }}>
+          <button onClick={() => setEnabled(true)} className="text-xs px-3 py-1.5 rounded-lg border text-white/70 hover:text-white" style={{ background: 'rgba(var(--c-accent-rgb),0.12)', borderColor: 'rgba(var(--c-accent-rgb),0.25)' }}>
             {t('now.setLocation')}
           </button>
         ) : (
@@ -186,14 +186,14 @@ const LocationCard: React.FC<{
               <input value={tz} onChange={e => setTz(e.target.value)} placeholder="Europe/London" className="mt-1 w-full bg-black/40 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white" />
             </label>
           </div>
-          <button onClick={apply} className="text-xs px-3 py-1.5 rounded-lg border text-white hover:opacity-90" style={{ background: 'rgba(255,46,81,0.18)', borderColor: 'rgba(255,46,81,0.35)' }}>
+          <button onClick={apply} className="text-xs px-3 py-1.5 rounded-lg border text-white hover:opacity-90" style={{ background: 'rgba(var(--c-accent-rgb),0.18)', borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}>
             {t('now.applyLocation')}
           </button>
         </div>
       )}
 
       {relocation && (
-        <div className="rounded-xl border p-4 mt-2" style={{ borderColor: 'rgba(255,46,81,0.18)', background: 'rgba(255,46,81,0.04)' }}>
+        <div className="rounded-xl border p-4 mt-2" style={{ borderColor: 'rgba(var(--c-accent-rgb),0.18)', background: 'rgba(var(--c-accent-rgb),0.04)' }}>
           <div className="flex items-center justify-between mb-2">
             <div className="text-[11px] uppercase tracking-wider text-white/50">{t('now.relocatedChart')}</div>
             <div className="text-[10px] font-mono text-white/40">
@@ -227,8 +227,8 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
   return (
     <div className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-          <Zap className="w-4 h-4" style={{ color: '#ff6b81' }} />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+          <Zap className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">{t('now.playbookTitle')}</h3>
@@ -236,8 +236,8 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
         </div>
       </div>
 
-      <div className="rounded-xl border p-3" style={{ borderColor: 'rgba(255,46,81,0.18)', background: 'rgba(255,46,81,0.04)' }}>
-        <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'rgba(255,107,129,0.75)' }}>{t('now.decisionWindow')}</div>
+      <div className="rounded-xl border p-3" style={{ borderColor: 'rgba(var(--c-accent-rgb),0.18)', background: 'rgba(var(--c-accent-rgb),0.04)' }}>
+        <div className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'rgba(var(--c-accent2-rgb),0.75)' }}>{t('now.decisionWindow')}</div>
         <p className="text-xs text-white/80 leading-relaxed">{pb.decisionWindow}</p>
       </div>
 
@@ -318,8 +318,8 @@ const PredictionDetailsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => 
   return (
     <div className="glass-card rounded-2xl p-6 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-          <Sparkles className="w-4 h-4" style={{ color: '#ff6b81' }} />
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+          <Sparkles className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-white">{t('now.periodAnalysisTitle')}</h3>

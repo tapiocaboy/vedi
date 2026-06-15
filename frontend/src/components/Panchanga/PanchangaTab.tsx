@@ -7,7 +7,7 @@ import type { BirthData } from '../../services/api';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 function fmtTime(iso: string | null, timeZone: string): string {
   if (!iso) return '—';
@@ -99,8 +99,8 @@ export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) 
       <div className="glass-card rounded-2xl p-3 sm:p-6">
         <div className="flex items-center gap-2.5 mb-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-            <CalendarDays className="w-4 h-4" style={{ color: '#ff6b81' }} />
+            style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+            <CalendarDays className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
           </div>
           <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('panchanga.title')}</h3>
         </div>

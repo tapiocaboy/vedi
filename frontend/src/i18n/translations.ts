@@ -17,6 +17,10 @@ const en = {
   'header.offline': 'Offline',
   'header.themeToDark': 'Switch to dark mode',
   'header.themeToLight': 'Switch to light mode',
+  'header.theme': 'Theme',
+  'theme.dark': 'Dark',
+  'theme.light': 'Light',
+  'theme.mono': 'Black & White',
   'lang.englishTitle': 'English',
   'lang.sinhalaTitle': 'සිංහල (Sinhala)',
 
@@ -432,6 +436,10 @@ const si: Record<keyof typeof en, string> = {
   'header.offline': 'අන්තර්ජාලය නැත',
   'header.themeToDark': 'අඳුරු පෙනුමට මාරු වන්න',
   'header.themeToLight': 'සැහැල්ලු පෙනුමට මාරු වන්න',
+  'header.theme': 'තේමාව',
+  'theme.dark': 'අඳුරු',
+  'theme.light': 'සැහැල්ලු',
+  'theme.mono': 'කළු සහ සුදු',
   'lang.englishTitle': 'English',
   'lang.sinhalaTitle': 'සිංහල',
 

@@ -8,7 +8,7 @@ import { ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi, labelDignity, labelArea, labelOrdinalHouse } from '../../i18n/astroLabels';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 interface Props {
   planet: PlanetPosition | null;

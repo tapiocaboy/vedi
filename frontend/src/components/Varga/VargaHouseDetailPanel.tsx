@@ -9,7 +9,7 @@ import {
   labelPlanet, labelRashi, labelRashiWestern, labelDignity, labelOrdinalHouse,
 } from '../../i18n/astroLabels';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 const GLYPH: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃',
@@ -138,7 +138,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
               {/* Lagna badge */}
               {analysis.isLagna && (
                 <div className="rounded-xl px-4 py-3 flex items-center gap-2"
-                  style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.25)' }}>
+                  style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.25)' }}>
                   <Home className="w-4 h-4" style={{ color: ACCENT }} />
                   <p className="text-sm font-semibold" style={{ color: isLight ? '#9f1239' : ACCENT }}>
                     {isD9 ? t('varga.navamsaLagnaBadge') : t('varga.dasamsaLagnaBadge')}
@@ -198,7 +198,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
                             </span>
                             {isVargottama && (
                               <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                style={{ color: ACCENT, background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.25)' }}>
+                                style={{ color: ACCENT, background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.25)' }}>
                                 <Sparkles className="w-2.5 h-2.5" /> {t('varga.vargottama')}
                               </span>
                             )}

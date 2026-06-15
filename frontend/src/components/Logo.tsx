@@ -1,7 +1,7 @@
 import React, { useId } from 'react';
 import { useLang } from '../i18n/LanguageContext';
 
-const PINK = '#FF2E51';
+const PINK = 'var(--c-accent)';
 
 interface LogoProps {
   size?: number;
@@ -72,7 +72,7 @@ export const BrandTitle: React.FC<BrandTitleProps> = ({ isLight = false, compact
         <p
           // Letter-spacing breaks Sinhala ligatures, so only track the Latin text
           className={`text-[10px] font-mono ${lang === 'si' ? 'text-[11px]' : 'uppercase tracking-[0.22em]'}`}
-          style={{ color: isLight ? 'rgba(255,46,81,0.70)' : 'rgba(255,255,255,0.45)' }}
+          style={{ color: isLight ? 'rgba(var(--c-accent-rgb),0.70)' : 'rgba(255,255,255,0.45)' }}
         >
           {t('footer.tagline')}
         </p>

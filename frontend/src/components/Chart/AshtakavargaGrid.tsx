@@ -10,7 +10,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashiWestern } from '../../i18n/astroLabels';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 interface Props {
   birthData: BirthData;
@@ -138,7 +138,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
     <div className="glass-card rounded-2xl p-6 space-y-5">
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: 'rgba(255,46,81,0.10)', border: '1px solid rgba(255,46,81,0.22)' }}>
+          style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}>
           <Grid3x3 className="w-4 h-4" style={{ color: ACCENT }} />
         </div>
         <div className="flex-1">

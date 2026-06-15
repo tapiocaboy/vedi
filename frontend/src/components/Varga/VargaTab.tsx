@@ -12,7 +12,7 @@ import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
 import { VargaHouseDetailPanel } from './VargaHouseDetailPanel';
 import type { VargaVariant } from '../../lib/core/vargaAnalysis';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 const GLYPH: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃',
@@ -100,11 +100,11 @@ function VargaGrid({
               style={{
                 border: isAsc ? `1.5px solid ${ACCENT}` : isLight ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.07)',
                 background: isAsc
-                  ? (isLight ? 'rgba(255,46,81,0.06)' : 'rgba(255,46,81,0.10)')
+                  ? (isLight ? 'rgba(var(--c-accent-rgb),0.06)' : 'rgba(var(--c-accent-rgb),0.10)')
                   : 'transparent',
               }}
               onMouseEnter={e => {
-                if (!isAsc) e.currentTarget.style.background = isLight ? 'rgba(255,46,81,0.04)' : 'rgba(255,255,255,0.05)';
+                if (!isAsc) e.currentTarget.style.background = isLight ? 'rgba(var(--c-accent-rgb),0.04)' : 'rgba(255,255,255,0.05)';
                 e.currentTarget.style.borderColor = ACCENT;
               }}
               onMouseLeave={e => {
@@ -228,8 +228,8 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
       <div className="glass-card rounded-2xl p-3 sm:p-6">
         <div className="flex items-center gap-2.5 mb-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}>
-            <Layers className="w-4 h-4" style={{ color: '#ff6b81' }} />
+            style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+            <Layers className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
           </div>
           <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('varga.title')}</h3>
         </div>
@@ -293,7 +293,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
                   <td className="px-2 py-2">
                     {p.isVargottama && (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold border"
-                        style={{ color: ACCENT, borderColor: `${ACCENT}50`, background: `${ACCENT}10` }}>
+                        style={{ color: ACCENT, borderColor: `rgba(var(--c-accent-rgb),0.31)`, background: `rgba(var(--c-accent-rgb),0.06)` }}>
                         <Sparkles className="w-2.5 h-2.5" /> {t('varga.vargottama')}
                       </span>
                     )}

@@ -8,7 +8,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
 import { useTheme } from '../../hooks/useTheme';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 interface Props {
   planets: PlanetPosition[];

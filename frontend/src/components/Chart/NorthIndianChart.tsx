@@ -7,7 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 interface Props {
   planets: PlanetPosition[];
@@ -184,7 +184,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
       <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1.5">
-            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px ${ACCENT}44` }}>{symbol}</span>
+            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px rgba(var(--c-accent-rgb),0.27)` }}>{symbol}</span>
             <span className="font-bold">{labelPlanet(planet, lang)}</span>
           </div>
         ))}

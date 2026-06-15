@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays } from 'lucide-react';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays } from 'lucide-react';
 
-const ACCENT = '#FF2E51';
+const ACCENT = 'var(--c-accent)';
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
@@ -36,16 +36,20 @@ const queryClient = new QueryClient({
 
 type ChartStyle = 'south' | 'north';
 type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'panchanga';
+type Theme = 'dark' | 'light' | 'mono';
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
   const [chartStyle, setChartStyle] = useState<ChartStyle>('south');
   const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
   const [chartData, setChartData]   = useState<Chart | null>(null);
-  const [isLight, setIsLight]       = useState<boolean>(() => {
+  const [theme, setTheme]           = useState<Theme>(() => {
     const saved = localStorage.getItem('trytellme_theme') ?? localStorage.getItem('predictor_theme');
-    return saved === 'light';
+    return saved === 'mono' ? 'mono' : saved === 'light' ? 'light' : 'dark';
   });
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  // The "mono" enterprise theme rides on top of the light layout.
+  const isLight = theme !== 'dark';
   // Legal gate — shown on every site load / refresh / first visit
   const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(true);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
@@ -60,20 +64,23 @@ function AppContent() {
   const { lang, setLang, t } = useLang();
 
 
-  // Apply theme class to <html> so body background responds
+  // Apply theme classes to <html> so body background + tokens respond.
+  // "mono" applies alongside "theme-light" (it inherits the light layout and
+  // only recolours the accent to greyscale + disables motion).
   useEffect(() => {
     const root = document.documentElement;
-    if (isLight) {
-      root.classList.add('theme-light');
-      root.classList.remove('theme-dark');
-    } else {
-      root.classList.remove('theme-light');
-      root.classList.add('theme-dark');
-    }
-    localStorage.setItem('trytellme_theme', isLight ? 'light' : 'dark');
-  }, [isLight]);
+    root.classList.toggle('theme-dark', theme === 'dark');
+    root.classList.toggle('theme-light', theme === 'light' || theme === 'mono');
+    root.classList.toggle('theme-mono', theme === 'mono');
+    localStorage.setItem('trytellme_theme', theme);
+  }, [theme]);
 
-  const toggleTheme = () => setIsLight(v => !v);
+  const themeOptions: { id: Theme; label: string; icon: React.ElementType }[] = [
+    { id: 'dark',  label: t('theme.dark'),  icon: Moon },
+    { id: 'light', label: t('theme.light'), icon: Sun },
+    { id: 'mono',  label: t('theme.mono'),  icon: Contrast },
+  ];
+  const activeTheme = themeOptions.find(o => o.id === theme) ?? themeOptions[0];
 
   const runGenerate = async (data: BirthData) => {
     setBirthData(data);
@@ -122,8 +129,8 @@ function AppContent() {
       className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-all duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
         activeTab === id
           ? isLight
-            ? 'text-white shadow-sm'
-            : 'text-white shadow-sm'
+            ? 'text-white shadow-sm on-accent'
+            : 'text-white shadow-sm on-accent'
           : isLight
             ? 'text-gray-500 hover:text-gray-800 hover:bg-white/70'
             : 'text-white/38 hover:text-white/65 hover:bg-white/5'
@@ -136,6 +143,10 @@ function AppContent() {
   );
 
   return (
+    <MotionConfig
+      reducedMotion={theme === 'mono' ? 'always' : 'never'}
+      transition={theme === 'mono' ? { duration: 0 } : undefined}
+    >
     <div className={`min-h-screen tech-grid transition-colors duration-300 ${isLight ? 'theme-light' : ''}`}
       style={{ backgroundColor: 'var(--bg-page)' }}
     >
@@ -158,15 +169,16 @@ function AppContent() {
         trigger={privacyTrigger}
       />
 
-      {/* High-tech particle network — both themes */}
-      <ParticleField isLight={isLight} />
+      {/* High-tech particle network — dark & light themes only (mono is static) */}
+      {theme !== 'mono' && <ParticleField isLight={isLight} />}
 
-      {/* Ambient color orbs */}
+      {/* Ambient color orbs — hidden in the mono enterprise theme */}
+      {theme !== 'mono' && (
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 ambient-orbs" aria-hidden>
         <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[180px]"
           style={{ background: isLight
-            ? 'radial-gradient(circle, rgba(255,46,81,0.06) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255,46,81,0.07) 0%, transparent 70%)'
+            ? 'radial-gradient(circle, rgba(var(--c-accent-rgb),0.06) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(var(--c-accent-rgb),0.07) 0%, transparent 70%)'
           }} />
         <div className="absolute top-1/3 -right-32 w-[420px] h-[420px] rounded-full blur-[160px]"
           style={{ background: isLight
@@ -184,9 +196,10 @@ function AppContent() {
             : 'radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%)'
           }} />
       </div>
+      )}
 
       {/* ── Header ───────────────────────────────────────────────────── */}
-      <header className="relative z-10 border-b app-header sticky top-0">
+      <header className="relative z-30 border-b app-header sticky top-0">
         <div className="max-w-7xl mx-auto px-3 sm:px-5 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Logo size={32} className="shrink-0 sm:w-10 sm:h-10" />
@@ -205,7 +218,7 @@ function AppContent() {
                   ? 'bg-gray-100 border border-gray-200 text-gray-500'
                   : 'bg-white/4 border border-white/8 text-white/45'
               }`}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#FF2E51' }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
                 v{health.version}
               </span>
             ) : null}
@@ -221,7 +234,7 @@ function AppContent() {
                   title={code === 'en' ? t('lang.englishTitle') : t('lang.sinhalaTitle')}
                   className={`px-2 sm:px-2.5 h-7 sm:h-8 rounded-[10px] text-[11px] sm:text-xs font-bold transition-all duration-200 ${
                     lang === code
-                      ? 'text-white shadow-sm'
+                      ? 'text-white shadow-sm on-accent'
                       : isLight
                         ? 'text-gray-500 hover:text-gray-800'
                         : 'text-white/40 hover:text-white/70'
@@ -233,18 +246,59 @@ function AppContent() {
               ))}
             </div>
 
-            {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              title={isLight ? t('header.themeToDark') : t('header.themeToLight')}
-              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                isLight
-                  ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
-                  : 'bg-white/5 border border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            </button>
+            {/* Theme picker — Dark / Light / Black & White */}
+            <div className="relative">
+              <button
+                onClick={() => setThemeMenuOpen(o => !o)}
+                title={t('header.theme')}
+                aria-haspopup="menu"
+                aria-expanded={themeMenuOpen}
+                className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1 transition-all duration-200 ${
+                  isLight
+                    ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
+                    : 'bg-white/5 border border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <activeTheme.icon className="w-4 h-4" />
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${themeMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {themeMenuOpen && (
+                <>
+                  {/* click-away catcher */}
+                  <div className="fixed inset-0 z-40" onClick={() => setThemeMenuOpen(false)} aria-hidden />
+                  <div
+                    role="menu"
+                    className={`absolute right-0 mt-2 w-44 z-50 rounded-xl border p-1 shadow-lg backdrop-blur-md ${
+                      isLight
+                        ? 'bg-white border-gray-200'
+                        : 'bg-[#0e111e]/95 border-white/10'
+                    }`}
+                  >
+                    {themeOptions.map(({ id, label, icon: Icon }) => {
+                      const selected = id === theme;
+                      return (
+                        <button
+                          key={id}
+                          role="menuitemradio"
+                          aria-checked={selected}
+                          onClick={() => { setTheme(id); setThemeMenuOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors duration-150 ${
+                            selected
+                              ? isLight ? 'bg-gray-100 text-gray-900' : 'bg-white/10 text-white'
+                              : isLight ? 'text-gray-600 hover:bg-gray-50' : 'text-white/60 hover:bg-white/5'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          <span className="flex-1 text-left">{label}</span>
+                          {selected && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c-accent)' }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -260,15 +314,16 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card rounded-2xl p-4 sm:p-6 relative overflow-hidden"
             >
-              {/* Animated background — vivid color wash + fast particles */}
+              {/* Animated background — vivid color wash + fast particles (skipped in mono) */}
+              {theme !== 'mono' && (
               <div className="absolute inset-0 pointer-events-none z-0 form-bg-particles">
                 {/* Fast shifting multi-color gradient */}
                 <motion.div
                   className="absolute inset-0"
                   style={{
                     background: isLight
-                      ? 'linear-gradient(135deg, rgba(255,46,81,0.07), rgba(255,230,0,0.05), rgba(0,180,90,0.05), rgba(255,140,0,0.06), rgba(0,160,220,0.04))'
-                      : 'linear-gradient(135deg, rgba(255,46,81,0.10), rgba(255,230,0,0.06), rgba(0,255,135,0.06), rgba(255,140,0,0.07), rgba(0,220,255,0.05))',
+                      ? 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.07), rgba(255,230,0,0.05), rgba(0,180,90,0.05), rgba(255,140,0,0.06), rgba(0,160,220,0.04))'
+                      : 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.10), rgba(255,230,0,0.06), rgba(0,255,135,0.06), rgba(255,140,0,0.07), rgba(0,220,255,0.05))',
                     backgroundSize: '500% 500%',
                   }}
                   animate={{ backgroundPosition: ['0% 0%', '100% 30%', '60% 100%', '30% 60%', '0% 0%'] }}
@@ -277,7 +332,7 @@ function AppContent() {
                 {/* Sweeping color blobs */}
                 <motion.div
                   className="absolute w-32 h-32 rounded-full blur-[50px]"
-                  style={{ background: isLight ? 'rgba(255,46,81,0.10)' : 'rgba(255,46,81,0.14)' }}
+                  style={{ background: isLight ? 'rgba(var(--c-accent-rgb),0.10)' : 'rgba(var(--c-accent-rgb),0.14)' }}
                   animate={{ x: ['-20%', '120%'], y: ['10%', '70%'] }}
                   transition={{ duration: 4, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
                 />
@@ -330,6 +385,7 @@ function AppContent() {
                   />
                 ))}
               </div>
+              )}
 
               <div className="relative z-10">
                 <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-gray-150' : 'border-white/5'}`}
@@ -337,8 +393,8 @@ function AppContent() {
                 >
                   <motion.div
                     className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ background: 'rgba(255,46,81,0.10)', border: '1px solid rgba(255,46,81,0.22)' }}
-                    animate={{ boxShadow: ['0 0 0px rgba(255,46,81,0)', '0 0 12px rgba(255,46,81,0.25)', '0 0 0px rgba(255,46,81,0)'] }}
+                    style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}
+                    animate={{ boxShadow: ['0 0 0px rgba(var(--c-accent-rgb),0)', '0 0 12px rgba(var(--c-accent-rgb),0.25)', '0 0 0px rgba(var(--c-accent-rgb),0)'] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
                     <Moon className="w-4 h-4" style={{ color: ACCENT }} />
@@ -399,7 +455,7 @@ function AppContent() {
                             onClick={() => setChartStyle(style)}
                             className={`px-5 py-2 rounded-lg text-xs font-semibold transition-all ${
                               chartStyle === style
-                                ? 'text-white'
+                                ? 'text-white on-accent'
                                 : isLight
                                   ? 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-200'
                                   : 'bg-white/4 text-white/40 hover:text-white border border-white/8'
@@ -422,7 +478,7 @@ function AppContent() {
 
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                          <Sun className="w-4 h-4" style={{ color: '#FF2E51' }} />
+                          <Sun className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
                           {t('chart.planetaryPositions')}
                         </h3>
                         <PlanetTable planets={chartData.planets} ascendant={chartData.ascendant} />
@@ -479,9 +535,9 @@ function AppContent() {
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <div className="flex items-center gap-2.5 mb-1">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ background: 'rgba(255,46,81,0.08)', border: '1px solid rgba(255,46,81,0.18)' }}
+                            style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}
                           >
-                            <Stars className="w-4 h-4" style={{ color: '#ff6b81' }} />
+                            <Stars className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
                           </div>
                           <h3 className="text-sm font-semibold text-white">{t('patterns.title')}</h3>
                         </div>
@@ -527,7 +583,7 @@ function AppContent() {
                   <motion.div
                     className="absolute inset-0 rounded-2xl pointer-events-none"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255,46,81,0.12), rgba(255,230,0,0.06), rgba(0,255,135,0.06), rgba(255,140,0,0.08))',
+                      background: 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.12), rgba(255,230,0,0.06), rgba(0,255,135,0.06), rgba(255,140,0,0.08))',
                       backgroundSize: '400% 400%',
                     }}
                     animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
@@ -597,6 +653,7 @@ function AppContent() {
         </div>
       </footer>
     </div>
+    </MotionConfig>
   );
 }
 
