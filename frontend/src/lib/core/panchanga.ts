@@ -1,4 +1,4 @@
-/** Panchanga calculations — direct port of backend/src/core/panchanga.py */
+/** Panchanga calculations —direct port of backend/src/core/panchanga.py */
 
 export const TITHI_NAMES = [
   'Pratipada','Dwitiya','Tritiya','Chaturthi','Panchami',
