@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -20,6 +20,7 @@ import { MatchTab } from './components/Match/MatchTab';
 import { VargaTab } from './components/Varga/VargaTab';
 import { PanchangaTab } from './components/Panchanga/PanchangaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
+import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -54,13 +55,14 @@ function AppContent() {
   const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(true);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
+  const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
 
   const generateChart = useGenerateChart();
   const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(birthData, 80);
-  const { data: health, isError: isHealthError } = useHealthCheck();
+  const { isError: isHealthError } = useHealthCheck();
   const { lang, setLang, t } = useLang();
 
 
@@ -162,6 +164,13 @@ function AppContent() {
         onDismiss={() => setMatchExperimentalVisible(false)}
       />
 
+      {/* Monthly transits — sign changes this month + their effects */}
+      <MonthlyTransitsModal
+        visible={monthlyTransitsVisible}
+        onClose={() => setMonthlyTransitsVisible(false)}
+        chart={chartData}
+      />
+
       {/* Privacy banner — shown on load + each generate */}
       <PrivacyBanner
         visible={privacyVisible}
@@ -208,20 +217,26 @@ function AppContent() {
 
           {/* Right side: status + language + theme toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {isHealthError ? (
+            {isHealthError && (
               <span className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-400">
                 <AlertCircle className="w-3 h-3" /> {t('header.offline')}
               </span>
-            ) : health ? (
-              <span className={`hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-mono ${
+            )}
+
+            {/* Monthly transits — replaces the old version badge */}
+            <button
+              onClick={() => setMonthlyTransitsVisible(true)}
+              title={t('monthly.title')}
+              className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
                 isLight
-                  ? 'bg-gray-100 border border-gray-200 text-gray-500'
-                  : 'bg-white/4 border border-white/8 text-white/45'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
-                v{health.version}
-              </span>
-            ) : null}
+                  ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                  : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
+              <CalendarRange className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{t('header.monthlyTransits')}</span>
+            </button>
 
             {/* Language switch: English / Sinhala */}
             <div className={`flex items-center rounded-xl p-0.5 border ${
