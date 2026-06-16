@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -21,6 +21,7 @@ import { VargaTab } from './components/Varga/VargaTab';
 import { PanchangaTab } from './components/Panchanga/PanchangaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
+import { NatalChartModal } from './components/Natal/NatalChartModal';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -56,6 +57,7 @@ function AppContent() {
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
+  const [natalChartVisible, setNatalChartVisible] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
@@ -171,6 +173,13 @@ function AppContent() {
         chart={chartData}
       />
 
+      {/* Natal chart — full birth-chart reading, line by line */}
+      <NatalChartModal
+        visible={natalChartVisible}
+        onClose={() => setNatalChartVisible(false)}
+        birthData={birthData}
+      />
+
       {/* Privacy banner — shown on load + each generate */}
       <PrivacyBanner
         visible={privacyVisible}
@@ -222,6 +231,20 @@ function AppContent() {
                 <AlertCircle className="w-3 h-3" /> {t('header.offline')}
               </span>
             )}
+
+            {/* Natal chart — full birth-chart reading */}
+            <button
+              onClick={() => setNatalChartVisible(true)}
+              title={t('natal.title')}
+              className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
+                isLight
+                  ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                  : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              <Orbit className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{t('header.natalChart')}</span>
+            </button>
 
             {/* Monthly transits — replaces the old version badge */}
             <button
