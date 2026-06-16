@@ -839,6 +839,23 @@ html[lang='si'] * {
   fill: #fff !important;
 }
 
+/* Timeline (Dasha) — the Mahadasha header backgrounds resolve to dark greys in
+   mono, but the light layer turns `.text-white` navy, leaving the label dark-on-
+   dark. Pin the header to a neutral dark fill and force WHITE text so it stays
+   legible, and flatten the per-lord colour dots to grey. */
+.theme-mono .dasha-md-header {
+  background-color: var(--c-accent-dark) !important;
+  background-image: none !important;
+}
+.theme-mono .dasha-md-header,
+.theme-mono .dasha-md-header * {
+  color: #fff !important;
+  fill: #fff !important;
+}
+.theme-mono .dasha-dot {
+  background-color: var(--c-accent-3) !important;
+}
+
 /* Flatten the accent gradient text/borders into a single neutral in mono */
 .theme-mono .text-gradient {
   background-image: none;

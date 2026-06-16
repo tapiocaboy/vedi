@@ -345,6 +345,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
             <div
               onClick={() => toggleExpand(mahadasha.lord, idx)}
               className={`
+                dasha-md-header
                 p-4 cursor-pointer flex items-center justify-between
                 transition-all hover:brightness-110
                 ${DASHA_COLORS[mahadasha.lord] || 'bg-slate-600'}
@@ -416,8 +417,9 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             `}
                           >
                             <div className="flex items-center gap-2">
-                              <span 
+                              <span
                                 className={`
+                                  dasha-dot
                                   w-3 h-3 rounded-full
                                   ${DASHA_COLORS[ad.lord] || 'bg-slate-500'}
                                 `}
