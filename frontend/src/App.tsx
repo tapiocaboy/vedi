@@ -22,6 +22,7 @@ import { PanchangaTab } from './components/Panchanga/PanchangaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
 import { NatalChartModal } from './components/Natal/NatalChartModal';
+import { FavourableForecast } from './components/Forecast/FavourableForecast';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -223,6 +224,13 @@ function AppContent() {
             <Logo size={32} className="shrink-0 sm:w-10 sm:h-10" />
             <BrandTitle isLight={isLight} />
           </div>
+
+          {/* Middle: favourability forecast — how long until a good window */}
+          <FavourableForecast
+            chart={chartData}
+            isLight={isLight}
+            onClick={() => setMonthlyTransitsVisible(true)}
+          />
 
           {/* Right side: status + language + theme toggle */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
