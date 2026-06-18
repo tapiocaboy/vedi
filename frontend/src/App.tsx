@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download, MessageCircle } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -23,6 +23,8 @@ import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModa
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
 import { NatalChartModal } from './components/Natal/NatalChartModal';
 import { FavourableForecast } from './components/Forecast/FavourableForecast';
+import { HoroscopeChat } from './components/Chat/HoroscopeChat';
+import { downloadChartMarkdown } from './lib/core/exportChart';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -59,6 +61,7 @@ function AppContent() {
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
   const [natalChartVisible, setNatalChartVisible] = useState(false);
+  const [chatVisible, setChatVisible] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
@@ -181,6 +184,26 @@ function AppContent() {
         birthData={birthData}
       />
 
+      {/* AI chat — ask questions about the horoscope (NVIDIA Nemotron) */}
+      <HoroscopeChat
+        visible={chatVisible}
+        onClose={() => setChatVisible(false)}
+        chart={chartData}
+      />
+
+      {/* Floating chat button — bottom right, when a chart exists */}
+      {chartData && !chatVisible && (
+        <button
+          onClick={() => setChatVisible(true)}
+          title={t('chat.title')}
+          aria-label={t('chat.title')}
+          className="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg on-accent transition-transform hover:scale-105"
+          style={{ backgroundColor: ACCENT, boxShadow: '0 8px 28px rgba(var(--c-accent-rgb),0.45)' }}
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      )}
+
       {/* Privacy banner — shown on load + each generate */}
       <PrivacyBanner
         visible={privacyVisible}
@@ -253,6 +276,22 @@ function AppContent() {
               <Orbit className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden xs:inline">{t('header.natalChart')}</span>
             </button>
+
+            {/* Export — download the full chart as Markdown (needs a chart) */}
+            {chartData && (
+              <button
+                onClick={() => downloadChartMarkdown(chartData)}
+                title={t('header.exportTitle')}
+                className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
+                  isLight
+                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Download className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline">{t('header.export')}</span>
+              </button>
+            )}
 
             {/* Monthly transits — replaces the old version badge */}
             <button
