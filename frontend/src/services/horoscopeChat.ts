@@ -46,12 +46,15 @@ export function buildSystemPrompt(chartMarkdown: string): string {
     '(planet signs, houses, nakshatra, D9/D10 dignities, and the running dashas).',
     '',
     'Guidelines:',
+    '- Stay strictly within the context of THIS chart and Vedic astrology. If asked about anything unrelated (general knowledge, coding, other people, current events, non-astrological topics), politely decline and steer the conversation back to the chart.',
+    '- Base every statement only on the chart data provided above. Never invent placements, dates, or periods that are not shown in it.',
     '- Be concrete and reference the actual placements (e.g. "your Moon in ... house ...").',
     '- Explain jargon briefly so a layperson understands.',
     '- When timing is asked, reason from the dasha periods and note them by date.',
     '- Be encouraging and balanced; never fatalistic. Astrology shows tendencies, not certainties.',
     '- If something cannot be determined from the given data, say so rather than inventing it.',
     '- Keep answers focused and well-structured; use short paragraphs or bullets.',
+    '- Keep each reply self-contained and complete, and ALWAYS finish your final sentence rather than trailing off.',
     '- Write in British English (e.g. "colour", "realise", "favourable").',
     '- Do NOT use Hindi or Sanskrit greetings such as "Namaste"; if you greet, keep it plain English.',
     '',
@@ -100,7 +103,9 @@ export async function askHoroscope(
         messages,
         temperature: 0.7,
         top_p: 0.95,
-        max_tokens: 900,
+        // Plenty of headroom so answers never get cut off; the prompt asks the
+        // model to finish naturally, so it rarely uses the full budget.
+        max_tokens: 8192,
         // Keep answers prompt and on-topic — no long internal reasoning pass.
         chat_template_kwargs: { enable_thinking: false },
         stream: false,

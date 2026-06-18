@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, Loader2, AlertTriangle, KeyRound, MessageCircle } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, AlertTriangle, KeyRound, MessageCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { Chart } from '../../types/astrology';
 import { buildChartMarkdown } from '../../lib/core/exportChart';
 import {
@@ -31,6 +31,7 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -102,7 +103,11 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
             onClick={onClose}
           />
           <motion.aside
-            className="fixed right-0 top-0 bottom-0 z-[66] w-full sm:w-[420px] glass-card border-l border-white/10 flex flex-col"
+            className={`fixed z-[66] glass-card flex flex-col transition-[width,height,inset] duration-300 ease-out ${
+              expanded
+                ? 'inset-0 m-auto w-[min(900px,94vw)] h-[min(880px,90vh)] rounded-2xl border border-white/12'
+                : 'right-0 top-0 bottom-0 w-full sm:w-[420px] border-l border-white/10'
+            }`}
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
@@ -116,6 +121,10 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
                 <h3 className="text-sm font-semibold text-white">{t('chat.title')}</h3>
                 <p className="text-[11px] text-white/45 truncate">{t('chat.subtitle')}</p>
               </div>
+              <button onClick={() => setExpanded(e => !e)} aria-label={expanded ? t('chat.minimize') : t('chat.expand')} title={expanded ? t('chat.minimize') : t('chat.expand')}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors shrink-0">
+                {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
               <button onClick={onClose} aria-label={t('monthly.close')}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors shrink-0">
                 <X className="w-4 h-4" />
