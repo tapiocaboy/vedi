@@ -12,6 +12,18 @@ import React from 'react';
 let keyId = 0;
 const nextKey = () => `md-${keyId++}`;
 
+// ── Table helpers ────────────────────────────────────────────────────────────
+function splitRow(line: string): string[] {
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+}
+
+/** A markdown table separator row, e.g. "| --- | :--: | ---: |". */
+function isTableSeparator(line: string): boolean {
+  if (!line || !line.includes('|') || !line.includes('-')) return false;
+  const cells = splitRow(line);
+  return cells.length > 0 && cells.every(c => /^:?-{1,}:?$/.test(c));
+}
+
 // ── Inline: bold, italic, code, links ────────────────────────────────────────
 function renderInline(text: string): React.ReactNode[] {
   const out: React.ReactNode[] = [];
@@ -57,6 +69,44 @@ export const Markdown: React.FC<{ content: string }> = ({ content }) => {
         <pre key={nextKey()} className="my-1.5 p-2.5 rounded-lg bg-black/40 border border-white/10 overflow-x-auto">
           <code className="text-[11px] font-mono text-white/85 whitespace-pre">{code.join('\n')}</code>
         </pre>,
+      );
+      continue;
+    }
+
+    // Table: a row with pipes immediately followed by a separator row.
+    if (line.includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      const header = splitRow(line);
+      i += 2; // skip header + separator
+      const rows: string[][] = [];
+      while (i < lines.length && lines[i].trim() !== '' && lines[i].includes('|')) {
+        rows.push(splitRow(lines[i]));
+        i++;
+      }
+      blocks.push(
+        <div key={nextKey()} className="my-2 overflow-x-auto">
+          <table className="w-full text-[11.5px] border-collapse">
+            <thead>
+              <tr>
+                {header.map(cell => (
+                  <th key={nextKey()} className="border border-white/12 bg-white/5 px-2 py-1 text-left font-semibold text-white">
+                    {renderInline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={nextKey()}>
+                  {header.map((_, ci) => (
+                    <td key={nextKey()} className="border border-white/10 px-2 py-1 align-top">
+                      {renderInline(r[ci] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
       );
       continue;
     }
@@ -132,7 +182,8 @@ export const Markdown: React.FC<{ content: string }> = ({ content }) => {
       !/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i]) &&
       !/^\s*>\s?/.test(lines[i]) &&
       !/^\s*[-*+]\s+/.test(lines[i]) &&
-      !/^\s*\d+\.\s+/.test(lines[i])
+      !/^\s*\d+\.\s+/.test(lines[i]) &&
+      !(lines[i].includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1]))
     ) { para.push(lines[i]); i++; }
     blocks.push(<p key={nextKey()} className="my-1 leading-relaxed">{renderInline(para.join(' '))}</p>);
   }
