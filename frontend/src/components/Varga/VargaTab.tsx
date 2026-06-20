@@ -6,6 +6,7 @@ import { getVargas } from '../../services/api';
 import type { BirthData } from '../../services/api';
 import type { VargaPlanet, VargaInsight } from '../../services/api';
 import { RASHIS } from '../../lib/core/rashi';
+import { EXTRA_VARGAS, type VargaCode } from '../../lib/core/vargas';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
@@ -191,6 +192,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const isLight = useTheme();
   const { lang, t } = useLang();
   const [selected, setSelected] = useState<{ variant: VargaVariant; rashi: number } | null>(null);
+  const [moreVarga, setMoreVarga] = useState<VargaCode>('D2');
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vargas', birthData],
     queryFn: () => getVargas(birthData),
@@ -304,6 +306,92 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
           </table>
         </div>
       </div>
+
+      {/* More divisional charts (D2, D3, D4, D7, D12, D24, D30, D60) */}
+      {(() => {
+        const def = EXTRA_VARGAS.find(v => v.code === moreVarga) ?? EXTRA_VARGAS[0];
+        const asc = data.chart.ascendants[def.code];
+        const byRashi: Record<number, VargaPlanet[]> = {};
+        for (const p of data.chart.planets) (byRashi[p.divisions[def.code].rashi] ??= []).push(p);
+        return (
+          <div className="glass-card rounded-2xl p-3 sm:p-6">
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
+                <Layers className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
+              </div>
+              <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('varga.moreTitle')}</h3>
+            </div>
+            <p className={`text-xs mb-4 ml-[2.625rem] ${isLight ? 'text-slate-500' : 'text-white/30'}`}>{t('varga.moreSubtitle')}</p>
+
+            {/* Chart selector chips */}
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {EXTRA_VARGAS.map(v => {
+                const active = v.code === moreVarga;
+                return (
+                  <button
+                    key={v.code}
+                    onClick={() => setMoreVarga(v.code)}
+                    title={`${v.name} — ${v.significance}`}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
+                      active
+                        ? 'text-white'
+                        : isLight ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : 'bg-white/5 text-white/55 border-white/8 hover:bg-white/10'
+                    }`}
+                    style={active ? { backgroundColor: ACCENT, borderColor: ACCENT } : undefined}
+                  >
+                    {v.code}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-start">
+              <VargaGrid
+                title={`${def.code} · ${def.name}`}
+                subtitle={`${t('varga.lagna')}: ${RASHIS[asc]} — ${def.significance}`}
+                hint={def.significance}
+                ascRashi={asc}
+                planetsByRashi={byRashi}
+                isLight={isLight}
+                onCellClick={() => {}}
+                ascMarker={t('varga.ascMarker')}
+              />
+
+              {/* Compact placement table for the selected varga */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className={`text-left text-[10px] uppercase tracking-wider font-bold ${isLight ? 'text-slate-500' : 'text-white/35'}`}>
+                      <th className="px-2 py-2">{t('varga.colPlanet')}</th>
+                      <th className="px-2 py-2">{def.code}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.chart.planets.map(p => {
+                      const cell = p.divisions[def.code];
+                      return (
+                        <tr key={p.planet} className={`border-t ${isLight ? 'border-slate-100' : 'border-white/5'}`}>
+                          <td className="px-2 py-2">
+                            <span className="font-bold mr-1.5" style={{ color: ACCENT }}>{GLYPH[p.planet]}</span>
+                            <span className={`font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                              {labelPlanet(p.planet, lang)}{p.isRetrograde ? ' ℞' : ''}
+                            </span>
+                          </td>
+                          <td className="px-2 py-2">
+                            <span className={`font-semibold mr-1.5 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>{cell.rashiName}</span>
+                            <DignityBadge dignity={cell.dignity} isLight={isLight} lang={lang} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

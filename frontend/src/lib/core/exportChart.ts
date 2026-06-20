@@ -3,12 +3,12 @@
  *
  * Assembles a portable Markdown document from a generated chart: birth
  * date/time/location, Sun & Moon positions, the full D1 planetary table, the
- * D9 (Navamsa) and D10 (Dasamsa) divisional charts, and the dasha periods.
+ * all divisional (varga) charts D2–D60, and the dasha periods.
  */
 
 import type { Chart } from '../../types/astrology';
 import { RASHIS, RASHI_ENGLISH } from './rashi';
-import { computeVargas } from './vargas';
+import { computeVargas, EXTRA_VARGAS } from './vargas';
 
 function titleCase(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -121,6 +121,24 @@ export function buildChartMarkdown(chart: Chart): string {
     push(`| ${p.planet} | ${p.d10RashiName} | ${dignityLabel(p.d10Dignity)} |`);
   }
   push();
+
+  // ── Other divisional charts (D2, D3, D4, D7, D12, D24, D30, D60) ───────
+  push('## Other Divisional Charts');
+  push();
+  for (const v of EXTRA_VARGAS) {
+    const ascR = vargas.ascendants[v.code];
+    push(`### ${v.code} — ${v.name} (${v.significance})`);
+    push();
+    push(`**Lagna:** ${RASHIS[ascR]} (${RASHI_ENGLISH[ascR]})`);
+    push();
+    push(`| Planet | ${v.code} Sign | Dignity |`);
+    push('| --- | --- | --- |');
+    for (const p of vargas.planets) {
+      const cell = p.divisions[v.code];
+      push(`| ${p.planet} | ${cell.rashiName} | ${dignityLabel(cell.dignity)} |`);
+    }
+    push();
+  }
 
   // ── Dashas ────────────────────────────────────────────────────────────
   const cd = chart.currentDasha;

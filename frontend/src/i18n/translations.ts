@@ -293,6 +293,8 @@ const en = {
   'varga.colD10': 'D10 Dasamsa',
   'varga.vargottama': 'Vargottama',
   'varga.ascMarker': 'Asc',
+  'varga.moreTitle': 'More Divisional Charts',
+  'varga.moreSubtitle': 'Each chart zooms into one area of life — pick a varga to explore it',
 
   // Panchanga tab
   'panchanga.title': "Today's Panchanga",
@@ -760,6 +762,8 @@ const si: Record<keyof typeof en, string> = {
   'varga.colD10': 'D10 දශාංශ',
   'varga.vargottama': 'වර්ගොත්තම',
   'varga.ascMarker': 'ලග්',
+  'varga.moreTitle': 'තවත් වර්ග කේන්දර',
+  'varga.moreSubtitle': 'සෑම කේන්දරයක්ම ජීවිතයේ එක් අංශයක් පෙන්වයි — වර්ගයක් තෝරන්න',
 
   // Panchanga tab
   'panchanga.title': 'අදගේ පංචාංග',
