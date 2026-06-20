@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download, MessageCircle } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -192,6 +192,7 @@ function AppContent() {
       />
 
       {/* Floating chat button — bottom right, when a chart exists */}
+      {/* Temporarily disabled
       {chartData && !chatVisible && (
         <button
           onClick={() => setChatVisible(true)}
@@ -203,6 +204,7 @@ function AppContent() {
           <MessageCircle className="w-6 h-6" />
         </button>
       )}
+      */}
 
       {/* Privacy banner — shown on load + each generate */}
       <PrivacyBanner
