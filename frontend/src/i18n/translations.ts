@@ -34,7 +34,7 @@ const en = {
   'chat.minimize': 'Minimise',
   'chat.thinking': 'Reading your chart…',
   'chat.needChart': 'Generate your birth chart first, then I can answer questions about it.',
-  'chat.notConfigured': 'AI chat is not configured. Add your NVIDIA API key to a .env file as NVIDIA_API_KEY and restart.',
+  'chat.notConfigured': 'NOT AVAILABLE FOR NOW.',
   'chat.error': 'Something went wrong reaching the AI',
   'chat.timeout': 'The model took too long to respond. Please try again or ask a shorter question.',
   'chat.poweredBy': 'NVIDIA Nemotron',
