@@ -204,6 +204,35 @@ export async function getPlanetPositions(
   return positions;
 }
 
+// Body name → Swiss Ephemeris id resolver (used by the time-series sampler).
+const BODY_ID: Record<string, (swe: SwissEph) => number> = {
+  SUN: s => s.SE_SUN, MOON: s => s.SE_MOON, MERCURY: s => s.SE_MERCURY,
+  VENUS: s => s.SE_VENUS, MARS: s => s.SE_MARS, JUPITER: s => s.SE_JUPITER,
+  SATURN: s => s.SE_SATURN, RAHU: s => s.SE_TRUE_NODE,
+};
+
+/**
+ * Sidereal longitude of one body at many UTC instants — a lightweight sampler
+ * for slow-motion analyses (e.g. Saturn's Sade Sati timeline) where calling the
+ * full getPlanetPositions hundreds of times would be wasteful. `dates` are UTC.
+ */
+export async function getBodyLongitudeSeries(
+  bodyName: keyof typeof BODY_ID,
+  dates: Date[],
+  ayanamsa: AyanamsaSystem = 'LAHIRI',
+): Promise<number[]> {
+  const swe = await getSwe();
+  swe.set_sid_mode(SID_MODES[ayanamsa], 0, 0);
+  const flags = swe.SEFLG_SWIEPH | swe.SEFLG_SIDEREAL | swe.SEFLG_SPEED;
+  const body = BODY_ID[bodyName](swe);
+  return dates.map(d => {
+    const hour = d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+    const jd = swe.julday(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), hour);
+    const r = swe.calc_ut(jd, body, flags);
+    return mod360(r[0]);
+  });
+}
+
 export async function getAyanamsaValue(
   dateStr: string,
   timezone: string,

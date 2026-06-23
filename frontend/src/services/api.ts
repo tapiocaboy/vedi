@@ -22,9 +22,11 @@ import type { CurrentLocation } from '../lib/core/transits';
 import { runMatching, type MatchSummary } from '../lib/services/matchingService';
 import { getVargaReport, type VargaReport, type VargaInsight } from '../lib/services/vargaService';
 import { getPanchangaReport, type PanchangaReport, type ChoghadiyaPeriod } from '../lib/services/panchangaService';
+import { getDoshaReport, type DoshaReport } from '../lib/services/doshaService';
 
-export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod };
+export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, DoshaReport };
 export type { VargaChart, VargaPlanet } from '../lib/core/vargas';
+export type { DoshaCheck, SadeSatiPeriod, SadeSatiPhase } from '../lib/core/doshas';
 
 export type { PeriodSnapshot, CurrentLocation, MatchSummary };
 export type { MatchReport, KootaScore, DoshaResult } from '../lib/core/matching';
@@ -167,6 +169,11 @@ export async function getSookshmaPeriods(birthData: BirthData): Promise<Sookshma
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */
 export async function getVargas(birthData: BirthData): Promise<VargaReport> {
   return getVargaReport(birthData);
+}
+
+/** Dosha checker: Mangal, Kaal Sarpa, Pitra + the full Sade Sati timeline. */
+export async function getDoshas(birthData: BirthData): Promise<DoshaReport> {
+  return getDoshaReport(birthData);
 }
 
 /** Today's Panchanga + Muhurta timings for the birth location. */

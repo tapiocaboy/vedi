@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download, MessageCircle } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -19,6 +19,7 @@ import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
 import { VargaTab } from './components/Varga/VargaTab';
 import { PanchangaTab } from './components/Panchanga/PanchangaTab';
+import { DoshaTab } from './components/Dosha/DoshaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
 import { NatalChartModal } from './components/Natal/NatalChartModal';
@@ -40,7 +41,7 @@ const queryClient = new QueryClient({
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'panchanga';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'panchanga' | 'doshas';
 type Theme = 'dark' | 'light' | 'mono';
 
 function AppContent() {
@@ -62,6 +63,7 @@ function AppContent() {
   const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
   const [natalChartVisible, setNatalChartVisible] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
@@ -390,10 +392,19 @@ function AppContent() {
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
       <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${sidebarHidden ? '' : 'lg:grid-cols-3'}`}>
 
-          {/* Left — Birth form */}
-          <div className="lg:col-span-1">
+          {/* Left — Birth form (slides away to widen the predictions area) */}
+          <AnimatePresence initial={false}>
+          {!sidebarHidden && (
+          <motion.div
+            key="sidebar"
+            className="lg:col-span-1"
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -477,7 +488,7 @@ function AppContent() {
                   style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : undefined }}
                 >
                   <motion.div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}
                     animate={{ boxShadow: ['0 0 0px rgba(var(--c-accent-rgb),0)', '0 0 12px rgba(var(--c-accent-rgb),0.25)', '0 0 0px rgba(var(--c-accent-rgb),0)'] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
@@ -487,6 +498,15 @@ function AppContent() {
                   <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
                     {t('form.birthDetails')}
                   </h2>
+                  <button
+                    type="button"
+                    onClick={() => setSidebarHidden(true)}
+                    title={t('form.hidePanel')}
+                    aria-label={t('form.hidePanel')}
+                    className={`ml-auto w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isLight ? 'text-gray-400 hover:bg-gray-100 hover:text-gray-700' : 'text-white/40 hover:bg-white/8 hover:text-white'}`}
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
                 </div>
 
                 <BirthDataForm onSubmit={handleSubmit} isLoading={generateChart.isPending} />
@@ -503,10 +523,23 @@ function AppContent() {
                 )}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
+          )}
+          </AnimatePresence>
 
           {/* Right — Results */}
-          <div className="lg:col-span-2">
+          <div className={sidebarHidden ? '' : 'lg:col-span-2'}>
+            {sidebarHidden && (
+              <button
+                type="button"
+                onClick={() => setSidebarHidden(false)}
+                className={`mb-4 inline-flex items-center gap-1.5 text-xs font-semibold px-3 h-9 rounded-xl border transition-colors ${
+                  isLight ? 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200' : 'bg-white/5 border-white/8 text-white/60 hover:bg-white/10'
+                }`}
+              >
+                <PanelLeftOpen className="w-4 h-4" /> {t('form.showPanel')}
+              </button>
+            )}
             <AnimatePresence mode="wait">
               {chartData ? (
                 <motion.div
@@ -526,6 +559,7 @@ function AppContent() {
                     <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
+                    <TabBtn id="doshas"   label={t('tab.doshas')}   icon={ShieldAlert} />
                     <TabBtn id="panchanga" label={t('tab.panchanga')} icon={CalendarDays} />
                     <TabBtn id="insights" label={t('tab.insights')} icon={Zap}        />
                   </div>
@@ -638,6 +672,13 @@ function AppContent() {
                   {activeTab === 'vargas' && birthData && (
                     <motion.div key="vargas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <VargaTab birthData={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Doshas (Mangal, Kaal Sarpa, Pitra, Sade Sati) ─ */}
+                  {activeTab === 'doshas' && birthData && (
+                    <motion.div key="doshas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <DoshaTab birthData={birthData} />
                     </motion.div>
                   )}
 

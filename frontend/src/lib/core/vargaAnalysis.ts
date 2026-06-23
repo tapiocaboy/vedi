@@ -247,3 +247,89 @@ export function analyzeVargaHouse(
     isLagna: houseNumber === 1,
   };
 }
+
+// ─── Generic reading for the minor divisional charts (D2, D3, …, D60) ────────
+// Rather than hand-authoring twelve house meanings for every extra varga, the
+// reading is composed from the varga's life-area, the universal bhava theme of
+// the clicked house, and the planets that occupy it (with their varga dignity).
+
+import { HOUSE_DATA } from './planetaryAnalysis';
+import type { VargaCode } from './vargas';
+
+const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+
+const DIGNITY_TONE: Record<DignityLevel, string> = {
+  'exalted': 'and does so with exceptional strength here',
+  'own-sign': 'comfortably and reliably here',
+  'friend-sign': 'with steady support here',
+  'neutral-sign': 'with average results here',
+  'enemy-sign': 'but is somewhat strained here',
+  'debilitated': 'though it struggles and needs conscious effort here',
+};
+
+export interface ExtraVargaPlanetEffect {
+  planet: string;
+  dignity: DignityLevel;
+  isRetrograde: boolean;
+  effect: string;
+}
+
+export interface ExtraVargaHouseAnalysis {
+  code: VargaCode;
+  vargaName: string;
+  significance: string;
+  houseNumber: number;
+  rashiIndex: number;
+  rashiName: string;
+  rashiEnglish: string;
+  rashiLord: string;
+  houseTheme: string;
+  keywords: string[];
+  reading: string;
+  planetEffects: ExtraVargaPlanetEffect[];
+  isLagna: boolean;
+}
+
+export function analyzeExtraVargaHouse(
+  code: VargaCode,
+  vargaName: string,
+  significance: string,
+  rashiIndex: number,
+  vargaAscendant: number,
+  planets: VargaPlanet[],
+): ExtraVargaHouseAnalysis {
+  const houseNumber = ((rashiIndex - vargaAscendant + 12) % 12) + 1;
+  const bhava = HOUSE_DATA[houseNumber] ?? HOUSE_DATA[1];
+  const area = significance.toLowerCase();
+
+  const occupants = planets.filter(p => p.divisions[code].rashi === rashiIndex);
+  const planetEffects: ExtraVargaPlanetEffect[] = occupants.map(p => {
+    const dignity = p.divisions[code].dignity;
+    return {
+      planet: p.planet,
+      dignity,
+      isRetrograde: p.isRetrograde,
+      effect: `${p.planet} acts on ${bhava.theme.toLowerCase()} within ${area} ${DIGNITY_TONE[dignity]}.`,
+    };
+  });
+
+  const isLagna = houseNumber === 1;
+  const reading = isLagna
+    ? `This is the ${vargaName} lagna (${code}) — the lens through which ${area} is read. ${RASHIS[rashiIndex]} rising here sets the tone for how the whole ${area} chart expresses itself.`
+    : `In the ${vargaName} chart (${code}), which examines ${area}, this is the ${ORD[houseNumber]} house in ${RASHIS[rashiIndex]}. ` +
+      `It governs ${bhava.rules.slice(0, 4).join(', ')} — read specifically as it bears on ${area}.` +
+      (occupants.length ? '' : ` No planet sits here, so its results flow through its sign lord ${RASHI_LORDS[rashiIndex]}.`);
+
+  return {
+    code, vargaName, significance,
+    houseNumber, rashiIndex,
+    rashiName: RASHIS[rashiIndex],
+    rashiEnglish: RASHI_ENGLISH[rashiIndex],
+    rashiLord: RASHI_LORDS[rashiIndex],
+    houseTheme: bhava.theme,
+    keywords: bhava.keywords,
+    reading,
+    planetEffects,
+    isLagna,
+  };
+}

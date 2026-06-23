@@ -11,6 +11,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
 import { VargaHouseDetailPanel } from './VargaHouseDetailPanel';
+import { ExtraVargaDetailPanel, type ExtraVargaSelection } from './ExtraVargaDetailPanel';
 import type { VargaVariant } from '../../lib/core/vargaAnalysis';
 
 const ACCENT = 'var(--c-accent)';
@@ -193,6 +194,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const { lang, t } = useLang();
   const [selected, setSelected] = useState<{ variant: VargaVariant; rashi: number } | null>(null);
   const [moreVarga, setMoreVarga] = useState<VargaCode>('D2');
+  const [extraSel, setExtraSel] = useState<ExtraVargaSelection | null>(null);
   const { data, isLoading, isError } = useQuery({
     queryKey: ['vargas', birthData],
     queryFn: () => getVargas(birthData),
@@ -354,7 +356,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
                 ascRashi={asc}
                 planetsByRashi={byRashi}
                 isLight={isLight}
-                onCellClick={() => {}}
+                onCellClick={rashi => setExtraSel({ code: def.code, name: def.name, significance: def.significance, rashi })}
                 ascMarker={t('varga.ascMarker')}
               />
 
@@ -408,6 +410,14 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
         vargaAscendant={selected?.variant === 'D10' ? data.chart.d10Ascendant : data.chart.d9Ascendant}
         planets={data.chart.planets}
         onClose={() => setSelected(null)}
+      />
+
+      {/* Detail reading for the extra divisional charts (D2–D60) */}
+      <ExtraVargaDetailPanel
+        selection={extraSel}
+        vargaAscendant={extraSel ? data.chart.ascendants[extraSel.code] : 0}
+        planets={data.chart.planets}
+        onClose={() => setExtraSel(null)}
       />
     </div>
   );

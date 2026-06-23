@@ -10,6 +10,7 @@ const en = {
   'tab.match': 'Match',
   'tab.patterns': 'Patterns',
   'tab.vargas': 'Vargas',
+  'tab.doshas': 'Doshas',
   'tab.panchanga': 'Panchanga',
   'tab.insights': 'Insights',
 
@@ -70,6 +71,8 @@ const en = {
 
   // Birth form
   'form.birthDetails': 'Birth Details',
+  'form.hidePanel': 'Hide panel for more space',
+  'form.showPanel': 'Birth details',
   'form.birthDate': 'Birth Date',
   'form.birthTime': 'Birth Time',
   'form.quickLocations': 'Quick Locations',
@@ -294,7 +297,19 @@ const en = {
   'varga.vargottama': 'Vargottama',
   'varga.ascMarker': 'Asc',
   'varga.moreTitle': 'More Divisional Charts',
-  'varga.moreSubtitle': 'Each chart zooms into one area of life — pick a varga to explore it',
+  'varga.moreSubtitle': 'Each chart zooms into one area of life — pick a varga, then tap a sign for its reading',
+  'varga.planetsHere': 'Planets in this division',
+  'varga.emptyHouse': 'No planets here',
+  'varga.emptyHouseNote': 'No planet occupies this sign in this chart — its results flow through its sign lord, {lord}.',
+  'dosha.title': 'Dosha Checker',
+  'dosha.subtitle': 'Classical afflictions and their cancellation (bhanga) rules',
+  'dosha.computing': 'Checking doshas…',
+  'dosha.failed': 'Could not compute doshas.',
+  'dosha.sadeSatiTitle': 'Sade Sati Timeline',
+  'dosha.natalMoon': 'Natal Moon',
+  'dosha.cycles': 'cycles in a lifetime',
+  'dosha.activeNow': 'Active now',
+  'dosha.sadeSatiNote': 'Saturn’s 7½-year transit over the 12th, 1st and 2nd signs from the natal Moon. Dates are approximate (±2 weeks) and ignore brief retrograde re-entries.',
 
   // Panchanga tab
   'panchanga.title': "Today's Panchanga",
@@ -479,6 +494,7 @@ const si: Record<keyof typeof en, string> = {
   'tab.match': 'කේන්දර ගැලපීම',
   'tab.patterns': 'ග්‍රහ යෝග',
   'tab.vargas': 'වර්ග කේන්දර',
+  'tab.doshas': 'දෝෂ',
   'tab.panchanga': 'පංචාංග',
   'tab.insights': 'විශේෂ විග්‍රහ',
 
@@ -539,6 +555,8 @@ const si: Record<keyof typeof en, string> = {
 
   // Birth form
   'form.birthDetails': 'උපන් විස්තර',
+  'form.hidePanel': 'වැඩි ඉඩක් සඳහා පැනලය සඟවන්න',
+  'form.showPanel': 'උපන් විස්තර',
   'form.birthDate': 'උපන් දිනය',
   'form.birthTime': 'උපන් වේලාව',
   'form.quickLocations': 'නිතර භාවිත ස්ථාන',
@@ -763,7 +781,19 @@ const si: Record<keyof typeof en, string> = {
   'varga.vargottama': 'වර්ගොත්තම',
   'varga.ascMarker': 'ලග්',
   'varga.moreTitle': 'තවත් වර්ග කේන්දර',
-  'varga.moreSubtitle': 'සෑම කේන්දරයක්ම ජීවිතයේ එක් අංශයක් පෙන්වයි — වර්ගයක් තෝරන්න',
+  'varga.moreSubtitle': 'සෑම කේන්දරයක්ම ජීවිතයේ එක් අංශයක් පෙන්වයි — වර්ගයක් තෝරා රාශියක් ස්පර්ශ කරන්න',
+  'varga.planetsHere': 'මෙම අංශයේ ග්‍රහයෝ',
+  'varga.emptyHouse': 'මෙහි ග්‍රහයෝ නැත',
+  'varga.emptyHouseNote': 'මෙම කේන්දරයේ මෙම රාශියේ ග්‍රහයෙක් නැත — එහි ප්‍රතිඵල රාශි අධිපති {lord} හරහා ගලයි.',
+  'dosha.title': 'දෝෂ පරීක්ෂාව',
+  'dosha.subtitle': 'සම්ප්‍රදායික දෝෂ සහ ඒවායේ භංග (අවලංගු වීමේ) නීති',
+  'dosha.computing': 'දෝෂ පරීක්ෂා කරමින්…',
+  'dosha.failed': 'දෝෂ ගණනය කළ නොහැකි විය.',
+  'dosha.sadeSatiTitle': 'සාඩ සති කාල රේඛාව',
+  'dosha.natalMoon': 'ජන්ම චන්ද්‍රයා',
+  'dosha.cycles': 'චක්‍ර',
+  'dosha.activeNow': 'දැන් සක්‍රියයි',
+  'dosha.sadeSatiNote': 'ජන්ම චන්ද්‍රයාගෙන් 12, 1, 2 රාශි හරහා ශනිගේ වසර 7½ ක ගමන. දින ආසන්න වශයෙන් (±සති 2) වේ.',
 
   // Panchanga tab
   'panchanga.title': 'අදගේ පංචාංග',
