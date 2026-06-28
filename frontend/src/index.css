@@ -892,3 +892,42 @@ html[lang='si'] * {
 .theme-mono .animated-border {
   box-shadow: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AZURE — sleek blue theme (blue · white · green/red)
+   Applied alongside .theme-light, so it inherits the light layout, the near-
+   black text and the green/red status colours; it only (a) recolours the accent
+   palette to blue and (b) pins a pure-white page background. Declared AFTER
+   .theme-light so its --bg-page override wins (same specificity).
+   ══════════════════════════════════════════════════════════════════════════ */
+:root.theme-azure {
+  --c-accent:            #2563eb;
+  --c-accent-2:          #3b82f6;
+  --c-accent-dark:       #1d4ed8;
+  --c-accent-darker:     #1e40af;
+  --c-accent-3:          #60a5fa;
+  --c-accent-4:          #93c5fd;
+  --c-accent-5:          #dbeafe;
+  --c-accent-edge:       #0a1f4d;
+
+  --c-accent-rgb:        37,99,235;
+  --c-accent2-rgb:       59,130,246;
+  --c-accent-dark-rgb:   29,78,216;
+  --c-accent-darker-rgb: 30,64,175;
+  --c-accent3-rgb:       96,165,250;
+  --c-accent4-rgb:       147,197,253;
+  --c-accent5-rgb:       219,234,254;
+
+  /* Crisp pure-white surface + faint blue grid */
+  --bg-page:             #ffffff;
+  --bg-page-grid:        rgba(37,99,235,0.04);
+}
+
+/* Accent-filled controls (active tabs, Generate, language toggle, chat FAB)
+   keep WHITE labels on the blue fill. Without this the light layer's
+   `.text-white → navy` rule would make low-contrast navy-on-blue text. */
+.theme-azure .on-accent,
+.theme-azure .on-accent * {
+  color: #fff !important;
+  fill: #fff !important;
+}

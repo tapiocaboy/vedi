@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Moon, Sun, Contrast, Droplet, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -42,7 +42,7 @@ const queryClient = new QueryClient({
 
 type ChartStyle = 'south' | 'north';
 type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
-type Theme = 'dark' | 'light' | 'mono';
+type Theme = 'dark' | 'light' | 'mono' | 'azure';
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
@@ -51,7 +51,7 @@ function AppContent() {
   const [chartData, setChartData]   = useState<Chart | null>(null);
   const [theme, setTheme]           = useState<Theme>(() => {
     const saved = localStorage.getItem('trytellme_theme') ?? localStorage.getItem('predictor_theme');
-    return saved === 'mono' ? 'mono' : saved === 'light' ? 'light' : 'dark';
+    return saved === 'mono' ? 'mono' : saved === 'azure' ? 'azure' : saved === 'light' ? 'light' : 'dark';
   });
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   // The "mono" enterprise theme rides on top of the light layout.
@@ -80,14 +80,17 @@ function AppContent() {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('theme-dark', theme === 'dark');
-    root.classList.toggle('theme-light', theme === 'light' || theme === 'mono');
+    // "mono" and "azure" both ride on top of the light layout.
+    root.classList.toggle('theme-light', theme === 'light' || theme === 'mono' || theme === 'azure');
     root.classList.toggle('theme-mono', theme === 'mono');
+    root.classList.toggle('theme-azure', theme === 'azure');
     localStorage.setItem('trytellme_theme', theme);
   }, [theme]);
 
   const themeOptions: { id: Theme; label: string; icon: React.ElementType }[] = [
     { id: 'dark',  label: t('theme.dark'),  icon: Moon },
     { id: 'light', label: t('theme.light'), icon: Sun },
+    { id: 'azure', label: t('theme.azure'), icon: Droplet },
     { id: 'mono',  label: t('theme.mono'),  icon: Contrast },
   ];
   const activeTheme = themeOptions.find(o => o.id === theme) ?? themeOptions[0];

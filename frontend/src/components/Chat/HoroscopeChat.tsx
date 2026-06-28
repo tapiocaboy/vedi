@@ -154,7 +154,7 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
                 <KeyRound className="w-7 h-7 text-amber-300/70" />
                 <p className="text-sm text-white/70 max-w-xs leading-relaxed">{t('chat.notConfigured')}</p>
                 <code className="text-[11px] font-mono text-white/50 bg-black/40 border border-white/10 rounded-md px-2 py-1">
-                  NVIDIA_API_KEY=…
+                  ...
                 </code>
               </div>
             ) : (
