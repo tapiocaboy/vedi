@@ -26,6 +26,7 @@ import { NatalChartModal } from './components/Natal/NatalChartModal';
 import { FavourableForecast } from './components/Forecast/FavourableForecast';
 import { HoroscopeChat } from './components/Chat/HoroscopeChat';
 import { downloadChartMarkdown } from './lib/core/exportChart';
+import { isChatConfigured } from './services/horoscopeChat';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
@@ -56,6 +57,8 @@ function AppContent() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   // The "mono" enterprise theme rides on top of the light layout.
   const isLight = theme !== 'dark';
+  // Hide all chat affordances when the NVIDIA key is missing/empty.
+  const chatConfigured = isChatConfigured();
   // Legal gate — shown on every site load / refresh / first visit
   const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(true);
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
@@ -196,8 +199,9 @@ function AppContent() {
         chart={chartData}
       />
 
-      {/* Floating chat button — bottom right, when a chart exists */}
-      {chartData && !chatVisible && (
+      {/* Floating chat button — bottom right, when a chart exists and the
+          NVIDIA key is configured (hidden entirely if the key is missing/empty) */}
+      {chartData && chatConfigured && !chatVisible && (
         <button
           onClick={() => setChatVisible(true)}
           title={t('chat.title')}

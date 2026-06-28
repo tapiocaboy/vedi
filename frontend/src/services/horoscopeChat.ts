@@ -34,7 +34,7 @@ export function getChatApiKey(): string | undefined {
 }
 
 export function isChatConfigured(): boolean {
-  return !!getChatApiKey();
+  return !!getChatApiKey()?.trim();
 }
 
 /** Build the system prompt that grounds the model in this person's chart. */

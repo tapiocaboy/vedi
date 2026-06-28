@@ -51,9 +51,12 @@ export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick })
   const targetLabel = months[highlightIdx]?.label ?? '';
 
   const mutedBar = isLight ? 'rgba(15,23,42,0.16)' : 'rgba(255,255,255,0.16)';
+  // The next favourable / best window is highlighted in solid green (it's a
+  // *good* window) — not the brand accent, which is pink/red in some themes.
+  const HILITE = '#10b981';
 
   const barColor = (score: number, isHi: boolean): string => {
-    if (isHi) return 'var(--c-accent)';
+    if (isHi) return HILITE;
     if (score >= FAVOURABLE_THRESHOLD) return 'rgba(16,185,129,0.65)'; // emerald — good
     if (score >= 4) return mutedBar;                                   // neutral
     return 'rgba(244,63,94,0.40)';                                     // rose — weak
@@ -86,8 +89,8 @@ export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick })
           className="absolute -top-0.5 w-1.5 h-1.5 rounded-full -translate-x-1/2"
           style={{
             left: `${((highlightIdx + 0.5) / months.length) * 100}%`,
-            backgroundColor: 'var(--c-accent)',
-            boxShadow: '0 0 6px var(--c-accent)',
+            backgroundColor: HILITE,
+            boxShadow: `0 0 6px ${HILITE}`,
           }}
         />
         <div className="flex gap-px h-2.5 mt-1.5 rounded-full overflow-hidden">
@@ -107,7 +110,7 @@ export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick })
 
       {/* Time axis end labels + target */}
       <div className={`shrink-0 text-right pl-3 ml-3 border-l ${isLight ? 'border-gray-300' : 'border-white/10'}`}>
-        <div className="text-[10px] font-semibold leading-tight" style={{ color: 'var(--c-accent)' }}>
+        <div className="text-[10px] font-semibold leading-tight" style={{ color: HILITE }}>
           {targetLabel}
         </div>
         <div className={`text-[9px] font-mono ${isLight ? 'text-gray-400' : 'text-white/35'}`}>
