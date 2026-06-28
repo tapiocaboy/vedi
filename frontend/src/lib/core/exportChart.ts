@@ -2,13 +2,17 @@
  * Birth-chart Markdown export.
  *
  * Assembles a portable Markdown document from a generated chart: birth
- * date/time/location, Sun & Moon positions, the full D1 planetary table, the
- * all divisional (varga) charts D2–D60, and the dasha periods.
+ * date/time/location, Sun & Moon positions, the full D1 planetary table, all
+ * the divisional (varga) charts D2–D60, the dasha periods, and — when a
+ * current-period prediction is supplied — the Knowledge Graph section.
  */
 
 import type { Chart } from '../../types/astrology';
+import type { DashaPredictionData } from '../../services/api';
 import { RASHIS, RASHI_ENGLISH } from './rashi';
 import { computeVargas, EXTRA_VARGAS } from './vargas';
+import { buildKnowledgeGraphMarkdown } from './knowledgeGraph';
+import { getCurrentPeriodPrediction } from '../services/predictionService';
 
 function titleCase(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -34,7 +38,7 @@ function dignityLabel(d: string): string {
   return d.split('-').map(titleCase).join(' ');
 }
 
-export function buildChartMarkdown(chart: Chart): string {
+export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionData): string {
   const bd = chart.birthData;
   const asc = chart.ascendant;
   const ascIndex = asc.rashiIndex;
@@ -169,6 +173,11 @@ export function buildChartMarkdown(chart: Chart): string {
     push();
   }
 
+  // ── Knowledge Graph (current-period entity map) ───────────────────────
+  if (prediction) {
+    push(buildKnowledgeGraphMarkdown(prediction));
+  }
+
   push('---');
   push();
   push('_Computed locally with Swiss Ephemeris · sidereal Vedic astrology · for reflection, not deterministic prediction._');
@@ -177,8 +186,16 @@ export function buildChartMarkdown(chart: Chart): string {
 }
 
 /** Trigger a browser download of the chart as a .md file. */
-export function downloadChartMarkdown(chart: Chart): void {
-  const md = buildChartMarkdown(chart);
+export async function downloadChartMarkdown(chart: Chart): Promise<void> {
+  // Best-effort: include the current-period Knowledge Graph; never block the
+  // export if the prediction can't be computed.
+  let prediction: DashaPredictionData | undefined;
+  try {
+    prediction = await getCurrentPeriodPrediction(chart.birthData);
+  } catch {
+    prediction = undefined;
+  }
+  const md = buildChartMarkdown(chart, prediction);
   const { date } = fmtDateTime(chart.birthData.date);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);

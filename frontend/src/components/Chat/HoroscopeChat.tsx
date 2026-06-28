@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Sparkles, X, Send, Loader2, AlertTriangle, KeyRound, MessageCircle, Maximize2, Minimize2 } from 'lucide-react';
 import type { Chart } from '../../types/astrology';
 import { buildChartMarkdown } from '../../lib/core/exportChart';
+import { getCurrentPrediction } from '../../services/api';
 import {
   askHoroscope, buildSystemPrompt, isChatConfigured, getChatModel,
   type ChatMessage,
@@ -36,9 +38,19 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const configured = isChatConfigured();
+
+  // Current-period prediction → powers the Knowledge Graph section of the
+  // context. Reuses the same cache as the Knowledge Graph / Insights tabs.
+  const { data: prediction } = useQuery({
+    queryKey: ['currentPrediction', chart?.birthData],
+    queryFn: () => getCurrentPrediction(chart!.birthData),
+    enabled: !!chart?.birthData?.date,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const systemPrompt = useMemo(
-    () => (chart ? buildSystemPrompt(buildChartMarkdown(chart)) : ''),
-    [chart],
+    () => (chart ? buildSystemPrompt(buildChartMarkdown(chart, prediction)) : ''),
+    [chart, prediction],
   );
 
   // Auto-scroll to the newest content.
