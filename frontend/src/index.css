@@ -667,9 +667,6 @@ input:focus, select:focus, textarea:focus {
 .privacy-close { color: rgba(255,255,255,0.4); }
 .privacy-close:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
 .privacy-progress { background: #22c55e; }
-/* Strong, high-contrast body text for the large generate popup (theme-aware) */
-.privacy-strong { color: rgba(255,255,255,0.86); }
-.theme-light .privacy-strong { color: rgba(15,23,42,0.88); }
 
 .theme-light .privacy-banner {
   background: #ffffff;

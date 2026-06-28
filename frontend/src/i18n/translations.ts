@@ -520,7 +520,6 @@ const en = {
   'privacy.bodyGenerate': 'All calculations happen locally in your browser. Nothing you enter is sent to any server or stored anywhere.',
   'privacy.bodyLoad': 'This tool runs entirely in your browser. We do not collect, store, or transmit any information you enter — ever.',
   'privacy.dismiss': 'Dismiss',
-  'privacy.continue': 'Continue',
 
   'match.experimental.title': 'Experimental Feature',
   'match.experimental.heroTitle': 'Horoscope Matching is still in development.',
@@ -1068,7 +1067,6 @@ const si: Record<keyof typeof en, string> = {
   'privacy.bodyGenerate': 'සියල්ල browser තුළ locally. enter කරන දෙය server එකකට නොයයි, store නොවේ.',
   'privacy.bodyLoad': 'tool එක browser තුළම. collect, store, transmit නොකරමු — ever.',
   'privacy.dismiss': 'වසන්න',
-  'privacy.continue': 'ඉදිරියට',
 
   'match.experimental.title': 'Experimental Feature',
   'match.experimental.heroTitle': 'Horoscope Matching still development.',
