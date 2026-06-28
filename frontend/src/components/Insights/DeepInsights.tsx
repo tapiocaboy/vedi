@@ -7,10 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
   Loader2, Layers, ChevronRight, AlertTriangle, Sparkles,
-  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit,
+  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays,
 } from 'lucide-react';
 import { getSookshmaPeriods, getCurrentPrediction } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
+import { PanchangaTab } from '../Panchanga/PanchangaTab';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import {
@@ -608,6 +609,15 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
 
       {/* Remedies */}
       <RemediesSummary prediction={prediction} />
+
+      {/* Panchanga — today's almanac + muhurta (moved in as a section) */}
+      <div className="pt-2">
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <CalendarDays className="w-4 h-4 text-violet-400" />
+          <span className="text-sm font-semibold text-white">{t('insights.panchangaSection')}</span>
+        </div>
+        <PanchangaTab birthData={birthData} />
+      </div>
     </div>
   );
 };

@@ -13,10 +13,11 @@ interface Props {
 const MONTHS_AHEAD = 18;
 
 /**
- * Header widget: a long month-by-month favourability bar chart spanning the
- * centre of the header, with a threshold line and good/bad colouring, plus a
- * headline saying how long until the next favourable window. Click opens the
- * monthly-transits modal. Hidden until a chart exists.
+ * Header widget: a single horizontal favourability bar spanning the centre of
+ * the header — a month-by-month heat strip coloured good/neutral/weak, with a
+ * marker on the next favourable window, plus a headline saying how long until
+ * that window. Click opens the monthly-transits modal. Hidden until a chart
+ * exists.
  */
 export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick }) => {
   const { t } = useLang();
@@ -78,25 +79,26 @@ export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick })
         </div>
       </div>
 
-      {/* Long bar chart */}
-      <div className="relative flex-1 h-7 self-center" aria-hidden>
-        {/* Favourable-threshold line */}
+      {/* Single horizontal favourability bar — month-by-month heat strip */}
+      <div className="relative flex-1 self-center" aria-hidden>
+        {/* Marker on the next favourable / best window */}
         <div
-          className={`absolute left-0 right-0 border-t border-dashed ${isLight ? 'border-emerald-500/40' : 'border-emerald-400/35'}`}
-          style={{ bottom: `${(FAVOURABLE_THRESHOLD / 10) * 100}%` }}
+          className="absolute -top-0.5 w-1.5 h-1.5 rounded-full -translate-x-1/2"
+          style={{
+            left: `${((highlightIdx + 0.5) / months.length) * 100}%`,
+            backgroundColor: 'var(--c-accent)',
+            boxShadow: '0 0 6px var(--c-accent)',
+          }}
         />
-        <div className="absolute inset-0 flex items-end gap-[2px]">
+        <div className="flex gap-px h-2.5 mt-1.5 rounded-full overflow-hidden">
           {months.map((m, i) => {
             const isHi = i === highlightIdx;
             return (
               <span
                 key={i}
-                style={{
-                  height: `${Math.max(6, (m.score / 10) * 100)}%`,
-                  backgroundColor: barColor(m.score, isHi),
-                  borderRadius: '2px',
-                }}
-                className={`flex-1 ${isHi ? 'shadow-[0_0_6px_var(--c-accent)]' : ''}`}
+                title={`${m.label}: ${m.score}/10`}
+                style={{ backgroundColor: barColor(m.score, isHi) }}
+                className="flex-1 h-full"
               />
             );
           })}

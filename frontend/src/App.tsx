@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, CalendarDays, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Moon, Sun, Contrast, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -18,7 +18,7 @@ import { DeepInsights } from './components/Insights/DeepInsights';
 import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
 import { VargaTab } from './components/Varga/VargaTab';
-import { PanchangaTab } from './components/Panchanga/PanchangaTab';
+import { KnowledgeGraph } from './components/Graph/KnowledgeGraph';
 import { DoshaTab } from './components/Dosha/DoshaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
@@ -41,7 +41,7 @@ const queryClient = new QueryClient({
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'panchanga' | 'doshas';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
 type Theme = 'dark' | 'light' | 'mono';
 
 function AppContent() {
@@ -560,7 +560,7 @@ function AppContent() {
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
                     <TabBtn id="doshas"   label={t('tab.doshas')}   icon={ShieldAlert} />
-                    <TabBtn id="panchanga" label={t('tab.panchanga')} icon={CalendarDays} />
+                    <TabBtn id="graph"    label={t('tab.graph')}    icon={Share2}     />
                     <TabBtn id="insights" label={t('tab.insights')} icon={Zap}        />
                   </div>
 
@@ -682,10 +682,10 @@ function AppContent() {
                     </motion.div>
                   )}
 
-                  {/* ── Panchanga (today's almanac + muhurta) ─────── */}
-                  {activeTab === 'panchanga' && birthData && (
-                    <motion.div key="panchanga" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <PanchangaTab birthData={birthData} />
+                  {/* ── Knowledge Graph (entities critical for now) ─ */}
+                  {activeTab === 'graph' && birthData && (
+                    <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <KnowledgeGraph birthData={birthData} />
                     </motion.div>
                   )}
 
