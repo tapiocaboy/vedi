@@ -76,6 +76,29 @@ describe('Ashtakoot Milan', () => {
     }
   })
 
+  it('an unmitigated Manglik dosha overrides a good guna score (1986 Kandy case)', () => {
+    // A: Aquarius/Dhanishta, Mars in 1st from Lagna → Manglik.
+    // B: Scorpio/Jyeshtha, Mars not in a Manglik house → not Manglik.
+    const a = person(10, 22, 1, 11);
+    const b = person(7, 17, 2, 2);
+    const r = computeMatch(a, b);
+    // Decent guna total on its own…
+    expect(r.totalObtained).toBeGreaterThanOrEqual(18);
+    // …but the Manglik mismatch is a deal-breaker.
+    const manglik = r.doshas.find(d => d.name.startsWith('Mangal'))!;
+    expect(manglik.present).toBe(true);
+    expect(manglik.mitigated).toBe(false);
+    expect(r.verdict).toBe('not recommended');
+  });
+
+  it('a deal-breaker dosha never reports better than "acceptable" via gunas alone', () => {
+    // High gunas but one-sided Manglik → must be capped to not recommended.
+    const a: MatchInput = { moonRashi: 5, moonNakshatra: 12, marsHouseFromLagna: 7, marsHouseFromMoon: 7 };
+    const b: MatchInput = { moonRashi: 5, moonNakshatra: 12, marsHouseFromLagna: 3, marsHouseFromMoon: 3 };
+    const r = computeMatch(a, b);
+    expect(r.verdict).toBe('not recommended');
+  });
+
   it('verdict thresholds map correctly', () => {
     // Two compatible charts (same rashi + nakshatra + Mars in safe houses) → 36 → excellent
     const top = computeMatch(person(5, 12, 3, 3), person(5, 12, 3, 3))

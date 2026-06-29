@@ -327,6 +327,12 @@ function verdictFor(score: number): MatchReport['verdict'] {
   return 'not recommended';
 }
 
+// Best → worst, so we can cap (never raise) a verdict when a dosha is present.
+const VERDICT_ORDER: MatchReport['verdict'][] = ['not recommended', 'acceptable', 'good', 'very good', 'excellent'];
+function capVerdict(v: MatchReport['verdict'], max: MatchReport['verdict']): MatchReport['verdict'] {
+  return VERDICT_ORDER[Math.min(VERDICT_ORDER.indexOf(v), VERDICT_ORDER.indexOf(max))];
+}
+
 export function computeMatch(a: MatchInput, b: MatchInput): MatchReport {
   const kootas: KootaScore[] = [
     calcVarna(a, b),
@@ -357,11 +363,36 @@ export function computeMatch(a: MatchInput, b: MatchInput): MatchReport {
     else if (!d.present || d.mitigated) whyMatching.push(`${d.name}: ${d.description}`);
   }
 
+  // Verdict — start from the guna score, then let serious doshas override it.
+  // Classically, a high guna total does NOT save a match that carries an
+  // unmitigated Mangal/Nadi/severe-Bhakoot dosha; these are deal-breakers.
+  const [manglik, bhakootD, nadiD] = doshas;
+  let verdict = verdictFor(total);
+  const dealBreakers: string[] = [];
+  if (nadiD.present && !nadiD.mitigated) {
+    verdict = capVerdict(verdict, 'not recommended');
+    dealBreakers.push('Nadi Dosha (health & progeny)');
+  }
+  if (manglik.present && !manglik.mitigated) {
+    verdict = capVerdict(verdict, 'not recommended');
+    dealBreakers.push('unmitigated Mangal (Manglik) Dosha');
+  }
+  if (bhakootD.present) {
+    const severe = /Shadashtak|Dwirdwadash/.test(bhakootD.description);
+    verdict = capVerdict(verdict, severe ? 'not recommended' : 'acceptable');
+    if (severe) dealBreakers.push('Bhakoot Dosha (6–8 / 2–12)');
+  }
+  if (dealBreakers.length && verdict === 'not recommended') {
+    whyNotMatching.unshift(
+      `Not recommended despite ${Math.round(total * 2) / 2}/36 gunas — a serious dosha overrides the score: ${dealBreakers.join(', ')}. Classical texts treat such a dosha as decisive, even when the guna count looks favourable.`,
+    );
+  }
+
   return {
     totalObtained: Math.round(total * 2) / 2, // halves kept (e.g. 24.5)
     totalMax: 36,
     percent: Math.round((total / 36) * 100),
-    verdict: verdictFor(total),
+    verdict,
     kootas,
     doshas,
     whyMatching,
