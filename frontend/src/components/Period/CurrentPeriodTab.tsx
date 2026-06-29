@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Clock, Compass, MapPin, AlertTriangle, Sparkles, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { getCurrentPeriodSnapshot, type BirthData, type CurrentLocation, type PeriodSnapshot } from '../../services/api';
 import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
+import { TransitChart } from './TransitChart';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelArea, labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
@@ -383,6 +384,7 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <PeriodBanner snap={data} />
+      <TransitChart gochara={data.gochara} />
       <PredictionDetailsCard snap={data} />
       <TransitsCard snap={data} />
       <LocationCard current={currentLocation} setCurrent={setCurrentLocation} relocation={data.relocation} />
