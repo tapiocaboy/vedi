@@ -384,7 +384,10 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <PeriodBanner snap={data} />
-      <TransitChart gochara={data.gochara} />
+      <TransitChart
+        gochara={data.gochara}
+        dasha={{ mahadasha: data.currentPeriods.mahadasha.lord, antardasha: data.currentPeriods.antardasha.lord }}
+      />
       <PredictionDetailsCard snap={data} />
       <TransitsCard snap={data} />
       <LocationCard current={currentLocation} setCurrent={setCurrentLocation} relocation={data.relocation} />

@@ -10,6 +10,8 @@
 import { getPlanetPositions, type PlanetPosition } from './ephemeris';
 import type { BirthData } from '../../types/astrology';
 import { RASHIS } from './rashi';
+import { applyVedha, annotateGrahaYuddha, annotateGandanta, annotateDignityState, computeMoonPhase, type MoonPhase } from './transitAnalysis';
+import type { DignityLevel } from './planetaryAnalysis';
 
 export type AyanamsaSystem = BirthData['ayanamsa'];
 
@@ -18,12 +20,28 @@ export interface PlanetTransit {
   rashi: number;
   rashiName: string;
   rashiDegree: number;
+  longitude: number;
+  speed: number;           // deg/day (negative = retrograde)
+  nakshatra: number;       // 0–26
+  nakshatraPada: number;   // 1–4
   houseFromMoon: number;
   houseFromLagna: number;
   /** −2…+2 valence per classical rules (Saturn 3/6/11 = +, Saturn 1/4/8/12 from Moon = −, etc.) */
   valence: number;
   note: string | null;
   isRetrograde: boolean;
+  /** Set when an auspicious result is obstructed (vedha) by another planet. */
+  vedha?: { byPlanet: string; house: number };
+  /** Set when within 1° of another tara graha (planetary war). */
+  war?: { with: string };
+  /** True at the water–fire sign junction (last/first 3°20'). */
+  gandanta?: boolean;
+  /** Transit dignity (exalted / own-sign / debilitated / friend / neutral / enemy). */
+  dignity?: DignityLevel;
+  /** True when too close to the Sun (combust / asta). */
+  combust?: boolean;
+  /** True when near a station (speed ≈ 0). */
+  stationary?: boolean;
 }
 
 export interface GocharaSnapshot {
@@ -34,6 +52,7 @@ export interface GocharaSnapshot {
   sadeSati: SadeSatiInfo;
   jupiterBlessing: { auspicious: boolean; reason: string };
   nodalShift: { rahuRashi: number; ketuRashi: number; note: string };
+  moonPhase: MoonPhase;
 }
 
 export interface SadeSatiInfo {
@@ -191,6 +210,10 @@ export async function getCurrentTransits(
       rashi: p.rashi,
       rashiName: RASHIS[p.rashi],
       rashiDegree: Math.round(p.rashiDegree * 100) / 100,
+      longitude: p.longitude,
+      speed: p.speed,
+      nakshatra: p.nakshatra,
+      nakshatraPada: p.nakshatraPada,
       houseFromMoon,
       houseFromLagna,
       valence: valenceFromMoon(name, houseFromMoon),
@@ -198,6 +221,18 @@ export async function getCurrentTransits(
       isRetrograde: p.isRetrograde,
     });
   }
+
+  // Classical refinements: vedha (obstruction), planetary war, gandanta,
+  // transit dignity / combustion / stationary state.
+  applyVedha(transits, natalMoonRashi);
+  annotateGrahaYuddha(transits);
+  annotateGandanta(transits);
+  annotateDignityState(transits, positions['SUN'].longitude);
+
+  const moonPhase: MoonPhase = computeMoonPhase(
+    positions['SUN'].longitude, positions['MOON'].longitude,
+    positions['MOON'].nakshatra, positions['MOON'].nakshatraPada,
+  );
 
   const saturnTransit = transits.find(t => t.planet === 'SATURN')!;
   const sadeSati = computeSadeSati(saturnTransit.rashi, natalMoonRashi);
@@ -227,5 +262,6 @@ export async function getCurrentTransits(
     sadeSati,
     jupiterBlessing,
     nodalShift,
+    moonPhase,
   };
 }
