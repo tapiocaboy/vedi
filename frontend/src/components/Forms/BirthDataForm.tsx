@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, Clock, Settings } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2 } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 
@@ -120,12 +120,26 @@ const AYANAMSAS = [
 
 const LOCATION_KEY = 'vedi_location_prefs';
 
+// The visitor's own IANA timezone — a far better default than a fixed offset,
+// and used to auto-set the zone when "Use my location" is tapped.
+const BROWSER_TZ = (() => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; }
+})();
+const BROWSER_TZ_IN_LIST = TIMEZONES.some(tz => tz.value === BROWSER_TZ) ? BROWSER_TZ : null;
+
 function loadSaved(): { latitude: string; longitude: string; timezone: string; ayanamsa: string } {
   try {
     const raw = localStorage.getItem(LOCATION_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { latitude: '', longitude: '', timezone: 'Etc/GMT+4', ayanamsa: 'LAHIRI' };
+  return { latitude: '', longitude: '', timezone: BROWSER_TZ_IN_LIST ?? 'UTC', ayanamsa: 'LAHIRI' };
+}
+
+/** "6.91° N" style coordinate readout. */
+function fmtCoord(value: string, pos: string, neg: string): string | null {
+  const n = parseFloat(value);
+  if (!Number.isFinite(n)) return null;
+  return `${Math.abs(n).toFixed(2)}° ${n >= 0 ? pos : neg}`;
 }
 
 export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) => {
@@ -192,6 +206,36 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     }));
   };
 
+  // ── Geolocation: one-tap fill of coordinates + timezone ──────────────────────
+  const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  const useMyLocation = () => {
+    if (!('geolocation' in navigator)) { setGeoError(t('form.geoUnsupported')); return; }
+    setLocating(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setFormData(prev => ({
+          ...prev,
+          latitude:  pos.coords.latitude.toFixed(4),
+          longitude: pos.coords.longitude.toFixed(4),
+          timezone:  BROWSER_TZ_IN_LIST ?? prev.timezone,
+        }));
+        setLocating(false);
+      },
+      err => {
+        setGeoError(err.code === err.PERMISSION_DENIED ? t('form.geoDenied') : t('form.geoFailed'));
+        setLocating(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+    );
+  };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const latReadout = fmtCoord(formData.latitude, 'N', 'S');
+  const lngReadout = fmtCoord(formData.longitude, 'E', 'W');
+
   // Colour/size/background + native date-time legibility live in `.form-field`
   // (see index.css) so the date/time pickers render correctly on mobile and in
   // both themes; Tailwind here only handles layout + focus ring.
@@ -213,6 +257,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             value={formData.date}
             onChange={handleChange}
             required
+            max={todayStr}
             className={inputClasses}
           />
         </div>
@@ -238,6 +283,16 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           {t('form.quickLocations')}
         </label>
         <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={useMyLocation}
+            disabled={locating}
+            className="preset-btn flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
+            style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
+          >
+            {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+            {locating ? t('form.locating') : t('form.useMyLocation')}
+          </button>
           {presetLocations.map(preset => (
             <button
               key={preset.name}
@@ -249,6 +304,11 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
             </button>
           ))}
         </div>
+        {geoError && (
+          <p className="mt-2 text-xs text-rose-400 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 shrink-0" /> {geoError}
+          </p>
+        )}
       </div>
 
       {/* Coordinates */}
@@ -290,6 +350,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           />
         </div>
       </div>
+
+      {/* Coordinate confirmation — reassures the user their point is set */}
+      {latReadout && lngReadout && (
+        <p className="-mt-2 flex items-center gap-1.5 text-xs form-label">
+          <MapPin className="w-3.5 h-3.5 text-[var(--c-accent)] shrink-0" />
+          <span className="font-bold">{latReadout}, {lngReadout}</span>
+        </p>
+      )}
 
       {/* Timezone */}
       <div>
