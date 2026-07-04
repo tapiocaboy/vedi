@@ -8,7 +8,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Orbit, Sparkles } from 'lucide-react';
+import { Orbit, Sparkles, Share2 } from 'lucide-react';
 import type { GocharaSnapshot, PlanetTransit, NatalPlacement } from '../../lib/core/transits';
 import {
   computeSignAnalysis, gradedAspects, aspectPct, buildTransitPredictions, computeTransitNatal,
@@ -42,6 +42,8 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
   const isLight = useTheme();
   const { lang, t } = useLang();
   const [selected, setSelected] = useState<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const signs = useMemo(() => computeSignAnalysis(gochara), [gochara]);
   const predictions = useMemo(() => buildTransitPredictions(gochara, signs, dasha), [gochara, signs, dasha]);
@@ -63,10 +65,17 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
   const moon = gochara.natalMoonRashi;
   const houseOf = (rashi: number) => signs[rashi].houseFromLagna;
 
-  // Aspect lines for the current selection (significant aspects only).
-  const selPlanets = selected != null ? byRashi[selected] : [];
+  // Aspect lines: hover previews and click pins the active sign; the "Show all
+  // aspects" toggle draws every transiting planet's significant aspects at once.
+  const activeSign = hovered ?? selected;
   const outgoing = new Set<number>();
-  selPlanets.forEach(p => gradedAspects(p.planet, p.rashi).filter(a => a.virupa >= 45).forEach(a => outgoing.add(a.toRashi)));
+  if (activeSign != null) {
+    byRashi[activeSign].forEach(p => gradedAspects(p.planet, p.rashi).filter(a => a.virupa >= 45).forEach(a => outgoing.add(a.toRashi)));
+  }
+  const aspectSources = showAll ? gochara.transits : activeSign != null ? byRashi[activeSign] : [];
+  const aspectLines = aspectSources.flatMap(p =>
+    gradedAspects(p.planet, p.rashi).filter(a => a.virupa >= 45).map(a => ({ p, a })),
+  );
 
   // Theme tokens
   const goodBg     = isLight ? 'rgba(16,185,129,0.14)' : 'rgba(16,185,129,0.18)';
@@ -94,10 +103,19 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
     if (rashi == null) return <div className="h-full w-full" />;
 
     const planets = byRashi[rashi];
+    const natalHere = natalByRashi[rashi];
     const tone = toneFor(rashi);
     const isLagna = rashi === lagna;
     const isSel = selected === rashi;
     const isAspected = outgoing.has(rashi);
+
+    // Rich hover tooltip.
+    const favWord = signs[rashi].tone === 'good' ? t('now.transitFavourable') : signs[rashi].tone === 'bad' ? t('now.transitChallenging') : t('now.transitNeutral');
+    const tip = [
+      `${labelRashi(rashi, lang, RASHIS[rashi])} · ${t('now.transitHouseFromLagna', { n: houseOf(rashi) })} · ${favWord}`,
+      planets.length ? `△ ${planets.map(p => `${PLANET_SYMBOLS[p.planet]} ${labelPlanet(p.planet, lang)}${p.isRetrograde ? ' ℞' : ''}`).join(', ')}` : '',
+      natalHere.length ? `${t('now.transitNatal')}: ${natalHere.map(n => labelPlanet(n.planet, lang)).join(', ')}` : '',
+    ].filter(Boolean).join('\n');
 
     return (
       <motion.button
@@ -106,6 +124,8 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: rashi * 0.015 }}
         onClick={() => setSelected(isSel ? null : rashi)}
+        onMouseEnter={() => setHovered(rashi)}
+        onMouseLeave={() => setHovered(h => (h === rashi ? null : h))}
         className="relative h-full w-full p-1 text-left cursor-pointer transition-all duration-150 select-none focus:outline-none"
         style={{
           background: tone.bg,
@@ -117,7 +137,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
                 ? `1.5px dashed rgba(var(--c-accent2-rgb),0.6)`
                 : `1px solid ${tone.border}`,
         }}
-        title={`${labelRashi(rashi, lang, RASHIS[rashi])} · ${t('now.transitHouseFromLagna', { n: houseOf(rashi) })}`}
+        title={tip}
       >
         <span className="absolute top-0.5 left-1 text-[10px] font-mono font-bold" style={{ color: isLagna ? ACCENT : houseClr }}>
           {houseOf(rashi)}
@@ -202,20 +222,22 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
               )))}
             </div>
 
-            {/* Graded drishti lines from the selected sign (≥75%) */}
+            {/* Graded drishti lines — active sign (hover/click) and/or all planets */}
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none">
-              {selected != null && selPlanets.flatMap(p =>
-                gradedAspects(p.planet, p.rashi).filter(a => a.virupa >= 45).map(a => {
-                  const from = signCenter(p.rashi), to = signCenter(a.toRashi);
-                  const col = PLANET_COLORS[p.planet] ?? '#94a3b8';
-                  return (
-                    <g key={`${p.planet}-${a.toRashi}`}>
-                      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={col} strokeWidth={a.virupa >= 60 ? 1 : 0.7} strokeOpacity={0.35 + 0.55 * (a.virupa / 60)} strokeDasharray="2 1.5" />
-                      <circle cx={to.x} cy={to.y} r={1.6} fill={col} />
-                    </g>
-                  );
-                })
-              )}
+              {aspectLines.map(({ p, a }) => {
+                const from = signCenter(p.rashi), to = signCenter(a.toRashi);
+                const col = PLANET_COLORS[p.planet] ?? '#94a3b8';
+                const isActive = activeSign != null && p.rashi === activeSign;
+                const base = 0.35 + 0.55 * (a.virupa / 60);
+                // In "show all" mode, fade lines that aren't from the active sign.
+                const opacity = showAll ? (activeSign == null ? base * 0.5 : isActive ? base : 0.08) : base;
+                return (
+                  <g key={`${p.planet}-${p.rashi}-${a.toRashi}`}>
+                    <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={col} strokeWidth={a.virupa >= 60 ? 1 : 0.7} strokeOpacity={opacity} strokeDasharray="2 1.5" />
+                    <circle cx={to.x} cy={to.y} r={1.6} fill={col} fillOpacity={Math.min(1, opacity + 0.15)} />
+                  </g>
+                );
+              })}
             </svg>
 
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -226,8 +248,26 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
             </div>
           </div>
 
+          {/* Show all aspects toggle + hover hint */}
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAll(v => !v)}
+              aria-pressed={showAll}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
+                showAll
+                  ? 'text-white border-transparent'
+                  : isLight ? 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200' : 'bg-white/5 border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+              }`}
+              style={showAll ? { backgroundColor: 'var(--c-accent)' } : undefined}
+            >
+              <Share2 className="w-3 h-3" /> {t('now.transitShowAll')}
+            </button>
+            <span className={`text-[9px] font-mono ${isLight ? 'text-slate-400' : 'text-white/30'}`}>{t('now.transitHoverHint')}</span>
+          </div>
+
           {/* Legend */}
-          <div className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
+          <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] font-medium" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.45)' }}>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: goodBg, border: `1px solid ${goodBorder}` }} />{t('now.transitFavourable')}</span>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: badBg, border: `1px solid ${badBorder}` }} />{t('now.transitChallenging')}</span>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: neutralBg, border: `1px solid ${baseBorder}` }} />{t('now.transitNeutral')}</span>
