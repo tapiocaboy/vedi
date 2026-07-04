@@ -2,9 +2,20 @@ import { describe, it, expect } from 'vitest';
 import {
   aspectVirupa, gradedAspects, houseBetween, applyVedha,
   computeMoonPhase, isGandanta, annotateGrahaYuddha,
-  isCombust, isStationary, transitDignity,
+  isCombust, isStationary, transitDignity, computeTransitNatal,
 } from './transitAnalysis';
-import type { PlanetTransit } from './transits';
+import type { PlanetTransit, NatalPlacement, GocharaSnapshot } from './transits';
+
+function stubGochara(transits: PlanetTransit[], natalPlanets: NatalPlacement[]): GocharaSnapshot {
+  return {
+    asOf: '', natalMoonRashi: 0, natalLagnaRashi: 0, transits, natalPlanets,
+    sadeSati: { active: false, phase: 'none', description: '' },
+    jupiterBlessing: { auspicious: false, reason: '' },
+    nodalShift: { rahuRashi: 0, ketuRashi: 0, note: '' },
+    moonPhase: { tithi: 1, tithiName: '', paksha: 'Shukla', waxing: true, illumination: 0, nakshatra: '', nakshatraIndex: 0, pada: 1 },
+  };
+}
+const nat = (planet: string, rashi: number, longitude: number): NatalPlacement => ({ planet, rashi, longitude, isRetrograde: false });
 
 const mk = (planet: string, rashi: number, houseFromMoon: number, valence: number): PlanetTransit => ({
   planet, rashi, rashiName: '', rashiDegree: 0, longitude: 0, speed: 1, nakshatra: 0, nakshatraPada: 1,
@@ -194,6 +205,33 @@ describe('Stationary state', () => {
     expect(isStationary('SUN', 0)).toBe(false);
     expect(isStationary('MOON', 0)).toBe(false);
     expect(isStationary('RAHU', 0)).toBe(false);
+  });
+});
+
+describe('Transit → Natal (bi-wheel)', () => {
+  it('detects transit Saturn aspecting natal Sun (7th, full)', () => {
+    // transit Saturn in Aquarius (10) → 7th from it is Leo (4), where natal Sun sits.
+    const g = stubGochara([mk('SATURN', 10, 1, 0)], [nat('SUN', 4, 124)]);
+    const hits = computeTransitNatal(g);
+    const hit = hits.find(h => h.transit === 'SATURN' && h.natal === 'SUN');
+    expect(hit).toBeDefined();
+    expect(hit!.kind).toBe('aspect');
+    expect(hit!.house).toBe(7);
+    expect(hit!.virupa).toBe(60);
+  });
+
+  it('detects a transit→natal conjunction with its orb', () => {
+    const transit = { ...mk('JUPITER', 3, 1, 0), longitude: 95 };
+    const g = stubGochara([transit], [nat('MOON', 3, 100)]);
+    const hit = computeTransitNatal(g).find(h => h.transit === 'JUPITER' && h.natal === 'MOON');
+    expect(hit!.kind).toBe('conjunction');
+    expect(hit!.orb).toBeCloseTo(5, 1);
+  });
+
+  it('returns nothing when there is no contact', () => {
+    // Mars in Aries (0) does not aspect Taurus (1) — 2nd house, no drishti.
+    const g = stubGochara([mk('MARS', 0, 1, 0)], [nat('VENUS', 1, 40)]);
+    expect(computeTransitNatal(g)).toHaveLength(0);
   });
 });
 

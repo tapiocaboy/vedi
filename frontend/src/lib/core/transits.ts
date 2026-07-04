@@ -44,11 +44,21 @@ export interface PlanetTransit {
   stationary?: boolean;
 }
 
+/** A natal planet/point position, for the transit-over-natal bi-wheel. */
+export interface NatalPlacement {
+  planet: string;      // 'SUN'…'KETU' or 'ASCENDANT'
+  rashi: number;
+  longitude: number;
+  isRetrograde: boolean;
+}
+
 export interface GocharaSnapshot {
   asOf: string;                       // ISO timestamp the transit was sampled at
   natalMoonRashi: number;
   natalLagnaRashi: number;
   transits: PlanetTransit[];
+  /** Natal planet positions (bi-wheel). Empty if the caller didn't supply them. */
+  natalPlanets: NatalPlacement[];
   sadeSati: SadeSatiInfo;
   jupiterBlessing: { auspicious: boolean; reason: string };
   nodalShift: { rahuRashi: number; ketuRashi: number; note: string };
@@ -191,6 +201,7 @@ export async function getCurrentTransits(
   natalLagnaRashi: number,
   asOf?: Date,
   here?: CurrentLocation,
+  natalPositions?: Record<string, PlanetPosition>,
 ): Promise<GocharaSnapshot> {
   const now = asOf ?? new Date();
   // For Gochara, lat/lon barely affect the sidereal positions of the slow
@@ -234,6 +245,15 @@ export async function getCurrentTransits(
     positions['MOON'].nakshatra, positions['MOON'].nakshatraPada,
   );
 
+  // Natal placements for the bi-wheel (transit-over-natal), if supplied.
+  const NATAL_BODIES = ['SUN', 'MOON', 'MARS', 'MERCURY', 'JUPITER', 'VENUS', 'SATURN', 'RAHU', 'KETU', 'ASCENDANT'];
+  const natalPlanets: NatalPlacement[] = natalPositions
+    ? NATAL_BODIES.filter(n => natalPositions[n]).map(n => {
+        const p = natalPositions[n];
+        return { planet: n, rashi: p.rashi, longitude: p.longitude, isRetrograde: p.isRetrograde };
+      })
+    : [];
+
   const saturnTransit = transits.find(t => t.planet === 'SATURN')!;
   const sadeSati = computeSadeSati(saturnTransit.rashi, natalMoonRashi);
 
@@ -259,6 +279,7 @@ export async function getCurrentTransits(
     natalMoonRashi,
     natalLagnaRashi,
     transits,
+    natalPlanets,
     sadeSati,
     jupiterBlessing,
     nodalShift,

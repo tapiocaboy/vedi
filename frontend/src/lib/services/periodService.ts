@@ -194,7 +194,7 @@ export async function getPeriodSnapshot(
   // Gochara / current transits — computed first so the prediction can use them.
   const natalMoonRashi = positions['MOON'].rashi;
   const natalLagnaRashi = positions['ASCENDANT'].rashi;
-  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation);
+  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation, positions);
   const transitSummary = summarizeGocharaForPrediction(gochara);
   ctx.transitNotes = transitSummary.notes;
   ctx.transitScoreMod = transitSummary.scoreMod;

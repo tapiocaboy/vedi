@@ -419,8 +419,19 @@ export class YogaCalculator {
     add(this.detectNeechabangaRajayoga());
     add(this.detectParivartan());
     add(this.detectAmalaYoga());
+
+    // De-duplicate: the same yoga can be detected more than once — e.g. a planet
+    // ruling two kendras yields the identical Kendra-Trikona Rajayoga (same name
+    // + same planet pair) for each. Collapse those to a single, strongest entry.
+    // Distinct yogas (different name OR different planets) are preserved.
+    const byKey = new Map<string, YogaResult>();
+    for (const y of all) {
+      const key = `${y.name}|${[...y.planetsInvolved].sort().join(',')}`;
+      const prev = byKey.get(key);
+      if (!prev || y.strengthScore > prev.strengthScore) byKey.set(key, y);
+    }
     // Sort by strength score descending
-    return all.sort((a, b) => b.strengthScore - a.strengthScore);
+    return [...byKey.values()].sort((a, b) => b.strengthScore - a.strengthScore);
   }
 
   /** Returns all yogas checked, including those not present — for a full analysis report */

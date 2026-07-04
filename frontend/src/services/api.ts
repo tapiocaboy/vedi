@@ -171,7 +171,7 @@ export async function getSookshmaPeriods(birthData: BirthData, targetDate?: Date
 /** Gochara (planetary transits) for a chart at a given date (defaults to now). */
 export async function getGochara(birthData: BirthData, asOf?: Date): Promise<GocharaSnapshot> {
   const positions = await getRawPositions(birthData.date, birthData.latitude, birthData.longitude, birthData.timezone, birthData.ayanamsa);
-  return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf);
+  return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf, undefined, positions);
 }
 
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */

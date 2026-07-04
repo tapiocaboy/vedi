@@ -11,8 +11,9 @@ import {
   Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays, CalendarClock, RotateCcw,
 } from 'lucide-react';
 import { getSookshmaPeriods, getCurrentPrediction, getGochara } from '../../services/api';
-import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot } from '../../services/api';
+import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeSignAnalysis, buildTransitPredictions, type DashaLords } from '../../lib/core/transitAnalysis';
+import { TransitDetailPanel } from './TransitDetailPanel';
 import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { PanchangaTab } from '../Panchanga/PanchangaTab';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
@@ -335,7 +336,9 @@ const DateBar: React.FC<{
 const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
   const { lang, t } = useLang();
   const mp = gochara.moonPhase;
+  const [sel, setSel] = useState<PlanetTransit | null>(null);
   const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-white/45');
+  const verdict = (v: number) => (v > 0 ? t('insights.trHelps') : v < 0 ? t('insights.trChallenges') : t('insights.trSteady'));
 
   return (
     <div className="glass-card rounded-2xl p-5">
@@ -343,7 +346,7 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
         <Orbit className="w-4 h-4 text-violet-400" />
         <span className="text-sm font-semibold text-white">{t('insights.gocharaTitle')}</span>
       </div>
-      <p className="text-[11px] text-white/30 font-mono mb-3">{t('insights.gocharaSubtitle')}</p>
+      <p className="text-[11px] text-white/30 font-mono mb-3">{t('insights.trClickHint')}</p>
 
       {mp && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-3 text-[11px] text-white/60">
@@ -356,25 +359,24 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
 
       <div className="space-y-1">
         {gochara.transits.map(tr => (
-          <div key={tr.planet} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/6 bg-black/20 text-[11px] flex-wrap">
+          <button
+            key={tr.planet}
+            onClick={() => setSel(tr)}
+            className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg border border-white/6 bg-black/20 hover:bg-white/5 hover:border-white/12 transition-colors text-[11px] flex-wrap"
+          >
             <span className="text-[14px] font-bold leading-none" style={{ color: PLANET_COLORS[tr.planet] }}>{PLANET_SYMBOLS[tr.planet]}</span>
             <span className="font-semibold text-white w-16">{labelPlanet(tr.planet, lang)}</span>
             <span className="text-white/70">{labelRashi(tr.rashi, lang, RASHIS[tr.rashi])}</span>
-            <span className="text-white/30 font-mono">{tr.rashiDegree.toFixed(1)}°</span>
             {tr.isRetrograde && <span className="text-amber-300 font-mono">{t('now.transitRetro')}</span>}
-            {tr.combust && <span className="text-orange-400">{t('now.transitCombust')}</span>}
-            {tr.stationary && <span className="text-sky-400">{t('now.transitStationary')}</span>}
-            {(tr.dignity === 'exalted' || tr.dignity === 'own-sign' || tr.dignity === 'debilitated') && (
-              <span className={tr.dignity === 'debilitated' ? 'text-rose-400' : tr.dignity === 'exalted' ? 'text-emerald-400' : 'text-violet-400'}>{labelDignity(tr.dignity, lang)}</span>
-            )}
-            {tr.vedha && <span className="text-amber-400">{t('now.transitVedha')}</span>}
-            {tr.gandanta && <span className="text-amber-400">{t('now.transitGandanta')}</span>}
-            {tr.war && <span className="text-rose-400">{t('now.transitWar')}</span>}
-            <span className={`ml-auto font-mono ${tone(tr.valence)}`}>{tr.houseFromMoon}{t('now.transitFromMoonShort')}</span>
-            <span className="text-white/25 font-mono">{tr.houseFromLagna}H</span>
-          </div>
+            {/* Plain verdict instead of jargon */}
+            <span className={`font-semibold ${tone(tr.valence)}`}>· {verdict(tr.valence)}</span>
+            <span className="ml-auto text-white/25">{t('insights.trTap')}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
+          </button>
         ))}
       </div>
+
+      <TransitDetailPanel transit={sel} gochara={gochara} onClose={() => setSel(null)} />
     </div>
   );
 };

@@ -288,6 +288,48 @@ export function applyVedha(transits: PlanetTransit[], natalMoonRashi: number): v
   }
 }
 
+// ── Transit → Natal (bi-wheel contacts) ─────────────────────────────────────────
+
+export interface TransitNatalHit {
+  transit: string;      // transiting planet
+  natal: string;        // natal planet/point
+  natalRashi: number;
+  kind: 'conjunction' | 'aspect';
+  house: number;        // sign offset transit→natal (1 = conjunction)
+  virupa: number;       // 60 for conjunction; graded strength for aspect
+  orb?: number;         // degrees between the two (conjunction only)
+}
+
+function angularSep(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+/** All transit→natal conjunctions and aspects, strongest first. */
+export function computeTransitNatal(g: GocharaSnapshot): TransitNatalHit[] {
+  const hits: TransitNatalHit[] = [];
+  for (const tr of g.transits) {
+    for (const n of g.natalPlanets) {
+      if (tr.rashi === n.rashi) {
+        hits.push({
+          transit: tr.planet, natal: n.planet, natalRashi: n.rashi, kind: 'conjunction',
+          house: 1, virupa: 60, orb: Math.round(angularSep(tr.longitude, n.longitude) * 10) / 10,
+        });
+      } else {
+        const virupa = aspectVirupa(tr.planet, tr.rashi, n.rashi);
+        if (virupa > 0) {
+          hits.push({ transit: tr.planet, natal: n.planet, natalRashi: n.rashi, kind: 'aspect', house: houseBetween(tr.rashi, n.rashi), virupa });
+        }
+      }
+    }
+  }
+  return hits.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'conjunction' ? -1 : 1;
+    if (a.kind === 'conjunction') return (a.orb ?? 99) - (b.orb ?? 99);
+    return b.virupa - a.virupa;
+  });
+}
+
 // ── Predictions ───────────────────────────────────────────────────────────────
 
 export interface TransitPrediction {
@@ -472,6 +514,28 @@ export function buildTransitPredictions(
       tone: weak.length > strong.length ? 'bad' : strong.length ? 'good' : 'neutral',
       title: 'Transit strength & state',
       text: `${parts.join('. ')}. Exalted/own planets deliver near-peak results; combust or debilitated planets are weakened and need support; stationary planets are unusually potent but unstable as they change direction.`,
+    });
+  }
+
+  // 9c. Transit → Natal contacts — the clearest event triggers
+  const SLOW = new Set(['SATURN', 'JUPITER', 'RAHU', 'KETU', 'MARS']);
+  const KEY_NATAL = new Set(['SUN', 'MOON', 'ASCENDANT']);
+  const tnHits = computeTransitNatal(g).filter(h =>
+    ((h.kind === 'conjunction' && (h.orb ?? 99) <= 10) || h.virupa >= 45) &&
+    (SLOW.has(h.transit) || KEY_NATAL.has(h.natal)) &&
+    h.transit !== h.natal,
+  );
+  if (tnHits.length) {
+    const items = tnHits.slice(0, 4).map(h =>
+      h.kind === 'conjunction'
+        ? `${titleCase(h.transit)} conjoins natal ${titleCase(h.natal)} (${h.orb}° orb)`
+        : `${titleCase(h.transit)} aspects natal ${titleCase(h.natal)} (${ordinal(h.house)}, ${aspectPct(h.virupa)}%)`,
+    );
+    preds.push({
+      id: 'transit-natal',
+      tone: 'info',
+      title: 'Transit → Natal contacts',
+      text: `${items.join('; ')}. These contacts activate the natal significations of the planets involved — the clearest triggers for events during this period.`,
     });
   }
 

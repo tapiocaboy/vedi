@@ -9,10 +9,10 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Orbit, Sparkles } from 'lucide-react';
-import type { GocharaSnapshot, PlanetTransit } from '../../lib/core/transits';
+import type { GocharaSnapshot, PlanetTransit, NatalPlacement } from '../../lib/core/transits';
 import {
-  computeSignAnalysis, gradedAspects, aspectPct, buildTransitPredictions,
-  type SignInfo, type DashaLords,
+  computeSignAnalysis, gradedAspects, aspectPct, buildTransitPredictions, computeTransitNatal,
+  type SignInfo, type DashaLords, type TransitNatalHit,
 } from '../../lib/core/transitAnalysis';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
@@ -49,6 +49,15 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
 
   const byRashi: Record<number, PlanetTransit[]> = {};
   for (let i = 0; i < 12; i++) byRashi[i] = signs[i].planets;
+
+  // Natal planets per sign (bi-wheel overlay) + transit→natal contacts.
+  const natalByRashi = useMemo(() => {
+    const m: Record<number, NatalPlacement[]> = {};
+    for (let i = 0; i < 12; i++) m[i] = [];
+    gochara.natalPlanets.forEach(n => m[n.rashi]?.push(n));
+    return m;
+  }, [gochara]);
+  const transitNatal = useMemo(() => computeTransitNatal(gochara), [gochara]);
 
   const lagna = gochara.natalLagnaRashi;
   const moon = gochara.natalMoonRashi;
@@ -118,6 +127,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
           <span className="absolute top-0.5 right-1 text-[10px]" title={t('now.transitNatalMoon')} style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.55)' }}>☽</span>
         )}
 
+        {/* Transiting planets (bright) */}
         <div className="flex flex-wrap gap-0.5 mt-3 justify-center">
           {planets.map(p => (
             <span
@@ -131,6 +141,22 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
             </span>
           ))}
         </div>
+
+        {/* Natal planets (dim overlay — the bi-wheel) */}
+        {natalByRashi[rashi].length > 0 && (
+          <div className="flex flex-wrap gap-0.5 justify-center mt-0.5 opacity-55">
+            {natalByRashi[rashi].map(n => (
+              <span
+                key={n.planet}
+                className="text-[9px] font-semibold leading-none"
+                style={{ color: PLANET_COLORS[n.planet] ?? '#94a3b8' }}
+                title={`natal ${labelPlanet(n.planet, lang)}`}
+              >
+                {PLANET_SYMBOLS[n.planet] ?? n.planet.slice(0, 2)}
+              </span>
+            ))}
+          </div>
+        )}
 
         <span className="absolute bottom-0.5 left-0 right-0 text-center text-[8.5px] font-mono font-bold truncate px-0.5" style={{ color: rashiClr }}>
           {labelRashi(rashi, lang, RASHIS[rashi])}
@@ -206,6 +232,9 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: badBg, border: `1px solid ${badBorder}` }} />{t('now.transitChallenging')}</span>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: neutralBg, border: `1px solid ${baseBorder}` }} />{t('now.transitNeutral')}</span>
             <span className="flex items-center gap-1"><span className="inline-block w-3 border-t border-dashed" style={{ borderColor: 'var(--c-accent-2)' }} />{t('now.transitAspectLine')}</span>
+            {gochara.natalPlanets.length > 0 && (
+              <span className="flex items-center gap-1"><span className="text-[11px] opacity-55" style={{ color: PLANET_COLORS.SATURN }}>♄</span>{t('now.transitNatal')}</span>
+            )}
           </div>
         </div>
 
@@ -216,13 +245,49 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
               {t('now.transitChartHint')}
             </div>
           ) : (
-            <SignDetail info={signs[selected]} byRashi={byRashi} isLight={isLight} />
+            <SignDetail info={signs[selected]} byRashi={byRashi} natalByRashi={natalByRashi} isLight={isLight} />
           )}
         </div>
       </div>
 
+      {/* Transit → Natal contacts (bi-wheel) */}
+      <TransitNatalCard hits={transitNatal} isLight={isLight} />
+
       {/* Transit predictions */}
       <TransitPredictions predictions={predictions} isLight={isLight} />
+    </div>
+  );
+};
+
+// ── Transit → Natal contacts ────────────────────────────────────────────────────
+
+const TransitNatalCard: React.FC<{ hits: TransitNatalHit[]; isLight: boolean }> = ({ hits, isLight }) => {
+  const { lang, t } = useLang();
+  const top = hits.filter(h => h.transit !== h.natal && (h.kind === 'conjunction' ? (h.orb ?? 99) <= 12 : h.virupa >= 30)).slice(0, 12);
+  if (!top.length) return null;
+  const head = isLight ? 'text-gray-800' : 'text-white';
+  const sub = isLight ? 'text-slate-400' : 'text-white/35';
+
+  return (
+    <div className="mt-4 pt-4 border-t" style={{ borderColor: isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.07)' }}>
+      <div className="flex items-center gap-2 mb-3">
+        <Orbit className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
+        <span className={`text-xs font-bold uppercase tracking-wider ${head}`}>{t('now.transitToNatal')}</span>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-1.5">
+        {top.map((h, i) => (
+          <div key={i} className={`flex items-center gap-1.5 text-[11px] rounded-lg border p-2 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/8 bg-black/20'}`}>
+            <span className="font-bold" style={{ color: PLANET_COLORS[h.transit] }}>{PLANET_SYMBOLS[h.transit]}</span>
+            <span className={isLight ? 'text-slate-700' : 'text-white/75'}>{labelPlanet(h.transit, lang)}</span>
+            <span className={sub}>{h.kind === 'conjunction' ? '☌' : '▷'}</span>
+            <span className="font-bold opacity-70" style={{ color: PLANET_COLORS[h.natal] }}>{PLANET_SYMBOLS[h.natal]}</span>
+            <span className={isLight ? 'text-slate-700' : 'text-white/75'}>{labelPlanet(h.natal, lang)}</span>
+            <span className={`ml-auto font-mono ${sub}`}>
+              {h.kind === 'conjunction' ? `${h.orb}°` : `${ordinal(h.house)} · ${aspectPct(h.virupa)}%`}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -232,14 +297,16 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
 const SignDetail: React.FC<{
   info: SignInfo;
   byRashi: Record<number, PlanetTransit[]>;
+  natalByRashi: Record<number, NatalPlacement[]>;
   isLight: boolean;
-}> = ({ info, byRashi, isLight }) => {
+}> = ({ info, byRashi, natalByRashi, isLight }) => {
   const { lang, t } = useLang();
   const head = isLight ? 'text-gray-800' : 'text-white';
   const body = isLight ? 'text-slate-600' : 'text-white/65';
   const sub  = isLight ? 'text-slate-400' : 'text-white/35';
   const divider = isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.07)';
   const rashi = info.rashi;
+  const natalHere = natalByRashi[rashi] ?? [];
 
   const favLabel = info.tone === 'good' ? t('now.transitFavourable') : info.tone === 'bad' ? t('now.transitChallenging') : t('now.transitNeutral');
   const favCls = info.tone === 'good' ? 'bg-emerald-500/15 text-emerald-400' : info.tone === 'bad' ? 'bg-rose-500/15 text-rose-400' : (isLight ? 'bg-slate-200 text-slate-500' : 'bg-white/10 text-white/50');
@@ -254,6 +321,19 @@ const SignDetail: React.FC<{
           {favLabel} · {info.score > 0 ? '+' : ''}{info.score.toFixed(1)}
         </span>
       </div>
+
+      {/* Natal planets sitting in this sign (bi-wheel) */}
+      {natalHere.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-[10px] uppercase tracking-wider ${sub}`}>{t('now.transitNatal')}:</span>
+          {natalHere.map(n => (
+            <span key={n.planet} className="text-[11px] font-semibold flex items-center gap-1">
+              <span style={{ color: PLANET_COLORS[n.planet] }}>{PLANET_SYMBOLS[n.planet]}</span>
+              <span className={body}>{labelPlanet(n.planet, lang)}</span>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Planets transiting here */}
       {info.planets.length === 0 ? (
