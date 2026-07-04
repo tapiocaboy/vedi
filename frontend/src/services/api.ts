@@ -18,7 +18,8 @@ import {
 } from '../lib/services/predictionService';
 import type { AshtakavargaResult } from '../lib/core/ashtakavarga';
 import { getPeriodSnapshot, type PeriodSnapshot } from '../lib/services/periodService';
-import type { CurrentLocation } from '../lib/core/transits';
+import { getCurrentTransits, type CurrentLocation, type GocharaSnapshot } from '../lib/core/transits';
+import { getPlanetPositions as getRawPositions } from '../lib/core/ephemeris';
 import { runMatching, type MatchSummary } from '../lib/services/matchingService';
 import { getVargaReport, type VargaReport, type VargaInsight } from '../lib/services/vargaService';
 import { getPanchangaReport, type PanchangaReport, type ChoghadiyaPeriod } from '../lib/services/panchangaService';
@@ -28,7 +29,8 @@ export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, Dosh
 export type { VargaChart, VargaPlanet } from '../lib/core/vargas';
 export type { DoshaCheck, SadeSatiPeriod, SadeSatiPhase } from '../lib/core/doshas';
 
-export type { PeriodSnapshot, CurrentLocation, MatchSummary };
+export type { PeriodSnapshot, CurrentLocation, MatchSummary, GocharaSnapshot };
+export type { PlanetTransit } from '../lib/core/transits';
 export type { MatchReport, KootaScore, DoshaResult } from '../lib/core/matching';
 
 export type { SookshmaPeriodList };
@@ -162,8 +164,14 @@ export async function getCurrentPeriodSnapshot(
   return getPeriodSnapshot(birthData, currentLocation, asOf);
 }
 
-export async function getSookshmaPeriods(birthData: BirthData): Promise<SookshmaPeriodList | null> {
-  return getSookshmaPeriodsForCurrent(birthData);
+export async function getSookshmaPeriods(birthData: BirthData, targetDate?: Date): Promise<SookshmaPeriodList | null> {
+  return getSookshmaPeriodsForCurrent(birthData, targetDate);
+}
+
+/** Gochara (planetary transits) for a chart at a given date (defaults to now). */
+export async function getGochara(birthData: BirthData, asOf?: Date): Promise<GocharaSnapshot> {
+  const positions = await getRawPositions(birthData.date, birthData.latitude, birthData.longitude, birthData.timezone, birthData.ayanamsa);
+  return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf);
 }
 
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */

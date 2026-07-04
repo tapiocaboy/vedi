@@ -2,20 +2,23 @@
  * DeepInsights — Sookshma Dasha timeline + enhanced multi-level predictions
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { addYears, format, differenceInYears } from 'date-fns';
 import {
   Loader2, Layers, ChevronRight, AlertTriangle, Sparkles,
-  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays,
+  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays, CalendarClock, RotateCcw,
 } from 'lucide-react';
-import { getSookshmaPeriods, getCurrentPrediction } from '../../services/api';
-import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
+import { getSookshmaPeriods, getCurrentPrediction, getGochara } from '../../services/api';
+import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot } from '../../services/api';
+import { computeSignAnalysis, buildTransitPredictions, type DashaLords } from '../../lib/core/transitAnalysis';
+import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { PanchangaTab } from '../Panchanga/PanchangaTab';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import {
-  labelArea, labelTrend, labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse,
+  labelArea, labelTrend, labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse, labelRashi,
 } from '../../i18n/astroLabels';
 
 interface Props {
@@ -250,39 +253,161 @@ function LordStrengthCard({ prediction }: { prediction: DashaPredictionData }) {
   );
 }
 
-// ── Current Transits ──────────────────────────────────────────────────────────
+// ── Date explorer bar ─────────────────────────────────────────────────────────
 
-function CurrentTransitsCard({ prediction }: { prediction: DashaPredictionData }) {
-  const { t } = useLang();
-  const transits = prediction.importantTransits ?? [];
-  if (!transits.length) return null;
+interface DateTarget { date: Date; isCurrent: boolean; }
+
+function clampDate(d: Date, min: Date, max: Date): Date {
+  return d < min ? new Date(min) : d > max ? new Date(max) : d;
+}
+
+const DateBar: React.FC<{
+  target: DateTarget;
+  setTarget: (t: DateTarget) => void;
+  min: Date;   // birth
+  max: Date;   // birth + 100 years (life max)
+}> = ({ target, setTarget, min, max }) => {
+  const { lang, t } = useLang();
+  const set = (d: Date) => setTarget({ date: clampDate(d, min, max), isCurrent: false });
+  const age = Math.max(0, differenceInYears(target.date, min));
+  const label = target.isCurrent
+    ? t('insights.viewingCurrent')
+    : t('insights.viewingDate', { date: target.date.toLocaleDateString(lang === 'si' ? 'si-LK' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) });
+
+  return (
+    <div className="glass-card rounded-2xl p-4">
+      {/* Single row: title · horizontal life slider · date picker · current */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <CalendarClock className="w-4 h-4 text-violet-400" />
+          <span className="text-sm font-semibold text-white">{t('insights.dateTitle')}</span>
+        </div>
+
+        {/* Horizontal life timeline: birth → +100y */}
+        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
+          <span className="text-[9px] font-mono text-white/40 shrink-0">{t('insights.birth')}</span>
+          <input
+            type="range"
+            min={min.getTime()}
+            max={max.getTime()}
+            step={86400000}
+            value={target.date.getTime()}
+            onChange={e => set(new Date(Number(e.target.value)))}
+            aria-label={t('insights.timelineAria')}
+            className="flex-1 cursor-pointer"
+            style={{ accentColor: 'var(--c-accent)' }}
+          />
+          <span className="text-[9px] font-mono text-white/40 shrink-0">{t('insights.lifeMax')}</span>
+        </div>
+
+        {/* Date picker */}
+        <input
+          type="date"
+          value={format(target.date, 'yyyy-MM-dd')}
+          min={format(min, 'yyyy-MM-dd')}
+          max={format(max, 'yyyy-MM-dd')}
+          onChange={e => { if (e.target.value) set(new Date(`${e.target.value}T12:00:00`)); }}
+          className="shrink-0 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white [color-scheme:dark]"
+          style={{ accentColor: 'var(--c-accent)' }}
+        />
+
+        {/* Current */}
+        <button
+          onClick={() => setTarget({ date: clampDate(new Date(), min, max), isCurrent: true })}
+          disabled={target.isCurrent}
+          className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold text-white on-accent disabled:opacity-45 transition-opacity"
+          style={{ backgroundColor: 'var(--c-accent)' }}
+        >
+          <RotateCcw className="w-3 h-3" /> {t('insights.current')}
+        </button>
+      </div>
+
+      {/* Readout — age + selected date */}
+      <div className="mt-2.5 text-[11px] font-mono text-white/45">
+        {t('insights.ageLabel', { n: age })} · {label}
+      </div>
+    </div>
+  );
+};
+
+// ── Transits (Gochara) at the selected date ────────────────────────────────────
+
+const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
+  const { lang, t } = useLang();
+  const mp = gochara.moonPhase;
+  const tone = (v: number) => (v > 0 ? 'text-emerald-400' : v < 0 ? 'text-rose-400' : 'text-white/45');
 
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-1">
         <Orbit className="w-4 h-4 text-violet-400" />
-        <span className="text-sm font-semibold text-white">{t('now.transitsTitle')}</span>
+        <span className="text-sm font-semibold text-white">{t('insights.gocharaTitle')}</span>
       </div>
-      <p className="text-[11px] text-white/30 font-mono mb-4">
-        {t('insights.transitsSubtitle')}
-      </p>
-      <ul className="space-y-2">
-        {transits.map((t, i) => (
-          <motion.li
-            key={i}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="flex items-start gap-2.5 text-sm text-white/70 leading-relaxed"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-400/60 mt-2 shrink-0" />
-            {t}
-          </motion.li>
+      <p className="text-[11px] text-white/30 font-mono mb-3">{t('insights.gocharaSubtitle')}</p>
+
+      {mp && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-3 text-[11px] text-white/60">
+          <span className="font-bold">☽ {t('now.transitMoonWord')}:</span>
+          <span className="font-semibold">{mp.tithiName}</span>
+          <span className="text-white/35">· {mp.paksha} paksha · {mp.illumination}% {t('now.transitLit')}</span>
+          <span className="text-white/35">· {mp.nakshatra} {t('now.transitPada')} {mp.pada}</span>
+        </div>
+      )}
+
+      <div className="space-y-1">
+        {gochara.transits.map(tr => (
+          <div key={tr.planet} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/6 bg-black/20 text-[11px] flex-wrap">
+            <span className="text-[14px] font-bold leading-none" style={{ color: PLANET_COLORS[tr.planet] }}>{PLANET_SYMBOLS[tr.planet]}</span>
+            <span className="font-semibold text-white w-16">{labelPlanet(tr.planet, lang)}</span>
+            <span className="text-white/70">{labelRashi(tr.rashi, lang, RASHIS[tr.rashi])}</span>
+            <span className="text-white/30 font-mono">{tr.rashiDegree.toFixed(1)}°</span>
+            {tr.isRetrograde && <span className="text-amber-300 font-mono">{t('now.transitRetro')}</span>}
+            {tr.combust && <span className="text-orange-400">{t('now.transitCombust')}</span>}
+            {tr.stationary && <span className="text-sky-400">{t('now.transitStationary')}</span>}
+            {(tr.dignity === 'exalted' || tr.dignity === 'own-sign' || tr.dignity === 'debilitated') && (
+              <span className={tr.dignity === 'debilitated' ? 'text-rose-400' : tr.dignity === 'exalted' ? 'text-emerald-400' : 'text-violet-400'}>{labelDignity(tr.dignity, lang)}</span>
+            )}
+            {tr.vedha && <span className="text-amber-400">{t('now.transitVedha')}</span>}
+            {tr.gandanta && <span className="text-amber-400">{t('now.transitGandanta')}</span>}
+            {tr.war && <span className="text-rose-400">{t('now.transitWar')}</span>}
+            <span className={`ml-auto font-mono ${tone(tr.valence)}`}>{tr.houseFromMoon}{t('now.transitFromMoonShort')}</span>
+            <span className="text-white/25 font-mono">{tr.houseFromLagna}H</span>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
-}
+};
+
+// ── Deeper predictions — dasha–gochara synthesis, aspects, dignity, timing ──────
+
+const TONE_DOT: Record<string, string> = { good: '#10b981', bad: '#f43f5e', neutral: '#94a3b8', info: 'var(--c-accent-2)' };
+
+const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLords }> = ({ gochara, dashaLords }) => {
+  const { t } = useLang();
+  const predictions = useMemo(() => {
+    const signs = computeSignAnalysis(gochara);
+    return buildTransitPredictions(gochara, signs, dashaLords);
+  }, [gochara, dashaLords]);
+
+  return (
+    <div className="glass-card rounded-2xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="w-4 h-4 text-violet-300" />
+        <span className="text-sm font-semibold text-white">{t('insights.transitInsightsTitle')}</span>
+      </div>
+      <p className="text-[11px] text-white/30 font-mono mb-4">{t('insights.transitInsightsSubtitle')}</p>
+      <div className="grid sm:grid-cols-2 gap-2">
+        {predictions.map(p => (
+          <div key={p.id} className="rounded-xl border border-white/8 bg-black/20 p-3" style={{ borderLeft: `3px solid ${TONE_DOT[p.tone] ?? TONE_DOT.neutral}` }}>
+            <div className="text-xs font-bold text-white mb-1">{p.title}</div>
+            <p className="text-[11px] text-white/60 leading-relaxed">{p.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // ── Area Breakdown ────────────────────────────────────────────────────────────
 
@@ -382,11 +507,11 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
 
 // ── Sookshma Timeline ─────────────────────────────────────────────────────────
 
-function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
+function SookshmaTimeline({ birthData, targetDate, refDate, dateKey }: { birthData: BirthData; targetDate?: Date; refDate: Date; dateKey: string }) {
   const { lang, t } = useLang();
   const { data, isLoading, error } = useQuery({
-    queryKey: ['sookshma', birthData],
-    queryFn: () => getSookshmaPeriods(birthData),
+    queryKey: ['sookshma', birthData, dateKey],
+    queryFn: () => getSookshmaPeriods(birthData, targetDate),
     enabled: !!birthData.date,
     staleTime: 10 * 60 * 1000,
   });
@@ -408,7 +533,7 @@ function SookshmaTimeline({ birthData }: { birthData: BirthData }) {
     );
   }
 
-  const today = new Date();
+  const today = refDate;
 
   return (
     <div className="glass-card rounded-2xl p-5">
@@ -563,61 +688,82 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
 
 export const DeepInsights: React.FC<Props> = ({ birthData }) => {
   const { t } = useLang();
+  const minDate = useMemo(() => new Date(birthData.date), [birthData.date]);
+  const maxDate = useMemo(() => addYears(new Date(birthData.date), 100), [birthData.date]); // life max = 100 years
+
+  const [target, setTarget] = useState<DateTarget>(() => ({ date: new Date(), isCurrent: true }));
+  const effectiveDate = target.isCurrent ? undefined : target.date;
+  const dateKey = target.isCurrent ? 'now' : target.date.toISOString().slice(0, 10);
+
   const { data: prediction, isLoading, error } = useQuery({
-    queryKey: ['currentPrediction', birthData],
-    queryFn: () => getCurrentPrediction(birthData),
-    enabled: !!birthData.date,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['currentPrediction', birthData, dateKey],
+    queryFn: () => getCurrentPrediction(birthData, effectiveDate),
+    enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
+  });
+  const { data: gochara } = useQuery({
+    queryKey: ['gochara', birthData, dateKey],
+    queryFn: () => getGochara(birthData, effectiveDate),
+    enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-16">
-        <Loader2 className="w-5 h-5 animate-spin text-violet-400 mr-3" />
-        <span className="text-sm text-white/40 font-mono">{t('insights.loading')}</span>
-      </div>
-    );
-  }
-
-  if (error || !prediction) {
-    return (
-      <div className="p-5 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm">
-        {t('insights.failed')}
-      </div>
-    );
-  }
+  const dashaLords: DashaLords | undefined = prediction?.currentPeriods
+    ? { mahadasha: prediction.currentPeriods.mahadasha.lord, antardasha: prediction.currentPeriods.antardasha?.lord }
+    : undefined;
 
   return (
     <div className="space-y-4">
-      {/* 4-level hierarchy + strength */}
-      <HierarchyCard prediction={prediction} />
+      {/* Date + vertical life-timeline slider (birth → +100y) */}
+      <DateBar target={target} setTarget={setTarget} min={minDate} max={maxDate} />
 
-      {/* Dasha lord natal strength */}
-      <LordStrengthCard prediction={prediction} />
-
-      {/* Combination alerts */}
-      <CombinationEffects prediction={prediction} />
-
-      {/* Live transits feeding the prediction */}
-      <CurrentTransitsCard prediction={prediction} />
-
-      {/* Sookshma timeline */}
-      <SookshmaTimeline birthData={birthData} />
-
-      {/* Area breakdown */}
-      <AreaBreakdown prediction={prediction} />
-
-      {/* Remedies */}
-      <RemediesSummary prediction={prediction} />
-
-      {/* Panchanga — today's almanac + muhurta (moved in as a section) */}
-      <div className="pt-2">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <CalendarDays className="w-4 h-4 text-violet-400" />
-          <span className="text-sm font-semibold text-white">{t('insights.panchangaSection')}</span>
+      {isLoading && (
+        <div className="flex items-center justify-center p-16">
+          <Loader2 className="w-5 h-5 animate-spin text-violet-400 mr-3" />
+          <span className="text-sm text-white/40 font-mono">{t('insights.loading')}</span>
         </div>
-        <PanchangaTab birthData={birthData} />
-      </div>
+      )}
+
+      {!isLoading && (error || !prediction) && (
+        <div className="p-5 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm">
+          {t('insights.failed')}
+        </div>
+      )}
+
+      {prediction && (
+        <>
+          {/* Active periods — 4-level hierarchy + overall rating */}
+          <HierarchyCard prediction={prediction} />
+
+          {/* Dasha lord chart strength */}
+          <LordStrengthCard prediction={prediction} />
+
+          {/* Combination alerts */}
+          <CombinationEffects prediction={prediction} />
+
+          {/* Transits (Gochara) at the selected date */}
+          {gochara && <GocharaCard gochara={gochara} />}
+
+          {/* Deeper predictions — dasha–gochara synthesis, aspects, dignity, timing */}
+          {gochara && <TransitInsights gochara={gochara} dashaLords={dashaLords} />}
+
+          {/* Sookshma timeline */}
+          <SookshmaTimeline birthData={birthData} targetDate={effectiveDate} refDate={target.date} dateKey={dateKey} />
+
+          {/* Area breakdown */}
+          <AreaBreakdown prediction={prediction} />
+
+          {/* Remedies */}
+          <RemediesSummary prediction={prediction} />
+
+          {/* Panchanga — almanac + muhurta for the selected date */}
+          <div className="pt-2">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <CalendarDays className="w-4 h-4 text-violet-400" />
+              <span className="text-sm font-semibold text-white">{t('insights.panchangaSection')}</span>
+            </div>
+            <PanchangaTab birthData={birthData} asOf={effectiveDate} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

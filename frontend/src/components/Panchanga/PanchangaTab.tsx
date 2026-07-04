@@ -60,12 +60,13 @@ function TimingRow({
   );
 }
 
-export const PanchangaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
+export const PanchangaTab: React.FC<{ birthData: BirthData; asOf?: Date }> = ({ birthData, asOf }) => {
   const isLight = useTheme();
   const { lang, t } = useLang();
+  const asOfKey = asOf ? asOf.toISOString().slice(0, 10) : 'now';
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['panchanga', birthData.latitude, birthData.longitude],
-    queryFn: () => getPanchanga(birthData),
+    queryKey: ['panchanga', birthData.latitude, birthData.longitude, asOfKey],
+    queryFn: () => getPanchanga(birthData, asOf),
     staleTime: 5 * 60 * 1000, // panchanga shifts through the day
   });
 
