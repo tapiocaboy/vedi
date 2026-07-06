@@ -579,6 +579,11 @@ const en = {
   'privacy.bodyLoad': 'This tool runs entirely in your browser. We do not collect, store, or transmit any information you enter — ever.',
   'privacy.dismiss': 'Dismiss',
 
+  'cookies.title': 'Anonymous visit analytics',
+  'cookies.body': 'We use Google Analytics to count visits and see which features get used. Your birth details are never sent anywhere — this only measures site traffic. Declining changes nothing about how the app works.',
+  'cookies.accept': 'Allow analytics',
+  'cookies.decline': 'No thanks',
+
   'match.experimental.title': 'Experimental Feature',
   'match.experimental.heroTitle': 'Horoscope Matching is still in development.',
   'match.experimental.heroBody': 'This feature is experimental — compatibility scores and dosha checks may be incomplete or inaccurate. Use it for exploration only, not for real relationship decisions.',
@@ -1183,6 +1188,11 @@ const si: Record<keyof typeof en, string> = {
   'privacy.bodyGenerate': 'සියල්ල browser තුළ locally. enter කරන දෙය server එකකට නොයයි, store නොවේ.',
   'privacy.bodyLoad': 'tool එක browser තුළම. collect, store, transmit නොකරමු — ever.',
   'privacy.dismiss': 'වසන්න',
+
+  'cookies.title': 'Anonymous visit analytics',
+  'cookies.body': 'Visits ගණනට Google Analytics use කරමු. ඔබේ birth details කිසි තැනකට නොයයි — site traffic පමණයි measure වෙන්නේ. decline කළත් app එක සාමාන්‍ය ලෙසම වැඩ කරයි.',
+  'cookies.accept': 'Analytics allow කරන්න',
+  'cookies.decline': 'එපා',
 
   'match.experimental.title': 'Experimental Feature',
   'match.experimental.heroTitle': 'Horoscope Matching still development.',

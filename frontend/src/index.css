@@ -685,6 +685,14 @@ input:focus, select:focus, textarea:focus {
   to   { width: 0%; }
 }
 
+/* ── Cookie consent banner (shares .privacy-banner container) ───────────── */
+.cookie-icon    { color: var(--c-accent); }
+.cookie-decline { color: rgba(255,255,255,0.5); }
+.cookie-decline:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
+
+.theme-light .cookie-decline { color: rgba(15,23,42,0.5); }
+.theme-light .cookie-decline:hover { background: rgba(0,0,0,0.05); color: rgba(15,23,42,0.8); }
+
 /* ── Dasha / AI badge ───────────────────────────────────────────────────── */
 .theme-light .dasha-ai-badge {
   box-shadow: 0 1px 8px rgba(var(--c-accent-rgb),0.12);

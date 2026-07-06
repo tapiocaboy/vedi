@@ -30,6 +30,7 @@ import { isChatConfigured } from './services/horoscopeChat';
 import { DisclaimerModal } from './components/DisclaimerModal';
 import { WelcomeLegalModal } from './components/WelcomeLegalModal';
 import { PrivacyBanner } from './components/PrivacyBanner';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Logo, BrandTitle } from './components/Logo';
 import { ParticleField } from './components/ParticleField';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
@@ -69,6 +70,10 @@ function AppContent() {
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
+  // Cookie consent (Google Analytics) — asked once per device, persisted.
+  const [cookieConsentVisible, setCookieConsentVisible] = useState(
+    () => localStorage.getItem('trytellme_cookie_consent') === null
+  );
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
 
   const generateChart = useGenerateChart();
@@ -120,6 +125,14 @@ function AppContent() {
     setDisclaimerVisible(false);
     setPrivacyTrigger('generate');
     setPrivacyVisible(true);
+  };
+
+  const handleCookieConsent = (granted: boolean) => {
+    localStorage.setItem('trytellme_cookie_consent', granted ? 'granted' : 'denied');
+    if (granted) {
+      window.gtag?.('consent', 'update', { analytics_storage: 'granted' });
+    }
+    setCookieConsentVisible(false);
   };
 
   const handlePrivacyDismiss = () => {
@@ -218,6 +231,13 @@ function AppContent() {
         visible={privacyVisible}
         onDismiss={privacyTrigger === 'generate' ? handlePrivacyDismiss : () => setPrivacyVisible(false)}
         trigger={privacyTrigger}
+      />
+
+      {/* Cookie consent — asked once, after the welcome legal modal closes */}
+      <CookieConsentBanner
+        visible={cookieConsentVisible && !welcomeLegalVisible}
+        onAccept={() => handleCookieConsent(true)}
+        onDecline={() => handleCookieConsent(false)}
       />
 
       {/* High-tech particle network — dark & light themes only (mono is static) */}

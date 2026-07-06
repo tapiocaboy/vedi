@@ -10,3 +10,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  /** Google Analytics gtag, defined inline in index.html. */
+  gtag?: (...args: unknown[]) => void;
+  dataLayer?: unknown[];
+}
