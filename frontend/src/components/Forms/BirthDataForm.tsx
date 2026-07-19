@@ -239,8 +239,8 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
   // Colour/size/background + native date-time legibility live in `.form-field`
   // (see index.css) so the date/time pickers render correctly on mobile and in
   // both themes; Tailwind here only handles layout + focus ring.
-  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-bold focus:border-[rgba(var(--c-accent-rgb),0.6)] focus:ring-1 focus:ring-[rgba(var(--c-accent-rgb),0.2)] outline-none transition-all";
-  const labelClasses = "form-label block text-sm font-bold mb-2 uppercase tracking-wide";
+  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-semibold outline-none";
+  const labelClasses = "form-label block text-xs font-semibold mb-2 uppercase tracking-wider";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -399,10 +399,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       <button
         type="submit"
         disabled={isLoading}
-        className="on-accent w-full py-3.5 px-6 text-white text-base font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: 'var(--c-accent)' }}
-        onMouseEnter={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--c-accent-dark)')}
-        onMouseLeave={e => !isLoading && ((e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--c-accent)')}
+        className="btn-primary on-accent w-full py-3.5 px-6 text-white text-base font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

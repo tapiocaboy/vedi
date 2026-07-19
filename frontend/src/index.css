@@ -109,9 +109,10 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
   text-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.3);
 }
+/* Light theme: no text shadows — crisp, clean type on white surfaces */
 .theme-light body,
 :root.theme-light body {
-  text-shadow: 0 0 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  text-shadow: none;
 }
 
 input, select, textarea, option { text-shadow: none !important; }
@@ -121,7 +122,29 @@ form label {
   text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 4px rgba(0,0,0,0.3);
 }
 .theme-light form label {
-  text-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 0 3px rgba(0,0,0,0.06);
+  text-shadow: none;
+}
+
+/* ── Text selection tinted to the brand accent ─────────────────────────── */
+::selection {
+  background: rgba(var(--c-accent-rgb),0.30);
+  color: inherit;
+}
+.theme-light ::selection {
+  background: rgba(var(--c-accent-rgb),0.18);
+}
+
+/* ── Tactile press feedback on every interactive control ───────────────── */
+button { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled):active { transform: scale(0.97); }
+
+/* ── Keyboard focus — visible ring for buttons/links/selects ───────────── */
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid rgba(var(--c-accent-rgb),0.65);
+  outline-offset: 2px;
+  border-radius: inherit;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
@@ -170,8 +193,15 @@ form label {
   box-shadow: var(--shadow-card);
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
+.glass-card:hover {
+  border-color: rgba(var(--c-accent-rgb),0.18);
+}
 .theme-light .glass-card {
   box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 24px rgba(0,0,0,0.05);
+}
+.theme-light .glass-card:hover {
+  border-color: rgba(var(--c-accent-rgb),0.20);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05), 0 10px 32px rgba(0,0,0,0.07);
 }
 
 /* ── Tech grid overlay ──────────────────────────────────────────────────── */
@@ -273,15 +303,17 @@ form label {
   animation: gradient-shift 3s ease infinite;
 }
 
-/* ── Form input focus ───────────────────────────────────────────────────── */
+/* ── Form input focus — soft accent halo instead of a hard 1px line ────── */
 input:focus, select:focus, textarea:focus {
   outline: none;
-  box-shadow: 0 0 0 1.5px rgba(var(--c-accent-rgb),0.40);
+  border-color: rgba(var(--c-accent-rgb),0.55) !important;
+  box-shadow: 0 0 0 3px rgba(var(--c-accent-rgb),0.15);
 }
 .theme-light input:focus,
 .theme-light select:focus,
 .theme-light textarea:focus {
-  box-shadow: 0 0 0 1.5px rgba(var(--c-accent-rgb),0.35);
+  border-color: rgba(var(--c-accent-rgb),0.50) !important;
+  box-shadow: 0 0 0 3px rgba(var(--c-accent-rgb),0.12);
 }
 
 /* ── Light mode: inputs ─────────────────────────────────────────────────── */
@@ -730,6 +762,11 @@ input:focus, select:focus, textarea:focus {
     color: #ffffff;
     /* 16px floor stops iOS Safari auto-zooming (the page "jump") on focus. */
     font-size: 16px;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .form-field:hover:not(:focus) {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.07);
   }
   .form-field::placeholder { color: rgba(255, 255, 255, 0.30); }
 
@@ -749,6 +786,11 @@ input:focus, select:focus, textarea:focus {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.10);
     color: rgba(255, 255, 255, 0.60);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  }
+  .preset-btn:hover {
+    background: rgba(var(--c-accent-rgb), 0.10);
+    transform: translateY(-1px);
   }
 
   /* Light theme — readable dark text on light fields, light native pickers. */
@@ -758,6 +800,10 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid rgba(0, 0, 0, 0.12);
     color: #0f172a;
   }
+  .theme-light .form-field:hover:not(:focus) {
+    border-color: rgba(0, 0, 0, 0.24);
+    background: #ffffff;
+  }
   .theme-light .form-field::placeholder { color: rgba(15, 23, 42, 0.35); }
   .theme-light .form-label { color: rgba(15, 23, 42, 0.70); }
   .theme-light .preset-btn {
@@ -765,6 +811,38 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid rgba(0, 0, 0, 0.10);
     color: rgba(15, 23, 42, 0.65);
   }
+  .theme-light .preset-btn:hover {
+    background: rgba(var(--c-accent-rgb), 0.06);
+  }
+
+  /* ── Primary CTA (Generate Chart) — gradient fill + lift + sheen ─────── */
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+    background-image: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-dark) 100%);
+    box-shadow: 0 4px 16px rgba(var(--c-accent-rgb), 0.30);
+    transition: box-shadow 0.25s ease, transform 0.2s ease, filter 0.2s ease;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(var(--c-accent-rgb), 0.40);
+    filter: brightness(1.06);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 12px rgba(var(--c-accent-rgb), 0.30);
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.22) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .btn-primary:hover:not(:disabled)::after { transform: translateX(120%); }
+  .theme-mono .btn-primary::after { display: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -886,6 +964,10 @@ html[lang='si'] * {
   transition: none !important;
   scroll-behavior: auto !important;
 }
+/* No press-scale or hover-lift micro-motion in the static mono theme */
+.theme-mono button:not(:disabled):active { transform: none; }
+.theme-mono .preset-btn:hover,
+.theme-mono .btn-primary:hover:not(:disabled) { transform: none; }
 .theme-mono .animate-spin,
 .theme-mono .spinner {
   animation: spin 0.7s linear infinite !important;
