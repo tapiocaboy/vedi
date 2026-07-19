@@ -5,6 +5,7 @@ import { Clock, Compass, MapPin, AlertTriangle, Sparkles, Zap, ArrowRight, Loade
 import { getCurrentPeriodSnapshot, type BirthData, type CurrentLocation, type PeriodSnapshot } from '../../services/api';
 import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
 import { TransitChart } from './TransitChart';
+import { UpcomingTransitsCard } from '../Transits/UpcomingTransitsCard';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelArea, labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
@@ -387,6 +388,11 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
       <TransitChart
         gochara={data.gochara}
         dasha={{ mahadasha: data.currentPeriods.mahadasha.lord, antardasha: data.currentPeriods.antardasha.lord }}
+      />
+      <UpcomingTransitsCard
+        ayanamsa={birthData.ayanamsa}
+        natalMoonRashi={data.gochara.natalMoonRashi}
+        natalLagnaRashi={data.gochara.natalLagnaRashi}
       />
       <PredictionDetailsCard snap={data} />
       <TransitsCard snap={data} />

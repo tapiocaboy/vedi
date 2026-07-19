@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { PlanetPosition } from '../../types/astrology';
-import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS } from '../../types/astrology';
+import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelPlanet, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
+import { labelPlanet, labelPlanetShort, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -117,22 +117,33 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
           <div className="absolute top-0.5 right-1 text-xs font-extrabold" style={{ color: ACCENT }}>↑</div>
         )}
 
-        {/* Planets */}
-        <div className="flex flex-wrap gap-0.5 mt-3 justify-center">
-          {planetsHere.map((planet, idx) => (
-            <motion.div
-              key={planet.planet}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + idx * 0.08 }}
-              className="text-[15px] font-extrabold px-0.5 rounded"
-              style={{ color: planet.isRetrograde ? '#e11d48' : planetClr, textShadow: '0 0 5px rgba(0,0,0,0.35)' }}
-              title={`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
-            >
-              {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
-              {planet.isRetrograde && <span className="text-[8px] font-bold">℞</span>}
-            </motion.div>
-          ))}
+        {/* Planets — colored glyph + short name + degree so each is identifiable at a glance */}
+        <div className="flex flex-wrap gap-x-1 gap-y-0.5 mt-3.5 justify-center content-start">
+          {planetsHere.map((planet, idx) => {
+            const color = planetDisplayColor(planet.planet, isLight);
+            return (
+              <motion.div
+                key={planet.planet}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + idx * 0.08 }}
+                className="flex items-baseline gap-[3px] px-1 py-px rounded-md leading-none"
+                style={{ background: isLight ? 'rgba(15,23,42,0.04)' : 'rgba(255,255,255,0.06)' }}
+                title={`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
+              >
+                <span className="text-[15px] font-extrabold" style={{ color, textShadow: isLight ? 'none' : `0 0 6px ${color}66` }}>
+                  {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
+                </span>
+                <span className="text-[10px] font-bold" style={{ color: planetClr }}>
+                  {labelPlanetShort(planet.planet, lang)}
+                </span>
+                <span className="text-[9px] font-mono font-semibold" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.55)' }}>
+                  {Math.floor(planet.rashiDegree)}°
+                </span>
+                {planet.isRetrograde && <span className="text-[9px] font-extrabold" style={{ color: '#e11d48' }}>℞</span>}
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Rashi name bottom */}
@@ -165,11 +176,11 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         ))}
       </div>
 
-      {/* Legend */}
+      {/* Legend — same colors as the chart cells */}
       <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1.5">
-            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px rgba(var(--c-accent-rgb),0.27)` }}>{symbol}</span>
+            <span className="text-base font-bold" style={{ color: planetDisplayColor(planet, isLight) }}>{symbol}</span>
             <span className="font-bold">{labelPlanet(planet, lang)}</span>
           </div>
         ))}

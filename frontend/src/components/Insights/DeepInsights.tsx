@@ -14,6 +14,8 @@ import { getSookshmaPeriods, getCurrentPrediction, getGochara } from '../../serv
 import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeSignAnalysis, buildTransitPredictions, type DashaLords } from '../../lib/core/transitAnalysis';
 import { TransitDetailPanel } from './TransitDetailPanel';
+import { ZodiacEffectsCard } from '../Transits/ZodiacEffectsCard';
+import { TransitPredictionCards } from '../shared/TransitPredictionCards';
 import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { PanchangaTab } from '../Panchanga/PanchangaTab';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
@@ -383,8 +385,6 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
 
 // ── Deeper predictions — dasha–gochara synthesis, aspects, dignity, timing ──────
 
-const TONE_DOT: Record<string, string> = { good: '#10b981', bad: '#f43f5e', neutral: '#94a3b8', info: 'var(--c-accent-2)' };
-
 const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLords }> = ({ gochara, dashaLords }) => {
   const { t } = useLang();
   const predictions = useMemo(() => {
@@ -399,14 +399,7 @@ const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLo
         <span className="text-sm font-semibold text-white">{t('insights.transitInsightsTitle')}</span>
       </div>
       <p className="text-[11px] text-white/30 font-mono mb-4">{t('insights.transitInsightsSubtitle')}</p>
-      <div className="grid sm:grid-cols-2 gap-2">
-        {predictions.map(p => (
-          <div key={p.id} className="rounded-xl border border-white/8 bg-black/20 p-3" style={{ borderLeft: `3px solid ${TONE_DOT[p.tone] ?? TONE_DOT.neutral}` }}>
-            <div className="text-xs font-bold text-white mb-1">{p.title}</div>
-            <p className="text-[11px] text-white/60 leading-relaxed">{p.text}</p>
-          </div>
-        ))}
-      </div>
+      <TransitPredictionCards predictions={predictions} />
     </div>
   );
 };
@@ -746,6 +739,9 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
 
           {/* Deeper predictions — dasha–gochara synthesis, aspects, dignity, timing */}
           {gochara && <TransitInsights gochara={gochara} dashaLords={dashaLords} />}
+
+          {/* Classical gochara phala for all 12 Moon signs */}
+          {gochara && <ZodiacEffectsCard gochara={gochara} standalone />}
 
           {/* Sookshma timeline */}
           <SookshmaTimeline birthData={birthData} targetDate={effectiveDate} refDate={target.date} dateKey={dateKey} />

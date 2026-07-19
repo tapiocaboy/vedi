@@ -3,6 +3,7 @@ import {
   aspectVirupa, gradedAspects, houseBetween, applyVedha,
   computeMoonPhase, isGandanta, annotateGrahaYuddha,
   isCombust, isStationary, transitDignity, computeTransitNatal,
+  computeTaraBala, annotateBindus, computeSignAnalysis, buildTransitPredictions,
 } from './transitAnalysis';
 import type { PlanetTransit, NatalPlacement, GocharaSnapshot } from './transits';
 
@@ -242,5 +243,93 @@ describe('Transit dignity', () => {
     expect(transitDignity('SUN', 4)).toBe('own-sign');        // Leo
     expect(transitDignity('SUN', 0)).toBe('exalted');         // Aries
     expect(transitDignity('SATURN', 9)).toBe('own-sign');     // Capricorn
+  });
+});
+
+describe('Tara Bala', () => {
+  it('starts the cycle at Janma on the natal nakshatra itself', () => {
+    const tb = computeTaraBala(0, 0);
+    expect(tb.tara).toBe(1);
+    expect(tb.name).toBe('Janma');
+    expect(tb.favourable).toBe(false);
+  });
+  it('identifies the favourable taras (Sampat, Kshema, Sadhana, Mitra, Parama Mitra)', () => {
+    expect(computeTaraBala(0, 1)).toMatchObject({ tara: 2, name: 'Sampat', favourable: true });
+    expect(computeTaraBala(0, 3)).toMatchObject({ tara: 4, name: 'Kshema', favourable: true });
+    expect(computeTaraBala(0, 5)).toMatchObject({ tara: 6, name: 'Sadhana', favourable: true });
+    expect(computeTaraBala(0, 7)).toMatchObject({ tara: 8, name: 'Mitra', favourable: true });
+    expect(computeTaraBala(0, 8)).toMatchObject({ tara: 9, name: 'Parama Mitra', favourable: true });
+  });
+  it('identifies the adverse taras (Vipat, Pratyak, Naidhana)', () => {
+    expect(computeTaraBala(0, 2)).toMatchObject({ tara: 3, name: 'Vipat', favourable: false });
+    expect(computeTaraBala(0, 4)).toMatchObject({ tara: 5, name: 'Pratyak', favourable: false });
+    expect(computeTaraBala(0, 6)).toMatchObject({ tara: 7, name: 'Naidhana', favourable: false });
+  });
+  it('reduces past the 9th and wraps around the 27 nakshatras', () => {
+    expect(computeTaraBala(0, 9).name).toBe('Janma');        // 10th → cycle restarts
+    expect(computeTaraBala(25, 1).name).toBe('Kshema');      // wrap: ((1−25+27)%27)+1 = 4
+  });
+});
+
+describe('Ashtakavarga bindus on transits', () => {
+  // A natal chart: Sun Leo(4), Moon Taurus(1), Mars Aries(0), Mercury Virgo(5),
+  // Jupiter Sagittarius(8), Venus Libra(6), Saturn Capricorn(9), Lagna Cancer(3).
+  const natal: Record<string, number> = {
+    SUN: 4, MOON: 1, MARS: 0, MERCURY: 5, JUPITER: 8, VENUS: 6, SATURN: 9, ASCENDANT: 3,
+    RAHU: 2, KETU: 8,
+  };
+
+  it('annotates the 7 classical planets with 0–8 bindus and returns sarva (total 337)', () => {
+    const transits = ['SUN', 'MOON', 'MARS', 'MERCURY', 'JUPITER', 'VENUS', 'SATURN', 'RAHU', 'KETU']
+      .map((p, i) => mk(p, i % 12, 1, 0));
+    const sarva = annotateBindus(transits, natal);
+    expect(sarva).toBeDefined();
+    expect(sarva!.reduce((a, b) => a + b, 0)).toBe(337);
+    for (const t of transits) {
+      if (t.planet === 'RAHU' || t.planet === 'KETU') {
+        expect(t.bindus).toBeUndefined();
+      } else {
+        expect(t.bindus).toBeGreaterThanOrEqual(0);
+        expect(t.bindus).toBeLessThanOrEqual(8);
+      }
+    }
+  });
+
+  it('returns undefined and annotates nothing when the natal chart is incomplete', () => {
+    const transits = [mk('SATURN', 0, 1, 0)];
+    const sarva = annotateBindus(transits, { SUN: 4, MOON: 1 });
+    expect(sarva).toBeUndefined();
+    expect(transits[0].bindus).toBeUndefined();
+  });
+
+  it('bindu support shifts the per-sign favourability score', () => {
+    const base = stubGochara([mk('JUPITER', 2, 3, 0)], []);
+    const low = computeSignAnalysis(base)[2].score;
+    const withBindus = stubGochara([{ ...mk('JUPITER', 2, 3, 0), bindus: 8 }], []);
+    const high = computeSignAnalysis(withBindus)[2].score;
+    expect(high).toBeGreaterThan(low);
+  });
+});
+
+describe('buildTransitPredictions plain language', () => {
+  it('every prediction carries a jargon-free headline and takeaway', () => {
+    const transits = [
+      mk('SUN', 2, 3, 1), mk('MOON', 4, 5, -1), mk('MARS', 5, 6, 1),
+      mk('MERCURY', 1, 2, 1), mk('JUPITER', 8, 9, 1), mk('VENUS', 0, 1, 1),
+      mk('SATURN', 7, 8, -1), mk('RAHU', 10, 11, 1), mk('KETU', 4, 5, -1),
+    ];
+    const g = stubGochara(transits, []);
+    g.taraBala = { tara: 2, name: 'Sampat', favourable: true, description: 'a wealth star.' };
+    const preds = buildTransitPredictions(g, computeSignAnalysis(g), { mahadasha: 'SATURN' });
+
+    expect(preds.length).toBeGreaterThan(4);
+    for (const p of preds) {
+      expect(p.plainTitle.length, p.id).toBeGreaterThan(5);
+      expect(p.plain.length, p.id).toBeGreaterThan(20);
+      // The plain takeaway must not lean on Sanskrit/astro jargon.
+      for (const term of ['vedha', 'gochara', 'virupa', 'drishti', 'bindu', 'gandanta', 'paksha', 'tithi', 'nakshatra', 'lagna', 'dasha']) {
+        expect(p.plain.toLowerCase(), `${p.id} plain mentions "${term}"`).not.toContain(term);
+      }
+    }
   });
 });

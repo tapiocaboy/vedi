@@ -14,6 +14,9 @@ import {
   computeSignAnalysis, gradedAspects, aspectPct, buildTransitPredictions, computeTransitNatal,
   type SignInfo, type DashaLords, type TransitNatalHit,
 } from '../../lib/core/transitAnalysis';
+import { gocharaEffect } from '../../lib/core/gocharaPhala';
+import { ZodiacEffectsCard } from '../Transits/ZodiacEffectsCard';
+import { TransitPredictionCards } from '../shared/TransitPredictionCards';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
@@ -295,6 +298,9 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
 
       {/* Transit predictions */}
       <TransitPredictions predictions={predictions} isLight={isLight} />
+
+      {/* Classical gochara phala for all 12 Moon signs */}
+      <ZodiacEffectsCard gochara={gochara} />
     </div>
   );
 };
@@ -424,8 +430,18 @@ const SignDetail: React.FC<{
                       {t('now.transitStationary')}
                     </span>
                   )}
+                  {p.bindus != null && (
+                    <span
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        p.bindus >= 5 ? 'text-emerald-400 bg-emerald-500/15' : p.bindus <= 2 ? 'text-rose-400 bg-rose-500/15' : (isLight ? 'text-slate-500 bg-slate-200' : 'text-white/50 bg-white/10')}`}
+                      title={t('now.transitBindus')}
+                    >
+                      {p.bindus}/8
+                    </span>
+                  )}
                   <span className={`ml-auto text-[10px] font-mono ${tone}`}>{p.houseFromMoon}{t('now.transitFromMoonShort')}</span>
                 </div>
+                <div className={`text-[11px] mt-0.5 ${body}`}>{gocharaEffect(p.planet, p.houseFromMoon)}</div>
                 {p.note && <div className={`text-[11px] italic mt-0.5 ${body}`}>{p.note}</div>}
               </li>
             );
@@ -479,39 +495,22 @@ const SignDetail: React.FC<{
 
 // ── Predictions ───────────────────────────────────────────────────────────────
 
-const TONE_STYLE: Record<string, { dot: string; text: string }> = {
-  good:    { dot: '#10b981', text: 'text-emerald-400' },
-  bad:     { dot: '#f43f5e', text: 'text-rose-400' },
-  neutral: { dot: '#94a3b8', text: 'text-slate-400' },
-  info:    { dot: 'var(--c-accent-2)', text: 'text-violet-400' },
-};
-
 const TransitPredictions: React.FC<{
   predictions: ReturnType<typeof buildTransitPredictions>;
   isLight: boolean;
 }> = ({ predictions, isLight }) => {
   const { t } = useLang();
   const head = isLight ? 'text-gray-800' : 'text-white';
-  const body = isLight ? 'text-slate-600' : 'text-white/65';
+  const sub = isLight ? 'text-slate-400' : 'text-white/35';
 
   return (
     <div className="mt-4 pt-4 border-t" style={{ borderColor: isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.07)' }}>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-1">
         <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
         <span className={`text-xs font-bold uppercase tracking-wider ${head}`}>{t('now.transitPredictionsTitle')}</span>
       </div>
-      <div className="grid sm:grid-cols-2 gap-2">
-        {predictions.map(p => {
-          const s = TONE_STYLE[p.tone] ?? TONE_STYLE.neutral;
-          return (
-            <div key={p.id} className={`rounded-xl border p-3 ${isLight ? 'border-slate-200 bg-slate-50' : 'border-white/8 bg-black/20'}`}
-              style={{ borderLeft: `3px solid ${s.dot}` }}>
-              <div className={`text-xs font-bold mb-1 ${head}`}>{p.title}</div>
-              <p className={`text-[11px] leading-relaxed ${body}`}>{p.text}</p>
-            </div>
-          );
-        })}
-      </div>
+      <p className={`text-[11px] mb-3 ${sub}`}>{t('now.transitPredictionsSubtitle')}</p>
+      <TransitPredictionCards predictions={predictions} />
     </div>
   );
 };

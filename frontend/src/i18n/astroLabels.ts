@@ -37,6 +37,21 @@ export function labelPlanet(code: string, lang: Lang): string {
   return titleKey ? tKey(titleKey, lang) : code;
 }
 
+/** Compact planet labels for tight chart cells (2–4 characters). */
+const PLANET_SHORT_EN: Record<string, string> = {
+  SUN: 'Su', MOON: 'Mo', MARS: 'Ma', MERCURY: 'Me', JUPITER: 'Ju',
+  VENUS: 'Ve', SATURN: 'Sa', RAHU: 'Ra', KETU: 'Ke', ASCENDANT: 'As',
+};
+const PLANET_SHORT_SI: Record<string, string> = {
+  SUN: 'රවි', MOON: 'සඳ', MARS: 'කුජ', MERCURY: 'බුධ', JUPITER: 'ගුරු',
+  VENUS: 'සිකු', SATURN: 'ශනි', RAHU: 'රාහු', KETU: 'කේතු', ASCENDANT: 'ලග්',
+};
+
+export function labelPlanetShort(code: string, lang: Lang): string {
+  const c = code.toUpperCase();
+  return (lang === 'si' ? PLANET_SHORT_SI[c] : PLANET_SHORT_EN[c]) ?? code.slice(0, 2);
+}
+
 /** Sanskrit rashi names (Mesha … Meena) */
 export const RASHI_SANSKRIT_SI = [
   'මේෂ', 'වෘෂභ', 'මිථුන', 'කර්ක',

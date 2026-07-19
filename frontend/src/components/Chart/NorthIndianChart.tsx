@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import type { PlanetPosition } from '../../types/astrology';
-import { RASHIS, PLANET_SYMBOLS } from '../../types/astrology';
+import { RASHIS, PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
+import { labelPlanet, labelPlanetShort, labelRashi } from '../../i18n/astroLabels';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -146,26 +146,31 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
           );
         })}
 
-        {/* Planet symbols per house */}
+        {/* Planets per house — colored glyph + short name so each is identifiable */}
         {Array.from({ length: 12 }, (_, i) => i + 1).map(house => {
           const [px, py] = PLANET_TEXT[house];
-          return planetsByHouse[house].map((planet, idx) => (
-            <motion.text
-              key={planet.planet}
-              x={px} y={py + idx * 9}
-              textAnchor="middle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 + idx * 0.08 }}
-              fontSize="10" fontWeight="900"
-              fill={planetFill(planet.isRetrograde ?? false)}
-              fontFamily="monospace"
-              className="pointer-events-none select-none"
-            >
-              {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
-              {planet.isRetrograde ? '℞' : ''}
-            </motion.text>
-          ));
+          return planetsByHouse[house].map((planet, idx) => {
+            const color = planetDisplayColor(planet.planet, isLight);
+            return (
+              <motion.text
+                key={planet.planet}
+                x={px} y={py + idx * 9.5}
+                textAnchor="middle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 + idx * 0.08 }}
+                fontSize="8.5" fontWeight="900"
+                fontFamily="monospace"
+                className="select-none"
+                style={{ paintOrder: 'stroke', stroke: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.55)', strokeWidth: 0.6 }}
+              >
+                <title>{`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}</title>
+                <tspan fill={color}>{PLANET_SYMBOLS[planet.planet] || ''}</tspan>
+                <tspan dx="1" fill={planetFill(false)}>{labelPlanetShort(planet.planet, lang)}</tspan>
+                {planet.isRetrograde && <tspan dx="0.5" fontSize="6" fill="#e11d48">℞</tspan>}
+              </motion.text>
+            );
+          });
         })}
 
         {/* Center ASC label */}
@@ -180,11 +185,11 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         </text>
       </svg>
 
-      {/* Legend */}
+      {/* Legend — same colors as the chart */}
       <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
           <div key={planet} className="flex items-center gap-1.5">
-            <span className="text-base font-bold" style={{ color: ACCENT, textShadow: `0 0 6px rgba(var(--c-accent-rgb),0.27)` }}>{symbol}</span>
+            <span className="text-base font-bold" style={{ color: planetDisplayColor(planet, isLight) }}>{symbol}</span>
             <span className="font-bold">{labelPlanet(planet, lang)}</span>
           </div>
         ))}

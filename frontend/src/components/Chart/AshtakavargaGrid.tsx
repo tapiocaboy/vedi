@@ -1,14 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Grid3x3, Loader2 } from 'lucide-react';
+import { Grid3x3, Loader2, Sparkles } from 'lucide-react';
 import { getAshtakavarga } from '../../services/api';
 import type { BirthData } from '../../services/api';
 import { PLANETS, bindusToLabel, sarvaToLabel, type Planet } from '../../lib/core/ashtakavarga';
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelPlanet, labelRashiWestern } from '../../i18n/astroLabels';
+import { labelPlanet, labelPlanetTheme, labelRashiWestern } from '../../i18n/astroLabels';
+import type { TranslationKey } from '../../i18n/translations';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -19,6 +20,15 @@ interface Props {
 const PLANET_GLYPH: Record<Planet, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
   Jupiter: '♃', Venus: '♀', Saturn: '♄',
+};
+
+// Localized quality word for a bindu count (0–8).
+const BINDU_LABEL_KEY: Record<ReturnType<typeof bindusToLabel>, TranslationKey> = {
+  'weak': 'ashtakavarga.scale.weak',
+  'below average': 'ashtakavarga.scale.belowAvg',
+  'average': 'ashtakavarga.scale.average',
+  'good': 'ashtakavarga.scale.good',
+  'strong': 'ashtakavarga.scale.strong',
 };
 
 // Dark-mode cell classes (existing)
@@ -65,9 +75,9 @@ interface MiniGridProps {
 }
 
 const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLight, lang, t }) => {
-  const total = row.reduce((a, b) => a + b, 0);
   const selfBindus = row[selfRashi];
   const cellClass = isLight ? bhinnaCellClassLight : bhinnaCellClassDark;
+  const selfQuality = t(BINDU_LABEL_KEY[bindusToLabel(selfBindus)]);
 
   return (
     <motion.div
@@ -79,23 +89,30 @@ const BhinnaMiniGrid: React.FC<MiniGridProps> = ({ planet, row, selfRashi, isLig
         border: isLight ? '1px solid #D1DCE5' : '1px solid rgba(255,255,255,0.08)',
       }}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-base leading-none" style={{ color: ACCENT }}>{PLANET_GLYPH[planet]}</span>
           <span className="text-xs font-semibold" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
             {labelPlanet(planet, lang)}
           </span>
         </div>
-        <div className="text-[10px] font-mono" style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.70)' }}>
-          Σ {total} · {t('ashtakavarga.self')}{' '}
-          <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{selfBindus}</span>
+        {/* Plain-language: how well the planet is supported where it was born */}
+        <div
+          className="text-[10px]"
+          style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.70)' }}
+          title={t('ashtakavarga.selfTip', { planet: labelPlanet(planet, lang) })}
+        >
+          {t('ashtakavarga.selfLine')}{' '}
+          <span className="font-bold" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
+            {selfBindus}/8 · {selfQuality}
+          </span>
         </div>
       </div>
       <div className="grid grid-cols-12 gap-[2px]">
         {row.map((b, idx) => (
           <div
             key={idx}
-            title={`${labelRashiWestern(idx, lang, RASHI_ENGLISH[idx])}: ${b} bindus (${bindusToLabel(b)})${idx === selfRashi ? ' — natal position' : ''}`}
+            title={`${labelRashiWestern(idx, lang, RASHI_ENGLISH[idx])}: ${b}/8 — ${t(BINDU_LABEL_KEY[bindusToLabel(b)])}${idx === selfRashi ? ` · ${t('ashtakavarga.natalHere')}` : ''}`}
             className={`aspect-square rounded-sm border text-[10px] font-mono leading-none flex items-center justify-center ${cellClass(b)} ${idx === selfRashi ? 'ring-1' : ''}`}
             style={idx === selfRashi ? { outline: `1.5px solid ${ACCENT}` } : undefined}
           >
@@ -117,9 +134,10 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
   });
 
   const mutedClr  = isLight ? '#334155' : 'rgba(255,255,255,0.70)';
-  const strongClr = isLight ? '#0f172a' : '#ffffff';
   const labelClr  = isLight ? '#475569' : 'rgba(255,255,255,0.55)';
+  const bodyClr   = isLight ? '#374151' : 'rgba(255,255,255,0.72)';
   const sarvaCell = isLight ? sarvaCellClassLight : sarvaCellClassDark;
+  const bhinnaCell = isLight ? bhinnaCellClassLight : bhinnaCellClassDark;
 
   if (isLoading) {
     return (
@@ -132,7 +150,29 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
     return <div className="text-rose-400 text-sm py-4">{t('ashtakavarga.failed')}</div>;
   }
 
-  const sarvaTotal = data.sarva.reduce((a, b) => a + b, 0);
+  // Plain-language highlights computed from the grid.
+  const signName = (idx: number) => labelRashiWestern(idx, lang, RASHI_ENGLISH[idx]);
+  const bestSign = data.sarva.indexOf(Math.max(...data.sarva));
+  const worstSign = data.sarva.indexOf(Math.min(...data.sarva));
+  const byStrength = [...PLANETS].sort((a, b) => data.selfStrength[b] - data.selfStrength[a]);
+  const strongPlanet = byStrength[0];
+  const weakPlanet = byStrength[byStrength.length - 1];
+
+  const highlights: { text: string; tone: 'good' | 'bad' }[] = [
+    { tone: 'good', text: t('ashtakavarga.plainBest', { sign: signName(bestSign), n: data.sarva[bestSign] }) },
+    { tone: 'bad', text: t('ashtakavarga.plainWorst', { sign: signName(worstSign), n: data.sarva[worstSign] }) },
+    { tone: 'good', text: t('ashtakavarga.plainPlanetStrong', { planet: labelPlanet(strongPlanet, lang), n: data.selfStrength[strongPlanet], theme: labelPlanetTheme(strongPlanet, lang) }) },
+    { tone: 'bad', text: t('ashtakavarga.plainPlanetWeak', { planet: labelPlanet(weakPlanet, lang), n: data.selfStrength[weakPlanet], theme: labelPlanetTheme(weakPlanet, lang) }) },
+  ];
+
+  // Legend: sample bindu value per quality band, coloured like the cells.
+  const legend: { sample: number; label: string; range: string }[] = [
+    { sample: 1, label: t('ashtakavarga.scale.weak'), range: '0–2' },
+    { sample: 3, label: t('ashtakavarga.scale.belowAvg'), range: '3' },
+    { sample: 4, label: t('ashtakavarga.scale.average'), range: '4' },
+    { sample: 5, label: t('ashtakavarga.scale.good'), range: '5' },
+    { sample: 7, label: t('ashtakavarga.scale.strong'), range: '6–8' },
+  ];
 
   return (
     <div className="glass-card rounded-2xl p-6 space-y-5">
@@ -149,10 +189,38 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
             {t('ashtakavarga.subtitle')}
           </p>
         </div>
-        <div className="text-[10px] font-mono text-right" style={{ color: mutedClr }}>
-          {t('ashtakavarga.totalBindus')}: <span style={{ color: strongClr }}>{sarvaTotal}</span>
-          <span style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.50)' }}> / 337</span>
+      </div>
+
+      {/* How to read this */}
+      <p className="text-[12px] leading-relaxed" style={{ color: bodyClr }}>
+        {t('ashtakavarga.howTo')}
+      </p>
+
+      {/* What this means for you — computed highlights */}
+      <div className="rounded-xl p-4" style={{ background: 'rgba(var(--c-accent-rgb),0.05)', border: '1px solid rgba(var(--c-accent-rgb),0.2)' }}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
+          <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: labelClr }}>
+            {t('ashtakavarga.plainTitle')}
+          </span>
         </div>
+        <ul className="space-y-1.5">
+          {highlights.map((h, i) => (
+            <li key={i} className="flex items-start gap-2 text-[12px] leading-relaxed" style={{ color: bodyClr }}>
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: h.tone === 'good' ? '#10b981' : '#f43f5e' }} />
+              {h.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Colour legend */}
+      <div className="flex flex-wrap items-center gap-2">
+        {legend.map(l => (
+          <span key={l.range} className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[10px] ${bhinnaCell(l.sample)}`}>
+            <span className="font-mono">{l.range}</span> {l.label}
+          </span>
+        ))}
       </div>
 
       {/* Sarvashtakavarga */}
@@ -164,7 +232,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
           {data.sarva.map((s, idx) => (
             <div
               key={idx}
-              title={`${labelRashiWestern(idx, lang, RASHI_ENGLISH[idx])}: ${s} bindus (${sarvaToLabel(s)})`}
+              title={`${signName(idx)}: ${s}/56 — ${sarvaToLabel(s)}`}
               className={`rounded border text-[11px] font-mono py-1.5 text-center ${sarvaCell(s)}`}
             >
               {s}

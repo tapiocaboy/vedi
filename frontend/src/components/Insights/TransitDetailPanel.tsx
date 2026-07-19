@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeTransitNatal } from '../../lib/core/transitAnalysis';
+import { gocharaEffect } from '../../lib/core/gocharaPhala';
 import { PLANET_SYMBOLS, PLANET_COLORS, RASHIS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
@@ -197,8 +198,10 @@ function buildReading(tr: PlanetTransit, g: GocharaSnapshot, lang: Lang): Readin
   const name = labelPlanet(tr.planet, lang);
   const meaning = `${name} stands for ${labelPlanetTheme(tr.planet, lang) || 'its themes'}. Wherever it travels, it colours that part of your life.`;
 
+  const classical = gocharaEffect(tr.planet, tr.houseFromMoon);
   const placement =
-    `Right now ${name} is moving through ${labelRashi(tr.rashi, lang, RASHIS[tr.rashi])} — your ${ordinal(tr.houseFromLagna)} house (${labelHouseTheme(tr.houseFromLagna, lang)}), and the ${ordinal(tr.houseFromMoon)} place from your Moon. So its themes touch these areas most.`;
+    `Right now ${name} is moving through ${labelRashi(tr.rashi, lang, RASHIS[tr.rashi])} — your ${ordinal(tr.houseFromLagna)} house (${labelHouseTheme(tr.houseFromLagna, lang)}), and the ${ordinal(tr.houseFromMoon)} place from your Moon.` +
+    (classical ? ` The classical reading for this position: ${classical}` : '');
 
   const verdict =
     tr.valence > 0
@@ -212,6 +215,15 @@ function buildReading(tr: PlanetTransit, g: GocharaSnapshot, lang: Lang): Readin
   else if (tr.dignity === 'own-sign') condition.push({ text: 'It sits in its own sign — comfortable, stable and dependable.', tone: 'good' });
   else if (tr.dignity === 'debilitated') condition.push({ text: `It is weakened (debilitated) in ${labelRashi(tr.rashi, lang, RASHIS[tr.rashi])} — its results are muted, so be patient.`, tone: 'bad' });
   if (tr.combust) condition.push({ text: 'It is too close to the Sun (combust) — its energy is dimmed for now.', tone: 'bad' });
+  if (tr.bindus != null) {
+    condition.push(
+      tr.bindus >= 5
+        ? { text: `It holds ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — its results here are strengthened for you.`, tone: 'good' }
+        : tr.bindus <= 2
+          ? { text: `It holds only ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — its results here are weakened for you.`, tone: 'bad' }
+          : { text: `It holds ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — an average level of support.`, tone: 'neutral' },
+    );
+  }
   if (tr.isRetrograde) condition.push({ text: 'It is retrograde — a time to review, revisit and finish things rather than start new ones.', tone: 'neutral' });
   if (tr.stationary) condition.push({ text: 'It is almost standing still (stationary) — an unusually powerful, pivotal moment for its themes.', tone: 'neutral' });
   if (tr.vedha) condition.push({ text: `Its good result is currently blocked (vedha) by ${titleCase(tr.vedha.byPlanet)}, so don't over-rely on it.`, tone: 'bad' });

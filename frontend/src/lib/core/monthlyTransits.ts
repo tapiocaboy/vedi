@@ -12,7 +12,7 @@
  */
 
 import { getPlanetPositions } from './ephemeris';
-import type { AyanamsaSystem } from './transits';
+import { valenceFromMoon, type AyanamsaSystem } from './transits';
 import { RASHIS, RASHI_LORDS } from './rashi';
 
 export type TransitEventType = 'ingress' | 'retrograde' | 'direct';
@@ -54,23 +54,8 @@ function houseFrom(targetRashi: number, referenceRashi: number): number {
   return ((targetRashi - referenceRashi + 12) % 12) + 1;
 }
 
-// Classical Gochara valence from the Moon (auspicious / challenging houses).
-const GOOD_FROM_MOON: Record<string, number[]> = {
-  SUN: [3, 6, 10, 11], MERCURY: [2, 4, 6, 8, 10, 11], VENUS: [1, 2, 3, 4, 5, 8, 9, 11, 12],
-  MARS: [3, 6, 11], JUPITER: [2, 5, 7, 9, 11], SATURN: [3, 6, 11],
-  RAHU: [3, 6, 10, 11], KETU: [3, 6, 10, 11],
-};
-const BAD_FROM_MOON: Record<string, number[]> = {
-  SUN: [1, 2, 4, 5, 7, 8, 9, 12], MERCURY: [1, 3, 5, 7, 9, 12], VENUS: [6, 7, 10],
-  MARS: [1, 2, 4, 5, 7, 8, 9, 10, 12], JUPITER: [1, 3, 4, 6, 8, 10, 12],
-  SATURN: [1, 2, 4, 5, 7, 8, 9, 10, 12], RAHU: [1, 2, 5, 8, 9, 12], KETU: [1, 2, 5, 8, 9, 12],
-};
-
-function valenceFromMoon(planet: string, house: number): number {
-  if ((GOOD_FROM_MOON[planet] ?? []).includes(house)) return 1;
-  if ((BAD_FROM_MOON[planet] ?? []).includes(house)) return -1;
-  return 0;
-}
+// Moon-relative valence is shared with the live Gochara engine (transits.ts)
+// so the monthly and upcoming views agree with the Sky Right Now analysis.
 
 // ─── Prediction text generators ──────────────────────────────────────────────
 
@@ -208,21 +193,17 @@ async function refineStation(
   return new Date(hi);
 }
 
-// ─── Main entry point ────────────────────────────────────────────────────────
+// ─── Range scanner (shared by monthly + upcoming views) ──────────────────────
 
-export async function getMonthlyTransits(
+/** Detect every ingress and station in [start, end) with full effect text. */
+async function scanTransitEvents(
   ayanamsa: AyanamsaSystem,
   natalMoonRashi: number,
   natalLagnaRashi: number,
-  asOf?: Date,
-): Promise<MonthlyTransitReport> {
-  const now = asOf ?? new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const start = new Date(Date.UTC(year, month, 1, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month + 1, 1, 0, 0, 0)); // exclusive
-
-  // Daily snapshots across the month (one extra at the end boundary).
+  start: Date,
+  end: Date,
+): Promise<MonthlyTransitEvent[]> {
+  // Daily snapshots across the range (one extra at the end boundary).
   const stepMs = 24 * 60 * 60 * 1000;
   const dates: Date[] = [];
   for (let t = start.getTime(); t <= end.getTime(); t += stepMs) dates.push(new Date(t));
@@ -284,6 +265,22 @@ export async function getMonthlyTransits(
   }
 
   events.sort((a, b) => a.date.localeCompare(b.date));
+  return events;
+}
+
+// ─── Main entry points ───────────────────────────────────────────────────────
+
+export async function getMonthlyTransits(
+  ayanamsa: AyanamsaSystem,
+  natalMoonRashi: number,
+  natalLagnaRashi: number,
+  asOf?: Date,
+): Promise<MonthlyTransitReport> {
+  const now = asOf ?? new Date();
+  const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0));
+  const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0)); // exclusive
+
+  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end);
 
   const netValence = events.reduce((s, e) => s + e.valence, 0);
   const monthLabel = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -298,6 +295,49 @@ export async function getMonthlyTransits(
     events,
     overview,
     netValence,
+  };
+}
+
+export interface UpcomingTransitEvent extends MonthlyTransitEvent {
+  /** Whole days from "now" until the event (0 = today). */
+  daysUntil: number;
+}
+
+export interface UpcomingTransitReport {
+  rangeStart: string;   // ISO — now
+  rangeEnd: string;     // ISO — now + horizon
+  horizonDays: number;
+  events: UpcomingTransitEvent[];
+}
+
+/**
+ * Forward-looking transit calendar: every sign ingress and station in the next
+ * `horizonDays` days (default 45), each tagged with how it lands for this
+ * chart (valence from the natal Moon) and a day countdown.
+ */
+export async function getUpcomingTransits(
+  ayanamsa: AyanamsaSystem,
+  natalMoonRashi: number,
+  natalLagnaRashi: number,
+  horizonDays = 45,
+  asOf?: Date,
+): Promise<UpcomingTransitReport> {
+  const start = asOf ?? new Date();
+  const end = new Date(start.getTime() + horizonDays * 24 * 60 * 60 * 1000);
+
+  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end);
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const upcoming: UpcomingTransitEvent[] = events.map(e => ({
+    ...e,
+    daysUntil: Math.max(0, Math.floor((new Date(e.date).getTime() - start.getTime()) / dayMs)),
+  }));
+
+  return {
+    rangeStart: start.toISOString(),
+    rangeEnd: end.toISOString(),
+    horizonDays,
+    events: upcoming,
   };
 }
 

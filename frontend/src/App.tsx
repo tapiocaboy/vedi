@@ -179,8 +179,16 @@ function AppContent() {
     <div className={`min-h-screen tech-grid transition-colors duration-300 ${isLight ? 'theme-light' : ''}`}
       style={{ backgroundColor: 'var(--bg-page)' }}
     >
-      {/* Legal gate — shown on every site load / refresh / first visit */}
-      <WelcomeLegalModal visible={welcomeLegalVisible} onAccept={() => setWelcomeLegalVisible(false)} />
+      {/* Legal gate — shown on every site load / refresh / first visit.
+          Accepting it surfaces the "your data stays on your device" banner. */}
+      <WelcomeLegalModal
+        visible={welcomeLegalVisible}
+        onAccept={() => {
+          setWelcomeLegalVisible(false);
+          setPrivacyTrigger('load');
+          setPrivacyVisible(true);
+        }}
+      />
 
       {/* Disclaimer — shown on every Generate Chart press */}
       <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />

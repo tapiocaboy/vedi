@@ -685,6 +685,12 @@ input:focus, select:focus, textarea:focus {
   to   { width: 0%; }
 }
 
+/* Always-visible privacy assurance under the birth form */
+.privacy-inline       { color: rgba(255,255,255,0.5); }
+.privacy-inline strong { color: rgba(255,255,255,0.75); }
+.theme-light .privacy-inline       { color: rgba(15,23,42,0.5); }
+.theme-light .privacy-inline strong { color: rgba(15,23,42,0.75); }
+
 /* ── Cookie consent banner (shares .privacy-banner container) ───────────── */
 .cookie-icon    { color: var(--c-accent); }
 .cookie-decline { color: rgba(255,255,255,0.5); }

@@ -10,7 +10,11 @@
 import { getPlanetPositions, type PlanetPosition } from './ephemeris';
 import type { BirthData } from '../../types/astrology';
 import { RASHIS } from './rashi';
-import { applyVedha, annotateGrahaYuddha, annotateGandanta, annotateDignityState, computeMoonPhase, type MoonPhase } from './transitAnalysis';
+import {
+  applyVedha, annotateGrahaYuddha, annotateGandanta, annotateDignityState,
+  annotateBindus, computeTaraBala, computeMoonPhase,
+  type MoonPhase, type TaraBala,
+} from './transitAnalysis';
 import type { DignityLevel } from './planetaryAnalysis';
 
 export type AyanamsaSystem = BirthData['ayanamsa'];
@@ -42,6 +46,12 @@ export interface PlanetTransit {
   combust?: boolean;
   /** True when near a station (speed ≈ 0). */
   stationary?: boolean;
+  /**
+   * Ashtakavarga bindus (0–8) this planet holds in the sign it is transiting,
+   * from the natal Bhinnashtakavarga. ≥5 strengthens the transit's results,
+   * ≤2 weakens them. Undefined for the nodes or when natal data is absent.
+   */
+  bindus?: number;
 }
 
 /** A natal planet/point position, for the transit-over-natal bi-wheel. */
@@ -63,6 +73,10 @@ export interface GocharaSnapshot {
   jupiterBlessing: { auspicious: boolean; reason: string };
   nodalShift: { rahuRashi: number; ketuRashi: number; note: string };
   moonPhase: MoonPhase;
+  /** Natal Sarvashtakavarga bindus per rashi (undefined without natal data). */
+  sarvaBindus?: number[];
+  /** Tara Bala of the transit Moon's nakshatra from the natal Moon's nakshatra. */
+  taraBala?: TaraBala;
 }
 
 export interface SadeSatiInfo {
@@ -78,6 +92,8 @@ function houseFrom(targetRashi: number, referenceRashi: number): number {
 
 // Classical transit-from-Moon valence per planet (auspicious / challenging houses).
 // References: Vaidyanatha Dixita's Jatakaparijata, BPHS Ch. on Gochara.
+// The nodes follow "Shanivat Rahu, Kujavat Ketu" — Rahu gives results like
+// Saturn, Ketu like Mars — so both favour the upachaya 3/6/11 from the Moon.
 const TRANSIT_GOOD_FROM_MOON: Record<string, number[]> = {
   SUN:     [3, 6, 10, 11],
   MOON:    [1, 3, 6, 7, 10, 11],
@@ -86,19 +102,23 @@ const TRANSIT_GOOD_FROM_MOON: Record<string, number[]> = {
   JUPITER: [2, 5, 7, 9, 11],
   VENUS:   [1, 2, 3, 4, 5, 8, 9, 11, 12],
   SATURN:  [3, 6, 11],
+  RAHU:    [3, 6, 11],
+  KETU:    [3, 6, 11],
 };
 
 const TRANSIT_BAD_FROM_MOON: Record<string, number[]> = {
   SUN:     [1, 2, 4, 5, 7, 8, 9, 12],
   MOON:    [2, 4, 5, 8, 9, 12],
   MARS:    [1, 2, 4, 5, 7, 8, 9, 10, 12],
-  MERCURY: [1, 3, 5, 7, 9, 11, 12],
+  MERCURY: [1, 3, 5, 7, 9, 12],
   JUPITER: [1, 3, 4, 6, 8, 10, 12],
   VENUS:   [6, 7, 10],
   SATURN:  [1, 2, 4, 5, 7, 8, 9, 10, 12],
+  RAHU:    [1, 2, 4, 5, 7, 8, 9, 10, 12],
+  KETU:    [1, 2, 4, 5, 7, 8, 9, 10, 12],
 };
 
-function valenceFromMoon(planet: string, house: number): number {
+export function valenceFromMoon(planet: string, house: number): number {
   if ((TRANSIT_GOOD_FROM_MOON[planet] ?? []).includes(house)) return 1;
   if ((TRANSIT_BAD_FROM_MOON[planet] ?? []).includes(house)) return -1;
   return 0;
@@ -185,6 +205,14 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot): GocharaPredic
   notes.push(g.jupiterBlessing.reason);
   mod += g.jupiterBlessing.auspicious ? 0.5 : -0.25;
 
+  // Ashtakavarga refinement: bindu support in the transited sign softens or
+  // sharpens the slow planets' verdicts (≥5 bindus helps, ≤3 hinders).
+  for (const t of g.transits) {
+    if ((t.planet === 'SATURN' || t.planet === 'JUPITER') && t.bindus != null) {
+      mod += (t.bindus - 4) * 0.05;
+    }
+  }
+
   for (const t of g.transits) {
     if (t.note && t.planet !== 'SATURN' && t.planet !== 'JUPITER') {
       notes.push(`${titleCase(t.planet)}: ${t.note}`);
@@ -240,6 +268,18 @@ export async function getCurrentTransits(
   annotateGandanta(transits);
   annotateDignityState(transits, positions['SUN'].longitude);
 
+  // Ashtakavarga refinement + Tara Bala — both need the natal chart.
+  let sarvaBindus: number[] | undefined;
+  let taraBala: TaraBala | undefined;
+  if (natalPositions) {
+    const natalRashis: Record<string, number> = {};
+    for (const [name, p] of Object.entries(natalPositions)) natalRashis[name] = p.rashi;
+    sarvaBindus = annotateBindus(transits, natalRashis);
+    if (natalPositions['MOON']) {
+      taraBala = computeTaraBala(natalPositions['MOON'].nakshatra, positions['MOON'].nakshatra);
+    }
+  }
+
   const moonPhase: MoonPhase = computeMoonPhase(
     positions['SUN'].longitude, positions['MOON'].longitude,
     positions['MOON'].nakshatra, positions['MOON'].nakshatraPada,
@@ -284,5 +324,7 @@ export async function getCurrentTransits(
     jupiterBlessing,
     nodalShift,
     moonPhase,
+    sarvaBindus,
+    taraBala,
   };
 }

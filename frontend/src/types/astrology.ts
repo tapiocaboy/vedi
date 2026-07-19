@@ -135,6 +135,19 @@ export const PLANET_COLORS: Record<string, string> = {
   ASCENDANT: '#8b5cf6', // violet-500 — lagna
 };
 
+// Pale planet colors that vanish on a light background get darker stand-ins.
+const PLANET_COLORS_LIGHT_OVERRIDE: Record<string, string> = {
+  MOON: '#64748b',   // slate-500 — slate-200 is invisible on white
+  MERCURY: '#059669', // emerald-600
+  RAHU: '#4b5563',   // gray-600
+};
+
+/** Planet display color legible on the active theme background. */
+export function planetDisplayColor(planet: string, isLight: boolean): string {
+  const base = PLANET_COLORS[planet] ?? '#8b5cf6';
+  return isLight ? (PLANET_COLORS_LIGHT_OVERRIDE[planet] ?? base) : base;
+}
+
 // Dasha planet color pills
 export const DASHA_COLORS: Record<string, string> = {
   Sun:     'bg-violet-500',

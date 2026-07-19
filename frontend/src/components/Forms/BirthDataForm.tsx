@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 
@@ -416,6 +416,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
           t('form.generate')
         )}
       </button>
+
+      {/* Always-visible privacy assurance — not just the transient banner */}
+      <div className="flex items-start justify-center gap-1.5 px-2">
+        <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 privacy-icon" />
+        <p className="text-[11px] leading-relaxed text-center privacy-inline">
+          <strong className="font-semibold">{t('privacy.title')}</strong> — {t('privacy.bodyGenerate')}
+        </p>
+      </div>
     </form>
   );
 };
