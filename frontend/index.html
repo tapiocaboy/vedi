@@ -4,7 +4,91 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <title>trytellme.xyz — Astrology Predictions</title>
+
+    <!-- ── Primary SEO ─────────────────────────────────────────────────── -->
+    <title>Free Vedic Astrology Birth Chart Calculator & Predictions | trytellme.xyz</title>
+    <meta name="description" content="Generate your free Vedic astrology birth chart (kundli) in seconds. Get planetary positions, Vimshottari Dasha timeline, yogas, doshas, nakshatra readings, horoscope matching and life predictions. Private — all calculations run in your browser." />
+    <meta name="keywords" content="vedic astrology, birth chart calculator, free kundli, jyotish, horoscope, dasha calculator, nakshatra, yoga, dosha, kundli matching, lagna, rashi, ayanamsa, lahiri, KP astrology" />
+    <meta name="author" content="trytellme.xyz" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://trytellme.xyz/" />
+    <meta name="theme-color" content="#0b0e18" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)" />
+
+    <!-- ── Open Graph (Facebook / WhatsApp / LinkedIn) ─────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://trytellme.xyz/" />
+    <meta property="og:site_name" content="trytellme.xyz" />
+    <meta property="og:title" content="Free Vedic Astrology Birth Chart Calculator & Predictions" />
+    <meta property="og:description" content="Your complete birth chart, Dasha timeline, yogas, doshas and life predictions — free, instant, and private. All calculations run in your browser." />
+    <meta property="og:image" content="https://trytellme.xyz/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="trytellme.xyz — Vedic astrology birth chart with planetary positions" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X card ────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Free Vedic Astrology Birth Chart Calculator & Predictions" />
+    <meta name="twitter:description" content="Your complete birth chart, Dasha timeline, yogas, doshas and life predictions — free, instant, and private." />
+    <meta name="twitter:image" content="https://trytellme.xyz/og-image.png" />
+
+    <!-- ── Structured data (Google rich results) ───────────────────────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "https://trytellme.xyz/#app",
+          "name": "trytellme.xyz — Vedic Astrology Birth Chart Calculator",
+          "url": "https://trytellme.xyz/",
+          "description": "Free Vedic astrology birth chart (kundli) calculator with planetary positions, Vimshottari Dasha timeline, yogas, doshas, nakshatra readings, horoscope matching and life predictions.",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "Any",
+          "browserRequirements": "Requires JavaScript",
+          "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+          "featureList": [
+            "South & North Indian birth chart styles",
+            "Vimshottari Dasha timeline",
+            "Yoga (planetary combination) detection",
+            "Dosha analysis (Mangal, Kaal Sarpa, Sade Sati)",
+            "Nakshatra readings",
+            "Horoscope compatibility matching",
+            "Divisional charts (Navamsa D9, Dasamsa D10)",
+            "Lahiri, KP and Raman ayanamsa"
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://trytellme.xyz/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Is the birth chart calculator free?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. trytellme.xyz is completely free and non-commercial. There is no sign-up, no payment, and no limit on the number of charts you can generate." }
+            },
+            {
+              "@type": "Question",
+              "name": "Is my birth data private?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Yes. All astrological calculations run locally in your browser using the Swiss Ephemeris. Your birth date, time and location are never sent to any server or stored anywhere." }
+            },
+            {
+              "@type": "Question",
+              "name": "What do I need to generate a Vedic birth chart?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Just your birth date, birth time and birth place (latitude, longitude and timezone). The app can also detect your current location with one tap." }
+            },
+            {
+              "@type": "Question",
+              "name": "Which ayanamsa systems are supported?",
+              "acceptedAnswer": { "@type": "Answer", "text": "Lahiri (Chitrapaksha), Krishnamurti (KP) and Raman ayanamsa are all supported, and charts are available in both South Indian and North Indian styles." }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -31,6 +115,15 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Free Vedic Astrology Birth Chart Calculator &amp; Predictions</h1>
+      <p>
+        trytellme.xyz generates your complete Vedic astrology birth chart (kundli) from your
+        birth date, time and place — including planetary positions, Vimshottari Dasha timeline,
+        yogas, doshas, nakshatra readings, divisional charts and horoscope matching.
+        All calculations run privately in your browser. Please enable JavaScript to use the app.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
