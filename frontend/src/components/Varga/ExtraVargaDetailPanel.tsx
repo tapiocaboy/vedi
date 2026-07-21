@@ -70,10 +70,10 @@ export const ExtraVargaDetailPanel: React.FC<Props> = ({ selection, vargaAscenda
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className={`text-sm font-bold ${isLight ? 'text-gray-900' : 'text-white'}`}>
-                  {a.code} · {labelOrdinalHouse(a.houseNumber, lang)} — {a.rashiName}
+                  {a.plainChartName} — {labelOrdinalHouse(a.houseNumber, lang)}
                 </h3>
                 <p className={`text-[11px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
-                  {a.vargaName} · {a.significance}
+                  {a.code} · {a.vargaName} · {a.rashiName}
                 </p>
               </div>
               <button onClick={onClose} aria-label={t('monthly.close')}
@@ -84,8 +84,18 @@ export const ExtraVargaDetailPanel: React.FC<Props> = ({ selection, vargaAscenda
 
             {/* Body */}
             <div className="overflow-y-auto p-4 space-y-4">
-              {/* Reading */}
-              <p className={`text-[12.5px] leading-relaxed ${isLight ? 'text-slate-700' : 'text-white/80'}`}>{a.reading}</p>
+              {/* What this box means, in ordinary words */}
+              <div>
+                <div className="text-[10px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--c-accent-2)' }}>
+                  {t('varga.thisBoxMeans')}
+                </div>
+                <p className={`text-[12.5px] leading-relaxed ${isLight ? 'text-slate-700' : 'text-white/80'}`}>{a.reading}</p>
+              </div>
+
+              {/* The question the whole chart answers, for orientation */}
+              <p className={`text-[11px] leading-relaxed italic ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                {a.question}
+              </p>
 
               {/* Keywords */}
               <div className="flex flex-wrap gap-1.5">

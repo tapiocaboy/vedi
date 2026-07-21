@@ -254,6 +254,7 @@ export function analyzeVargaHouse(
 // the clicked house, and the planets that occupy it (with their varga dignity).
 
 import { HOUSE_DATA } from './planetaryAnalysis';
+import { VARGA_PLAIN, plainPlanetEffect } from './vargaMeanings';
 import type { VargaCode } from './vargas';
 
 const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
@@ -288,6 +289,12 @@ export interface ExtraVargaHouseAnalysis {
   reading: string;
   planetEffects: ExtraVargaPlanetEffect[];
   isLagna: boolean;
+  /** What this house means inside this specific chart, in ordinary words. */
+  plainMeaning: string;
+  /** Everyday name of the chart, e.g. "Money chart". */
+  plainChartName: string;
+  /** The question this chart answers. */
+  question: string;
 }
 
 export function analyzeExtraVargaHouse(
@@ -302,6 +309,7 @@ export function analyzeExtraVargaHouse(
   const bhava = HOUSE_DATA[houseNumber] ?? HOUSE_DATA[1];
   const area = significance.toLowerCase();
 
+  const plain = VARGA_PLAIN[code];
   const occupants = planets.filter(p => p.divisions[code].rashi === rashiIndex);
   const planetEffects: ExtraVargaPlanetEffect[] = occupants.map(p => {
     const dignity = p.divisions[code].dignity;
@@ -309,16 +317,31 @@ export function analyzeExtraVargaHouse(
       planet: p.planet,
       dignity,
       isRetrograde: p.isRetrograde,
-      effect: `${p.planet} acts on ${bhava.theme.toLowerCase()} within ${area} ${DIGNITY_TONE[dignity]}.`,
+      // Plain language when we have it for this chart; the technical phrasing
+      // remains the fallback so no varga is left without a reading.
+      effect: plain
+        ? plainPlanetEffect(p.planet, dignity, p.isRetrograde, code)
+        : `${p.planet} acts on ${bhava.theme.toLowerCase()} within ${area} ${DIGNITY_TONE[dignity]}.`,
     };
   });
 
   const isLagna = houseNumber === 1;
-  const reading = isLagna
-    ? `This is the ${vargaName} lagna (${code}) — the lens through which ${area} is read. ${RASHIS[rashiIndex]} rising here sets the tone for how the whole ${area} chart expresses itself.`
-    : `In the ${vargaName} chart (${code}), which examines ${area}, this is the ${ORD[houseNumber]} house in ${RASHIS[rashiIndex]}. ` +
-      `It governs ${bhava.rules.slice(0, 4).join(', ')} — read specifically as it bears on ${area}.` +
-      (occupants.length ? '' : ` No planet sits here, so its results flow through its sign lord ${RASHI_LORDS[rashiIndex]}.`);
+  const plainMeaning = plain?.houses[houseNumber] ?? '';
+
+  // Lead with what this box actually means for the reader, then the mechanics.
+  const reading = plain
+    ? (isLagna
+        ? `${plain.lagnaMeaning} This is the starting point of your ${plain.plainName.toLowerCase()} — ` +
+          `${RASHIS[rashiIndex]} rising sets the tone for everything else in it.`
+        : plainMeaning) +
+      (occupants.length
+        ? ''
+        : ` No planet sits here, so this plays out through ${RASHI_LORDS[rashiIndex]}, the ruler of ${RASHIS[rashiIndex]} — look at how ${RASHI_LORDS[rashiIndex]} is doing elsewhere in this chart.`)
+    : isLagna
+      ? `This is the ${vargaName} lagna (${code}) — the lens through which ${area} is read. ${RASHIS[rashiIndex]} rising here sets the tone for how the whole ${area} chart expresses itself.`
+      : `In the ${vargaName} chart (${code}), which examines ${area}, this is the ${ORD[houseNumber]} house in ${RASHIS[rashiIndex]}. ` +
+        `It governs ${bhava.rules.slice(0, 4).join(', ')} — read specifically as it bears on ${area}.` +
+        (occupants.length ? '' : ` No planet sits here, so its results flow through its sign lord ${RASHI_LORDS[rashiIndex]}.`);
 
   return {
     code, vargaName, significance,
@@ -331,5 +354,8 @@ export function analyzeExtraVargaHouse(
     reading,
     planetEffects,
     isLagna,
+    plainMeaning,
+    plainChartName: plain?.plainName ?? vargaName,
+    question: plain?.question ?? significance,
   };
 }

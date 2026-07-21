@@ -27,6 +27,21 @@ export interface MatchInput {
   moonNakshatra: number;      // 0–26
   marsHouseFromLagna: number; // 1–12 (or 0 if unknown)
   marsHouseFromMoon: number;  // 1–12
+
+  // ── Optional chart context ────────────────────────────────────────────
+  // Ashtakoot alone reads only the Moon. These let the analysis reach the
+  // 7th house, the marriage karakas and the Navamsa — the layers a real
+  // compatibility reading rests on. All optional, so a Moon-only input
+  // still produces a valid (if shallower) report.
+
+  /** Natal ascendant sign (0–11). */
+  ascendantRashi?: number;
+  /** Natal D1 sign per planet, keyed Sun/Moon/Mars/…/Ketu. */
+  planetRashis?: Record<string, number>;
+  /** Navamsa (D9) sign per planet. */
+  d9Rashis?: Record<string, number>;
+  /** Navamsa ascendant sign (0–11). */
+  d9Ascendant?: number;
 }
 
 export interface KootaScore {
@@ -51,10 +66,12 @@ export interface MatchReport {
   verdict: 'excellent' | 'very good' | 'good' | 'acceptable' | 'not recommended';
   kootas: KootaScore[];
   doshas: DoshaResult[];
-  /** Bullet points — what makes this pairing work. */
-  whyMatching: string[];
-  /** Bullet points — friction or concerns. */
-  whyNotMatching: string[];
+  /**
+   * Set when a dosha caps the verdict below what the guna total alone would
+   * give. The interpretation layer turns the rest of the report into prose;
+   * this is the one thing the score cannot express on its own.
+   */
+  overrideNote?: string;
 }
 
 // ─── Reference tables ────────────────────────────────────────────────────────
@@ -278,23 +295,125 @@ function calcNadi(a: MatchInput, b: MatchInput): KootaScore {
 
 // ─── Doshas ──────────────────────────────────────────────────────────────────
 
-function calcManglikDosha(a: MatchInput, b: MatchInput): DoshaResult {
-  const isManglik = (m: MatchInput) =>
-    [1, 4, 7, 8, 12].includes(m.marsHouseFromLagna) ||
-    [1, 4, 7, 8, 12].includes(m.marsHouseFromMoon);
-  const aM = isManglik(a), bM = isManglik(b);
-  const present = aM || bM;
-  const mitigated = aM === bM; // both or neither → cancel
-  return {
-    name: 'Mangal (Manglik) Dosha',
-    present,
-    mitigated,
-    description: !present
-      ? 'Neither person is Manglik — Mars is not in the harmful houses for either chart.'
-      : aM && bM
-        ? 'Both persons are Manglik — the dosha cancels out. Mars-driven energy is matched on both sides.'
-        : `${aM ? 'Person A' : 'Person B'} is Manglik while the other is not — classical concern. Mitigation includes Mars-strengthening remedies and a delayed marriage.`,
+/** Houses from a reference point in which Mars is held to cause the dosha. */
+const MANGLIK_HOUSES = [1, 4, 7, 8, 12];
+
+export type ManglikSeverity = 'none' | 'mild' | 'moderate' | 'strong';
+
+export interface ManglikDetail {
+  isManglik: boolean;
+  /** How many of the three reference points (Lagna, Moon, Venus) are afflicted. */
+  intensity: number;
+  severity: ManglikSeverity;
+  fromLagna: boolean;
+  fromMoon: boolean;
+  fromVenus: boolean;
+  /** Mars's house from each reference; 0 when the reference is unknown. */
+  houses: { lagna: number; moon: number; venus: number };
+  /** Classical exemptions (Kuja Dosha Bhanga) that apply to this chart alone. */
+  cancellations: string[];
+}
+
+function signDistance(from: number, to: number): number {
+  return ((to - from + 12) % 12) + 1;
+}
+
+/**
+ * Kuja (Mangal) Dosha, graded rather than binary.
+ *
+ * Classical practice checks Mars from three reference points — the Lagna, the
+ * Moon and Venus — and treats the dosha as heavier the more of them are hit.
+ * It also recognises a set of exemptions (Kuja Dosha Bhanga); a chart carrying
+ * one is not read the same as a chart carrying none, which the previous
+ * all-or-nothing check could not express.
+ */
+export function analyseManglik(m: MatchInput): ManglikDetail {
+  const rashis = m.planetRashis;
+  const marsRashi = rashis?.Mars;
+  const venusRashi = rashis?.Venus;
+  const jupiterRashi = rashis?.Jupiter;
+
+  const venusHouse =
+    marsRashi != null && venusRashi != null ? signDistance(venusRashi, marsRashi) : 0;
+
+  const houses = {
+    lagna: m.marsHouseFromLagna,
+    moon: m.marsHouseFromMoon,
+    venus: venusHouse,
   };
+
+  const fromLagna = MANGLIK_HOUSES.includes(houses.lagna);
+  const fromMoon = MANGLIK_HOUSES.includes(houses.moon);
+  const fromVenus = MANGLIK_HOUSES.includes(houses.venus);
+  const intensity = [fromLagna, fromMoon, fromVenus].filter(Boolean).length;
+
+  const cancellations: string[] = [];
+  if (marsRashi != null) {
+    // Mars in its own sign or exalted has no need to act destructively.
+    if (marsRashi === 0 || marsRashi === 7) {
+      cancellations.push('Mars sits in its own sign, which classical texts treat as removing most of the dosha’s sting.');
+    } else if (marsRashi === 9) {
+      cancellations.push('Mars is exalted, so it acts constructively rather than destructively here.');
+    }
+    // Jupiter with or aspecting Mars is the standard neutraliser.
+    if (jupiterRashi != null) {
+      if (jupiterRashi === marsRashi) {
+        cancellations.push('Jupiter sits with Mars, and Jupiter’s company is the classical neutraliser of this dosha.');
+      } else if ([5, 7, 9].includes(signDistance(jupiterRashi, marsRashi))) {
+        cancellations.push('Jupiter aspects Mars, which classical practice treats as cancelling the dosha.');
+      }
+    }
+  }
+
+  const isManglik = intensity > 0;
+  let severity: ManglikSeverity = 'none';
+  if (isManglik) {
+    severity = intensity >= 3 ? 'strong' : intensity === 2 ? 'moderate' : 'mild';
+    // Each exemption steps the severity down one band.
+    for (let i = 0; i < cancellations.length && severity !== 'mild'; i++) {
+      severity = severity === 'strong' ? 'moderate' : 'mild';
+    }
+  }
+
+  return { isManglik, intensity, severity, fromLagna, fromMoon, fromVenus, houses, cancellations };
+}
+
+function refList(d: ManglikDetail): string {
+  const refs = [d.fromLagna && 'the Ascendant', d.fromMoon && 'the Moon', d.fromVenus && 'Venus'].filter(Boolean) as string[];
+  if (refs.length === 0) return '';
+  if (refs.length === 1) return refs[0];
+  return `${refs.slice(0, -1).join(', ')} and ${refs[refs.length - 1]}`;
+}
+
+function calcManglikDosha(a: MatchInput, b: MatchInput): DoshaResult {
+  const da = analyseManglik(a);
+  const db = analyseManglik(b);
+  const present = da.isManglik || db.isManglik;
+
+  // Both afflicted is the classical mutual cancellation. One-sided is only
+  // mitigated when that chart carries its own exemption.
+  const bothManglik = da.isManglik && db.isManglik;
+  const soleDetail = da.isManglik && !db.isManglik ? da : !da.isManglik && db.isManglik ? db : null;
+  const mitigated = !present || bothManglik || (soleDetail?.cancellations.length ?? 0) > 0;
+
+  let description: string;
+  if (!present) {
+    description = 'Neither of you is Manglik — Mars avoids the difficult houses from the Ascendant, the Moon and Venus in both charts.';
+  } else if (bothManglik) {
+    description =
+      `Both of you are Manglik (${da.severity} on your side, ${db.severity} on your partner’s). ` +
+      'Classically this cancels: when both carry the same Mars-driven intensity, neither is overwhelmed by the other.';
+  } else {
+    const who = da.isManglik ? 'You are' : 'Your partner is';
+    const d = soleDetail!;
+    description =
+      `${who} Manglik (${d.severity}) and the other is not — Mars falls in a difficult house from ${refList(d)}. ` +
+      (d.cancellations.length
+        ? `This is softened: ${d.cancellations.join(' ')}`
+        : 'Classical practice treats a one-sided Manglik as a real concern; the usual counsel is Mars remedies and marrying later rather than earlier.');
+  }
+
+  return { name: 'Mangal (Manglik) Dosha', present, mitigated, description };
 }
 
 function bhakootDoshaFrom(score: KootaScore): DoshaResult {
@@ -352,17 +471,6 @@ export function computeMatch(a: MatchInput, b: MatchInput): MatchReport {
     nadiDoshaFrom(kootas[7]),     // Nadi
   ];
 
-  const whyMatching = kootas
-    .filter(k => k.passed)
-    .map(k => `${k.name} (${k.obtained}/${k.max}): ${k.reason}`);
-  const whyNotMatching = kootas
-    .filter(k => !k.passed)
-    .map(k => `${k.name} (${k.obtained}/${k.max}): ${k.reason}`);
-  for (const d of doshas) {
-    if (d.present && !d.mitigated) whyNotMatching.push(`${d.name}: ${d.description}`);
-    else if (!d.present || d.mitigated) whyMatching.push(`${d.name}: ${d.description}`);
-  }
-
   // Verdict — start from the guna score, then let serious doshas override it.
   // Classically, a high guna total does NOT save a match that carries an
   // unmitigated Mangal/Nadi/severe-Bhakoot dosha; these are deal-breakers.
@@ -382,11 +490,10 @@ export function computeMatch(a: MatchInput, b: MatchInput): MatchReport {
     verdict = capVerdict(verdict, severe ? 'not recommended' : 'acceptable');
     if (severe) dealBreakers.push('Bhakoot Dosha (6–8 / 2–12)');
   }
-  if (dealBreakers.length && verdict === 'not recommended') {
-    whyNotMatching.unshift(
-      `Not recommended despite ${Math.round(total * 2) / 2}/36 gunas — a serious dosha overrides the score: ${dealBreakers.join(', ')}. Classical texts treat such a dosha as decisive, even when the guna count looks favourable.`,
-    );
-  }
+  const overrideNote =
+    dealBreakers.length && verdict === 'not recommended'
+      ? `Not recommended despite ${Math.round(total * 2) / 2}/36 gunas — a serious dosha overrides the score: ${dealBreakers.join(', ')}. Classical texts treat such a dosha as decisive, even when the guna count looks favourable.`
+      : undefined;
 
   return {
     totalObtained: Math.round(total * 2) / 2, // halves kept (e.g. 24.5)
@@ -395,7 +502,6 @@ export function computeMatch(a: MatchInput, b: MatchInput): MatchReport {
     verdict,
     kootas,
     doshas,
-    whyMatching,
-    whyNotMatching,
+    overrideNote,
   };
 }

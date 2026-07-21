@@ -11,7 +11,10 @@ import type { Chart } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
 import { RASHIS, RASHI_ENGLISH } from './rashi';
 import { computeVargas, EXTRA_VARGAS } from './vargas';
+import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, plainPlanetEffect } from './vargaMeanings';
+import { RASHI_LORDS } from './planetaryAnalysis';
 import { buildKnowledgeGraphMarkdown } from './knowledgeGraph';
+import { marriageInsights, careerInsights } from '../services/vargaService';
 import { getCurrentPeriodPrediction } from '../services/predictionService';
 
 function titleCase(name: string): string {
@@ -113,6 +116,10 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
     push(`| ${p.planet} | ${p.d9RashiName} | ${dignityLabel(p.d9Dignity)} | ${p.isVargottama ? 'Yes' : '—'} |`);
   }
   push();
+  push('**Marriage reading:**');
+  push();
+  for (const ins of marriageInsights(vargas)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
+  push();
 
   // ── D10 Dasamsa ───────────────────────────────────────────────────────
   push(`## D10 — Dasamsa Chart (Career & Status)`);
@@ -125,23 +132,81 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
     push(`| ${p.planet} | ${p.d10RashiName} | ${dignityLabel(p.d10Dignity)} |`);
   }
   push();
+  push('**Career reading:**');
+  push();
+  for (const ins of careerInsights(vargas)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
+  push();
 
   // ── Other divisional charts (D2, D3, D4, D7, D12, D24, D30, D60) ───────
+  // Each carries its full interpretation, not just the sign table, so the
+  // export and the chat see exactly what the app shows on screen.
   push('## Other Divisional Charts');
+  push();
+  push(
+    'Each divisional chart magnifies one area of life. The same nine planets are re-sorted to show ' +
+    'how they behave in that area alone — so the money chart can read strongly while the study chart reads weakly.',
+  );
   push();
   for (const v of EXTRA_VARGAS) {
     const ascR = vargas.ascendants[v.code];
-    push(`### ${v.code} — ${v.name} (${v.significance})`);
+    const plain = VARGA_PLAIN[v.code];
+    const karakas = VARGA_KARAKAS[v.code] ?? [];
+
+    push(`### ${v.code} — ${v.name} (${plain?.plainName ?? v.significance})`);
     push();
-    push(`**Lagna:** ${RASHIS[ascR]} (${RASHI_ENGLISH[ascR]})`);
+    if (plain) {
+      push(`**Answers:** ${plain.question}`);
+      push();
+      push(plain.intro);
+      push();
+    }
+    push(`**Lagna:** ${RASHIS[ascR]} (${RASHI_ENGLISH[ascR]})${plain ? ` — ${plain.lagnaMeaning}` : ''}`);
     push();
-    push(`| Planet | ${v.code} Sign | Dignity |`);
-    push('| --- | --- | --- |');
+
+    if (karakas.length) {
+      push(`**Key planet${karakas.length > 1 ? 's' : ''} for this chart:** ` +
+        karakas.map(k => `${k.planet} (${k.role})`).join(', '));
+      push();
+    }
+
+    // Whole-chart verdict — the same judgement the UI card shows.
+    const verdict = vargaVerdict(
+      v.code,
+      vargas.planets.map(p => ({
+        planet: p.planet,
+        dignity: p.divisions[v.code].dignity,
+        house: houseFrom(p.divisions[v.code].rashi, ascR),
+      })),
+      RASHI_LORDS[ascR],
+    );
+    push(`**Verdict:** ${verdict.headline} _(${verdict.standing})_`);
+    push();
+    push(verdict.summary);
+    push();
+    for (const r of verdict.reasons) push(`- ${r}`);
+    push();
+
+    push(`| Planet | ${v.code} Sign | House | Dignity | What it does here |`);
+    push('| --- | --- | --- | --- | --- |');
     for (const p of vargas.planets) {
       const cell = p.divisions[v.code];
-      push(`| ${p.planet} | ${cell.rashiName} | ${dignityLabel(cell.dignity)} |`);
+      const house = houseFrom(cell.rashi, ascR);
+      const effect = plain
+        ? plainPlanetEffect(p.planet, cell.dignity, p.isRetrograde, v.code).replace(/\|/g, '/')
+        : '—';
+      push(`| ${p.planet} | ${cell.rashiName} | ${house} | ${dignityLabel(cell.dignity)} | ${effect} |`);
     }
     push();
+
+    if (plain) {
+      push(`**What each house means in this chart:**`);
+      push();
+      for (let h = 1; h <= 12; h++) {
+        const rashiOfHouse = (ascR + h - 1) % 12;
+        push(`- **${h}. ${RASHIS[rashiOfHouse]}** — ${plain.houses[h]}`);
+      }
+      push();
+    }
   }
 
   // ── Dashas ────────────────────────────────────────────────────────────

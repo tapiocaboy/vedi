@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Layers, Loader2, Heart, Briefcase, Sparkles } from 'lucide-react';
+import { Layers, Loader2, Heart, Briefcase, Sparkles, MousePointerClick, CheckCircle2, AlertTriangle, MinusCircle } from 'lucide-react';
 import { getVargas } from '../../services/api';
 import type { BirthData } from '../../services/api';
 import type { VargaPlanet, VargaInsight } from '../../services/api';
 import { RASHIS } from '../../lib/core/rashi';
+import { RASHI_LORDS } from '../../lib/core/planetaryAnalysis';
 import { EXTRA_VARGAS, type VargaCode } from '../../lib/core/vargas';
+import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, type VargaStanding } from '../../lib/core/vargaMeanings';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
@@ -118,9 +120,13 @@ function VargaGrid({
                 }
               }}
             >
-              <span className={`text-[8px] font-bold leading-none ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
-                {RASHIS[rashi].slice(0, 3)}
-                {isAsc && <span style={{ color: ACCENT }}> ·{ascMarker}</span>}
+              <span className={`text-[8px] font-bold leading-none flex items-center justify-between gap-0.5 ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
+                <span className="truncate">
+                  {RASHIS[rashi].slice(0, 3)}
+                  {isAsc && <span style={{ color: ACCENT }}> ·{ascMarker}</span>}
+                </span>
+                {/* Persistent affordance: every box opens a reading */}
+                <MousePointerClick className="w-2.5 h-2.5 shrink-0 opacity-45" style={{ color: ACCENT }} />
               </span>
               <div className="flex flex-wrap gap-x-1 items-start content-start flex-1 mt-0.5">
                 {occupants.map(p => (
@@ -141,10 +147,89 @@ function VargaGrid({
           );
         })}
       </div>
-      <p className={`mt-2.5 text-center text-[11px] font-bold tracking-wide ${isLight ? 'text-slate-600' : 'text-white/55'}`}
-        style={{ textShadow: isLight ? '0 0 1px rgba(0,0,0,0.15)' : '0 1px 2px rgba(0,0,0,0.8)' }}>
+      <p
+        className="mt-2.5 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-center text-[11px] font-bold tracking-wide"
+        style={{
+          color: ACCENT,
+          background: 'rgba(var(--c-accent-rgb),0.07)',
+          border: '1px solid rgba(var(--c-accent-rgb),0.18)',
+        }}
+      >
+        <MousePointerClick className="w-3 h-3 shrink-0" />
         {hint}
       </p>
+    </div>
+  );
+}
+
+const STANDING_STYLE: Record<VargaStanding, { icon: React.ElementType; color: string; bg: string }> = {
+  'strong':       { icon: CheckCircle2,  color: '#10b981', bg: 'rgba(16,185,129,0.10)' },
+  'workable':     { icon: MinusCircle,   color: '#8b93a7', bg: 'rgba(148,163,184,0.10)' },
+  'needs-effort': { icon: AlertTriangle, color: '#f43f5e', bg: 'rgba(244,63,94,0.10)' },
+};
+
+/** Plain-English verdict for a whole divisional chart. */
+function VargaVerdictCard({
+  code, planets, ascendant, isLight,
+}: {
+  code: VargaCode;
+  planets: VargaPlanet[];
+  ascendant: number;
+  isLight: boolean;
+}) {
+  const { lang, t } = useLang();
+  const plain = VARGA_PLAIN[code];
+  const verdict = vargaVerdict(
+    code,
+    planets.map(p => ({
+      planet: p.planet,
+      dignity: p.divisions[code].dignity,
+      house: ((p.divisions[code].rashi - ascendant + 12) % 12) + 1,
+    })),
+    RASHI_LORDS[ascendant],
+  );
+  const style = STANDING_STYLE[verdict.standing];
+  const Icon = style.icon;
+
+  return (
+    <div className="rounded-xl p-3 sm:p-4 mb-4" style={{ background: style.bg, border: `1px solid ${style.color}40` }}>
+      <div className="flex items-start gap-2.5">
+        <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: style.color }} />
+        <div className="min-w-0">
+          <div className={`text-xs font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{verdict.headline}</div>
+          {plain && (
+            <>
+              <p className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{plain.question}</p>
+              <p className={`text-[11px] mt-1 ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{plain.intro}</p>
+            </>
+          )}
+          <p className={`text-[11.5px] leading-relaxed mt-1.5 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
+            {verdict.summary}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {verdict.reasons.map((r, i) => (
+              <li key={i} className={`text-[11px] leading-relaxed flex items-start gap-1.5 ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                <span style={{ color: style.color }}>•</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* The planet this chart is judged by — the first thing a reader
+              should look for in the grid below. */}
+          {(VARGA_KARAKAS[code] ?? []).length > 0 && (
+            <p className={`text-[11px] mt-2 pt-2 border-t ${isLight ? 'text-slate-500 border-slate-200' : 'text-white/40 border-white/8'}`}>
+              {t('varga.keyPlanet')}{' '}
+              {(VARGA_KARAKAS[code] ?? []).map((k, i, arr) => (
+                <React.Fragment key={k.planet}>
+                  <strong className={isLight ? 'text-slate-700' : 'text-white/70'}>{labelPlanet(k.planet, lang)}</strong>
+                  {` (${k.role})`}{i < arr.length - 1 ? ', ' : ''}
+                </React.Fragment>
+              ))}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -324,35 +409,48 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
               </div>
               <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('varga.moreTitle')}</h3>
             </div>
-            <p className={`text-xs mb-4 ml-[2.625rem] ${isLight ? 'text-slate-500' : 'text-white/30'}`}>{t('varga.moreSubtitle')}</p>
+            <p className={`text-xs mb-3 ml-[2.625rem] ${isLight ? 'text-slate-500' : 'text-white/30'}`}>{t('varga.moreSubtitle')}</p>
 
-            {/* Chart selector chips */}
+            {/* What a divisional chart is, for a first-time reader */}
+            <div className="rounded-xl p-3 mb-4"
+              style={{ background: isLight ? '#f8fafc' : 'rgba(255,255,255,0.03)', border: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
+              <p className={`text-[11.5px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/55'}`}>
+                {t('varga.whatIsVarga')}
+              </p>
+            </div>
+
+            {/* Chart selector chips — named in plain words, not just codes */}
             <div className="flex flex-wrap gap-1.5 mb-4">
               {EXTRA_VARGAS.map(v => {
                 const active = v.code === moreVarga;
+                const plainName = VARGA_PLAIN[v.code]?.plainName ?? v.significance;
                 return (
                   <button
                     key={v.code}
                     onClick={() => setMoreVarga(v.code)}
-                    title={`${v.name} — ${v.significance}`}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors border ${
+                    title={VARGA_PLAIN[v.code]?.question ?? `${v.name} — ${v.significance}`}
+                    className={`px-2.5 py-2 rounded-lg text-[11px] font-bold transition-colors border ${
                       active
-                        ? 'text-white'
-                        : isLight ? 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200' : 'bg-white/5 text-white/55 border-white/8 hover:bg-white/10'
+                        ? 'text-white on-accent'
+                        : isLight ? 'bg-white text-gray-600 border-gray-300 shadow-sm hover:bg-gray-50 hover:text-gray-900' : 'bg-white/10 text-white/75 border-white/15 hover:bg-white/20 hover:text-white'
                     }`}
                     style={active ? { backgroundColor: ACCENT, borderColor: ACCENT } : undefined}
                   >
-                    {v.code}
+                    <span className="opacity-70 mr-1">{v.code}</span>
+                    {plainName.replace(/ chart$/, '')}
                   </button>
                 );
               })}
             </div>
 
+            {/* Plain-English verdict for the selected chart */}
+            <VargaVerdictCard code={def.code} planets={data.chart.planets} ascendant={asc} isLight={isLight} />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-start">
               <VargaGrid
-                title={`${def.code} · ${def.name}`}
+                title={`${def.code} · ${VARGA_PLAIN[def.code]?.plainName ?? def.name}`}
                 subtitle={`${t('varga.lagna')}: ${RASHIS[asc]} — ${def.significance}`}
-                hint={def.significance}
+                hint={t('varga.tapAnyBox')}
                 ascRashi={asc}
                 planetsByRashi={byRashi}
                 isLight={isLight}

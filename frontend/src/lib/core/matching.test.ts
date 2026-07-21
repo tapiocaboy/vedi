@@ -67,13 +67,18 @@ describe('Ashtakoot Milan', () => {
     expect(none.present).toBe(false)
   })
 
-  it('produces non-empty whyMatching / whyNotMatching lists', () => {
-    const r = computeMatch(person(0, 0), person(5, 5))
-    expect(r.whyMatching.length + r.whyNotMatching.length).toBeGreaterThan(0)
-    // Each line includes the koota name & score
-    for (const line of [...r.whyMatching, ...r.whyNotMatching]) {
-      expect(line.length).toBeGreaterThan(10)
-    }
+  it('records an override note only when a dosha caps the verdict', () => {
+    // Manglik on one side only → capped, so the note explains the override.
+    const capped = computeMatch(
+      { moonRashi: 5, moonNakshatra: 12, marsHouseFromLagna: 7, marsHouseFromMoon: 7 },
+      { moonRashi: 5, moonNakshatra: 12, marsHouseFromLagna: 3, marsHouseFromMoon: 3 },
+    )
+    expect(capped.verdict).toBe('not recommended')
+    expect(capped.overrideNote).toMatch(/overrides the score/)
+
+    // A clean, high-scoring pair has nothing to override.
+    const clean = computeMatch(person(5, 12, 3, 3), person(5, 12, 3, 3))
+    expect(clean.overrideNote).toBeUndefined()
   })
 
   it('an unmitigated Manglik dosha overrides a good guna score (1986 Kandy case)', () => {

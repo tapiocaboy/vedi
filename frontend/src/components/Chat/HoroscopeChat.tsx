@@ -6,7 +6,7 @@ import type { Chart } from '../../types/astrology';
 import { buildChartMarkdown } from '../../lib/core/exportChart';
 import { getCurrentPrediction } from '../../services/api';
 import {
-  askHoroscope, buildSystemPrompt, isChatConfigured, getChatModel,
+  askHoroscope, buildSystemPrompt, isChatConfigured, getChatModel, DIVISIONAL_INDEX,
   type ChatMessage,
 } from '../../services/horoscopeChat';
 import { useLang } from '../../i18n/LanguageContext';
@@ -163,6 +163,28 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
                   {/* Greeting */}
                   <div className="rounded-xl border border-white/8 bg-black/30 p-3">
                     <p className="text-[12px] text-white/75 leading-relaxed">{t('chat.greeting')}</p>
+
+                    {/* The divisional charts loaded into this conversation.
+                        Tapping one asks about it, so the list doubles as a
+                        starting point rather than just an inventory. */}
+                    <div className="mt-2.5 pt-2.5 border-t border-white/8">
+                      <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1.5">
+                        {t('chat.chartsLoaded')}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DIVISIONAL_INDEX.map(d => (
+                          <button
+                            key={d.code}
+                            onClick={() => send(t('chat.askAboutChart', { code: d.code, plain: d.plain }))}
+                            title={d.question}
+                            className="text-[11px] rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
+                          >
+                            <span className="opacity-60 mr-1">{d.code}</span>
+                            {d.plain}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   {messages.length === 0 && (

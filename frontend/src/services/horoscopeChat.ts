@@ -37,6 +37,24 @@ export function isChatConfigured(): boolean {
   return !!getChatApiKey()?.trim();
 }
 
+/**
+ * The divisional charts the export always includes. Used both to brief the
+ * model and to tell the user, at the start of a chat, what can be asked about.
+ */
+export const DIVISIONAL_INDEX: Array<{ code: string; plain: string; question: string }> = [
+  { code: 'D1',  plain: 'Main chart',          question: 'the whole life at a glance' },
+  { code: 'D2',  plain: 'Money',               question: 'how money behaves in your life' },
+  { code: 'D3',  plain: 'Siblings & courage',  question: 'your drive, and siblings and peers' },
+  { code: 'D4',  plain: 'Home & property',     question: 'the home, land and security you build' },
+  { code: 'D7',  plain: 'Children',            question: 'children and what you create' },
+  { code: 'D9',  plain: 'Marriage',            question: 'marriage, the spouse, and inner strength' },
+  { code: 'D10', plain: 'Career',              question: 'career, status and public standing' },
+  { code: 'D12', plain: 'Parents & ancestry',  question: 'what your parents and lineage passed on' },
+  { code: 'D24', plain: 'Learning',            question: 'how you learn and how far study takes you' },
+  { code: 'D30', plain: 'Weak spots',          question: 'where trouble is most likely to find you' },
+  { code: 'D60', plain: 'Deep karma',          question: 'the pattern running beneath everything' },
+];
+
 /** Build the system prompt that grounds the model in this person's chart. */
 export function buildSystemPrompt(chartMarkdown: string): string {
   return [
@@ -44,8 +62,13 @@ export function buildSystemPrompt(chartMarkdown: string): string {
     "You are given ONE specific person's birth chart below, exported as Markdown.",
     "Answer the user's questions about THIS chart only, grounding every statement in the data provided:",
     'planet signs and houses, the Moon nakshatra, the running dashas, and ALL the divisional (varga) charts',
-    'included below — D2 (wealth), D3 (siblings), D4 (property), D7 (children), D9 (marriage/dharma),',
-    'D10 (career), D12 (parents), D24 (education), D30 (adversity) and D60 (overall karma).',
+    'included below. Every divisional chart carries its own verdict, its key planet (karaka), a plain-language',
+    'meaning for each of its twelve houses, and a per-planet reading — use those rather than generic house',
+    'meanings, because a house means something different in each chart (the 5th is children in D7, exam',
+    'ability in D24, and recklessness in D30).',
+    '',
+    'The divisional charts available to you:',
+    ...DIVISIONAL_INDEX.map(d => `  - ${d.code} (${d.plain}) — ${d.question}`),
     'A "Knowledge Graph — Current Period" section is also included: it maps the currently running',
     'dasha planets, their strength/condition, the life themes (houses) each one activates, the current',
     'life-area trends, and what needs attention right now.',
@@ -57,7 +80,8 @@ export function buildSystemPrompt(chartMarkdown: string): string {
     '- Explain jargon briefly so a layperson understands.',
     '- When timing is asked, reason from the dasha periods and note them by date.',
     '- For "current period" / "right now" / "this year" questions, lead with the Knowledge Graph section — the active dasha planets, their condition, the life themes they activate, and what needs attention.',
-    '- For area-specific questions, read the matching divisional chart (e.g. D2 for wealth, D7 for children, D10 for career, D24 for education) alongside the main chart, not just D1.',
+    '- For area-specific questions, read the matching divisional chart (e.g. D2 for money, D7 for children, D10 for career, D24 for learning) alongside the main chart, not just D1. Name the chart you used, and quote its verdict and key planet.',
+    '- Note that D30 is inverted: strength there means better resistance to trouble, not more trouble.',
     '- Be encouraging and balanced; never fatalistic. Astrology shows tendencies, not certainties.',
     '- If something cannot be determined from the given data, say so rather than inventing it.',
     '- Keep answers focused and well-structured; use short paragraphs or bullets.',

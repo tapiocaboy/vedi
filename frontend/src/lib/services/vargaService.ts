@@ -35,7 +35,7 @@ const DIGNITY_TEXT: Record<DignityLevel, string> = {
   'debilitated': 'debilitated',
 };
 
-function marriageInsights(chart: VargaChart): VargaInsight[] {
+export function marriageInsights(chart: VargaChart): VargaInsight[] {
   const insights: VargaInsight[] = [];
   const find = (p: string) => chart.planets.find(x => x.planet === p);
 
@@ -95,7 +95,7 @@ function marriageInsights(chart: VargaChart): VargaInsight[] {
   return insights;
 }
 
-function careerInsights(chart: VargaChart): VargaInsight[] {
+export function careerInsights(chart: VargaChart): VargaInsight[] {
   const insights: VargaInsight[] = [];
   const find = (p: string) => chart.planets.find(x => x.planet === p);
 
