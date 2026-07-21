@@ -24,8 +24,18 @@ import { runMatching, type MatchSummary } from '../lib/services/matchingService'
 import { getVargaReport, type VargaReport, type VargaInsight } from '../lib/services/vargaService';
 import { getPanchangaReport, type PanchangaReport, type ChoghadiyaPeriod } from '../lib/services/panchangaService';
 import { getDoshaReport, type DoshaReport } from '../lib/services/doshaService';
+import {
+  getAntardashaDepth as libGetAntardashaDepth,
+  type AntardashaDepthReport,
+  type WeightedPratyantardasha,
+} from '../lib/services/dashaDepthService';
 
 export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, DoshaReport };
+export type { AntardashaDepthReport, WeightedPratyantardasha };
+export type { WeightBand, PeriodTone, WeightFactor } from '../lib/core/dashaWeight';
+export type { TransitHit } from '../lib/core/dashaTransits';
+export type { PeriodStrategy, StrategyWindow, Stance } from '../lib/core/periodStrategy';
+export type { AntardashaJudgement, JudgementFactor, Verdict } from '../lib/core/antardashaJudgement';
 export type { VargaChart, VargaPlanet } from '../lib/core/vargas';
 export type { DoshaCheck, SadeSatiPeriod, SadeSatiPhase } from '../lib/core/doshas';
 
@@ -144,6 +154,19 @@ export async function getAntardashaPrediction(birthData: BirthData, mahadasha: s
 
 export async function getPratyantardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
   return libGetPD(birthData, mahadasha, antardasha, pratyantardasha);
+}
+
+/**
+ * Pratyantardasha-level breakdown of one antardasha: per-window weight, the
+ * transits that reinforce it, and how to work the period profitably.
+ * `antardashaStart` is the ISO start of the exact antardasha instance.
+ */
+export async function getAntardashaDepth(
+  birthData: BirthData,
+  antardashaStart: string,
+  asOf?: Date,
+): Promise<AntardashaDepthReport | null> {
+  return libGetAntardashaDepth(birthData, antardashaStart, asOf);
 }
 
 export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult> {

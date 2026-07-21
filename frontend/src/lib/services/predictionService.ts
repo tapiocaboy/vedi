@@ -49,7 +49,7 @@ const ENGINE_PLANET_KEY: Record<string, Contributor> = {
   JUPITER: 'Jupiter', VENUS: 'Venus', SATURN: 'Saturn',
 };
 
-function buildChartContext(positions: Record<string, PlanetPosition>): ChartContext {
+export function buildChartContext(positions: Record<string, PlanetPosition>): ChartContext {
   const rashis = { Lagna: positions['ASCENDANT'].rashi } as Record<Contributor, number>;
   for (const [k, v] of Object.entries(ENGINE_PLANET_KEY)) {
     rashis[v] = positions[k].rashi;

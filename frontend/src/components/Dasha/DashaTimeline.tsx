@@ -4,30 +4,14 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  ChevronDown, 
-  ChevronUp, 
-  Eye,
-  Heart, 
-  Wallet, 
-  Briefcase, 
-  Users, 
-  Sparkles,
-  Loader2,
-  Star,
-  CheckCircle,
-  AlertTriangle,
-  MinusCircle,
-  Gem
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import type { DashaWithAntardashas, BirthData } from '../../types/astrology';
 import { DASHA_COLORS } from '../../types/astrology';
 import { formatDate, formatYears, formatDays } from '../../utils/dateUtils';
 import { parseISO, isWithinInterval } from 'date-fns';
-import { getAntardashaPrediction, type DashaPredictionData } from '../../services/api';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelArea, labelTrend, labelPlanet } from '../../i18n/astroLabels';
+import { labelPlanet } from '../../i18n/astroLabels';
+import { AntardashaPanel } from './AntardashaPanel';
 
 interface Props {
   timeline: DashaWithAntardashas[];
@@ -35,234 +19,6 @@ interface Props {
   currentDate?: Date;
 }
 
-const TREND_ICONS = {
-  positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  negative: { icon: AlertTriangle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30' },
-  mixed: { icon: MinusCircle, color: 'text-violet-300', bg: 'bg-violet-400/10', border: 'border-violet-400/30' },
-  neutral: { icon: MinusCircle, color: 'text-white/50', bg: 'bg-slate-500/10', border: 'border-slate-500/30' },
-};
-
-const AREA_CONFIG = {
-  health: { icon: Heart, color: 'text-rose-400', bgColor: 'bg-rose-500/10' },
-  wealth: { icon: Wallet, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-  career: { icon: Briefcase, color: 'text-violet-400', bgColor: 'bg-violet-500/10' },
-  relationships: { icon: Users, color: 'text-pink-400', bgColor: 'bg-pink-500/10' },
-  general: { icon: Sparkles, color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-};
-
-interface PredictionDisplayProps {
-  prediction: DashaPredictionData;
-  mahadashaLord: string;
-  antardashaLord: string;
-}
-
-const PredictionDisplay: React.FC<PredictionDisplayProps> = ({ prediction, mahadashaLord, antardashaLord }) => {
-  const { lang, t } = useLang();
-  const [expandedArea, setExpandedArea] = useState<string | null>(null);
-  const [showActivities, setShowActivities] = useState(false);
-
-  const renderTrendBadge = (trend: string) => {
-    const config = TREND_ICONS[trend as keyof typeof TREND_ICONS] || TREND_ICONS.neutral;
-    const Icon = config.icon;
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${config.bg} ${config.color} border ${config.border}`}>
-        <Icon className="w-3 h-3" />
-        {labelTrend(trend, lang)}
-      </span>
-    );
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mt-3 glass-card rounded-lg overflow-hidden"
-    >
-      {/* Header */}
-      <div className="p-4 bg-gradient-to-r from-violet-800 to-violet-700">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-display font-semibold text-lg text-white">
-              {t('dasha.predictionsFor', { md: labelPlanet(mahadashaLord, lang), ad: labelPlanet(antardashaLord, lang) })}
-            </h4>
-            <p className="text-white/70 text-sm mt-1 line-clamp-2">
-              {prediction.overallTheme}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-white/70 text-xs">{t('dasha.rating')}</div>
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 text-violet-300 fill-violet-300" />
-              <span className="font-bold text-lg text-white">{prediction.overallRating}/10</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Life Areas Grid */}
-      <div className="p-4 space-y-2">
-        <h5 className="text-sm font-semibold text-white/70 mb-3">{t('dasha.lifeAreaOutlook')}</h5>
-        
-        {Object.entries(prediction.predictions).map(([area, data]) => {
-          const config = AREA_CONFIG[area as keyof typeof AREA_CONFIG];
-          if (!config) return null;
-          
-          const Icon = config.icon;
-          const isExpanded = expandedArea === area;
-          
-          return (
-            <div key={area} className="rounded-lg border border-white/6 overflow-hidden bg-white/3">
-              <button
-                onClick={() => setExpandedArea(isExpanded ? null : area)}
-                className="w-full p-3 flex items-center justify-between hover:bg-white/4 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`p-1.5 rounded-lg ${config.bgColor} border border-violet-800/25`}>
-                    <Icon className={`w-4 h-4 ${config.color}`} />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium text-white text-sm">{labelArea(area, lang)}</div>
-                    <div className="text-xs text-white/50 line-clamp-1 max-w-xs">{data.summary}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {renderTrendBadge(data.trend)}
-                  {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-white/25" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/25" />
-                  )}
-                </div>
-              </button>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="border-t border-white/6"
-                  >
-                    <div className="p-4 bg-white/3 space-y-4">
-                      {/* Details */}
-                      <div>
-                        <h6 className="font-medium text-white/70 text-sm mb-2">{t('common.details')}</h6>
-                        <ul className="space-y-1">
-                          {data.details.slice(0, 5).map((detail, i) => (
-                            <li key={i} className="flex items-start gap-2 text-xs text-white/50">
-                              <span className="text-violet-400 mt-0.5">•</span>
-                              <span>{detail}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Remedies */}
-                      {data.remedies.length > 0 && (
-                        <div>
-                          <h6 className="font-medium text-white/70 text-sm mb-2">{t('common.remedies')}</h6>
-                          <ul className="space-y-1">
-                            {data.remedies.slice(0, 3).map((remedy, i) => (
-                              <li key={i} className="flex items-start gap-2 text-xs text-white/50">
-                                <span className="text-emerald-400">✓</span>
-                                <span>{remedy}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Remedies & Activities */}
-      <div className="px-4 pb-4 space-y-3">
-        {/* Main Remedies */}
-        <div className="p-3 bg-white/3 rounded-lg border border-white/6">
-          <h5 className="text-sm font-semibold text-white/70 mb-2 flex items-center gap-2">
-            <Gem className="w-4 h-4 text-purple-400" />
-            {t('dasha.recommendedRemedies')}
-          </h5>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            {prediction.remedies.gemstone && (
-              <div className="p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                <div className="text-purple-400 font-medium">{t('remedy.gemstone')}</div>
-                <div className="text-white/70">{prediction.remedies.gemstone}</div>
-              </div>
-            )}
-            {prediction.remedies.mantra && (
-              <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
-                <div className="text-violet-400 font-medium">{t('remedy.affirmation')}</div>
-                <div className="text-white/70 truncate">{prediction.remedies.mantra}</div>
-              </div>
-            )}
-            {prediction.remedies.deity && (
-              <div className="p-2 bg-violet-400/10 rounded-lg border border-violet-400/20">
-                <div className="text-violet-300 font-medium">{t('remedy.focus')}</div>
-                <div className="text-white/70">{prediction.remedies.deity}</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Activities */}
-        <button
-          onClick={() => setShowActivities(!showActivities)}
-          className="w-full p-3 flex items-center justify-between bg-white/3 rounded-lg border border-white/6 hover:bg-white/5 transition-colors"
-        >
-          <span className="text-sm font-semibold text-white/70 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            {t('dasha.activitiesGuide')}
-          </span>
-          {showActivities ? <ChevronUp className="w-4 h-4 text-white/25" /> : <ChevronDown className="w-4 h-4 text-white/25" />}
-        </button>
-
-        <AnimatePresence>
-          {showActivities && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="grid grid-cols-2 gap-3"
-            >
-              <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
-                <h6 className="font-medium text-emerald-400 text-xs mb-2 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> {t('dasha.favorable')}
-                </h6>
-                <ul className="space-y-1">
-                  {prediction.favorableActivities.slice(0, 4).map((activity, i) => (
-                    <li key={i} className="text-xs text-white/70 flex items-start gap-1">
-                      <span className="text-emerald-400">✓</span>
-                      <span>{activity}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="p-3 bg-rose-500/10 rounded-lg border border-rose-500/30">
-                <h6 className="font-medium text-rose-400 text-xs mb-2 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> {t('dasha.avoid')}
-                </h6>
-                <ul className="space-y-1">
-                  {prediction.unfavorableActivities.slice(0, 4).map((activity, i) => (
-                    <li key={i} className="text-xs text-white/70 flex items-start gap-1">
-                      <span className="text-rose-400">✗</span>
-                      <span>{activity}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </motion.div>
-  );
-};
 
 export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDate = new Date() }) => {
   const { lang, t } = useLang();
@@ -270,19 +26,10 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
   const [selectedAntardasha, setSelectedAntardasha] = useState<{
     mahadasha: string;
     antardasha: string;
+    /** ISO start — identifies which instance of this lord pair is open. */
+    start: string;
     key: string;
   } | null>(null);
-
-  // Fetch prediction for selected Antardasha
-  const { data: prediction, isLoading: isPredictionLoading } = useQuery({
-    queryKey: ['antardashaPrediction', selectedAntardasha?.mahadasha, selectedAntardasha?.antardasha, birthData],
-    queryFn: () => {
-      if (!birthData || !selectedAntardasha) return null;
-      return getAntardashaPrediction(birthData, selectedAntardasha.mahadasha, selectedAntardasha.antardasha);
-    },
-    enabled: !!birthData && !!selectedAntardasha,
-    staleTime: 10 * 60 * 1000, // 10 minutes cache
-  });
 
   // Check if a period contains the current date
   const isCurrent = (start: string, end: string): boolean => {
@@ -309,12 +56,18 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
   };
 
   // Handle Antardasha click
-  const handleAntardashaClick = (mahadasha: string, antardasha: string, mdIdx: number, adIdx: number) => {
+  const handleAntardashaClick = (
+    mahadasha: string,
+    antardasha: string,
+    start: string,
+    mdIdx: number,
+    adIdx: number,
+  ) => {
     const key = `${mahadasha}-${antardasha}-${mdIdx}-${adIdx}`;
     if (selectedAntardasha?.key === key) {
       setSelectedAntardasha(null);
     } else {
-      setSelectedAntardasha({ mahadasha, antardasha, key });
+      setSelectedAntardasha({ mahadasha, antardasha, start, key });
     }
   };
 
@@ -407,7 +160,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: adIdx * 0.03 }}
-                            onClick={() => birthData && handleAntardashaClick(mahadasha.lord, ad.lord, idx, adIdx)}
+                            onClick={() => birthData && handleAntardashaClick(mahadasha.lord, ad.lord, ad.start, idx, adIdx)}
                             className={`
                               p-3 rounded-lg flex items-center justify-between
                               bg-white/3 border
@@ -443,27 +196,15 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             </div>
                           </motion.div>
 
-                          {/* Inline Prediction Display */}
+                          {/* Everything about the selected antardasha, in one panel */}
                           <AnimatePresence>
-                            {isSelected && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                              >
-                                {isPredictionLoading ? (
-                                  <div className="mt-3 p-6 glass-card rounded-lg flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 animate-spin text-violet-500 mr-2" />
-                                    <span className="text-sm text-white/50 font-mono">{t('dasha.loadingPredictions')}</span>
-                                  </div>
-                                ) : prediction ? (
-                                  <PredictionDisplay 
-                                    prediction={prediction}
-                                    mahadashaLord={mahadasha.lord}
-                                    antardashaLord={ad.lord}
-                                  />
-                                ) : null}
-                              </motion.div>
+                            {isSelected && birthData && (
+                              <AntardashaPanel
+                                birthData={birthData}
+                                mahadashaLord={mahadasha.lord}
+                                antardashaLord={ad.lord}
+                                antardashaStart={ad.start}
+                              />
                             )}
                           </AnimatePresence>
                         </div>

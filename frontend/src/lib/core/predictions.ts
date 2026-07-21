@@ -319,6 +319,19 @@ function getPairEffect(mahadasha: string, antardasha: string): PairEffect | null
   return PAIR_EFFECTS[`${mahadasha}-${antardasha}`] ?? null;
 }
 
+/**
+ * Classical rating shift (−2…+2) for a lord/sub-lord pair, or 0 when the
+ * combination carries no special reading. Exposed for the weight engine.
+ */
+export function pairRatingMod(lord: string, subLord: string): number {
+  return getPairEffect(lord, subLord)?.ratingMod ?? 0;
+}
+
+/** Theme line for a lord/sub-lord pair, when the combination is a named one. */
+export function pairTheme(lord: string, subLord: string): string | null {
+  return getPairEffect(lord, subLord)?.theme ?? null;
+}
+
 // ─── Prediction Engine ─────────────────────────────────────────────────────
 
 export class DashaPredictionEngine {
