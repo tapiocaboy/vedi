@@ -596,8 +596,8 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
   const [expanded, setExpanded] = useState(false);
 
   const { data: prediction, isLoading, error } = useQuery({
-    queryKey: ['currentPrediction', birthData],
-    queryFn: () => getCurrentPrediction(birthData),
+    queryKey: ['currentPrediction', birthData, lang],
+    queryFn: () => getCurrentPrediction(birthData, undefined, lang),
     enabled: !!birthData.date,
     staleTime: 5 * 60 * 1000,
   });

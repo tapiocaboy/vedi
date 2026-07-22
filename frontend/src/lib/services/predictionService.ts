@@ -5,6 +5,7 @@
 import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
 import { VimshottariDasha } from '../core/dasha';
 import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '../core/predictions';
+import { type Lang, getStoredLang } from '../core/i18n';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
 import { getCurrentTransits, summarizeGocharaForPrediction } from '../core/transits';
 import type { BirthData } from '../../types/astrology';
@@ -95,19 +96,19 @@ async function chartCtxFor(bd: BirthData): Promise<ChartContext> {
   return buildChartContext(positions);
 }
 
-export async function getMahadashaPrediction(bd: BirthData, dashaLord: string): Promise<DashaPredictionData> {
+export async function getMahadashaPrediction(bd: BirthData, dashaLord: string, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
   const ctx = await chartCtxFor(bd);
-  return formatPrediction(engine.generateCompletePrediction(dashaLord, undefined, undefined, undefined, ctx));
+  return formatPrediction(engine.generateCompletePrediction(dashaLord, undefined, undefined, undefined, ctx, lang));
 }
 
-export async function getAntardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
+export async function getAntardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
   const ctx = await chartCtxFor(bd);
-  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, undefined, undefined, ctx));
+  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, undefined, undefined, ctx, lang));
 }
 
-export async function getPratyantardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
+export async function getPratyantardashaPrediction(bd: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
   const ctx = await chartCtxFor(bd);
-  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, pratyantardasha, undefined, ctx));
+  return formatPrediction(engine.generateCompletePrediction(mahadasha, antardasha, pratyantardasha, undefined, ctx, lang));
 }
 
 /** Just the Ashtakavarga grid for the chart. */
@@ -125,7 +126,7 @@ export async function getAshtakavargaForChart(bd: BirthData) {
   });
 }
 
-export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date): Promise<DashaPredictionData> {
+export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
   const { moonLon, ctx } = await getCurrentDashaContext(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const td = targetDate ?? new Date();
@@ -134,8 +135,8 @@ export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Dat
 
   // Fold current transits (Sade Sati, Guru blessing…) into the prediction.
   try {
-    const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td);
-    const transitSummary = summarizeGocharaForPrediction(gochara);
+    const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td, undefined, undefined, lang);
+    const transitSummary = summarizeGocharaForPrediction(gochara, lang);
     ctx.transitNotes = transitSummary.notes;
     ctx.transitScoreMod = transitSummary.scoreMod;
   } catch {
@@ -148,6 +149,7 @@ export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Dat
     current.pratyantardasha?.lord,
     current.sookshmaDasha?.lord,
     ctx,
+    lang,
   );
   const result = formatPrediction(pred);
   result.currentPeriods = {
@@ -218,13 +220,13 @@ export async function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: D
   };
 }
 
-export async function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80): Promise<unknown[]> {
+export async function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80, lang: Lang = getStoredLang()): Promise<unknown[]> {
   const { moonLon, ctx } = await getCurrentDashaContext(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const mahadashas = calc.generateMahadashaTimeline(yearsAhead);
 
   return mahadashas.map(md => {
-    const prediction = engine.generateCompletePrediction(md.lord, undefined, undefined, undefined, ctx);
+    const prediction = engine.generateCompletePrediction(md.lord, undefined, undefined, undefined, ctx, lang);
     const antardashas = calc.calculateAntardasha(md);
 
     return {
@@ -235,7 +237,7 @@ export async function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80)
       isBirthDasha: md.isBirthDasha,
       prediction: formatPrediction(prediction),
       antardashas: antardashas.map(ad => {
-        const adPred = engine.generateCompletePrediction(md.lord, ad.lord, undefined, undefined, ctx);
+        const adPred = engine.generateCompletePrediction(md.lord, ad.lord, undefined, undefined, ctx, lang);
         return {
           lord: ad.lord,
           start: toIso(ad.start),

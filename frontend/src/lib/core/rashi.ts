@@ -12,6 +12,13 @@ export const RASHI_ENGLISH = [
   'Sagittarius','Capricorn','Aquarius','Pisces',
 ] as const;
 
+/** Sinhala (Sanskrit-derived) rashi names, index-aligned with RASHIS. */
+export const RASHI_SI = [
+  'මේෂ', 'වෘෂභ', 'මිථුන', 'කර්කටක',
+  'සිංහ', 'කන්‍යා', 'තුලා', 'වෘශ්චික',
+  'ධනු', 'මකර', 'කුම්භ', 'මීන',
+] as const;
+
 export const RASHI_LORDS: Record<string, string> = {
   Mesha:'Mars', Vrishabha:'Venus', Mithuna:'Mercury', Karka:'Moon',
   Simha:'Sun', Kanya:'Mercury', Tula:'Venus', Vrischika:'Mars',

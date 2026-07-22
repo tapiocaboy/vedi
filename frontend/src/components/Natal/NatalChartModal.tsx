@@ -109,12 +109,12 @@ const GROUP_LABEL: Record<NatalLine['group'], string> = {
 };
 
 const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [openId, setOpenId] = useState<string | null>('lagna');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['natal-report', birthData],
-    queryFn: () => buildNatalReport(birthData),
+    queryKey: ['natal-report', birthData, lang],
+    queryFn: () => buildNatalReport(birthData, lang),
     staleTime: Infinity, // a natal chart never changes
   });
 

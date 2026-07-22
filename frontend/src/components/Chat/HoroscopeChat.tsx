@@ -40,10 +40,11 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
   const configured = isChatConfigured();
 
   // Current-period prediction → powers the Knowledge Graph section of the
-  // context. Reuses the same cache as the Knowledge Graph / Insights tabs.
+  // context. Kept in English regardless of UI language: it is fed to the model
+  // as structured context, not shown to the user.
   const { data: prediction } = useQuery({
-    queryKey: ['currentPrediction', chart?.birthData],
-    queryFn: () => getCurrentPrediction(chart!.birthData),
+    queryKey: ['currentPrediction', chart?.birthData, 'en'],
+    queryFn: () => getCurrentPrediction(chart!.birthData, undefined, 'en'),
     enabled: !!chart?.birthData?.date,
     staleTime: 5 * 60 * 1000,
   });

@@ -30,8 +30,8 @@ export const UpcomingTransitsCard: React.FC<Props> = ({ ayanamsa, natalMoonRashi
   const [open, setOpen] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['upcoming-transits', ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays],
-    queryFn: () => getUpcomingTransits(ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays),
+    queryKey: ['upcoming-transits', ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays, lang],
+    queryFn: () => getUpcomingTransits(ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays, undefined, lang),
     staleTime: 60 * 60_000, // ingress dates are stable for an hour easily
   });
 

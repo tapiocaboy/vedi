@@ -9,6 +9,7 @@
 
 import { VimshottariDasha } from '../core/dasha';
 import { DashaPredictionEngine, type ChartContext } from '../core/predictions';
+import { type Lang, getStoredLang } from '../core/i18n';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
 import { getCurrentTransits, summarizeGocharaForPrediction, type GocharaSnapshot, type CurrentLocation } from '../core/transits';
 import { relocateChart, type RelocatedChart } from '../core/relocation';
@@ -179,6 +180,7 @@ export async function getPeriodSnapshot(
   bd: BirthData,
   currentLocation?: CurrentLocation,
   asOf?: Date,
+  lang: Lang = getStoredLang(),
 ): Promise<PeriodSnapshot> {
   const td = asOf ?? new Date();
 
@@ -194,8 +196,8 @@ export async function getPeriodSnapshot(
   // Gochara / current transits — computed first so the prediction can use them.
   const natalMoonRashi = positions['MOON'].rashi;
   const natalLagnaRashi = positions['ASCENDANT'].rashi;
-  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation, positions);
-  const transitSummary = summarizeGocharaForPrediction(gochara);
+  const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation, positions, lang);
+  const transitSummary = summarizeGocharaForPrediction(gochara, lang);
   ctx.transitNotes = transitSummary.notes;
   ctx.transitScoreMod = transitSummary.scoreMod;
 
@@ -207,6 +209,7 @@ export async function getPeriodSnapshot(
     periodsRaw.pratyantardasha?.lord,
     periodsRaw.sookshmaDasha?.lord,
     ctx,
+    lang,
   );
   const prediction = formatPrediction(predRaw);
   prediction.currentPeriods = {

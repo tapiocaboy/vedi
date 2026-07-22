@@ -76,7 +76,7 @@ function monthFromOffset(offset: number): Date {
 }
 
 const Body: React.FC<{ chart: Chart }> = ({ chart }) => {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const moonRashi = chart.planets.find(p => p.planet === 'MOON')?.rashiIndex ?? 0;
   const lagnaRashi = chart.ascendant.rashiIndex;
   const ayanamsa = chart.birthData.ayanamsa;
@@ -89,8 +89,8 @@ const Body: React.FC<{ chart: Chart }> = ({ chart }) => {
   const monthLabel = target.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['monthly-transits', ayanamsa, moonRashi, lagnaRashi, monthKey],
-    queryFn: () => getMonthlyTransits(ayanamsa, moonRashi, lagnaRashi, target),
+    queryKey: ['monthly-transits', ayanamsa, moonRashi, lagnaRashi, monthKey, lang],
+    queryFn: () => getMonthlyTransits(ayanamsa, moonRashi, lagnaRashi, target, lang),
     staleTime: 60 * 60_000, // an hour — ingress dates don't change
   });
 

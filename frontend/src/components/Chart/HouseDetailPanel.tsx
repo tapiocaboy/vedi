@@ -43,7 +43,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
   planets.forEach(p => { allPlanetRashiMap[p.planet] = p.rashiIndex; });
 
   const analysis = houseNumber
-    ? analyzeHouse(houseNumber, ascendantRashiIndex, planets, allPlanetRashiMap)
+    ? analyzeHouse(houseNumber, ascendantRashiIndex, planets, allPlanetRashiMap, lang)
     : null;
 
   // Panel theme tokens

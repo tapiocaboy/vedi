@@ -18,10 +18,17 @@ import { RASHIS } from './rashi';
 import { NAKSHATRAS } from './nakshatra';
 import { getDignity, type DignityLevel } from './planetaryAnalysis';
 import { computeAshtakavarga, type Contributor, type Planet as AvPlanet } from './ashtakavarga';
+import { type Lang, rashiName, joinAnd } from './i18n';
+import { TP, TARA_DESC, RETRO_TEXT, joinPlanets, transitPlanet as P } from './text/transitText';
 
 function ordinal(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+/** Structural Title-case (keys getDignity etc.) — not a localised name. */
+function titleCase(s: string): string {
+  return s.charAt(0) + s.slice(1).toLowerCase();
 }
 
 /** Natural benefic (true) vs malefic (false). Moon & Mercury treated benefic. */
@@ -292,27 +299,19 @@ export interface TaraBala {
   description: string;
 }
 
-const TARAS: [name: string, favourable: boolean, description: string][] = [
-  ['Janma',        false, 'the birth-star day — body and mind are sensitive; routine over risk.'],
-  ['Sampat',       true,  'a wealth star — favourable for gains, purchases and beginnings.'],
-  ['Vipat',        false, 'a danger star — avoid risks, journeys and confrontation.'],
-  ['Kshema',       true,  'a well-being star — protective and prosperous; good for most matters.'],
-  ['Pratyak',      false, 'an obstacle star — plans meet resistance; postpone what can wait.'],
-  ['Sadhana',      true,  'an achievement star — efforts succeed; act on goals.'],
-  ['Naidhana',     false, 'the most adverse star — keep the day light and defer key decisions.'],
-  ['Mitra',        true,  'a friendly star — cooperation, meetings and support flow.'],
-  ['Parama Mitra', true,  'the best-friend star — highly supportive for anything important.'],
-];
+const TARA_FAVOURABLE: Record<number, boolean> = {
+  1: false, 2: true, 3: false, 4: true, 5: false, 6: true, 7: false, 8: true, 9: true,
+};
 
 /**
  * Tara Bala: the transit Moon's nakshatra counted from the natal Moon's
  * nakshatra, reduced to the 9-fold tara cycle. A classical day-quality filter.
  */
-export function computeTaraBala(natalNakshatra: number, transitNakshatra: number): TaraBala {
+export function computeTaraBala(natalNakshatra: number, transitNakshatra: number, lang: Lang = 'en'): TaraBala {
   const count = ((transitNakshatra - natalNakshatra + 27) % 27) + 1;
   const tara = ((count - 1) % 9) + 1;
-  const [name, favourable, description] = TARAS[tara - 1];
-  return { tara, name, favourable, description };
+  const entry = TARA_DESC[tara];
+  return { tara, name: entry.name, favourable: TARA_FAVOURABLE[tara], description: lang === 'si' ? entry.desc.si : entry.desc.en };
 }
 
 // ── Vedha (obstruction) ─────────────────────────────────────────────────────────
@@ -343,7 +342,7 @@ export const VEDHA_EXEMPT: Record<string, string> = {
  * result is obstructed — valence drops to neutral and a `vedha` marker is set.
  * Rahu/Ketu neither cause nor receive vedha (no classical rule).
  */
-export function applyVedha(transits: PlanetTransit[], natalMoonRashi: number): void {
+export function applyVedha(transits: PlanetTransit[], natalMoonRashi: number, lang: Lang = 'en'): void {
   const occupants: Record<number, string[]> = {};
   for (const tr of transits) {
     if (VEDHA_FOR_GOOD[tr.planet]) (occupants[tr.rashi] ??= []).push(tr.planet);
@@ -357,7 +356,9 @@ export function applyVedha(transits: PlanetTransit[], natalMoonRashi: number): v
     if (obstructor) {
       tr.valence = 0;
       tr.vedha = { byPlanet: obstructor, house: vHouse };
-      const msg = `Auspicious result obstructed (vedha) by ${titleCase(obstructor)}.`;
+      const msg = lang === 'si'
+        ? `${P(obstructor, lang)} විසින් සුබ ප්‍රතිඵලය අවහිර කර ඇත (වේධ).`
+        : `Auspicious result obstructed (vedha) by ${titleCase(obstructor)}.`;
       tr.note = tr.note ? `${tr.note} · ${msg}` : msg;
     }
   }
@@ -420,29 +421,24 @@ export interface TransitPrediction {
   plain: string;
 }
 
-function titleCase(s: string): string {
-  return s.charAt(0) + s.slice(1).toLowerCase();
-}
-
-const RETRO_TEXT: Record<string, string> = {
-  MERCURY: 'review communication, contracts, travel and devices — double-check details before committing.',
-  VENUS: 'revisit relationships, finances and values; reconnect and refine rather than starting anew.',
-  MARS: 'channel energy with care; avoid impulsive conflict and rushed decisions.',
-  JUPITER: 'turn growth inward — reflect on beliefs, learning and long-term direction.',
-  SATURN: 'revisit duties and structures; consolidate and complete rather than expand.',
-};
-
 export interface DashaLords { mahadasha?: string; antardasha?: string; }
+
+function ordN(n: number, lang: Lang): string {
+  if (lang === 'si') return `${n} වන`;
+  return ordinal(n);
+}
 
 /** Generate interpretive transit predictions from the snapshot + sign analysis. */
 export function buildTransitPredictions(
   g: GocharaSnapshot,
   signs: Record<number, SignInfo>,
   dasha?: DashaLords,
+  lang: Lang = 'en',
 ): TransitPrediction[] {
   const preds: TransitPrediction[] = [];
   const lagna = g.natalLagnaRashi;
   const moon = g.natalMoonRashi;
+  const t = (b: { en: string; si: string }) => (lang === 'si' ? b.si : b.en);
 
   // 1. Overall climate (occupancy valence balance)
   const good = g.transits.filter(t => t.valence > 0).length;
@@ -451,55 +447,32 @@ export function buildTransitPredictions(
   preds.push({
     id: 'overall',
     tone: net >= 2 ? 'good' : net <= -2 ? 'bad' : 'neutral',
-    title: 'Overall transit climate',
-    plainTitle: 'The overall weather right now',
-    plain: net >= 2
-      ? 'More planets are helping you than testing you — a good time to start things and say yes.'
-      : net <= -2
-        ? 'More planets are testing you than helping — keep life simple and don’t take on extra battles.'
-        : 'The sky is mixed — some things flow, some drag. Pick your moments.',
-    text: net >= 2
-      ? `A broadly supportive period — ${good} planets are in favourable transit versus ${bad} under pressure. Good momentum for initiating plans.`
-      : net <= -2
-        ? `A demanding stretch — ${bad} planets are in challenging transit versus ${good} favourable. Focus on essentials and avoid overreach.`
-        : `A mixed period — ${good} favourable and ${bad} challenging transits. Pick your moments and stay flexible.`,
+    title: t(TP.overallTitle),
+    plainTitle: t(TP.overallPlainTitle),
+    plain: TP.overallPlain(net, lang),
+    text: TP.overallText(net, good, bad, lang),
   });
 
   // 1b. Dasha–Gochara synthesis — does transit "fire" the running dasha?
   if (dasha) {
     const describe = (role: 'Mahadasha' | 'Antardasha', lordRaw?: string) => {
       if (!lordRaw) return;
-      const lord = lordRaw.toUpperCase();
-      const tr = g.transits.find(t => t.planet === lord);
+      const lordKey = lordRaw.toUpperCase();
+      const tr = g.transits.find(t => t.planet === lordKey);
       if (!tr) return;
+      const lord = P(lordKey, lang);
       const afflicted = !!tr.vedha || !!tr.war || !!tr.gandanta || !!tr.combust || tr.dignity === 'debilitated';
       const dignified = tr.dignity === 'exalted' || tr.dignity === 'own-sign';
-      const good = !afflicted && (tr.valence > 0 || dignified);
-      const bad = !good && (tr.valence < 0 || afflicted);
-      const lower = role.toLowerCase();
-      const place = `transiting the ${ordinal(tr.houseFromMoon)} from your Moon and the ${ordinal(tr.houseFromLagna)} from the Lagna${tr.isRetrograde ? ', retrograde' : ''}`;
-      const flags = [
-        tr.dignity === 'exalted' && 'exalted', tr.dignity === 'own-sign' && 'in own sign',
-        tr.dignity === 'debilitated' && 'debilitated', tr.combust && 'combust',
-        tr.stationary && 'stationary', tr.vedha && 'vedha-obstructed',
-        tr.war && 'in planetary war', tr.gandanta && 'in gandanta',
-      ].filter(Boolean).join(', ');
-      const verdict = good
-        ? `is well placed in transit (${place}${flags ? `, ${flags}` : ''}) — it actively "fires" the running ${lower}, so its promised results are supported now. A good window to act on its themes.`
-        : bad
-          ? `is under pressure in transit (${place}${flags ? `, ${flags}` : ''}) — the ${lower}'s results are subdued or delayed for now; be patient and avoid forcing outcomes.`
-          : `is neutrally placed in transit (${place}) — the ${lower} ticks along steadily, neither strongly activated nor blocked.`;
+      const isGood = !afflicted && (tr.valence > 0 || dignified);
+      const isBad = !isGood && (tr.valence < 0 || afflicted);
+      const kind: 'good' | 'bad' | 'neutral' = isGood ? 'good' : isBad ? 'bad' : 'neutral';
       preds.push({
         id: `dasha-${role}`,
-        tone: good ? 'good' : bad ? 'bad' : 'neutral',
-        title: `${role} lord ${titleCase(lord)} in transit`,
-        plainTitle: `${titleCase(lord)}, the planet running your current life chapter`,
-        plain: good
-          ? `${titleCase(lord)} is in a strong position right now — the themes of your current period get a green light. Act on them.`
-          : bad
-            ? `${titleCase(lord)} is having a hard time in the sky right now — results from your current period may feel slow. Don’t force it.`
-            : `${titleCase(lord)} is coasting — your current period runs steadily, with no big push either way.`,
-        text: `Your ${lower} lord ${titleCase(lord)} ${verdict}`,
+        tone: kind,
+        title: TP.dashaTitle(role, lord, lang),
+        plainTitle: TP.dashaPlainTitle(lord, lang),
+        plain: TP.dashaPlain(lord, kind, lang),
+        text: TP.dashaPlain(lord, kind, lang),
       });
     };
     describe('Mahadasha', dasha.mahadasha);
@@ -511,9 +484,9 @@ export function buildTransitPredictions(
   // 2. Sade Sati
   if (g.sadeSati.active) {
     preds.push({
-      id: 'sadesati', tone: 'bad', title: 'Sade Sati active',
-      plainTitle: 'Saturn’s long 7½-year test is on',
-      plain: 'Life feels heavier and slower than usual in this phase. It passes — keep routines simple, rest well and avoid shortcuts.',
+      id: 'sadesati', tone: 'bad', title: t(TP.sadeSatiTitle),
+      plainTitle: t(TP.sadeSatiPlainTitle),
+      plain: t(TP.sadeSatiPlain),
       text: g.sadeSati.description,
     });
   }
@@ -522,43 +495,35 @@ export function buildTransitPredictions(
   preds.push({
     id: 'guru',
     tone: g.jupiterBlessing.auspicious ? 'good' : 'neutral',
-    title: 'Jupiter (Guru) transit',
-    plainTitle: 'Jupiter — your luck and growth planet',
-    plain: g.jupiterBlessing.auspicious
-      ? 'Jupiter is smiling on you right now — growth, opportunities and help from others come easier. Use this window.'
-      : 'Jupiter is in teaching mode rather than gifting mode — growth comes through lessons, not luck. Learn, don’t chase.',
+    title: t(TP.guruTitle),
+    plainTitle: t(TP.guruPlainTitle),
+    plain: TP.guruPlain(g.jupiterBlessing.auspicious, lang),
     text: g.jupiterBlessing.reason,
   });
 
   // 4. Strong aspects on the Lagna
   for (const a of signs[lagna].aspectsIn.filter(a => a.virupa >= 30).sort((x, y) => y.virupa - x.virupa).slice(0, 2)) {
+    const planet = P(a.planet, lang);
     preds.push({
       id: `lagna-${a.planet}`,
       tone: a.benefic ? 'good' : 'bad',
-      title: `${titleCase(a.planet)} aspects your Lagna (${aspectPct(a.virupa)}%)`,
-      plainTitle: `${titleCase(a.planet)} is shining on your body & confidence`,
-      plain: a.benefic
-        ? `${titleCase(a.planet)}’s gaze boosts your energy and presence — a good stretch to be seen, speak up and take initiative.`
-        : `${titleCase(a.planet)}’s gaze presses on your energy and self-image — pace yourself, sleep enough and don’t overcommit.`,
-      text: a.benefic
-        ? `${titleCase(a.planet)} casts a strong aspect on your ascendant — supports vitality, confidence and how you show up. A window to put yourself forward.`
-        : `${titleCase(a.planet)} casts a strong aspect on your ascendant — adds pressure to health, energy and self-image. Pace yourself and protect your wellbeing.`,
+      title: TP.lagnaAspectTitle(planet, aspectPct(a.virupa), lang),
+      plainTitle: TP.lagnaAspectPlainTitle(planet, lang),
+      plain: TP.lagnaAspectPlain(planet, a.benefic, lang),
+      text: TP.lagnaAspectText(planet, a.benefic, lang),
     });
   }
 
   // 5. Strong aspects on the natal Moon sign
   for (const a of signs[moon].aspectsIn.filter(a => a.virupa >= 30).sort((x, y) => y.virupa - x.virupa).slice(0, 2)) {
+    const planet = P(a.planet, lang);
     preds.push({
       id: `moon-${a.planet}`,
       tone: a.benefic ? 'good' : 'bad',
-      title: `${titleCase(a.planet)} aspects your Moon sign (${aspectPct(a.virupa)}%)`,
-      plainTitle: `${titleCase(a.planet)} is influencing your mood`,
-      plain: a.benefic
-        ? `${titleCase(a.planet)}’s influence steadies your emotions — relationships and peace of mind feel easier now.`
-        : `${titleCase(a.planet)}’s influence stirs your emotions — expect more stress than usual; protect sleep and don’t react in the moment.`,
-      text: a.benefic
-        ? `${titleCase(a.planet)} aspects your natal Moon — emotional steadiness and support; mood and relationships feel easier.`
-        : `${titleCase(a.planet)} aspects your natal Moon — peace of mind is tested; guard against stress, reactivity and broken sleep.`,
+      title: TP.moonAspectTitle(planet, aspectPct(a.virupa), lang),
+      plainTitle: TP.moonAspectPlainTitle(planet, lang),
+      plain: TP.moonAspectPlain(planet, a.benefic, lang),
+      text: TP.moonAspectText(planet, a.benefic, lang),
     });
   }
 
@@ -566,11 +531,9 @@ export function buildTransitPredictions(
   const saturn = g.transits.find(t => t.planet === 'SATURN');
   if (saturn?.note && !g.sadeSati.active) {
     preds.push({
-      id: 'saturn', tone: saturn.valence > 0 ? 'good' : 'bad', title: 'Saturn transit',
-      plainTitle: 'Saturn — the discipline planet',
-      plain: saturn.valence > 0
-        ? 'Saturn is on your side for now — steady, patient effort gets rewarded. Keep showing up.'
-        : 'Saturn is testing you in one area of life — expect delays there and answer with patience, not force.',
+      id: 'saturn', tone: saturn.valence > 0 ? 'good' : 'bad', title: t(TP.saturnTitle),
+      plainTitle: t(TP.saturnPlainTitle),
+      plain: TP.saturnPlain(saturn.valence > 0, lang),
       text: saturn.note,
     });
   }
@@ -581,45 +544,46 @@ export function buildTransitPredictions(
     preds.push({
       id: 'retro',
       tone: 'info',
-      title: `Retrograde: ${retro.map(r => titleCase(r.planet)).join(', ')}`,
-      plainTitle: 'Some planets are in “review mode”',
-      plain: 'A backward-moving planet favours finishing, fixing and double-checking over brand-new starts in its areas.',
-      text: retro.map(r => `${titleCase(r.planet)} — ${RETRO_TEXT[r.planet]}`).join(' '),
+      title: TP.retroTitle(joinPlanets(retro.map(r => r.planet), lang), lang),
+      plainTitle: t(TP.retroPlainTitle),
+      plain: t(TP.retroPlain),
+      text: retro.map(r => `${P(r.planet, lang)} — ${lang === 'si' ? RETRO_TEXT[r.planet].si : RETRO_TEXT[r.planet].en}`).join(' '),
     });
   }
 
   // 8. Gandanta — planets at the karmic water–fire junction
   const gand = g.transits.filter(t => t.gandanta);
   if (gand.length) {
-    const isAre = gand.length > 1 ? 'are' : 'is';
+    const planets = joinPlanets(gand.map(t => t.planet), lang);
     preds.push({
       id: 'gandanta',
       tone: 'bad',
-      title: 'Gandanta (sign junction)',
-      plainTitle: `${gand.map(t => titleCase(t.planet)).join(' & ')} at a delicate turning point`,
-      plain: 'Things connected to this planet feel shaky for a few days — hold off on big commitments there until it settles.',
-      text: `${gand.map(t => titleCase(t.planet)).join(', ')} ${isAre} in gandanta — the karmic water–fire junction. Matters ruled by ${gand.length > 1 ? 'these planets' : 'this planet'} feel unstable and tender now; avoid major commitments through ${gand.length > 1 ? 'them' : 'it'}.`,
+      title: t(TP.gandantaTitle),
+      plainTitle: TP.gandantaPlainTitle(planets, lang),
+      plain: t(TP.gandantaPlain),
+      text: TP.gandantaText(planets, gand.length > 1, lang),
     });
   }
 
   // 9. Planetary war — tara grahas within 1°
   const seen = new Set<string>();
-  const wars: string[] = [];
-  for (const t of g.transits) {
-    if (!t.war) continue;
-    const key = [t.planet, t.war.with].sort().join('-');
+  const warPairs: string[] = [];
+  for (const tr of g.transits) {
+    if (!tr.war) continue;
+    const key = [tr.planet, tr.war.with].sort().join('-');
     if (seen.has(key)) continue;
     seen.add(key);
-    wars.push(`${titleCase(t.planet)} & ${titleCase(t.war.with)}`);
+    warPairs.push(`${P(tr.planet, lang)} ${lang === 'si' ? 'හා' : '&'} ${P(tr.war.with, lang)}`);
   }
-  if (wars.length) {
+  if (warPairs.length) {
+    const pairs = joinAnd(warPairs, lang);
     preds.push({
       id: 'war',
       tone: 'bad',
-      title: 'Planetary war (Graha Yuddha)',
-      plainTitle: `${wars.join(' and ')} are clashing in the sky`,
-      plain: 'Two planets are crowding each other, so the things they stand for pull in opposite directions for a short while — expect friction there.',
-      text: `${wars.join('; ')} ${wars.length > 1 ? 'are' : 'is'} within 1° — a planetary war. Their significations clash and the weaker planet's results are compromised while they stay this close.`,
+      title: t(TP.warTitle),
+      plainTitle: TP.warPlainTitle(pairs, lang),
+      plain: t(TP.warPlain),
+      text: TP.warText(pairs, warPairs.length > 1, lang),
     });
   }
 
@@ -629,19 +593,36 @@ export function buildTransitPredictions(
     const rich = withBindus.filter(t => t.bindus! >= 6);
     const poor = withBindus.filter(t => t.bindus! <= 2);
     if (rich.length || poor.length) {
-      const parts: string[] = [];
-      if (rich.length) parts.push(`Well supported — ${rich.map(t => `${titleCase(t.planet)} (${t.bindus}/8 bindus)`).join(', ')}`);
-      if (poor.length) parts.push(`Poorly supported — ${poor.map(t => `${titleCase(t.planet)} (${t.bindus}/8 bindus)`).join(', ')}`);
+      const richList = joinPlanets(rich.map(t => t.planet), lang);
+      const poorList = joinPlanets(poor.map(t => t.planet), lang);
+      const plainParts: string[] = [];
+      const textParts: string[] = [];
+      if (rich.length) {
+        plainParts.push(lang === 'si'
+          ? `${richList} ඔබ වෙනුවෙන් පූර්ණ ශක්තියෙන් ක්‍රියා කරයි — ${rich.length > 1 ? 'ඒවායේ' : 'එහි'} තේමා මත රැඳෙන්න`
+          : `${richList} ${rich.length > 1 ? 'are' : 'is'} running on a full tank for you — lean on ${rich.length > 1 ? 'their' : 'its'} themes`);
+        textParts.push(lang === 'si'
+          ? `හොඳින් සහාය ලැබේ — ${rich.map(t => `${P(t.planet, lang)} (බින්දු ${t.bindus}/8)`).join(', ')}`
+          : `Well supported — ${rich.map(t => `${P(t.planet, lang)} (${t.bindus}/8 bindus)`).join(', ')}`);
+      }
+      if (poor.length) {
+        plainParts.push(lang === 'si'
+          ? `${poorList} අඩු ශක්තියෙන් ක්‍රියා කරයි — දැන් ${poor.length > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවලින් වැඩිය අපේක්ෂා නොකරන්න`
+          : `${poorList} ${poor.length > 1 ? 'are' : 'is'} running on low fuel — don’t expect much from ${poor.length > 1 ? 'their' : 'its'} areas right now`);
+        textParts.push(lang === 'si'
+          ? `දුර්වල ලෙස සහාය ලැබේ — ${poor.map(t => `${P(t.planet, lang)} (බින්දු ${t.bindus}/8)`).join(', ')}`
+          : `Poorly supported — ${poor.map(t => `${P(t.planet, lang)} (${t.bindus}/8 bindus)`).join(', ')}`);
+      }
+      const avNote = lang === 'si'
+        ? ' ග්‍රහයෙක් තම ජන්ම අෂ්ටකවර්ගයේ බින්දු 5+ක් දරන රාශියක් ගෝචරය කරන විට පීඩනය යටතේ පවා එහි යහ ප්‍රතිඵලය දෙයි; බින්දු 2ක් හෝ අඩු නම්, හිතකර භාවයක් වුවත් අල්ප ඵලයක් දෙයි.'
+        : ' A planet transiting a sign where it holds 5+ bindus in your natal ashtakavarga delivers its good promise even under pressure; with 2 or fewer, even a favourable house yields little.';
       preds.push({
         id: 'ashtakavarga',
         tone: poor.length > rich.length ? 'bad' : rich.length ? 'good' : 'neutral',
-        title: 'Ashtakavarga support',
-        plainTitle: 'How much backing each planet has from your birth chart',
-        plain: [
-          rich.length ? `${rich.map(t => titleCase(t.planet)).join(', ')} ${rich.length > 1 ? 'are' : 'is'} running on a full tank for you — lean on ${rich.length > 1 ? 'their' : 'its'} themes` : '',
-          poor.length ? `${poor.map(t => titleCase(t.planet)).join(', ')} ${poor.length > 1 ? 'are' : 'is'} running on low fuel — don’t expect much from ${poor.length > 1 ? 'their' : 'its'} areas right now` : '',
-        ].filter(Boolean).join('; ') + '.',
-        text: `${parts.join('. ')}. A planet transiting a sign where it holds 5+ bindus in your natal ashtakavarga delivers its good promise even under pressure; with 2 or fewer, even a favourable house yields little.`,
+        title: t(TP.avTitle),
+        plainTitle: t(TP.avPlainTitle),
+        plain: plainParts.join(lang === 'si' ? '; ' : '; ') + '.',
+        text: `${textParts.join('. ')}.${avNote}`,
       });
     }
   }
@@ -651,21 +632,42 @@ export function buildTransitPredictions(
   const weak = g.transits.filter(t => t.dignity === 'debilitated' || t.combust);
   const stationary = g.transits.filter(t => t.stationary);
   if (strong.length || weak.length || stationary.length) {
-    const parts: string[] = [];
-    if (strong.length) parts.push(`Strong — ${strong.map(t => `${titleCase(t.planet)} (${t.dignity === 'exalted' ? 'exalted' : 'own sign'})`).join(', ')}`);
-    if (weak.length) parts.push(`Weakened — ${weak.map(t => `${titleCase(t.planet)} (${t.combust ? 'combust' : 'debilitated'})`).join(', ')}`);
-    if (stationary.length) parts.push(`Stationary/pivotal — ${stationary.map(t => titleCase(t.planet)).join(', ')}`);
+    const plainParts: string[] = [];
+    const textParts: string[] = [];
+    if (strong.length) {
+      plainParts.push(lang === 'si'
+        ? `${joinPlanets(strong.map(t => t.planet), lang)} පූර්ණ බලයෙන් සිටී — ${strong.length > 1 ? 'ඒවායේ' : 'එහි'} ජීවන ක්ෂේත්‍ර හොඳින් ගලා යයි`
+        : `${joinPlanets(strong.map(t => t.planet), lang)} ${strong.length > 1 ? 'are' : 'is'} at full power — ${strong.length > 1 ? 'their' : 'its'} areas of life flow well`);
+      textParts.push(lang === 'si'
+        ? `ප්‍රබල — ${strong.map(t => `${P(t.planet, lang)} (${t.dignity === 'exalted' ? 'උච්ච' : 'ස්වක්ෂේත්‍ර'})`).join(', ')}`
+        : `Strong — ${strong.map(t => `${P(t.planet, lang)} (${t.dignity === 'exalted' ? 'exalted' : 'own sign'})`).join(', ')}`);
+    }
+    if (weak.length) {
+      plainParts.push(lang === 'si'
+        ? `${joinPlanets(weak.map(t => t.planet), lang)} මොට වී ඇත — ${weak.length > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවල පහසුවෙන් කටයුතු කරන්න`
+        : `${joinPlanets(weak.map(t => t.planet), lang)} ${weak.length > 1 ? 'are' : 'is'} dimmed — go easy on ${weak.length > 1 ? 'their' : 'its'} areas`);
+      textParts.push(lang === 'si'
+        ? `දුර්වල — ${weak.map(t => `${P(t.planet, lang)} (${t.combust ? 'අස්තංගත' : 'නීච'})`).join(', ')}`
+        : `Weakened — ${weak.map(t => `${P(t.planet, lang)} (${t.combust ? 'combust' : 'debilitated'})`).join(', ')}`);
+    }
+    if (stationary.length) {
+      plainParts.push(lang === 'si'
+        ? `${joinPlanets(stationary.map(t => t.planet), lang)} නතර වී සිටී — ${stationary.length > 1 ? 'ඒවායේ' : 'එහි'} කරුණුවල හැරවුම් ලක්ෂ්‍යයකි`
+        : `${joinPlanets(stationary.map(t => t.planet), lang)} ${stationary.length > 1 ? 'are' : 'is'} at a standstill — a turning point in ${stationary.length > 1 ? 'their' : 'its'} matters`);
+      textParts.push(lang === 'si'
+        ? `නිශ්චල/තීරණාත්මක — ${joinPlanets(stationary.map(t => t.planet), lang)}`
+        : `Stationary/pivotal — ${joinPlanets(stationary.map(t => t.planet), lang)}`);
+    }
+    const strNote = lang === 'si'
+      ? ' උච්ච/ස්වක්ෂේත්‍ර ග්‍රහයෝ උච්චතම ප්‍රතිඵල දෙති; අස්තංගත හෝ නීච ග්‍රහයෝ දුර්වල වන අතර සහාය අවශ්‍යය; නිශ්චල ග්‍රහයෝ අසාමාන්‍ය ලෙස බලවත් නමුත් දිශාව මාරු කරන විට අස්ථිරයි.'
+      : ' Exalted/own planets deliver near-peak results; combust or debilitated planets are weakened and need support; stationary planets are unusually potent but unstable as they change direction.';
     preds.push({
       id: 'strength',
       tone: weak.length > strong.length ? 'bad' : strong.length ? 'good' : 'neutral',
-      title: 'Transit strength & state',
-      plainTitle: 'Which planets are strong or weak right now',
-      plain: [
-        strong.length ? `${strong.map(t => titleCase(t.planet)).join(', ')} ${strong.length > 1 ? 'are' : 'is'} at full power — ${strong.length > 1 ? 'their' : 'its'} areas of life flow well` : '',
-        weak.length ? `${weak.map(t => titleCase(t.planet)).join(', ')} ${weak.length > 1 ? 'are' : 'is'} dimmed — go easy on ${weak.length > 1 ? 'their' : 'its'} areas` : '',
-        stationary.length ? `${stationary.map(t => titleCase(t.planet)).join(', ')} ${stationary.length > 1 ? 'are' : 'is'} at a standstill — a turning point in ${stationary.length > 1 ? 'their' : 'its'} matters` : '',
-      ].filter(Boolean).join('; ') + '.',
-      text: `${parts.join('. ')}. Exalted/own planets deliver near-peak results; combust or debilitated planets are weakened and need support; stationary planets are unusually potent but unstable as they change direction.`,
+      title: t(TP.strengthTitle),
+      plainTitle: t(TP.strengthPlainTitle),
+      plain: plainParts.join('; ') + '.',
+      text: `${textParts.join('. ')}.${strNote}`,
     });
   }
 
@@ -680,16 +682,23 @@ export function buildTransitPredictions(
   if (tnHits.length) {
     const items = tnHits.slice(0, 4).map(h =>
       h.kind === 'conjunction'
-        ? `${titleCase(h.transit)} conjoins natal ${titleCase(h.natal)} (${h.orb}° orb)`
-        : `${titleCase(h.transit)} aspects natal ${titleCase(h.natal)} (${ordinal(h.house)}, ${aspectPct(h.virupa)}%)`,
+        ? (lang === 'si'
+            ? `${P(h.transit, lang)} ජන්ම ${P(h.natal, lang)} සමඟ එක් වේ (අංශක ${h.orb}ක් ඇතුළත)`
+            : `${P(h.transit, lang)} conjoins natal ${P(h.natal, lang)} (${h.orb}° orb)`)
+        : (lang === 'si'
+            ? `${P(h.transit, lang)} ජන්ම ${P(h.natal, lang)} බලයි (${ordN(h.house, lang)}, ${aspectPct(h.virupa)}%)`
+            : `${P(h.transit, lang)} aspects natal ${P(h.natal, lang)} (${ordinal(h.house)}, ${aspectPct(h.virupa)}%)`),
     );
+    const tnNote = lang === 'si'
+      ? ' මෙම සම්බන්ධතා අදාළ ග්‍රහයන්ගේ ජන්ම කරුණු සක්‍රිය කරයි — මෙම කාලයේ සිදුවීම්වලට පැහැදිලිම උත්තේජක.'
+      : ' These contacts activate the natal significations of the planets involved — the clearest triggers for events during this period.';
     preds.push({
       id: 'transit-natal',
       tone: 'info',
-      title: 'Transit → Natal contacts',
-      plainTitle: 'Planets touching sensitive spots in your birth chart',
-      plain: 'When a moving planet touches a planet you were born with, real events tend to follow in that part of life — these are the contacts to watch.',
-      text: `${items.join('; ')}. These contacts activate the natal significations of the planets involved — the clearest triggers for events during this period.`,
+      title: t(TP.tnTitle),
+      plainTitle: t(TP.tnPlainTitle),
+      plain: t(TP.tnPlain),
+      text: `${items.join('; ')}.${tnNote}`,
     });
   }
 
@@ -697,13 +706,27 @@ export function buildTransitPredictions(
   const tMoon = g.transits.find(t => t.planet === 'MOON');
   const mp = g.moonPhase;
   if (tMoon && mp) {
+    const moodWord = tMoon.valence > 0
+      ? (lang === 'si' ? 'සැහැල්ලු හා පහසු' : 'light and easy')
+      : tMoon.valence < 0 ? (lang === 'si' ? 'තරමක් සංවේදී — ඔබටම කරුණාවන්ත වන්න' : 'a bit sensitive — be kind to yourself') : (lang === 'si' ? 'ස්ථාවර' : 'steady');
+    const waxWord = mp.waxing
+      ? (lang === 'si' ? 'චන්ද්‍රයා වැඩෙමින් — ආරම්භ කිරීමට හා සම්බන්ධ වීමට හොඳයි.' : 'The Moon is growing — good for starting and reaching out.')
+      : (lang === 'si' ? 'චන්ද්‍රයා අඩු වෙමින් — නිම කිරීමට හා සන්සුන් වීමට හොඳයි.' : 'The Moon is shrinking — good for finishing and winding down.');
+    const moodTextWord = tMoon.valence > 0 ? (lang === 'si' ? 'සැහැල්ලු හා සහායක' : 'lighter and supportive') : tMoon.valence < 0 ? (lang === 'si' ? 'සංවේදී හා අඩු ශක්තියක්' : 'sensitive and lower-energy') : (lang === 'si' ? 'ස්ථාවර' : 'steady');
+    const waxTextPhrase = mp.waxing
+      ? (lang === 'si' ? 'වැඩෙන, ගොඩනැගෙන අවධියකි — ආරම්භ, වර්ධනය හා සම්බන්ධතාවලට හිතකරයි.' : 'A waxing, building phase — favours initiating, growth and outreach.')
+      : (lang === 'si' ? 'අඩුවන, මුදාහරින අවධියකි — නිම කිරීම, අත්හැරීම හා අභ්‍යන්තර වැඩවලට හිතකරයි.' : 'A waning, releasing phase — favours completing, letting go and inner work.');
     preds.push({
       id: 'tmoon',
       tone: tMoon.valence > 0 ? 'good' : tMoon.valence < 0 ? 'bad' : 'neutral',
-      title: `Moon: ${mp.tithiName} (${mp.paksha} paksha)`,
-      plainTitle: 'Today’s Moon — your day-to-day mood',
-      plain: `${mp.waxing ? 'The Moon is growing — good for starting and reaching out.' : 'The Moon is shrinking — good for finishing and winding down.'} Today’s mood runs ${tMoon.valence > 0 ? 'light and easy' : tMoon.valence < 0 ? 'a bit sensitive — be kind to yourself' : 'steady'}. This changes every couple of days.`,
-      text: `The Moon is ${mp.illumination}% lit in ${RASHIS[tMoon.rashi]}, nakshatra ${mp.nakshatra} pada ${mp.pada} — the ${ordinal(tMoon.houseFromMoon)} from your natal Moon. ${mp.waxing ? 'A waxing, building phase — favours initiating, growth and outreach.' : 'A waning, releasing phase — favours completing, letting go and inner work.'} Daily mood feels ${tMoon.valence > 0 ? 'lighter and supportive' : tMoon.valence < 0 ? 'sensitive and lower-energy' : 'steady'}; the Moon changes sign in ~2¼ days.`,
+      title: TP.moonTitle(mp.tithiName, mp.paksha, lang),
+      plainTitle: t(TP.moonPlainTitle),
+      plain: lang === 'si'
+        ? `${waxWord} අද මනෝභාවය ${moodWord} ලෙස ගලා යයි. මෙය දින දෙක තුනකට වරක් වෙනස් වේ.`
+        : `${waxWord} Today’s mood runs ${moodWord}. This changes every couple of days.`,
+      text: lang === 'si'
+        ? `චන්ද්‍රයා ${rashiName(tMoon.rashi, lang)} හි ${mp.illumination}% ක් ආලෝකමත් වී ඇත, ${mp.nakshatra} නක්ෂත්‍රයේ ${mp.pada} පාදයේ — ඔබේ ජන්ම චන්ද්‍රයාගෙන් ${ordN(tMoon.houseFromMoon, lang)}. ${waxTextPhrase} දෛනික මනෝභාවය ${moodTextWord} ලෙස දැනේ; චන්ද්‍රයා දින 2¼කින් පමණ රාශිය මාරු කරයි.`
+        : `The Moon is ${mp.illumination}% lit in ${RASHIS[tMoon.rashi]}, nakshatra ${mp.nakshatra} pada ${mp.pada} — the ${ordinal(tMoon.houseFromMoon)} from your natal Moon. ${waxTextPhrase} Daily mood feels ${moodTextWord}; the Moon changes sign in ~2¼ days.`,
     });
   }
 
@@ -713,33 +736,36 @@ export function buildTransitPredictions(
     preds.push({
       id: 'tarabala',
       tone: tb.favourable ? 'good' : 'bad',
-      title: `Tara Bala: ${tb.name} (${ordinal(tb.tara)} tara)`,
-      plainTitle: tb.favourable ? 'Today’s star is friendly to you' : 'Today’s star is not on your side',
-      plain: tb.favourable
-        ? 'By your personal day-star cycle, today favours important moves — sign, book, ask, begin.'
-        : 'By your personal day-star cycle, today is better for routine than risk — big decisions can wait a day or two.',
-      text: `The Moon rides your ${ordinal(tb.tara)} tara today — ${tb.name}, ${tb.description} The tara cycle re-runs every 9 nakshatras (~9 days), so this quality shifts daily.`,
+      title: TP.taraTitle(tb.name, ordN(tb.tara, lang), lang),
+      plainTitle: tb.favourable ? t(TP.taraPlainTitleGood) : t(TP.taraPlainTitleBad),
+      plain: TP.taraPlain(tb.favourable, lang),
+      text: lang === 'si'
+        ? `අද චන්ද්‍රයා ඔබේ ${ordN(tb.tara, lang)} තාරාවේ ගමන් කරයි — ${tb.name}, ${tb.description} තාරා චක්‍රය සෑම නක්ෂත්‍ර 9කට වරක් (දින 9ක් පමණ) නැවත ක්‍රියාත්මක වේ, එබැවින් මෙම ගුණය දිනපතා වෙනස් වේ.`
+        : `The Moon rides your ${ordinal(tb.tara)} tara today — ${tb.name}, ${tb.description} The tara cycle re-runs every 9 nakshatras (~9 days), so this quality shifts daily.`,
     });
   }
 
   // 9. Vedha (obstruction) — auspicious transits that got cancelled
   const vedhas = g.transits.filter(t => t.vedha);
   if (vedhas.length) {
+    const planets = joinAnd(vedhas.map(v => P(v.planet, lang)), lang);
     preds.push({
       id: 'vedha',
       tone: 'neutral',
-      title: 'Vedha (obstruction)',
-      plainTitle: 'A good influence is temporarily on hold',
-      plain: `${vedhas.map(v => titleCase(v.planet)).join(' and ')} would normally be helping you now, but another planet is blocking the benefit — don’t count on it until the block passes.`,
-      text: `${vedhas.map(v => `${titleCase(v.planet)}'s favourable transit is obstructed by ${titleCase(v.vedha!.byPlanet)}`).join('; ')}. The blocked good result is cancelled for now — don't over-rely on it.`,
+      title: t(TP.vedhaTitle),
+      plainTitle: t(TP.vedhaPlainTitle),
+      plain: TP.vedhaPlain(planets, vedhas.length > 1, lang),
+      text: lang === 'si'
+        ? `${vedhas.map(v => `${P(v.planet, lang)}ගේ හිතකර ගෝචරය ${P(v.vedha!.byPlanet, lang)} විසින් අවහිර වී ඇත`).join('; ')}. අවහිර වූ යහ ප්‍රතිඵලය දැනට අවලංගු වේ — එය මත අධික ලෙස රඳා නොසිටින්න.`
+        : `${vedhas.map(v => `${P(v.planet, lang)}'s favourable transit is obstructed by ${P(v.vedha!.byPlanet, lang)}`).join('; ')}. The blocked good result is cancelled for now — don't over-rely on it.`,
     });
   }
 
   // 10. Nodal axis
   preds.push({
-    id: 'nodes', tone: 'info', title: 'Rahu–Ketu axis',
-    plainTitle: 'Where obsession and letting-go live right now',
-    plain: 'Rahu marks where life pulls hardest at your ambition; Ketu marks what you’re being asked to release. They stay put for about 18 months.',
+    id: 'nodes', tone: 'info', title: t(TP.nodesTitle),
+    plainTitle: t(TP.nodesPlainTitle),
+    plain: t(TP.nodesPlain),
     text: g.nodalShift.note,
   });
 

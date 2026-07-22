@@ -18,8 +18,8 @@ interface Props {
 export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
   const { lang, t } = useLang();
   const { data: prediction, isLoading, error } = useQuery({
-    queryKey: ['currentPrediction', birthData],
-    queryFn: () => getCurrentPrediction(birthData),
+    queryKey: ['currentPrediction', birthData, lang],
+    queryFn: () => getCurrentPrediction(birthData, undefined, lang),
     enabled: !!birthData.date,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

@@ -14,6 +14,10 @@
 import { getPlanetPositions } from './ephemeris';
 import { valenceFromMoon, type AyanamsaSystem } from './transits';
 import { RASHIS, RASHI_LORDS } from './rashi';
+import { type Lang, getStoredLang, planetName } from './i18n';
+import {
+  MONTHLY, signifies, houseTheme, planetLabelM, monthLabelFor, localRashi,
+} from './text/monthlyText';
 
 export type TransitEventType = 'ingress' | 'retrograde' | 'direct';
 
@@ -59,95 +63,59 @@ function houseFrom(targetRashi: number, referenceRashi: number): number {
 
 // ─── Prediction text generators ──────────────────────────────────────────────
 
-const PLANET_LABEL: Record<string, string> = {
-  SUN: 'Sun', MERCURY: 'Mercury', VENUS: 'Venus', MARS: 'Mars',
-  JUPITER: 'Jupiter', SATURN: 'Saturn', RAHU: 'Rahu', KETU: 'Ketu',
-};
-
-const PLANET_SIGNIFIES: Record<string, string> = {
-  SUN: 'authority, vitality, recognition and the father',
-  MERCURY: 'communication, commerce, learning and quick thinking',
-  VENUS: 'love, comfort, money, art and relationships',
-  MARS: 'energy, courage, drive, property and conflict',
-  JUPITER: 'wisdom, fortune, growth, dharma and mentors',
-  SATURN: 'discipline, karma, patience, structure and hard work',
-  RAHU: 'ambition, the unconventional, foreign matters and sudden surges',
-  KETU: 'detachment, spirituality, endings and past-life karma',
-};
-
-// Per-house Gochara theme — what the moving planet now stirs up in daily life.
-const HOUSE_THEME: Record<number, { label: string; favorable: string; challenging: string; areas: string[] }> = {
-  1:  { label: 'self & vitality', favorable: 'a fresh sense of direction and presence', challenging: 'pressure on health, mood and self-image', areas: ['Health & energy', 'Personal initiatives'] },
-  2:  { label: 'wealth, family & speech', favorable: 'gains through savings, family and measured words', challenging: 'strain on finances, food habits and family talk', areas: ['Finances & savings', 'Family & speech'] },
-  3:  { label: 'courage, effort & communication', favorable: 'bold initiative, supportive siblings and effective communication', challenging: 'scattered effort and friction with siblings or peers', areas: ['Courage & initiative', 'Communication'] },
-  4:  { label: 'home, mother & peace', favorable: 'comfort at home, property luck and inner calm', challenging: 'domestic stress, restlessness and matters around mother or vehicles', areas: ['Home & property', 'Inner peace'] },
-  5:  { label: 'creativity, children & romance', favorable: 'creative flow, romance, good news around children and smart speculation', challenging: 'setbacks in romance, speculation or matters of children', areas: ['Romance & creativity', 'Children & learning'] },
-  6:  { label: 'work, rivals & health', favorable: 'victory over rivals, debt clearance and steady service', challenging: 'conflicts, debts and small recurring health issues', areas: ['Competition & service', 'Debts & health'] },
-  7:  { label: 'partnership & public dealings', favorable: 'harmony in partnership and productive deals', challenging: 'tension with spouse or partners and tricky negotiations', areas: ['Marriage & partnership', 'Business deals'] },
-  8:  { label: 'transformation & hidden matters', favorable: 'research insight, inheritance and deep transformation', challenging: 'sudden upheavals, anxiety and hidden obstacles', areas: ['Sudden change', 'Shared resources & occult'] },
-  9:  { label: 'fortune, dharma & higher learning', favorable: 'luck, blessings, travel and guidance from mentors', challenging: 'a dip in luck and questioning of beliefs or direction', areas: ['Luck & dharma', 'Travel & higher study'] },
-  10: { label: 'career, status & action', favorable: 'career momentum, visibility and authority', challenging: 'pressure at work, reputation tests and heavier responsibility', areas: ['Career & status', 'Public reputation'] },
-  11: { label: 'gains, income & networks', favorable: 'income, fulfilled desires and powerful connections', challenging: 'unmet expectations and unreliable gains or friends', areas: ['Income & gains', 'Friends & networks'] },
-  12: { label: 'expenses, foreign lands & release', favorable: 'spiritual growth, rest and well-spent foreign or charitable expense', challenging: 'rising expenses, isolation, disturbed sleep and losses', areas: ['Expenses & loss', 'Spirituality & rest'] },
-};
-
 function buildIngressEffect(
-  planet: string, fromRashi: number, toRashi: number, houseFromMoon: number, houseFromLagna: number, valence: number,
+  planet: string, fromRashi: number, toRashi: number, houseFromMoon: number, houseFromLagna: number, valence: number, lang: Lang,
 ): { title: string; effect: string; themes: string[] } {
-  const name = PLANET_LABEL[planet];
-  const themeM = HOUSE_THEME[houseFromMoon];
-  const themeL = HOUSE_THEME[houseFromLagna];
-  const newLord = RASHI_LORDS[RASHIS[toRashi]];
-  const fromName = RASHIS[fromRashi];
-  const toName = RASHIS[toRashi];
+  const name = planetLabelM(planet, lang);
+  const themeM = houseTheme(houseFromMoon, lang);
+  const themeL = houseTheme(houseFromLagna, lang);
+  const newLord = planetName(RASHI_LORDS[RASHIS[toRashi]], lang);
+  const fromName = localRashi(fromRashi, lang);
+  const toName = localRashi(toRashi, lang);
 
-  const title = `${name} enters ${toName} — ${houseFromMoon}th from Moon`;
+  const title = MONTHLY.ingressTitle(name, toName, houseFromMoon, lang);
+  const blend = lang === 'si'
+    ? `${themeM.favorable} හා ${themeM.challenging} මිශ්‍රණයක්`
+    : `a blend of ${themeM.favorable} and ${themeM.challenging}`;
+  const orientation = valence > 0 ? themeM.favorable : valence < 0 ? themeM.challenging : blend;
 
-  const orientation = valence > 0 ? themeM.favorable : valence < 0 ? themeM.challenging : `a blend of ${themeM.favorable} and ${themeM.challenging}`;
-
-  const effect =
-    `${name} leaves ${fromName} and moves into ${toName} (ruled by ${newLord}), now transiting your ` +
-    `${houseFromMoon}th house from the natal Moon and ${houseFromLagna}th from the Lagna. ` +
-    `This shifts the focus of ${PLANET_SIGNIFIES[planet]} toward ${themeM.label}, bringing ${orientation}. ` +
-    `From the Lagna it colours ${themeL.label}, so ${valence >= 0 ? 'lean into' : 'stay measured around'} those affairs while ${name} holds this sign.`;
+  const effect = MONTHLY.ingressEffect(
+    name, fromName, toName, newLord, houseFromMoon, houseFromLagna,
+    signifies(planet, lang), themeM.label, orientation, themeL.label, valence, lang,
+  );
 
   const themes: string[] = [];
-  const sideM = valence > 0 ? themeM.favorable : valence < 0 ? themeM.challenging : `${themeM.favorable}, but watch for ${themeM.challenging}`;
-  themes.push(`${themeM.areas[0]}: ${capitalize(sideM)}.`);
-  if (themeM.areas[1]) themes.push(`${themeM.areas[1]}: a clear theme for the weeks ${name} spends here.`);
-  themes.push(`${themeL.areas[0]} (from Lagna): ${themeL.areas[0].toLowerCase().includes('career') ? 'visible activity' : 'noticeable movement'} around ${themeL.label}.`);
+  const watchFor = lang === 'si' ? `${themeM.favorable}, නමුත් ${themeM.challenging} ගැන අවධානයෙන්` : `${themeM.favorable}, but watch for ${themeM.challenging}`;
+  const sideM = valence > 0 ? themeM.favorable : valence < 0 ? themeM.challenging : watchFor;
+  themes.push(MONTHLY.ingressThemeMain(themeM.areas[0], sideM, lang));
+  if (themeM.areas[1]) themes.push(MONTHLY.ingressThemeSecondary(themeM.areas[1], name, lang));
+  const isCareer = HOUSE_THEME_CAREER.has(houseFromLagna);
+  themes.push(MONTHLY.ingressThemeLagna(themeL.areas[0], themeL.label, isCareer, lang));
   return { title, effect, themes };
 }
 
-function buildStationEffect(
-  planet: string, type: 'retrograde' | 'direct', toRashi: number, houseFromMoon: number,
-): { title: string; effect: string; themes: string[] } {
-  const name = PLANET_LABEL[planet];
-  const themeM = HOUSE_THEME[houseFromMoon];
-  const sign = RASHIS[toRashi];
-  if (type === 'retrograde') {
-    const title = `${name} turns retrograde in ${sign}`;
-    const effect =
-      `${name} stations retrograde in ${sign}, in your ${houseFromMoon}th house from the Moon. ` +
-      `Matters of ${PLANET_SIGNIFIES[planet]} tied to ${themeM.label} slow down, double back and ask to be revisited. ` +
-      `Favour review, repair and revisiting rather than launching anything new in this area until it turns direct.`;
-    return { title, effect, themes: [
-      `${themeM.areas[0]}: revisit and refine rather than start fresh.`,
-      `Expect delays and second thoughts around ${themeM.label}.`,
-    ] };
-  }
-  const title = `${name} turns direct in ${sign}`;
-  const effect =
-    `${name} stations direct in ${sign}, in your ${houseFromMoon}th house from the Moon. ` +
-    `The backlog around ${themeM.label} and ${PLANET_SIGNIFIES[planet]} begins to clear and move forward again. ` +
-    `Plans that were stalled can now be re-committed with better clarity.`;
-  return { title, effect, themes: [
-    `${themeM.areas[0]}: momentum returns — green light to proceed.`,
-    `Stalled matters of ${themeM.label} start resolving.`,
-  ] };
-}
+// The Lagna 10th house theme is career-facing (drives the wording of the bullet).
+const HOUSE_THEME_CAREER = new Set([10]);
 
-function capitalize(s: string): string { return s.charAt(0).toUpperCase() + s.slice(1); }
+function buildStationEffect(
+  planet: string, type: 'retrograde' | 'direct', toRashi: number, houseFromMoon: number, lang: Lang,
+): { title: string; effect: string; themes: string[] } {
+  const name = planetLabelM(planet, lang);
+  const themeM = houseTheme(houseFromMoon, lang);
+  const sign = localRashi(toRashi, lang);
+  if (type === 'retrograde') {
+    return {
+      title: MONTHLY.retroTitle(name, sign, lang),
+      effect: MONTHLY.retroEffect(name, sign, houseFromMoon, signifies(planet, lang), themeM.label, lang),
+      themes: [MONTHLY.retroTheme1(themeM.areas[0], lang), MONTHLY.retroTheme2(themeM.label, lang)],
+    };
+  }
+  return {
+    title: MONTHLY.directTitle(name, sign, lang),
+    effect: MONTHLY.directEffect(name, sign, houseFromMoon, signifies(planet, lang), themeM.label, lang),
+    themes: [MONTHLY.directTheme1(themeM.areas[0], lang), MONTHLY.directTheme2(themeM.label, lang)],
+  };
+}
 
 // ─── Sampling helpers ────────────────────────────────────────────────────────
 
@@ -202,6 +170,7 @@ async function scanTransitEvents(
   natalLagnaRashi: number,
   start: Date,
   end: Date,
+  lang: Lang,
 ): Promise<MonthlyTransitEvent[]> {
   // Daily snapshots across the range (one extra at the end boundary).
   const stepMs = 24 * 60 * 60 * 1000;
@@ -229,10 +198,10 @@ async function scanTransitEvents(
         const houseFromMoon = houseFrom(cur.rashi, natalMoonRashi);
         const houseFromLagna = houseFrom(cur.rashi, natalLagnaRashi);
         const valence = valenceFromMoon(planet, houseFromMoon);
-        const built = buildIngressEffect(planet, prev.rashi, cur.rashi, houseFromMoon, houseFromLagna, valence);
+        const built = buildIngressEffect(planet, prev.rashi, cur.rashi, houseFromMoon, houseFromLagna, valence, lang);
         events.push({
           planet, type: 'ingress', date: at.toISOString(),
-          fromRashi: prev.rashi, toRashi: cur.rashi, toRashiName: RASHIS[cur.rashi],
+          fromRashi: prev.rashi, toRashi: cur.rashi, toRashiName: localRashi(cur.rashi, lang),
           houseFromMoon, houseFromLagna, valence, ...built,
         });
       }
@@ -254,10 +223,10 @@ async function scanTransitEvents(
         // A retrograde slows benefic flow; clamp the valence to non-positive.
         const baseV = valenceFromMoon(planet, houseFromMoon);
         const valence = type === 'retrograde' ? Math.min(0, baseV) : baseV;
-        const built = buildStationEffect(planet, type, toRashi, houseFromMoon);
+        const built = buildStationEffect(planet, type, toRashi, houseFromMoon, lang);
         events.push({
           planet, type, date: at.toISOString(),
-          fromRashi: null, toRashi, toRashiName: RASHIS[toRashi],
+          fromRashi: null, toRashi, toRashiName: localRashi(toRashi, lang),
           houseFromMoon, houseFromLagna, valence, ...built,
         });
       }
@@ -275,16 +244,17 @@ export async function getMonthlyTransits(
   natalMoonRashi: number,
   natalLagnaRashi: number,
   asOf?: Date,
+  lang: Lang = getStoredLang(),
 ): Promise<MonthlyTransitReport> {
   const now = asOf ?? new Date();
   const start = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0));
   const end = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0)); // exclusive
 
-  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end);
+  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end, lang);
 
   const netValence = events.reduce((s, e) => s + e.valence, 0);
-  const monthLabel = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  const overview = buildOverview(events, netValence, monthLabel);
+  const monthLabel = monthLabelFor(start, lang);
+  const overview = buildOverview(events, netValence, monthLabel, lang);
 
   return {
     monthLabel,
@@ -321,11 +291,12 @@ export async function getUpcomingTransits(
   natalLagnaRashi: number,
   horizonDays = 45,
   asOf?: Date,
+  lang: Lang = getStoredLang(),
 ): Promise<UpcomingTransitReport> {
   const start = asOf ?? new Date();
   const end = new Date(start.getTime() + horizonDays * 24 * 60 * 60 * 1000);
 
-  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end);
+  const events = await scanTransitEvents(ayanamsa, natalMoonRashi, natalLagnaRashi, start, end, lang);
 
   const dayMs = 24 * 60 * 60 * 1000;
   const upcoming: UpcomingTransitEvent[] = events.map(e => ({
@@ -341,26 +312,19 @@ export async function getUpcomingTransits(
   };
 }
 
-function buildOverview(events: MonthlyTransitEvent[], netValence: number, monthLabel: string): string {
-  if (events.length === 0) {
-    return `In ${monthLabel} the slow planets hold their signs — no major ingresses or stations land this month, so the themes already running in your chart simply continue without a sharp turn.`;
-  }
+function buildOverview(events: MonthlyTransitEvent[], netValence: number, monthLabel: string, lang: Lang): string {
+  if (events.length === 0) return MONTHLY.overviewEmpty(monthLabel, lang);
   const ingresses = events.filter(e => e.type === 'ingress');
   const stations = events.filter(e => e.type !== 'ingress');
   const good = events.filter(e => e.valence > 0).length;
   const tough = events.filter(e => e.valence < 0).length;
 
-  const tone =
-    netValence > 1 ? 'Overall the month leans supportive — more doors open than close.'
-      : netValence < -1 ? 'Overall the month asks for patience and care — several transits add friction before they add reward.'
-      : 'Overall the month is mixed — gains and tests arrive in roughly equal measure, so timing matters.';
+  const tone = MONTHLY.overviewTone(netValence, lang);
 
   const heavy = events.find(e => e.planet === 'SATURN' || e.planet === 'JUPITER' || e.planet === 'RAHU' || e.planet === 'KETU');
   const heavyLine = heavy
-    ? ` The most significant shift is ${PLANET_LABEL[heavy.planet]} ${heavy.type === 'ingress' ? `entering ${heavy.toRashiName}` : `turning ${heavy.type}`}, which resets a long-running theme.`
+    ? MONTHLY.overviewHeavy(planetLabelM(heavy.planet, lang), heavy.type === 'ingress', localRashi(heavy.toRashi, lang), heavy.type, lang)
     : '';
 
-  return `In ${monthLabel} there ${events.length === 1 ? 'is' : 'are'} ${events.length} notable transit${events.length === 1 ? '' : 's'}` +
-    ` (${ingresses.length} sign change${ingresses.length === 1 ? '' : 's'}, ${stations.length} station${stations.length === 1 ? '' : 's'}):` +
-    ` ${good} broadly favourable and ${tough} more demanding. ${tone}${heavyLine}`;
+  return MONTHLY.overviewMain(monthLabel, events.length, ingresses.length, stations.length, good, tough, tone, heavyLine, lang);
 }

@@ -49,7 +49,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
   const [showAll, setShowAll] = useState(false);
 
   const signs = useMemo(() => computeSignAnalysis(gochara), [gochara]);
-  const predictions = useMemo(() => buildTransitPredictions(gochara, signs, dasha), [gochara, signs, dasha]);
+  const predictions = useMemo(() => buildTransitPredictions(gochara, signs, dasha, lang), [gochara, signs, dasha, lang]);
   const mp = gochara.moonPhase;
 
   const byRashi: Record<number, PlanetTransit[]> = {};

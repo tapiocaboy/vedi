@@ -18,7 +18,7 @@
  */
 
 import { getDignity, RASHI_LORDS, type DignityLevel } from './planetaryAnalysis';
-import { RASHIS } from './rashi';
+import { type Lang, planetName, houseLabel, joinAnd, rashiName } from './i18n';
 
 export type FunctionalNature = 'yogakaraka' | 'functional-benefic' | 'neutral' | 'functional-malefic';
 
@@ -156,19 +156,43 @@ function hasNeechaBhanga(planet: string, input: StrengthInput): boolean {
 
 // ─── Main assessment ────────────────────────────────────────────────────────
 
-const ORDINAL = (n: number): string => {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
-  }
+// ── Bilingual note builders ──────────────────────────────────────────────
+// The prediction engine surfaces these notes, so each has both languages.
+// `p` = localised planet name, `r` = localised rashi, `h` = localised house list.
+
+const NOTE = {
+  neechaBhanga: (p: string, r: string, lang: Lang) => lang === 'si'
+    ? `${p} ${r} රාශියේ නීච වුවත් නීච භංග (අවලංගු වීම) සිදු වී ඇත — එහි දශාවල මුල් වෙහෙස අසාමාන්‍ය ශක්තියක් බවට හැරේ.`
+    : `${p} is debilitated in ${r} but Neecha Bhanga (cancellation) applies — early struggles in its periods transform into unusual strength.`,
+  debilitated: (p: string, r: string, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී ${r} රාශියේ නීච වී ඇත — මෙම දශාව තුළ එහි ඵල සඳහා දැනුවත් වෑයමක් හා ප්‍රතිකර්ම අවශ්‍ය වේ.`
+    : `${p} is debilitated in ${r} natally — its significations need conscious effort and remedial support during this period.`,
+  exalted: (p: string, r: string, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී ${r} රාශියේ උච්ච වී ඇත — එහි දශාවල එය සිය ඉහළම හැකියාවෙන් ඵල දෙයි.`
+    : `${p} is exalted in ${r} natally — it delivers results at near-peak capacity during its periods.`,
+  ownSign: (p: string, r: string, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී ස්වකීය රාශියේ (${r}) සිටී — මෙම දශාව පුරාම ස්ථාවර, විශ්වාසදායක ඵල ලැබේ.`
+    : `${p} occupies its own sign (${r}) natally — stable, reliable results throughout this period.`,
+  enemySign: (p: string, r: string, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී සතුරු රාශියක (${r}) සිටී — ඵල ලැබෙන්නේ ඝට්ටනය සමඟ වන අතර නොපසුබට උත්සාහය අවශ්‍යය.`
+    : `${p} sits in an enemy's sign (${r}) natally — results come with friction and require persistence.`,
+  combust: (p: string, deg: number, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී අස්තංගත වී ඇත (සූර්යයාගෙන් අංශක ${deg}ක් ඇතුළත) — එහි බාහිර ප්‍රකාශනය අඩුය; බාහිර ඵලවලට වඩා එහි තේමාවල අභ්‍යන්තර වර්ධනය වැදගත් වේ.`
+    : `${p} is combust (within ${deg}° of the Sun) natally — its outward expression is dimmed; inner development of its themes matters more than external results.`,
+  retrograde: (p: string, lang: Lang) => lang === 'si'
+    ? `${p} ජන්මයේදී වක්‍ර වී ඇත — චේෂ්ටා බලයෙන් ප්‍රබල නමුත් එහි ඵල නැවත සලකා බැලීම්, ප්‍රමාද හෝ දෙවන වර උත්සාහයන් හරහා ලැබේ.`
+    : `${p} is retrograde natally — strong (chesta bala) but its results arrive through revision, delay, or second attempts.`,
+  yogakaraka: (p: string, h: string, lang: Lang) => lang === 'si'
+    ? `${p} ඔබේ ලග්නයට යෝගකාරකයාය (කේන්ද්‍රයක් හා ත්‍රිකෝණයක් යන දෙකම අධිපති වේ: ${h}) — එහි දශා ඔබේ ජීවිතයේ ඵලදායීම කාලවලින් වේ.`
+    : `${p} is the yogakaraka for your ascendant (rules both a kendra and a trikona: ${h}) — its periods are among the most productive of your life.`,
+  functionalMalefic: (p: string, h: string, lang: Lang) => lang === 'si'
+    ? `${p} ඔබේ ${h} අධිපතියාය — අභියෝගාත්මක භාව අධිපත්‍යය නිසා එහි දශාව ඵල දීමට පෙර පරීක්ෂාවට ලක් කරයි.`
+    : `${p} rules your ${h} — challenging house lordship means its period tests before it rewards.`,
 };
 
-export function assessPlanetStrength(planet: string, input: StrengthInput): PlanetStrength {
+export function assessPlanetStrength(planet: string, input: StrengthInput, lang: Lang = 'en'): PlanetStrength {
   const notes: string[] = [];
+  const pName = planetName(planet, lang);
 
   // ── Dignity ──
   let dignity: DignityLevel | null = null;
@@ -178,20 +202,21 @@ export function assessPlanetStrength(planet: string, input: StrengthInput): Plan
   if (rashi != null) {
     dignity = getDignity(planet, rashi);
     dignityMod = DIGNITY_MODS[dignity];
+    const rName = rashiName(rashi, lang);
     if (dignity === 'debilitated') {
       neechaBhanga = hasNeechaBhanga(planet, input);
       if (neechaBhanga) {
         dignityMod = 0.5; // cancellation turns weakness into latent strength
-        notes.push(`${planet} is debilitated in ${RASHIS[rashi]} but Neecha Bhanga (cancellation) applies — early struggles in its periods transform into unusual strength.`);
+        notes.push(NOTE.neechaBhanga(pName, rName, lang));
       } else {
-        notes.push(`${planet} is debilitated in ${RASHIS[rashi]} natally — its significations need conscious effort and remedial support during this period.`);
+        notes.push(NOTE.debilitated(pName, rName, lang));
       }
     } else if (dignity === 'exalted') {
-      notes.push(`${planet} is exalted in ${RASHIS[rashi]} natally — it delivers results at near-peak capacity during its periods.`);
+      notes.push(NOTE.exalted(pName, rName, lang));
     } else if (dignity === 'own-sign') {
-      notes.push(`${planet} occupies its own sign (${RASHIS[rashi]}) natally — stable, reliable results throughout this period.`);
+      notes.push(NOTE.ownSign(pName, rName, lang));
     } else if (dignity === 'enemy-sign') {
-      notes.push(`${planet} sits in an enemy's sign (${RASHIS[rashi]}) natally — results come with friction and require persistence.`);
+      notes.push(NOTE.enemySign(pName, rName, lang));
     }
   }
 
@@ -209,7 +234,7 @@ export function assessPlanetStrength(planet: string, input: StrengthInput): Plan
       if (sep <= limit) {
         isCombust = true;
         combustMod = -1.0;
-        notes.push(`${planet} is combust (within ${Math.round(sep)}° of the Sun) natally — its outward expression is dimmed; inner development of its themes matters more than external results.`);
+        notes.push(NOTE.combust(pName, Math.round(sep), lang));
       }
     }
   }
@@ -219,7 +244,7 @@ export function assessPlanetStrength(planet: string, input: StrengthInput): Plan
   let retroMod = 0;
   if (isRetrograde && planet !== 'Rahu' && planet !== 'Ketu') {
     retroMod = 0.25; // chesta bala — retrograde planets are strong but indirect
-    notes.push(`${planet} is retrograde natally — strong (chesta bala) but its results arrive through revision, delay, or second attempts.`);
+    notes.push(NOTE.retrograde(pName, lang));
   }
 
   // ── Natal house placement ──
@@ -234,10 +259,11 @@ export function assessPlanetStrength(planet: string, input: StrengthInput): Plan
     lordedHouses = lordedHousesFor(planet, input.ascendantRashi);
     functionalNature = functionalNatureFor(planet, input.ascendantRashi);
     functionalMod = FUNCTIONAL_MODS[functionalNature];
+    const houseList = joinAnd(lordedHouses.map(h => houseLabel(h, lang)), lang);
     if (functionalNature === 'yogakaraka') {
-      notes.push(`${planet} is the yogakaraka for your ascendant (rules both a kendra and a trikona: ${lordedHouses.map(ORDINAL).join(' & ')} houses) — its periods are among the most productive of your life.`);
+      notes.push(NOTE.yogakaraka(pName, houseList, lang));
     } else if (functionalNature === 'functional-malefic' && lordedHouses.length) {
-      notes.push(`${planet} rules your ${lordedHouses.map(ORDINAL).join(' & ')} house${lordedHouses.length > 1 ? 's' : ''} — challenging house lordship means its period tests before it rewards.`);
+      notes.push(NOTE.functionalMalefic(pName, houseList, lang));
     }
   }
 

@@ -263,8 +263,8 @@ export const AntardashaPanel: React.FC<Props> = ({
   const [showDefinition, setShowDefinition] = useState(false);
 
   const { data: report, isLoading } = useQuery<AntardashaDepthReport | null>({
-    queryKey: ['antardashaDepth', antardashaStart, birthData],
-    queryFn: () => getAntardashaDepth(birthData, antardashaStart),
+    queryKey: ['antardashaDepth', antardashaStart, birthData, lang],
+    queryFn: () => getAntardashaDepth(birthData, antardashaStart, undefined, lang),
     staleTime: 10 * 60 * 1000,
   });
 

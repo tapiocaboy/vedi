@@ -9,6 +9,7 @@
 import { getPlanetPositions } from '../core/ephemeris';
 import { VimshottariDasha, type AntardashaPeriodInfo } from '../core/dasha';
 import { DashaPredictionEngine, type ChartContext } from '../core/predictions';
+import { type Lang, getStoredLang } from '../core/i18n';
 import { assessPlanetStrength, type PlanetStrength } from '../core/dashaStrength';
 import { scanWindowTransits, type NatalPoint, type TransitHit } from '../core/dashaTransits';
 import {
@@ -167,6 +168,7 @@ export async function getAntardashaDepth(
   bd: BirthData,
   antardashaStartISO: string,
   asOf: Date = new Date(),
+  lang: Lang = getStoredLang(),
 ): Promise<AntardashaDepthReport | null> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
   const ctx: ChartContext = buildChartContext(positions);
@@ -183,7 +185,7 @@ export async function getAntardashaDepth(
   const strengthCache = new Map<string, PlanetStrength | null>();
   const strengthOf = (planet: string): PlanetStrength | null => {
     if (!strengthCache.has(planet)) {
-      strengthCache.set(planet, ctx.planetRashis ? assessPlanetStrength(planet, ctx) : null);
+      strengthCache.set(planet, ctx.planetRashis ? assessPlanetStrength(planet, ctx, lang) : null);
     }
     return strengthCache.get(planet)!;
   };
@@ -197,11 +199,11 @@ export async function getAntardashaDepth(
   const transitHits = await scanWindowTransits(ad.start, ad.end, natalPoints, bd.ayanamsa);
 
   // The antardasha reading is the baseline every sub-window is measured against.
-  const baseline = engine.generateCompletePrediction(md, ad.lord, undefined, undefined, ctx);
+  const baseline = engine.generateCompletePrediction(md, ad.lord, undefined, undefined, ctx, lang);
 
   // ...and the classical judgement is what makes this antardasha differ from
   // its eight siblings inside the same mahadasha.
-  const judgement = judgeAntardasha({ mahadashaLord: md, antardashaLord: ad.lord, ctx, strengthOf });
+  const judgement = judgeAntardasha({ mahadashaLord: md, antardashaLord: ad.lord, ctx, strengthOf, lang });
 
   const periods: WeightedPratyantardasha[] = pratyantars.map(pd => {
     const hotTargets = new Set([md, ad.lord, pd.lord, 'Sun', 'Moon', 'Lagna']);
@@ -217,7 +219,7 @@ export async function getAntardashaDepth(
     });
 
     // Only the difference from the baseline is worth showing at this level.
-    const sub = engine.generateCompletePrediction(md, ad.lord, pd.lord, undefined, ctx);
+    const sub = engine.generateCompletePrediction(md, ad.lord, pd.lord, undefined, ctx, lang);
     const trendShifts: TrendShift[] = [];
     const addedDetails: string[] = [];
     for (const [area, base] of Object.entries(baseline.predictions)) {
@@ -265,6 +267,7 @@ export async function getAntardashaDepth(
     judgement,
     strengthOf,
     nextAntardasha: next ? { lord: next.lord, start: next.start, end: next.end } : null,
+    lang,
   });
 
   return {

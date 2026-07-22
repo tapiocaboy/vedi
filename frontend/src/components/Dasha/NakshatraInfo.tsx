@@ -55,7 +55,7 @@ const ItemRow: React.FC<{ item: NakshatraItem; open: boolean; onToggle: () => vo
 export const NakshatraInfo: React.FC<Props> = ({ nakshatra, title }) => {
   const { lang, t } = useLang();
   const [openKey, setOpenKey] = useState<string | null>('overview');
-  const items = getNakshatraItems(nakshatra);
+  const items = getNakshatraItems(nakshatra, lang);
 
   return (
     <motion.div

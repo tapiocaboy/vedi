@@ -16,6 +16,8 @@ import {
   type MoonPhase, type TaraBala,
 } from './transitAnalysis';
 import type { DignityLevel } from './planetaryAnalysis';
+import { type Lang, rashiName } from './i18n';
+import { TRANSIT_NOTE, SADE_SATI_DESC, JUPITER_BLESSING, NODAL_NOTE, NOTE_PREFIX } from './text/transitText';
 
 export type AyanamsaSystem = BirthData['ayanamsa'];
 
@@ -124,41 +126,34 @@ export function valenceFromMoon(planet: string, house: number): number {
   return 0;
 }
 
-function noteForTransit(planet: string, houseFromMoon: number, houseFromLagna: number): string | null {
+function noteForTransit(planet: string, houseFromMoon: number, houseFromLagna: number, lang: Lang): string | null {
+  const t = (b: { en: string; si: string }) => (lang === 'si' ? b.si : b.en);
   if (planet === 'SATURN') {
-    if (houseFromMoon === 12 || houseFromMoon === 1 || houseFromMoon === 2) return 'Sade Sati phase from Moon';
-    if (houseFromMoon === 8) return 'Ashtama Shani — pressure on health, hidden matters';
-    if (houseFromMoon === 4) return 'Kantaka Shani — stress on home, mother, vehicles';
-    if (houseFromMoon === 3 || houseFromMoon === 6 || houseFromMoon === 11) return 'Favourable Saturn transit (3/6/11 from Moon)';
+    if (houseFromMoon === 12 || houseFromMoon === 1 || houseFromMoon === 2) return t(TRANSIT_NOTE.sadeSatiPhase);
+    if (houseFromMoon === 8) return t(TRANSIT_NOTE.ashtamaShani);
+    if (houseFromMoon === 4) return t(TRANSIT_NOTE.kantakaShani);
+    if (houseFromMoon === 3 || houseFromMoon === 6 || houseFromMoon === 11) return t(TRANSIT_NOTE.saturnFavourable);
   }
   if (planet === 'JUPITER') {
-    if ([2, 5, 7, 9, 11].includes(houseFromMoon)) return 'Auspicious Guru transit from Moon';
-    if (houseFromMoon === 6 || houseFromMoon === 8 || houseFromMoon === 12) return 'Demanding Guru transit — expansion turns to lessons';
+    if ([2, 5, 7, 9, 11].includes(houseFromMoon)) return t(TRANSIT_NOTE.guruAuspicious);
+    if (houseFromMoon === 6 || houseFromMoon === 8 || houseFromMoon === 12) return t(TRANSIT_NOTE.guruDemanding);
   }
   if (planet === 'RAHU' || planet === 'KETU') {
-    if (houseFromMoon === 1 || houseFromMoon === 8 || houseFromMoon === 12) return 'Node on a sensitive axis from Moon — restlessness, hidden currents';
+    if (houseFromMoon === 1 || houseFromMoon === 8 || houseFromMoon === 12) return t(TRANSIT_NOTE.nodeSensitive);
   }
   if (planet === 'MARS' && (houseFromLagna === 1 || houseFromLagna === 4 || houseFromLagna === 7 || houseFromLagna === 8)) {
-    return 'Mars on a Kuja axis from Lagna — manage temper and conflicts';
+    return t(TRANSIT_NOTE.marsKuja);
   }
   return null;
 }
 
-function computeSadeSati(saturnRashi: number, moonRashi: number): SadeSatiInfo {
+function computeSadeSati(saturnRashi: number, moonRashi: number, lang: Lang): SadeSatiInfo {
   const house = houseFrom(saturnRashi, moonRashi);
-  if (house === 12) {
-    return { active: true, phase: 'rising',
-      description: `Sade Sati first phase — Saturn in ${RASHIS[saturnRashi]} (12th from natal Moon). Inner pressure, expenses, sleep changes. Last ~2.5 years.` };
-  }
-  if (house === 1) {
-    return { active: true, phase: 'peak',
-      description: `Sade Sati peak — Saturn in your natal Moon rashi (${RASHIS[saturnRashi]}). Most intense phase. Patience, discipline, simplification. ~2.5 years.` };
-  }
-  if (house === 2) {
-    return { active: true, phase: 'setting',
-      description: `Sade Sati closing phase — Saturn in ${RASHIS[saturnRashi]} (2nd from natal Moon). Wealth/family/speech tested. Final ~2.5 years.` };
-  }
-  return { active: false, phase: 'none', description: 'Not currently in Sade Sati.' };
+  const rashi = rashiName(saturnRashi, lang);
+  if (house === 12) return { active: true, phase: 'rising', description: SADE_SATI_DESC.rising(rashi, lang) };
+  if (house === 1) return { active: true, phase: 'peak', description: SADE_SATI_DESC.peak(rashi, lang) };
+  if (house === 2) return { active: true, phase: 'setting', description: SADE_SATI_DESC.setting(rashi, lang) };
+  return { active: false, phase: 'none', description: lang === 'si' ? SADE_SATI_DESC.none.si : SADE_SATI_DESC.none.en };
 }
 
 export interface CurrentLocation {
@@ -176,16 +171,13 @@ export interface GocharaPredictionSummary {
   scoreMod: number;
 }
 
-function titleCase(key: string): string {
-  return key.charAt(0) + key.slice(1).toLowerCase();
-}
 
 /**
  * Distil a Gochara snapshot into the handful of signals that should colour
  * a dasha prediction: Sade Sati, Saturn 4th/8th, Jupiter's blessing, and any
  * other flagged transits.
  */
-export function summarizeGocharaForPrediction(g: GocharaSnapshot): GocharaPredictionSummary {
+export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = 'en'): GocharaPredictionSummary {
   const notes: string[] = [];
   let mod = 0;
 
@@ -199,7 +191,7 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot): GocharaPredic
     if (saturn.houseFromMoon === 8) mod -= 0.5;
     else if (saturn.houseFromMoon === 4) mod -= 0.25;
     else if ([3, 6, 11].includes(saturn.houseFromMoon)) mod += 0.25;
-    if (saturn.note) notes.push(`Saturn: ${saturn.note}`);
+    if (saturn.note) notes.push(NOTE_PREFIX('SATURN', saturn.note, lang));
   }
 
   notes.push(g.jupiterBlessing.reason);
@@ -215,7 +207,7 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot): GocharaPredic
 
   for (const t of g.transits) {
     if (t.note && t.planet !== 'SATURN' && t.planet !== 'JUPITER') {
-      notes.push(`${titleCase(t.planet)}: ${t.note}`);
+      notes.push(NOTE_PREFIX(t.planet, t.note, lang));
     }
   }
 
@@ -230,6 +222,7 @@ export async function getCurrentTransits(
   asOf?: Date,
   here?: CurrentLocation,
   natalPositions?: Record<string, PlanetPosition>,
+  lang: Lang = 'en',
 ): Promise<GocharaSnapshot> {
   const now = asOf ?? new Date();
   // For Gochara, lat/lon barely affect the sidereal positions of the slow
@@ -256,14 +249,14 @@ export async function getCurrentTransits(
       houseFromMoon,
       houseFromLagna,
       valence: valenceFromMoon(name, houseFromMoon),
-      note: noteForTransit(name, houseFromMoon, houseFromLagna),
+      note: noteForTransit(name, houseFromMoon, houseFromLagna, lang),
       isRetrograde: p.isRetrograde,
     });
   }
 
   // Classical refinements: vedha (obstruction), planetary war, gandanta,
   // transit dignity / combustion / stationary state.
-  applyVedha(transits, natalMoonRashi);
+  applyVedha(transits, natalMoonRashi, lang);
   annotateGrahaYuddha(transits);
   annotateGandanta(transits);
   annotateDignityState(transits, positions['SUN'].longitude);
@@ -276,7 +269,7 @@ export async function getCurrentTransits(
     for (const [name, p] of Object.entries(natalPositions)) natalRashis[name] = p.rashi;
     sarvaBindus = annotateBindus(transits, natalRashis);
     if (natalPositions['MOON']) {
-      taraBala = computeTaraBala(natalPositions['MOON'].nakshatra, positions['MOON'].nakshatra);
+      taraBala = computeTaraBala(natalPositions['MOON'].nakshatra, positions['MOON'].nakshatra, lang);
     }
   }
 
@@ -295,15 +288,15 @@ export async function getCurrentTransits(
     : [];
 
   const saturnTransit = transits.find(t => t.planet === 'SATURN')!;
-  const sadeSati = computeSadeSati(saturnTransit.rashi, natalMoonRashi);
+  const sadeSati = computeSadeSati(saturnTransit.rashi, natalMoonRashi, lang);
 
   const jupiterTransit = transits.find(t => t.planet === 'JUPITER')!;
   const jupiterAuspicious = [2, 5, 7, 9, 11].includes(jupiterTransit.houseFromMoon);
   const jupiterBlessing = {
     auspicious: jupiterAuspicious,
     reason: jupiterAuspicious
-      ? `Guru is transiting your ${jupiterTransit.houseFromMoon}th from Moon — supportive window for expansion in matters of that house.`
-      : `Guru is transiting your ${jupiterTransit.houseFromMoon}th from Moon — period of learning rather than gain in that area.`,
+      ? JUPITER_BLESSING.auspicious(jupiterTransit.houseFromMoon, lang)
+      : JUPITER_BLESSING.learning(jupiterTransit.houseFromMoon, lang),
   };
 
   const rahuTransit = transits.find(t => t.planet === 'RAHU')!;
@@ -311,7 +304,7 @@ export async function getCurrentTransits(
   const nodalShift = {
     rahuRashi: rahuTransit.rashi,
     ketuRashi: ketuTransit.rashi,
-    note: `Current Rahu-Ketu axis: ${RASHIS[rahuTransit.rashi]} / ${RASHIS[ketuTransit.rashi]} — the nodes shift rashi roughly every 18 months.`,
+    note: NODAL_NOTE(rashiName(rahuTransit.rashi, lang), rashiName(ketuTransit.rashi, lang), lang),
   };
 
   return {

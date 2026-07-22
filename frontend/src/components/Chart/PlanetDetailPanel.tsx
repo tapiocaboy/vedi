@@ -52,7 +52,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
     : undefined;
 
   const analysis = planet && planet.planet !== 'ASCENDANT'
-    ? analyzePlanet(planet.planet, planet.rashiIndex, ascendantRashiIndex, planet.isRetrograde, planet.rashiDegree, chartContext)
+    ? analyzePlanet(planet.planet, planet.rashiIndex, ascendantRashiIndex, planet.isRetrograde, planet.rashiDegree, chartContext, lang)
     : null;
 
   const displayName = planet?.planet ?? '';

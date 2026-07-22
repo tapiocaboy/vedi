@@ -20,6 +20,13 @@ import { getNakshatra } from './nakshatra';
 import { getNakshatraItems } from './nakshatraInsights';
 import { analyzePlanet } from './planetaryAnalysis';
 import { analyzeHouse } from './houseAnalysis';
+import { type Lang, pick, pickList, planetName, rashiName as siRashiName } from './i18n';
+import { SIG_TEXT } from './text/predictionVocab';
+import { HOUSE_DISPLAY } from './text/planetaryText';
+import {
+  LAGNA_TRAITS, NAK_ITEM_HEADING, H, NATAL,
+  elementLabel, modalityLabel, houseOrdinal, houseOrdinalShort,
+} from './text/natalText';
 
 export type Tone = 'good' | 'bad' | 'neutral' | 'info';
 
@@ -51,8 +58,6 @@ export interface NatalReport {
 
 const PLANET_ORDER = ['SUN', 'MOON', 'MARS', 'MERCURY', 'JUPITER', 'VENUS', 'SATURN', 'RAHU', 'KETU'] as const;
 
-const ORDINAL = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
-
 function titleCase(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
@@ -61,21 +66,12 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// ─── Per-sign rising (Lagna) character ───────────────────────────────────────
-const LAGNA_TRAITS: Record<number, string> = {
-  0:  'With Aries (Mesha) rising you meet life head-on — pioneering, energetic, competitive, and quick to act. A strong Mars makes you a natural starter who thrives on challenge but must temper impatience.',
-  1:  'With Taurus (Vrishabha) rising you are steady, patient, and sensual — you value comfort, beauty, and security. Ruled by Venus, you build slowly and lastingly, though stubbornness can set in.',
-  2:  'With Gemini (Mithuna) rising you are curious, communicative, and adaptable — a quick mind that loves variety. Ruled by Mercury, you excel at words and ideas but can scatter your focus.',
-  3:  'With Cancer (Karka) rising you are sensitive, nurturing, and intuitive — deeply tied to home, family, and emotional security. Ruled by the Moon, your moods colour your whole outlook.',
-  4:  'With Leo (Simha) rising you are dignified, warm, and naturally commanding — you seek recognition and lead from the heart. Ruled by the Sun, pride is your strength and your test.',
-  5:  'With Virgo (Kanya) rising you are analytical, precise, and service-minded — discerning and health-conscious. Ruled by Mercury, you perfect details but can over-criticise yourself and others.',
-  6:  'With Libra (Tula) rising you are gracious, diplomatic, and partnership-oriented — you seek balance, beauty, and fairness. Ruled by Venus, harmony matters, though indecision can stall you.',
-  7:  'With Scorpio (Vrischika) rising you are intense, magnetic, and private — driven to probe beneath the surface and transform. Ruled by Mars, your willpower is formidable.',
-  8:  'With Sagittarius (Dhanu) rising you are optimistic, philosophical, and freedom-loving — a seeker of meaning and far horizons. Ruled by Jupiter, you inspire but may overpromise.',
-  9:  'With Capricorn (Makara) rising you are disciplined, ambitious, and responsible — a patient builder of lasting structures. Ruled by Saturn, you rise through perseverance.',
-  10: 'With Aquarius (Kumbha) rising you are independent, humanitarian, and original — drawn to ideas, groups, and reform. Ruled by Saturn, you think ahead of your time.',
-  11: 'With Pisces (Meena) rising you are compassionate, imaginative, and spiritual — porous to the moods around you. Ruled by Jupiter, you dream widely and feel deeply.',
-};
+/** Localised keywords for a planet (for "what it governs" bullets). */
+function localKeywords(planetKey: string, lang: Lang): string[] {
+  const sig = SIG_TEXT[planetKey];
+  if (!sig) return [];
+  return lang === 'si' ? sig.keywords.si.slice() : sig.keywords.en.map(cap);
+}
 
 // ─── Badge helpers ───────────────────────────────────────────────────────────
 function dignityTone(d: string): Tone {
@@ -96,41 +92,37 @@ function functionalTone(n: string): Tone {
 
 // ─── Line builders ───────────────────────────────────────────────────────────
 
-function buildLagnaLine(ascRashi: number, lordHouse: number, lordDignityLabel: string): NatalLine {
-  const lord = RASHI_LORDS[RASHIS[ascRashi]];
+function buildLagnaLine(ascRashi: number, lordHouse: number, lordDignityLabel: string, lang: Lang): NatalLine {
+  const lordKey = RASHI_LORDS[RASHIS[ascRashi]];
+  const lord = planetName(lordKey, lang);
   const element = RASHI_ELEMENTS[RASHIS[ascRashi]];
   const modality = RASHI_MODALITIES[RASHIS[ascRashi]];
+  const elLabel = elementLabel(element, lang);
+  const mLabel = modalityLabel(modality, lang);
+  const english = RASHI_ENGLISH[ascRashi];
+  const rashiLabel = lang === 'si' ? siRashiName(ascRashi, lang) : RASHIS[ascRashi];
+  const lordHouseLabel = houseOrdinal(lordHouse, lang);
   return {
     id: 'lagna',
     group: 'lagna',
     icon: 'LAGNA',
-    title: `Ascendant — ${RASHI_ENGLISH[ascRashi]} (${RASHIS[ascRashi]}) rising`,
-    subtitle: `Chart ruler ${lord} · ${element} · ${modality}`,
+    title: NATAL.lagnaTitle(english, rashiLabel, lang),
+    subtitle: NATAL.lagnaSubtitle(lord, elLabel, mLabel, lang),
     badges: [
-      { label: RASHI_ENGLISH[ascRashi], tone: 'info' },
-      { label: `${element}`, tone: 'info' },
-      { label: `Ruler: ${lord}`, tone: 'info' },
+      { label: english, tone: 'info' },
+      { label: elLabel, tone: 'info' },
+      { label: NATAL.rulerBadge(lord, lang), tone: 'info' },
     ],
-    summary: `Your rising sign sets the lens through which you meet the world and frames every other house. ${RASHI_ENGLISH[ascRashi]} gives you a ${modality.toLowerCase()} ${element.toLowerCase()} nature.`,
+    summary: NATAL.lagnaSummary(english, mLabel, elLabel, lang),
     sections: [
-      { heading: 'Your rising sign', body: LAGNA_TRAITS[ascRashi] },
-      { heading: 'Element & mode', body: `A ${element} sign makes your core drive ${element === 'Fire' ? 'active, inspired and pioneering' : element === 'Earth' ? 'grounded, practical and reliable' : element === 'Air' ? 'mental, social and communicative' : 'emotional, intuitive and adaptive'}. Being ${modality} means you ${modality === 'Movable' ? 'initiate easily and prefer momentum and change' : modality === 'Fixed' ? 'hold firm, build steadily and resist being rushed' : 'adapt, mediate and move fluidly between options'}.` },
-      { heading: 'Your chart ruler', body: `${lord} rules your Ascendant and is the single most important planet in your chart. It sits in your ${ORDINAL[lordHouse]} house and is ${lordDignityLabel.toLowerCase()} — so the affairs of the ${ORDINAL[lordHouse]} house become central to your life direction, and ${lord}'s condition strongly colours your overall vitality and fortune.` },
+      { heading: pick(H.risingSign, lang), body: pick(LAGNA_TRAITS[ascRashi], lang) },
+      { heading: pick(H.elementMode, lang), body: NATAL.elementModeBody(element, modality, lang) },
+      { heading: pick(H.chartRuler, lang), body: NATAL.chartRulerBody(lord, lordHouseLabel, lordDignityLabel, lang) },
     ],
   };
 }
 
-// Heading shown for each nakshatra insight item inside the Natal modal.
-const NAK_ITEM_HEADING: Record<string, string> = {
-  overview: 'Your personality',
-  lord: 'Ruling planet',
-  gana: 'Temperament (Gana)',
-  pada: 'Birth quarter (Pada)',
-  deity: 'Presiding deity',
-  symbol: 'Symbol',
-};
-
-function buildNakshatraLine(moonLon: number, moonSign: number): NatalLine {
+function buildNakshatraLine(moonLon: number, moonSign: number, lang: Lang): NatalLine {
   const nak = getNakshatra(moonLon);
 
   // Reuse the same rich, plain-language content as the Chart-tab nakshatra card
@@ -138,31 +130,32 @@ function buildNakshatraLine(moonLon: number, moonSign: number): NatalLine {
   const items = getNakshatraItems({
     index: nak.index, name: nak.name, lord: nak.lord, pada: nak.pada,
     degree: nak.degree, deity: nak.deity, symbol: nak.symbol, gana: nak.gana,
-  });
+  }, lang);
 
   const sections: NatalSection[] = items.map(it => ({
-    heading: NAK_ITEM_HEADING[it.key] ?? it.key,
+    heading: NAK_ITEM_HEADING[it.key] ? pick(NAK_ITEM_HEADING[it.key], lang) : it.key,
     body: it.body,
     bullets: it.bullets,
   }));
   // Lead with how the nakshatra seeds the whole dasha timeline.
   sections.unshift({
-    heading: 'Why your birth star matters',
-    body: `The Moon occupies ${nak.name}, symbolised by the ${nak.symbol.toLowerCase()} and presided over by ${nak.deity}. This star shapes your emotional nature and instinctive mind, and it seeds the entire Vimshottari Dasha timeline that schedules your life's chapters.`,
+    heading: pick(H.whyBirthStar, lang),
+    body: NATAL.nakWhyBody(nak.name, nak.symbol, nak.deity, lang),
   });
 
+  const rashiLabel = lang === 'si' ? siRashiName(moonSign, lang) : RASHIS[moonSign];
   return {
     id: 'nakshatra',
     group: 'nakshatra',
     icon: 'STAR',
-    title: `Moon in ${nak.name} (Pada ${nak.pada})`,
-    subtitle: `Birth star · ruled by ${nak.lord} · ${RASHIS[moonSign]}`,
+    title: NATAL.nakTitle(nak.name, nak.pada, lang),
+    subtitle: NATAL.nakSubtitle(nak.lord, rashiLabel, lang),
     badges: [
-      { label: `Lord: ${nak.lord}`, tone: 'info' },
-      { label: `Pada ${nak.pada}`, tone: 'info' },
+      { label: NATAL.nakLordBadge(nak.lord, lang), tone: 'info' },
+      { label: NATAL.nakPadaBadge(nak.pada, lang), tone: 'info' },
       { label: nak.gana, tone: 'info' },
     ],
-    summary: `Your Moon's nakshatra describes your emotional nature and instinctive mind, and it seeds the entire Vimshottari Dasha timeline that schedules your life's chapters.`,
+    summary: NATAL.nakSummary(lang),
     sections,
   };
 }
@@ -179,64 +172,72 @@ function buildPlanetLine(
   p: PlanetCtx,
   ascRashi: number,
   context: { longitude: number; sunLongitude: number; signByPlanet: Record<string, number> },
+  lang: Lang,
 ): NatalLine {
-  const planet = titleCase(planetUpper); // 'Sun' — required for correct dignity lookup
-  const a = analyzePlanet(planet, p.rashiIndex, ascRashi, p.isRetrograde, p.rashiDegree, context);
+  const planetKey = titleCase(planetUpper); // 'Sun' — required for correct dignity lookup
+  const a = analyzePlanet(planetKey, p.rashiIndex, ascRashi, p.isRetrograde, p.rashiDegree, context, lang);
+  const planetLabel = planetName(planetKey, lang);
+  const houseName = pick(HOUSE_DISPLAY[a.house].name, lang);
+  const houseTheme = pick(HOUSE_DISPLAY[a.house].theme, lang);
+  const houseRules = pickList(HOUSE_DISPLAY[a.house].rules, lang);
+  const keywords = localKeywords(planetKey, lang);
+  const rashiLabel = lang === 'si' ? siRashiName(p.rashiIndex, lang) : RASHIS[p.rashiIndex];
 
   const badges: NatalBadge[] = [
     { label: a.dignityInfo.label, tone: dignityTone(a.dignity) },
     { label: a.strength.verdictLabel, tone: verdictTone(a.strength.verdict) },
     { label: a.functional.label, tone: functionalTone(a.functional.nature) },
   ];
-  if (a.isRetrograde) badges.push({ label: 'Retrograde', tone: 'info' });
-  if (a.combustion?.isCombust) badges.push({ label: 'Combust', tone: 'bad' });
-  if (a.neechaBhanga?.cancelled) badges.push({ label: 'Neecha Bhanga', tone: 'good' });
+  if (a.isRetrograde) badges.push({ label: pick(NATAL.retrogradeBadge, lang), tone: 'info' });
+  if (a.combustion?.isCombust) badges.push({ label: pick(NATAL.combustBadge, lang), tone: 'bad' });
+  if (a.neechaBhanga?.cancelled) badges.push({ label: pick(NATAL.neechaBhangaBadge, lang), tone: 'good' });
 
   const sections: NatalSection[] = [];
 
   sections.push({
-    heading: 'What it governs',
-    bullets: a.keywords.slice(0, 7).map(cap),
+    heading: pick(H.whatItGoverns, lang),
+    bullets: keywords.slice(0, 7),
   });
 
   if (a.placement) {
-    sections.push({ heading: `Why it matters in your ${a.houseData.name}`, body: a.placement.effect });
-    if (a.placement.strengths.length) sections.push({ heading: 'Strengths to lean on', tone: 'good', bullets: a.placement.strengths });
-    if (a.placement.challenges.length) sections.push({ heading: 'What to watch', tone: 'bad', bullets: a.placement.challenges });
+    sections.push({ heading: NATAL.whyMattersHeading(houseName, lang), body: a.placement.effect });
+    if (a.placement.strengths.length) sections.push({ heading: pick(H.strengthsToLean, lang), tone: 'good', bullets: a.placement.strengths });
+    if (a.placement.challenges.length) sections.push({ heading: pick(H.whatToWatch, lang), tone: 'bad', bullets: a.placement.challenges });
   } else {
     sections.push({
-      heading: `In your ${a.houseData.name}`,
-      body: `${planet} sits in your ${a.houseData.name} (${a.houseData.theme}), directing its energy of ${(a.keywords.slice(0, 3).join(', '))} into ${a.houseData.rules.slice(0, 3).join(', ')}.`,
+      heading: NATAL.inYourHouseHeading(houseName, lang),
+      body: NATAL.inYourHouseBody(planetLabel, houseName, houseTheme, keywords.slice(0, 3).join(', '), houseRules.slice(0, 3).join(', '), lang),
     });
   }
 
-  sections.push({ heading: 'Strength in your chart', body: a.strength.summary });
-  sections.push({ heading: 'Dignity & role', body: `${a.dignityInfo.desc} ${a.functional.desc}` });
+  sections.push({ heading: pick(H.strengthInChart, lang), body: a.strength.summary });
+  sections.push({ heading: pick(H.dignityRole, lang), body: NATAL.dignityRoleBody(a.dignityInfo.desc, a.functional.desc) });
 
   if (a.retrogradeEffect) {
-    sections.push({ heading: 'Retrograde effect', tone: 'info', body: a.retrogradeEffect.general });
+    sections.push({ heading: pick(H.retrogradeEffect, lang), tone: 'info', body: a.retrogradeEffect.general });
   }
   if (a.combustion?.isCombust) {
-    sections.push({ heading: 'Combustion', tone: 'bad', body: a.combustion.desc });
+    sections.push({ heading: pick(H.combustion, lang), tone: 'bad', body: a.combustion.desc });
   }
   if (a.neechaBhanga?.cancelled) {
-    sections.push({ heading: 'Debilitation cancelled', tone: 'good', body: a.neechaBhanga.desc });
+    sections.push({ heading: pick(H.debilitationCancelled, lang), tone: 'good', body: a.neechaBhanga.desc });
   }
   if (a.gemstone || a.mantra) {
     const parts: string[] = [];
-    if (a.gemstone) parts.push(`Gemstone: ${a.gemstone}`);
-    if (a.mantra) parts.push(`Mantra: ${a.mantra}`);
-    sections.push({ heading: 'Supportive remedy', body: parts.join(' · ') });
+    const sig = SIG_TEXT[planetKey];
+    if (a.gemstone) parts.push(NATAL.gemstoneLabel(sig ? pick(sig.gemstone, lang) : a.gemstone, lang));
+    if (a.mantra) parts.push(NATAL.mantraLabel(sig ? pick(sig.mantra, lang) : a.mantra, lang));
+    sections.push({ heading: pick(H.supportiveRemedy, lang), body: NATAL.supportiveRemedyBody(parts) });
   }
 
   return {
     id: `planet-${planetUpper}`,
     group: 'planet',
     icon: planetUpper,
-    title: `${planet} in ${RASHIS[p.rashiIndex]} · ${a.houseData.name}`,
-    subtitle: `${RASHI_ENGLISH[p.rashiIndex]} ${p.rashiDegree.toFixed(2)}° · ${a.dignityInfo.label}${a.isRetrograde ? ' · Retrograde' : ''}`,
+    title: NATAL.planetTitle(planetLabel, rashiLabel, houseName, lang),
+    subtitle: NATAL.planetSubtitle(RASHI_ENGLISH[p.rashiIndex], p.rashiDegree.toFixed(2), a.dignityInfo.label, a.isRetrograde, lang),
     badges,
-    summary: `${planet} carries ${a.keywords.slice(0, 3).join(', ')}. Placed in your ${a.houseData.name}, it is ${a.strength.verdictLabel.toLowerCase()} and acts as a ${a.functional.label.toLowerCase()} for your Ascendant.`,
+    summary: NATAL.planetSummary(planetLabel, keywords.slice(0, 3).join(', '), houseName, a.strength.verdictLabel, a.functional.label, lang),
     sections,
   };
 }
@@ -246,49 +247,59 @@ function buildHouseLine(
   ascRashi: number,
   planetsForHouse: Array<{ planet: string; rashiIndex: number; isRetrograde: boolean }>,
   signByPlanetTitle: Record<string, number>,
+  lang: Lang,
 ): NatalLine {
-  const h = analyzeHouse(houseNumber, ascRashi, planetsForHouse, signByPlanetTitle);
+  const h = analyzeHouse(houseNumber, ascRashi, planetsForHouse, signByPlanetTitle, lang);
+  const houseName = pick(HOUSE_DISPLAY[houseNumber].name, lang);
+  const houseTheme = pick(HOUSE_DISPLAY[houseNumber].theme, lang);
+  const houseRules = pickList(HOUSE_DISPLAY[houseNumber].rules, lang);
+  const rashiLordLabel = planetName(h.rashiLord, lang);
+  const rashiLabel = lang === 'si' ? siRashiName(h.rashiIndex, lang) : h.rashiName;
+  const houseLabel = houseOrdinal(houseNumber, lang);
 
   const sections: NatalSection[] = [];
-  sections.push({ heading: 'What this area of life covers', bullets: h.houseData.rules.map(cap) });
+  sections.push({ heading: pick(H.whatAreaCovers, lang), bullets: houseRules.map(r => lang === 'si' ? r : cap(r)) });
   sections.push({
-    heading: 'The sign on this house',
-    body: `${h.rashiName} (${h.rashiEnglish}) falls on your ${ORDINAL[houseNumber]} house, so its ruler ${h.rashiLord} governs these matters. The way ${h.rashiLord} is placed decides how these affairs unfold.`,
+    heading: pick(H.signOnHouse, lang),
+    body: NATAL.signOnHouseBody(rashiLabel, h.rashiEnglish, houseLabel, rashiLordLabel, lang),
   });
   sections.push({
-    heading: `Where the ruler (${h.rashiLord}) went`,
-    body: `${h.lordHouseDesc} Its dignity there is ${h.lordDignity.replace('-', ' ')}, which ${dignityTone(h.lordDignity) === 'good' ? 'supports and strengthens' : dignityTone(h.lordDignity) === 'bad' ? 'tests and complicates' : 'gives mixed results to'} this house's themes.`,
+    heading: NATAL.whereRulerHeading(rashiLordLabel, lang),
+    body: NATAL.whereRulerBody(h.lordHouseDesc, h.lordDignity, dignityTone(h.lordDignity) as 'good' | 'bad' | 'neutral', lang),
   });
   if (h.planetEffects.length) {
-    sections.push({ heading: 'Planets placed here', bullets: h.planetEffects.map(e => `${titleCase(e.planet)}: ${e.effect}`) });
+    sections.push({ heading: pick(H.planetsPlacedHere, lang), bullets: h.planetEffects.map(e => NATAL.planetHereBullet(planetName(titleCase(e.planet), lang), e.effect)) });
   } else {
-    sections.push({ heading: 'Planets placed here', body: `No planet occupies this house, so its results flow mainly through its ruler ${h.rashiLord} (described above) and any planets aspecting it. An empty house is not a weak house — read it through its lord.` });
+    sections.push({ heading: pick(H.planetsPlacedHere, lang), body: NATAL.noPlanetBody(rashiLordLabel, lang) });
   }
   if (h.combinationEffect) {
-    sections.push({ heading: 'Combined effect', tone: 'info', body: h.combinationEffect });
+    sections.push({ heading: pick(H.combinedEffect, lang), tone: 'info', body: h.combinationEffect });
   }
 
+  const lordHouseOrd = houseOrdinalShort(h.lordHouse, lang) || pick(NATAL.emptyOrdinal, lang);
+  const planetsLabel = h.planetsInHouse.length ? h.planetsInHouse.map(pl => planetName(titleCase(pl), lang)).join(', ') : null;
   const badges: NatalBadge[] = [
     { label: h.rashiEnglish, tone: 'info' },
-    { label: `Ruler ${h.rashiLord} → ${ORDINAL[h.lordHouse] || '—'}`, tone: 'info' },
+    { label: NATAL.rulerHouseBadge(rashiLordLabel, lordHouseOrd, lang), tone: 'info' },
   ];
-  if (h.planetsInHouse.length) badges.push({ label: `${h.planetsInHouse.length} planet${h.planetsInHouse.length > 1 ? 's' : ''}`, tone: 'neutral' });
+  if (h.planetsInHouse.length) badges.push({ label: NATAL.planetsCountBadge(h.planetsInHouse.length, lang), tone: 'neutral' });
 
+  const summaryLordOrd = houseOrdinalShort(h.lordHouse, lang) || pick(NATAL.sameHouseWord, lang);
   return {
     id: `house-${houseNumber}`,
     group: 'house',
     icon: String(houseNumber),
-    title: `${h.houseData.name} — ${h.houseData.theme}`,
-    subtitle: `${h.rashiName} · ruled by ${h.rashiLord}${h.planetsInHouse.length ? ` · ${h.planetsInHouse.map(titleCase).join(', ')}` : ' · empty'}`,
+    title: NATAL.houseTitle(houseName, houseTheme, lang),
+    subtitle: NATAL.houseSubtitle(rashiLabel, rashiLordLabel, planetsLabel, lang),
     badges,
-    summary: `Your ${h.houseData.name} covers ${h.houseData.rules.slice(0, 3).join(', ')}. With ${h.rashiName} here, its ruler ${h.rashiLord} sits in the ${ORDINAL[h.lordHouse] || 'same'} house.`,
+    summary: NATAL.houseSummary(houseName, houseRules.slice(0, 3).join(', '), rashiLabel, rashiLordLabel, summaryLordOrd, lang),
     sections,
   };
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────
 
-export async function buildNatalReport(bd: BirthData): Promise<NatalReport> {
+export async function buildNatalReport(bd: BirthData, lang: Lang = 'en'): Promise<NatalReport> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
   const ascRashi = positions.ASCENDANT.rashi;
 
@@ -305,11 +316,11 @@ export async function buildNatalReport(bd: BirthData): Promise<NatalReport> {
   const lordUpper = PLANET_ORDER.find(n => titleCase(n) === lordOfAsc) ?? 'SUN';
   const lordRashi = positions[lordUpper].rashi;
   const lordHouse = ((lordRashi - ascRashi + 12) % 12) + 1;
-  const lordAnalysis = analyzePlanet(lordOfAsc, lordRashi, ascRashi, positions[lordUpper].isRetrograde, positions[lordUpper].rashiDegree);
-  lines.push(buildLagnaLine(ascRashi, lordHouse, lordAnalysis.dignityInfo.label));
+  const lordAnalysis = analyzePlanet(lordOfAsc, lordRashi, ascRashi, positions[lordUpper].isRetrograde, positions[lordUpper].rashiDegree, undefined, lang);
+  lines.push(buildLagnaLine(ascRashi, lordHouse, lordAnalysis.dignityInfo.label, lang));
 
   // 2) Moon nakshatra (birth star).
-  lines.push(buildNakshatraLine(positions.MOON.longitude, positions.MOON.rashi));
+  lines.push(buildNakshatraLine(positions.MOON.longitude, positions.MOON.rashi, lang));
 
   // 3) The nine grahas.
   for (const name of PLANET_ORDER) {
@@ -319,7 +330,7 @@ export async function buildNatalReport(bd: BirthData): Promise<NatalReport> {
       rashiDegree: pos.rashiDegree,
       longitude: pos.longitude,
       isRetrograde: pos.isRetrograde,
-    }, ascRashi, { longitude: pos.longitude, sunLongitude, signByPlanet: signByPlanetTitle }));
+    }, ascRashi, { longitude: pos.longitude, sunLongitude, signByPlanet: signByPlanetTitle }, lang));
   }
 
   // 4) The twelve bhavas.
@@ -329,16 +340,16 @@ export async function buildNatalReport(bd: BirthData): Promise<NatalReport> {
     isRetrograde: positions[name].isRetrograde,
   }));
   for (let house = 1; house <= 12; house++) {
-    lines.push(buildHouseLine(house, ascRashi, planetsForHouse, signByPlanetTitle));
+    lines.push(buildHouseLine(house, ascRashi, planetsForHouse, signByPlanetTitle, lang));
   }
 
   const nak = getNakshatra(positions.MOON.longitude);
 
   return {
     meta: {
-      ascendantName: RASHIS[ascRashi],
+      ascendantName: lang === 'si' ? siRashiName(ascRashi, lang) : RASHIS[ascRashi],
       ascendantEnglish: RASHI_ENGLISH[ascRashi],
-      moonSign: RASHIS[positions.MOON.rashi],
+      moonSign: lang === 'si' ? siRashiName(positions.MOON.rashi, lang) : RASHIS[positions.MOON.rashi],
       moonNakshatra: nak.name,
       ayanamsa: bd.ayanamsa,
       generatedAt: new Date().toISOString(),

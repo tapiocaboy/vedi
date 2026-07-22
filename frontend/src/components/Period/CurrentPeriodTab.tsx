@@ -356,18 +356,18 @@ const PredictionDetailsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => 
 };
 
 export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
 
-  // Stable key so the query re-runs when location changes.
+  // Stable key so the query re-runs when location or language changes.
   const queryKey = useMemo(
-    () => ['period-snapshot', birthData, currentLocation],
-    [birthData, currentLocation],
+    () => ['period-snapshot', birthData, currentLocation, lang],
+    [birthData, currentLocation, lang],
   );
 
   const { data, isLoading, error } = useQuery({
     queryKey,
-    queryFn: () => getCurrentPeriodSnapshot(birthData, currentLocation ?? undefined),
+    queryFn: () => getCurrentPeriodSnapshot(birthData, currentLocation ?? undefined, undefined, lang),
     staleTime: 5 * 60_000, // 5 min — transits don't move fast
   });
 

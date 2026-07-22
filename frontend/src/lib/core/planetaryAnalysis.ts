@@ -3,6 +3,13 @@
  */
 
 import { PLANET_SIGNIFICATIONS, PLANETARY_RELATIONSHIPS } from './predictions';
+import { type Lang, pick, pickList } from './i18n';
+import {
+  DIGNITY_LABEL, DIGNITY_DESC, FUNCTIONAL_LABEL, VERDICT_LABEL,
+  DIG_BALA_FRAMES, FUNCTIONAL_DESC, COMBUSTION_FRAMES, NB_FRAMES,
+  strengthSummary, FACTOR_LABEL, ordHouse,
+} from './text/planetaryText';
+import { PLANET_IN_HOUSE_TEXT, RETROGRADE_TEXT } from './text/planetHouseText';
 
 // ─── House themes ──────────────────────────────────────────────────────────
 
@@ -109,11 +116,6 @@ const DIG_BALA_STRONG: Record<string, number> = {
   Sun: 10, Moon: 4, Mars: 10, Mercury: 1, Jupiter: 1, Venus: 4, Saturn: 7,
 };
 
-const ordinalHouse = (n: number): string => {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
-};
-
 export interface DigBalaInfo {
   score: number;                                   // 0..1
   level: 'strong' | 'moderate' | 'weak' | 'na';
@@ -121,33 +123,22 @@ export interface DigBalaInfo {
   desc: string;
 }
 
-export function getDigBala(planet: string, house: number): DigBalaInfo {
+export function getDigBala(planet: string, house: number, lang: Lang = 'en'): DigBalaInfo {
   const strong = DIG_BALA_STRONG[planet];
   if (!strong) {
-    return { score: 0.5, level: 'na', strongHouse: null,
-      desc: 'Directional strength (Dig Bala) is not assigned to shadow planets.' };
+    return { score: 0.5, level: 'na', strongHouse: null, desc: pick(DIG_BALA_FRAMES.na, lang) };
   }
   const weak = ((strong - 1 + 6) % 12) + 1;        // house opposite the strong one
   let dist = Math.abs(house - weak);
   dist = Math.min(dist, 12 - dist);                // 0 (at weak) .. 6 (at strong)
   const score = dist / 6;
   const level = score >= 0.66 ? 'strong' : score >= 0.34 ? 'moderate' : 'weak';
-  return { score, level, strongHouse: strong,
-    desc: `Fully directionally strong in the ${ordinalHouse(strong)} house. Here in the ${ordinalHouse(house)} house its Dig Bala is ${level}, so the planet's results come across as ${level === 'strong' ? 'prominent and effective' : level === 'weak' ? 'muted and easily overshadowed' : 'moderately expressed'}.` };
+  return { score, level, strongHouse: strong, desc: DIG_BALA_FRAMES.desc(strong, house, level, lang) };
 }
 
 // Functional (lordship-based) nature — judged from the Ascendant, the single
 // biggest factor in whether a planet behaves as a benefic or a malefic.
 export type FunctionalNature = 'yogakaraka' | 'benefic' | 'neutral' | 'mixed' | 'malefic' | 'maraka';
-
-const FUNCTIONAL_LABELS: Record<FunctionalNature, string> = {
-  'yogakaraka': 'Yogakaraka',
-  'benefic':    'Functional Benefic',
-  'neutral':    'Neutral',
-  'mixed':      'Mixed',
-  'malefic':    'Functional Malefic',
-  'maraka':     'Maraka',
-};
 
 const FUNCTIONAL_SCORE: Record<FunctionalNature, number> = {
   'yogakaraka': 1.0, 'benefic': 0.78, 'neutral': 0.5, 'mixed': 0.45, 'malefic': 0.22, 'maraka': 0.3,
@@ -168,11 +159,11 @@ function housesRuledFrom(planet: string, ascIndex: number): number[] {
   return d.ownSigns.map(sign => ((sign - ascIndex + 12) % 12) + 1).sort((a, b) => a - b);
 }
 
-export function getFunctionalNature(planet: string, ascIndex: number): FunctionalInfo {
+export function getFunctionalNature(planet: string, ascIndex: number, lang: Lang = 'en'): FunctionalInfo {
   const rules = housesRuledFrom(planet, ascIndex);
   if (rules.length === 0) {
-    return { nature: 'neutral', label: FUNCTIONAL_LABELS.neutral, rulesHouses: [], isYogakaraka: false, score: 0.5,
-      desc: 'A shadow planet owns no sign, so it carries no rulership-based nature. It delivers the results of the house it occupies, of its dispositor (the lord of its sign), and of any planet it joins — read it through those.' };
+    return { nature: 'neutral', label: pick(FUNCTIONAL_LABEL.neutral, lang), rulesHouses: [], isYogakaraka: false, score: 0.5,
+      desc: FUNCTIONAL_DESC.shadow('', false, lang) };
   }
   const has = (...hs: number[]) => hs.some(h => rules.includes(h));
   const trikona  = has(5, 9);
@@ -190,26 +181,14 @@ export function getFunctionalNature(planet: string, ascIndex: number): Functiona
   else if (maraka)              nature = 'maraka';
   else                          nature = 'neutral';
 
-  const hs = rules.map(ordinalHouse).join(' & ');
-  const plural = rules.length > 1 ? 'houses' : 'house';
-  const descMap: Record<FunctionalNature, string> = {
-    'yogakaraka': `Rules both a trine and an angle (the ${hs} houses) — a Yogakaraka for this Ascendant. This is among the most auspicious roles a planet can hold: its periods (dashas) tend to bring the chart's strongest rises in status, wealth, and success.`,
-    'benefic':    `Rules the ${hs} ${plural}, including a trine or the Ascendant — a functional benefic for this Lagna. Its dasha and transits generally support growth, fortune, and well-being.`,
-    'neutral':    `Rules the ${hs} ${plural} — a broadly neutral role for this Lagna. Its outcomes lean on dignity, house, and the company it keeps.`,
-    'mixed':      `Rules both a trine and a difficult house (the ${hs} houses) — a mixed functional nature. It can favour the trine's affairs while testing those of the harder house.`,
-    'malefic':    `Rules the ${hs} ${plural} — a dusthana (6/8/12) lordship for this Lagna, so it acts as a functional malefic. Its periods can bring obstacles, debt, or health and relationship strain unless well supported.`,
-    'maraka':     `Rules the ${hs} ${plural} (a 2nd/7th maraka lordship). Not malefic by nature, but classically tied to health-sensitive timing — its dashas warrant extra care with vitality.`,
-  };
-  return { nature, label: FUNCTIONAL_LABELS[nature], rulesHouses: rules, isYogakaraka, score: FUNCTIONAL_SCORE[nature], desc: descMap[nature] };
+  const hs = rules.map(h => ordHouse(h, lang)).join(lang === 'si' ? ' හා ' : ' & ');
+  const desc = FUNCTIONAL_DESC[nature](hs, rules.length > 1, lang);
+  return { nature, label: pick(FUNCTIONAL_LABEL[nature], lang), rulesHouses: rules, isYogakaraka, score: FUNCTIONAL_SCORE[nature], desc };
 }
 
 // Combined assessment — a lightweight Shadbala that folds the factors into one
 // 0–100 score and a plain-language verdict.
 export type StrengthVerdict = 'very-strong' | 'strong' | 'moderate' | 'weak' | 'very-weak';
-
-const VERDICT_LABELS: Record<StrengthVerdict, string> = {
-  'very-strong': 'Very Strong', 'strong': 'Strong', 'moderate': 'Moderate', 'weak': 'Weak', 'very-weak': 'Very Weak',
-};
 
 const CHESHTA_PLANETS = new Set(['Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']);
 
@@ -231,8 +210,9 @@ export function assessStrength(args: {
   isRetrograde: boolean;
   combust?: boolean;
   neechaBhanga?: boolean;
+  lang?: Lang;
 }): StrengthAssessment {
-  const { planet, dignity, moolatrikona, dig, functional, isRetrograde, combust = false, neechaBhanga = false } = args;
+  const { planet, dignity, moolatrikona, dig, functional, isRetrograde, combust = false, neechaBhanga = false, lang = 'en' } = args;
 
   let sthana = DIGNITY_LABELS[dignity].strength / 10;          // 0.1 .. 1.0
   if (moolatrikona) sthana = Math.min(1, sthana + 0.1);
@@ -254,27 +234,27 @@ export function assessStrength(args: {
     score >= 45 ? 'moderate' :
     score >= 30 ? 'weak' : 'very-weak';
 
-  const digPhrase = dig.level === 'na' ? 'no assigned directional strength'
-    : `${dig.level} directional strength`;
-  const summary = [
-    `Overall this planet is ${VERDICT_LABELS[verdict].toLowerCase()} in this chart.`,
-    `It is ${DIGNITY_LABELS[dignity].label.toLowerCase()}${moolatrikona ? ' (Moolatrikona)' : ''} by sign`,
-    neechaBhanga ? ', but its debilitation is cancelled (Neecha Bhanga), so it performs far above a debilitated planet' : '',
-    `, with ${digPhrase}`,
-    cheshta ? ', and extra motional strength from its retrograde motion' : '',
-    '. ',
-    combust ? 'It is combust — too close to the Sun — which burns its outward significations. ' : '',
-    `As a ${functional.label.toLowerCase()} for this Ascendant, it leans ${functional.score >= 0.7 ? 'strongly supportive' : functional.score >= 0.5 ? 'broadly neutral' : 'challenging'} over its periods.`,
-  ].join('');
+  const verdictLabel = pick(VERDICT_LABEL[verdict], lang);
+  const summary = strengthSummary({
+    verdictLabel,
+    dignityLabel: pick(DIGNITY_LABEL[dignity], lang),
+    moolatrikona, neechaBhanga,
+    digLevel: dig.level,
+    cheshta: cheshta === 1,
+    combust,
+    functionalLabel: functional.label,
+    functionalScore: functional.score,
+    lang,
+  });
 
   const factors: StrengthFactor[] = [
-    { label: 'Sign Dignity', value: sthana },
-    { label: 'Direction',    value: dig.level === 'na' ? 0.5 : dig.score },
-    { label: 'Function',     value: functional.score },
+    { label: pick(FACTOR_LABEL.signDignity, lang), value: sthana },
+    { label: pick(FACTOR_LABEL.direction, lang),   value: dig.level === 'na' ? 0.5 : dig.score },
+    { label: pick(FACTOR_LABEL.function, lang),    value: functional.score },
   ];
-  if (cheshta) factors.push({ label: 'Motion', value: 1 });
+  if (cheshta) factors.push({ label: pick(FACTOR_LABEL.motion, lang), value: 1 });
 
-  return { score, verdict, verdictLabel: VERDICT_LABELS[verdict], summary, factors };
+  return { score, verdict, verdictLabel, summary, factors };
 }
 
 // Combustion (Astangata) — a planet too close to the Sun is "burnt", weakening
@@ -291,7 +271,7 @@ export interface CombustionInfo {
   desc: string;
 }
 
-export function getCombustion(planet: string, planetLongitude: number, sunLongitude: number, isRetrograde: boolean): CombustionInfo | null {
+export function getCombustion(planet: string, planetLongitude: number, sunLongitude: number, isRetrograde: boolean, lang: Lang = 'en'): CombustionInfo | null {
   const base = COMBUSTION_ORB[planet];
   if (base === undefined) return null;             // Sun, Rahu, Ketu — never combust
   let sep = Math.abs(planetLongitude - sunLongitude) % 360;
@@ -301,8 +281,8 @@ export function getCombustion(planet: string, planetLongitude: number, sunLongit
   return {
     isCombust, separation: sep, limit,
     desc: isCombust
-      ? `Only ${sep.toFixed(1)}° from the Sun (within the ${limit}° combustion orb) — the planet is combust. Its outward results are partly burnt up even where its dignity is good, though its inner and spiritual side can intensify.`
-      : `${sep.toFixed(1)}° from the Sun, clear of the ${limit}° combustion orb — not burnt.`,
+      ? COMBUSTION_FRAMES.combust(sep.toFixed(1), limit, lang)
+      : COMBUSTION_FRAMES.clear(sep.toFixed(1), limit, lang),
   };
 }
 
@@ -325,8 +305,9 @@ export function getNeechaBhanga(args: {
   ascIndex: number;
   isRetrograde: boolean;
   signByPlanet: Record<string, number>;    // planet -> rashiIndex for all grahas
+  lang?: Lang;
 }): NeechaBhangaInfo {
-  const { planet, rashiIndex, ascIndex, isRetrograde, signByPlanet } = args;
+  const { planet, rashiIndex, ascIndex, isRetrograde, signByPlanet, lang = 'en' } = args;
   if (getDignity(planet, rashiIndex) !== 'debilitated') {
     return { applies: false, cancelled: false, statusLabel: '', reasons: [], desc: '' };
   }
@@ -342,199 +323,42 @@ export function getNeechaBhanga(args: {
 
   // 1. Lord of the debilitation sign sits in a kendra from Lagna or Moon.
   if (inKendraFromLagnaOrMoon(signByPlanet[dispositor])) {
-    reasons.push(`the lord of the debilitation sign (${dispositor}) is in a kendra from the Lagna or Moon`);
+    reasons.push(NB_FRAMES.reasonDispositorKendra(dispositor, lang));
   }
   // 2. The planet exalted in this sign sits in a kendra from Lagna or Moon.
   if (exaltedHere && inKendraFromLagnaOrMoon(signByPlanet[exaltedHere])) {
-    reasons.push(`${exaltedHere}, which is exalted in this sign, is in a kendra from the Lagna or Moon`);
+    reasons.push(NB_FRAMES.reasonExaltedKendra(exaltedHere, lang));
   }
   // 3. The dispositor is itself exalted or in its own sign.
   const dispSign = signByPlanet[dispositor];
   if (dispSign !== undefined) {
     const dd = getDignity(dispositor, dispSign);
     if (dd === 'exalted' || dd === 'own-sign') {
-      reasons.push(`the dispositor ${dispositor} is itself ${dd === 'exalted' ? 'exalted' : 'in its own sign'}`);
+      reasons.push(NB_FRAMES.reasonDispositorStrong(dispositor, dd === 'exalted', lang));
     }
   }
   // 4. The debilitated planet is conjunct or directly aspected (7th) by its dispositor.
   if (dispSign !== undefined && (dispSign === debilSign || ((dispSign - debilSign + 12) % 12) === 6)) {
-    reasons.push(`its dispositor ${dispositor} ${dispSign === debilSign ? 'is conjunct it' : 'aspects it from the 7th'}`);
+    reasons.push(NB_FRAMES.reasonDispositorAspect(dispositor, dispSign === debilSign, lang));
   }
   // 5. The debilitated planet is retrograde.
   if (isRetrograde) {
-    reasons.push('the planet is retrograde');
+    reasons.push(NB_FRAMES.reasonRetrograde(lang));
   }
 
   const cancelled = reasons.length > 0;
   return {
     applies: true,
     cancelled,
-    statusLabel: cancelled ? 'Cancelled' : 'Active',
+    statusLabel: cancelled
+      ? (lang === 'si' ? 'භංග විය' : 'Cancelled')
+      : (lang === 'si' ? 'සක්‍රියයි' : 'Active'),
     reasons,
     desc: cancelled
-      ? `Debilitation is cancelled because ${reasons[0]}${reasons.length > 1 ? `, and ${reasons.length - 1} further reason${reasons.length > 2 ? 's' : ''}` : ''}. The planet behaves far better than a raw debilitation — classically a Neecha Bhanga Raja Yoga, giving a strong rise after early struggle.`
-      : `The planet is debilitated and none of the classical cancellation (Neecha Bhanga) conditions are met, so its weakness stands. Remedial focus is advised for its significations.`,
+      ? NB_FRAMES.cancelled(reasons[0], reasons.length - 1, lang)
+      : NB_FRAMES.active(lang),
   };
 }
-
-// ─── Retrograde effects ────────────────────────────────────────────────────
-
-const RETROGRADE_EFFECTS: Record<string, {
-  general: string; health: string; wealth: string; career: string; relationships: string;
-  intensified: string[]; remedies: string[];
-}> = {
-  Mars: {
-    general: 'Retrograde Mars turns its energy inward. External drive is replaced by inner restlessness, frustration, and introspection. Actions taken during this period tend to require revision. Energy that would normally be directed outward can become self-destructive if not channeled consciously.',
-    health: 'Internal heat and inflammation are more common than external injuries. Blood pressure can rise from suppressed anger. Exercise is essential as an outlet; avoid letting tension accumulate.',
-    wealth: 'Impulsive financial decisions made now often need to be reversed. Property transactions and technical investments should be carefully re-evaluated. Debts from the past may resurface.',
-    career: 'Career moves made now may not stick — projects are started and then abandoned or revised. Leadership is less effective; better to support existing structures than launch new ones.',
-    relationships: 'Old conflicts with siblings or partners resurface for resolution. Anger turned inward affects intimacy. Past arguments need to be addressed rather than avoided.',
-    intensified: ['Accidents from internal causes (stress, poor judgment) rather than external', 'Legal and property disputes from the past re-emerge', 'Frustration and impatience peak — impulsive decisions backfire'],
-    remedies: ['Channel physical energy daily through exercise — running, martial arts, or yoga', 'Donate red lentils and copper items on Tuesdays', 'Recite the Hanuman Chalisa to transform Mars energy into disciplined courage', 'Avoid initiating major property or legal actions during this period'],
-  },
-  Mercury: {
-    general: 'Retrograde Mercury slows and internalizes communication and analytical processes. The mind becomes more introspective, revisiting old ideas rather than generating new ones. Contracts, agreements, and technology all require extra care and verification.',
-    health: 'The nervous system is under strain — anxiety, overthinking, and mental fatigue are the main risks. Skin conditions may flare. Digestive health is affected by accumulated mental stress.',
-    wealth: 'Financial plans made now are subject to revision. Contracts and agreements entered into should be reviewed thoroughly. Existing business dealings from the past may resurface for renegotiation.',
-    career: 'Communication errors, misunderstandings, and technology failures are more likely. Best period to review, revise, and refine existing work rather than launching anything new.',
-    relationships: 'Communication breakdowns with friends and partners. Old friends from the past re-enter your life. Misunderstandings are common — over-communicate and confirm.',
-    intensified: ['Technology, devices, and communication systems malfunction', 'Documents and contracts need triple-checking', 'Past business partners or communication issues resurface'],
-    remedies: ['Practice written journaling to externalize internal mental processing', 'Delay signing major contracts or agreements until Mercury turns direct', 'Chant Om Budhaya Namah 108 times on Wednesdays', 'Wear emerald or green tourmaline to stabilize Mercury energy'],
-  },
-  Jupiter: {
-    general: 'Retrograde Jupiter turns its expansive wisdom inward. External growth slows, but inner philosophical and spiritual development accelerates dramatically. The material benefits of Jupiter are delayed, but the quality of wisdom gained is deeper and more lasting.',
-    health: 'Liver and weight-related conditions need monitoring. Inner joy and optimism may be temporarily diminished, affecting immune function and overall vitality.',
-    wealth: 'Financial expansion is delayed rather than denied. Investments made now may require a longer timeline to mature. Avoid over-speculation or over-borrowing during this transit.',
-    career: 'Career growth slows externally, but internal capacity builds significantly. Teaching, writing, research, and advisory work thrive. External recognition comes later, after the retrograde ends.',
-    relationships: 'Relationships with mentors, teachers, or elders undergo review. Children may require extra attention. Past-life wisdom is accessible through meditation and introspection.',
-    intensified: ['Spiritual practice becomes more rewarding than worldly pursuits', 'Wisdom from past experiences becomes more accessible', 'Philosophical and religious questions intensify'],
-    remedies: ['Deepen your spiritual practice — meditation, scriptural study, and service', 'Offer yellow flowers and turmeric to Brihaspati on Thursdays', 'Fast on Thursdays or eat only one meal', 'Donate to educational or spiritual institutions — this activates the positive Jupiter'],
-  },
-  Venus: {
-    general: 'Retrograde Venus brings past relationships, artistic projects, and values under deep review. The desire for love and beauty turns inward. Old romantic connections resurface, and unexpressed feelings from the past demand attention.',
-    health: 'Hormonal imbalances and reproductive health fluctuate. Kidney function may be affected. Overindulgence in comfort eating or substance use is a risk when feelings are not processed.',
-    wealth: 'Past financial decisions related to luxury, beauty, or relationships may resurface. Avoid major purchases of art, jewelry, or luxury goods now — quality is hard to assess. Hidden financial agreements may resurface.',
-    career: 'Creative projects already in progress benefit from revision and refinement. New creative launches may not receive the reception you expected. Networking based on charm alone is less effective.',
-    relationships: 'Former partners, old flames, or estranged friends re-enter the picture. Unresolved feelings demand resolution. Current relationships undergo a values re-evaluation — what truly matters becomes clear.',
-    intensified: ['Ex-partners re-emerge for closure or reconciliation', 'Artistic and creative works need revision — the first version rarely satisfies', 'Self-worth questions surface — feeling unloveable or undervalued'],
-    remedies: ['Do not make major relationship decisions — allow the cycle to complete', 'Practice self-care and self-love rituals — beauty, relaxation, nurturing', 'Chant Om Shukraya Namah and offer white flowers on Fridays', 'Avoid large purchases of luxury items or cosmetic procedures'],
-  },
-  Saturn: {
-    general: 'Retrograde Saturn intensifies its karmic review function. Past obligations, unfinished duties, and neglected responsibilities come back with greater urgency. The lessons Saturn teaches are not avoided — they are repeated with higher stakes until the underlying pattern is resolved.',
-    health: 'Chronic conditions from the past resurface with more intensity. Joints, bones, and teeth require attention. Mental health — particularly depression, anxiety, and pessimism — must be proactively managed.',
-    wealth: 'Financial karma from past decisions returns. Debts, obligations, and poorly planned investments demand settlement. Avoid new long-term financial commitments until Saturn turns direct.',
-    career: 'Career progress that was previously blocked comes under review. Old work obligations resurface. Authority figures and organizational structures require careful navigation — do not cut corners.',
-    relationships: 'Past relationship karma is being processed. Relationships with elderly, workers, or authority figures come under review. Old obligations to family or community demand attention.',
-    intensified: ['Past-life and this-life karmic debts accelerate in their demand for resolution', 'Obstacles multiply if underlying patterns are not honestly addressed', 'Depression and heaviness are risks — spiritual discipline is the antidote'],
-    remedies: ['Serve the elderly, disabled, and underprivileged with consistent regularity', 'Donate black sesame, iron items, and warm clothing on Saturdays', 'Chant the Shani Chalisa and Mahamrityunjaya mantra daily', 'Practice extreme patience — this period rewards persistence more than speed'],
-  },
-  Rahu: {
-    general: 'Retrograde Rahu amplifies its shadowy, compulsive, and boundary-dissolving qualities. Obsessive thinking, foreign influences, and unconventional impulses become stronger. The desire for the unusual intensifies, and the ability to discern genuine opportunity from illusion decreases.',
-    health: 'Mental health — anxiety, phobias, and obsessive thoughts — is the primary risk. Mysterious or psychosomatic ailments are more possible. Avoid all intoxicants as sensitivity is heightened.',
-    wealth: 'Speculative and risky financial ventures are particularly dangerous now. Foreign financial dealings may conceal hidden complications. Sudden gains can be followed by sudden losses.',
-    career: 'Career ambitions become obsessive rather than strategic. Foreign career opportunities may be illusory. New ventures in technology, foreign lands, or unconventional domains need thorough due diligence.',
-    relationships: 'Obsessive attractions to unusual or unsuitable partners. Past entanglements resurface. Foreign individuals enter the picture — with consequences that are not immediately visible.',
-    intensified: ['Illusions and self-deception around opportunity are at their peak', 'Addictive behavior patterns surface and intensify', 'Foreign or unconventional influences disrupt stability'],
-    remedies: ['Chant the Durga Chalisa and Rahu Beej mantra — Om Raam Rahave Namah', 'Avoid making major life decisions based on unusual or foreign opportunities', 'Practice grounding — walk barefoot on earth, maintain routine, eat wholesome food', 'Donate to causes serving marginalized communities on Saturdays'],
-  },
-  Ketu: {
-    general: 'Retrograde Ketu deepens its spiritual and past-life focus. The pull toward detachment, moksha, and inner wisdom intensifies. Worldly desires feel increasingly hollow, and the need for spiritual connection becomes urgent. Past-life memories, intuitions, and karmic lessons surface more clearly.',
-    health: 'Mysterious viral and inflammatory conditions are possible. Accidents — especially to lower extremities — need extra caution. Spiritual practices like meditation and pranayama directly improve physical health.',
-    wealth: 'Material accumulation feels unsatisfying despite any financial gains. Wealth from worldly sources diminishes while wealth from spiritual or research work may increase. Avoid speculative ventures entirely.',
-    career: 'Traditional career paths feel meaningless. The pull toward healing, research, spiritual work, and investigative pursuits is strong. Past-life skills in technical or occult domains surface naturally.',
-    relationships: 'Detachment from relationships increases — both healthy detachment and unhealthy withdrawal. Past-life connections with soulmates are more likely to emerge. Relationships from the past surface for karmic completion.',
-    intensified: ['Past-life memories and déjà vu experiences increase significantly', 'Desire for spiritual liberation over worldly achievement peaks', 'Difficulty staying present — pulled toward the past or the transcendent'],
-    remedies: ['Deepen spiritual practice — meditation, vipassana, and service are most effective', 'Worship Lord Ganesha with red flowers on Tuesdays for obstacle removal', "Wear cat's eye (chrysoberyl) only after careful astrological assessment", 'Donate blankets, multicolored items, and sesame to those in need'],
-  },
-};
-
-// ─── Planet-in-house effects ───────────────────────────────────────────────
-
-const PLANET_IN_HOUSE: Record<string, Record<number, {
-  effect: string; strengths: string[]; challenges: string[]; keynote: string;
-}>> = {
-  Sun: {
-    1:  { keynote:'Authority & Presence', effect:'Sun in the 1st house creates a commanding personality with natural leadership qualities. The native projects confidence and authority. Health is generally robust, though the ego must be consciously managed.',                         strengths:['Natural leadership and authority','Strong physical vitality','Prominent public presence','Clarity of purpose and direction'],                                  challenges:['Ego and pride can create friction with others','Dominance may overshadow collaboration','Authority figures in life often test the ego'] },
-    2:  { keynote:'Wealth Through Status', effect:'Sun illuminates the house of wealth and family. Income often comes through government, authority positions, or the father. Speech is authoritative; the family identity is important to the native.',                              strengths:['Income from authoritative positions','Strong family values and identity','Confident and commanding speech'],                                                      challenges:['Ego attachment to financial status','Conflict with father over resources','Tendency to overspend on status symbols'] },
-    3:  { keynote:'Leadership Through Communication', effect:'Strong courage and communication skills. Leadership in writing, media, or sibling relationships. The native is bold, direct, and willing to take initiative in expressing ideas.',                                  strengths:['Bold and direct communication style','Leadership among siblings and peers','Courage to express unpopular truths'],                                                challenges:['Domineering in communication','Conflict with siblings over authority','Tendency to speak before listening'] },
-    4:  { keynote:'Authority at Home', effect:'The Sun in the 4th house places authority in the domestic sphere. The native may have an influential father but feels restricted at home. Success in real estate, government properties, or homeland matters.',                     strengths:['Strong connection to homeland and property','Father\'s influence shapes the home','Success in real estate and government'],                                        challenges:['Ego clashes in home environment','Father relationship is complex','Difficulty finding emotional peace at home'] },
-    5:  { keynote:'Creative Brilliance', effect:'Sun in the house of creativity and intelligence brings brilliance in arts, leadership, and speculation. Children are a source of pride. The native thrives in creative leadership roles and enjoys being in the spotlight.',       strengths:['Creative brilliance and artistic leadership','Children bring honor and joy','Natural magnetism in romantic relationships'],                                        challenges:['Ego investment in children or creative work','Speculation and risk-taking tendencies','Difficulty accepting creative criticism'] },
-    6:  { keynote:'Victory Over Enemies', effect:'Sun in the 6th house creates strong enemies but also the strength to overcome them. The native thrives in competitive environments and excels in service-oriented leadership. Health requires attention to heart and vitality.',  strengths:['Excellent competitive instinct and resilience','Victory over obstacles through sheer will','Strong performance in government or healthcare'],                        challenges:['Persistent enemies in the workplace','Health fluctuates due to overwork','Sun here can create ego conflicts with employees'] },
-    7:  { keynote:'Visible Partner', effect:'The partner tends to be powerful, authoritative, or from a prominent family. Business partnerships are best with established individuals. Public dealings are influenced by ego — the native must practice humility in partnerships.',  strengths:['Attractive to authoritative and successful partners','Public reputation benefits from partnerships','Business acumen in government and corporate settings'],        challenges:['Ego clashes with spouse or partners','Domineering in marriage or business','Partner may outshine the native or vice versa'] },
-    8:  { keynote:'Hidden Power', effect:'Sun in the 8th house creates interest in occult, research, and transformation. Vitality can fluctuate dramatically. Inheritance and government benefits are possible. The native undergoes profound personal transformation across life.',  strengths:['Research abilities and occult knowledge','Potential government or inherited wealth','Profound personal transformation'],                                           challenges:['Vitality fluctuates; health crises are possible','Ego is repeatedly dissolved through crises','Conflict with authority over inheritance or taxation'] },
-    9:  { keynote:'Philosophical Leadership', effect:'Sun in the 9th house is highly auspicious for fortune, philosophy, and higher learning. The father is an influential and positive figure. Fame comes through religious or educational pursuits. Travel brings recognition.',   strengths:['Strong philosophical and religious conviction','Father as a positive and influential figure','Fame and fortune through dharmic pursuits'],                        challenges:['Rigid adherence to personal philosophy','Conflict with different belief systems','Fanaticism in religion or ideology'] },
-    10: { keynote:'Peak Career Authority', effect:'Sun in the 10th house is one of the best placements for career success. Authority, government recognition, and professional leadership are strongly indicated. The native is seen as a natural leader in their field.',          strengths:['Exceptional career visibility and authority','Government recognition and honors','Natural professional leadership respected by peers'],                            challenges:['Ego battles with authority or organization','Career overshadows personal and family life','Pressure of constant public scrutiny'] },
-    11: { keynote:'Gains Through Influence', effect:'Sun in the 11th house brings financial gains through social networks, government connections, and senior figures. The native commands respect in social circles and benefits from associations with powerful individuals.',     strengths:['Income through influential social networks','Senior figures and government support goals','Social leadership and community influence'],                            challenges:['Ego conflicts in group settings','Friends may be competitive rather than supportive','Financial gains fluctuate with reputation'] },
-    12: { keynote:'Spiritual Authority', effect:'Sun in the 12th house diminishes material authority but elevates spiritual authority. The native may work in foreign lands, institutions, or behind the scenes. Vitality benefits from solitude and spiritual practice.',          strengths:['Spiritual leadership and foreign recognition','Healing and solitary creative work thrive','Strong capacity for meditative and spiritual practice'],                 challenges:['Father relationship complex or distant','Public recognition is limited or delayed','Ego dissolution through isolation or loss'] },
-  },
-  Moon: {
-    1:  { keynote:'Emotional Presence', effect:'Moon in the 1st house creates a deeply sensitive, empathetic, and emotionally expressive personality. The native is highly intuitive, changeable in mood, and strongly connected to the public. Mother plays a defining role.',   strengths:['Deep emotional intelligence and empathy','Strong public appeal and popularity','Powerful intuition and psychic sensitivity'],                                     challenges:['Moods fluctuate with lunar cycles','Overly sensitive to criticism and environment','Difficulty separating personal feelings from objective reality'] },
-    2:  { keynote:'Emotional Wealth', effect:'Moon illuminates the house of wealth with emotional sensitivity. Income fluctuates like the tides. The family environment is nurturing but changeable. Food, dairy, and hospitality are beneficial income sources.',                  strengths:['Nurturing family environment and emotional bonds','Income from public-facing businesses, food, or dairy','Strong emotional relationship with accumulated resources'], challenges:['Financial fluctuations matching emotional cycles','Emotional overspending and comfort eating tendencies','Attachment to family opinions on money'] },
-    4:  { keynote:'Mother\'s Blessing', effect:'Moon in its natural house (4th) is highly auspicious. Deep attachment to home, mother, and emotional security. The native thrives in the homeland and builds a beautiful, nurturing home environment. Real estate is favorable.',  strengths:['Deeply nurturing home environment','Strong mother-child bond — highly supportive','Real estate and property bring lasting happiness'],                             challenges:['Difficulty leaving the hometown or childhood home','Over-reliance on mother or maternal figures','Emotional turbulence when home environment is disturbed'] },
-    5:  { keynote:'Creative Emotion', effect:'Moon in the 5th brings emotional creativity, romantic sensitivity, and deep love for children. Artistic talents flourish. Investments and speculation follow emotional impulses rather than logic — requiring caution.',              strengths:['Creative artistic expression is deeply felt','Deeply loving parent-child relationships','Romantic sensitivity and emotional intelligence in relationships'],         challenges:['Emotional investment in children can cause anxiety','Speculation driven by emotion rather than research','Romantic idealism leads to disappointment'] },
-    7:  { keynote:'Emotional Partnership', effect:'The spouse is often emotionally sensitive, nurturing, and connected to the public. Partnerships are based on emotional resonance. The native finds emotional security through relationships and dislikes being alone.',           strengths:['Deeply nurturing and emotionally fulfilling partnerships','Spouse is caring, sensitive, and publicly popular','Business partnerships with women or public-facing entities thrive'], challenges:['Emotional dependency on partner for security','Mood swings disrupt relationship harmony','Public business vulnerable to emotional and market fluctuations'] },
-    10: { keynote:'Public Career Success', effect:'Moon in the 10th house is excellent for public-facing careers. The native gains fame through emotional connection with the public — media, politics, hospitality, and public service all excel. The mother may influence career.',strengths:['Fame and recognition from the general public','Career in public-facing domains thrives — media, politics, hospitality','Emotional intelligence as a professional asset'], challenges:['Mood fluctuations affect professional consistency','Career reputation is vulnerable to public opinion','Overwork to maintain public approval leads to burnout'] },
-    11: { keynote:'Social Gains', effect:'Moon in the 11th house brings gains through social connections, public networks, and elder sisters. Income fluctuates but trends upward over time. The native is emotionally invested in social causes and group endeavors.',              strengths:['Broad and supportive social network','Income from public business, women, and emotional services','Elder siblings are supportive and beneficial'],                challenges:['Income fluctuates with emotional cycles','Emotional dependency on social approval for motivation','Over-generosity depletes financial gains'] },
-    12: { keynote:'Inner Contemplation', effect:'Moon in the 12th house brings deep inner emotional life, connection to foreign lands, and spiritual sensitivity. The native may feel emotionally isolated in childhood but finds peace through solitude, service, and spirituality.', strengths:['Deep spiritual and meditative emotional capacity','Connection to foreign lands, cultures, and international living','Service in healing, isolation, or care environments'],challenges:['Emotional isolation and loneliness','Sleep disturbances and subconscious anxiety','Difficulty expressing emotions in social settings'] },
-  },
-  Mars: {
-    1:  { keynote:'Dynamic Energy', effect:'Mars in the 1st house creates a dynamic, energetic, and courageous personality. The native is assertive, competitive, and physically active. Success in physical and competitive fields. Watch for impulsiveness and anger management.',strengths:['Exceptional physical energy and stamina','Natural courage and competitiveness','Leadership in physical and technical domains'],                                      challenges:['Impulsiveness leads to regretted actions','Anger can damage relationships and opportunities','Accident-proneness — especially to the head and face'] },
-    3:  { keynote:'Courageous Communication', effect:'Mars in the 3rd house creates bold communication, courageous siblings, and strong writing ability. The native is direct, sometimes blunt, but highly effective in competitive communication environments.',                   strengths:['Bold and courageous writing and speaking ability','Victory in competitive and legal communication','Excellent in sports, military, and technical skills'],           challenges:['Conflict and aggression with siblings','Communication can be aggressive or argumentative','Short journeys involve risk — travel carefully'] },
-    4:  { keynote:'Property & Passion', effect:'Mars in the 4th house creates passion for property and the home. Real estate can be both a financial strength and a source of conflict. The home environment may be intense or competitive. Mother relationship has a complex dynamic.',strengths:['Strong drive for property acquisition and real estate gains','Protective of home and family with fierce loyalty','Physical home improvements and land work thrive'], challenges:['Conflict at home and with mother','Property disputes are more likely','Emotional tension and anger in the home environment'] },
-    7:  { keynote:'Passionate Partnerships', effect:'Mars in the 7th house brings passionate, energetic partnerships. The spouse is often assertive and ambitious. Business partnerships are competitive and productive. Legally-oriented partnerships are common — law, business, military.',strengths:['Passionate and physically energetic partnerships','Business drive and competitive advantage through partnerships','Legal and contractual dealings done confidently'],  challenges:['Marital friction and conflict from competing egos','Legal disputes in business partnerships','Partner may be domineering or aggressive'] },
-    10: { keynote:'Career Drive', effect:'Mars in the 10th house is excellent for career ambition, government service, military, engineering, and competitive professions. The native rises through sheer effort and competitive drive. Recognition through physical or technical excellence.',strengths:['Exceptional career ambition and competitive drive','Success in engineering, military, government, and sports','Leadership through physical and technical expertise'], challenges:['Conflict with authority figures and bosses','Career moves are sometimes impulsive or premature','Aggression in the workplace creates unnecessary enemies'] },
-    11: { keynote:'Competitive Gains', effect:'Mars in the 11th house drives income through competitive effort, technical business, and assertive networking. The native gains through siblings, friends, and elder co-workers. Income from real estate, sports, and technical fields is indicated.',strengths:['Strong drive for financial gains and income growth','Competitive technical business and entrepreneurship','Elder siblings and friends provide real support and opportunities'],challenges:['Overwork and aggression to achieve financial goals','Conflict with elder siblings over money or property','Impulsive spending undoes financial gains made through effort'] },
-  },
-  Mercury: {
-    1:  { keynote:'Intellectual Presence', effect:'Mercury in the 1st house creates an intellectually sharp, communicative, and analytical personality. The native appears youthful throughout life and is often multi-talented. Quick thinking and verbal dexterity are natural strengths.',strengths:['Sharp intellect and analytical mind','Natural communication skills — writing, speaking, teaching','Youthful appearance and adaptable personality'],                   challenges:['Overthinking and indecisiveness','Tendency to intellectualize emotions rather than feel them','Can be superficial or overly detached from deeper matters'] },
-    2:  { keynote:'Wealth Through Intelligence', effect:'Mercury in the 2nd house indicates income through intellect, communication, and business acumen. Financial decisions are made logically. Multiple income streams from writing, teaching, trading, or communication are indicated.',strengths:['Multiple income sources through intellect and communication','Financial intelligence and careful money management','Business and trading acumen'],                    challenges:['Overthinking financial decisions creates missed opportunities','Speech can be excessively focused on money or material concerns','Scattered financial investments from constantly changing ideas'] },
-    3:  { keynote:'Communication Mastery', effect:'Mercury in its natural house (3rd) is a powerful placement for communication, writing, and intellectual skills. The native is an excellent writer, speaker, trader, and communicator. Sibling relationships are intellectually stimulating.',strengths:['Master communicator — writing, speaking, media, and teaching','Excellent trading and negotiation skills','Intellectually stimulating sibling relationships'],       challenges:['Overthinking before acting — analysis paralysis','Tendency to gossip or over-communicate','Siblings may be too competitive or intellectually rivalrous'] },
-    5:  { keynote:'Creative Intelligence', effect:'Mercury in the 5th house creates intellectual creativity and analytical brilliance. The native excels in education, writing, games of strategy, and intellectual investments. Children are intellectually sharp and communicative.',strengths:['Brilliant intellectual and creative capacity','Excellent in educational and strategic endeavors','Children are communicative and intellectually gifted'],               challenges:['Overthinking romantic relationships — head overrules heart','Speculative investments based on analysis rather than intuition can miss emotional signals','Teaching style may be overly dry or academic'] },
-    7:  { keynote:'Intellectual Partnership', effect:'Mercury in the 7th house brings mentally stimulating partnerships. The spouse or business partner is intelligent, communicative, and skilled. Contracts and negotiations are handled well. Business in communication or trading fields thrives.',strengths:['Intelligent and communicative spouse and partners','Excellent contract negotiation and business acumen','Partnerships in writing, media, and trading fields thrive'], challenges:['Over-analyzing partner leading to emotional disconnection','Too many business partnerships simultaneously — difficult to manage','Indecisiveness in committing to partnerships'] },
-    10: { keynote:'Career Through Communication', effect:'Mercury in the 10th house excels in career fields requiring communication, analysis, and intellect — writing, teaching, IT, business, and government. The native builds reputation through intellectual contribution.',         strengths:['Career success in writing, teaching, communication, and IT','Government and intellectual advisory roles flourish','Strong professional reputation through intellectual output'],challenges:['Career path changes frequently — Mercury is restless','Authority figures question intellectual conclusions — confidence needed','Over-reliance on intellect without developing leadership gravitas'] },
-  },
-  Jupiter: {
-    1:  { keynote:'Wisdom & Fortune', effect:'Jupiter in the 1st house is one of the most auspicious placements. The native is blessed with wisdom, optimism, and natural good fortune. Teaching ability, philosophical depth, and spiritual understanding come naturally.',          strengths:['Natural wisdom, knowledge, and philosophical understanding','Strong good fortune and overall life blessing','Teaching and advisory abilities that earn respect'],       challenges:['Weight gain and over-indulgence as Jupiter expands everything','Overconfidence from excessive optimism','Procrastination because things tend to work out anyway'] },
-    2:  { keynote:'Abundant Wealth', effect:'Jupiter in the 2nd house is highly auspicious for wealth accumulation. The family background is blessed, speech is wise and eloquent, and financial growth is sustained over time. Multiple wealth sources indicated.',                   strengths:['Exceptional wealth accumulation and financial blessing','Eloquent, wise, and inspiring speech','Family background is respected and fortunate'],                     challenges:['Overspending from excessive generosity or optimism','Weight gain from overindulgence in rich foods','Trusting others too easily with financial matters'] },
-    4:  { keynote:'Home Happiness', effect:'Jupiter in the 4th house blesses home, mother, and emotional peace. The native has a large, beautiful home. Education is excellent. Mother is a wise and fortunate influence. Deep happiness from family life and homeland.',             strengths:['Large and beautiful home environment blessed with peace','Excellent education and intellectual foundation','Mother is wise, supportive, and highly influential'],    challenges:['Complacency from excessive comfort','Over-reliance on family for emotional support','Weight gain from over-eating in a comfortable home environment'] },
-    5:  { keynote:'Children & Creativity Blessed', effect:'Jupiter in the 5th house (its natural house of strength) is exceptionally auspicious. Children are blessed, intelligent, and successful. Creative and intellectual endeavors thrive. Investments in education and dharmic fields yield excellent returns.',strengths:['Highly blessed children who are successful and spiritual','Excellent creativity, intellect, and educational achievement','Investments in dharmic and ethical fields yield exceptional returns'],challenges:['Over-indulgence in speculation can erode gains','Excessive expectations from children lead to pressure','Too many creative interests without finishing any single one'] },
-    7:  { keynote:'Blessed Partnerships', effect:'Jupiter in the 7th house brings a wise, educated, and fortunate spouse. Business partnerships are ethical and mutually beneficial. Legal dealings are generally favorable. The native attracts trustworthy and respectable associates.',strengths:['Wise, educated, and fortunate life partner','Highly beneficial and ethical business partnerships','Positive legal outcomes and favorable public dealings'],           challenges:['Unrealistically high expectations of partners','Overly trusting in partnerships — can be taken advantage of','Spouse or partner may be overweight or over-indulgent'] },
-    9:  { keynote:'Greatest Fortune', effect:'Jupiter in its own house (9th) is the most auspicious position in Vedic astrology. Luck, fortune, father, philosophy, and higher learning are all maximally blessed. The native is a teacher of teachers and a guardian of wisdom.',    strengths:['Maximum fortune, luck, and divine blessing in this life','Father is highly wise, successful, and a positive life force','Mastery of philosophy, religion, and higher wisdom'],challenges:['Dogmatism in religious or philosophical beliefs','Over-confidence in personal luck leading to complacency','May reject practical worldly matters as beneath spiritual focus'] },
-    10: { keynote:'Career Success', effect:'Jupiter in the 10th house brings professional success, recognition, and authority through wisdom, teaching, law, and ethical conduct. The native is respected in their field and may achieve positions of significant organizational authority.',strengths:['Professional success through wisdom and ethical conduct','Recognition as an authority in teaching, law, or advisory fields','Career advancement through genuine merit and respected knowledge'],challenges:['Career growth can be slower than expected despite qualifications','Overcommitting to professional obligations at family\'s expense','May reject practical opportunities for idealistic ones that don\'t materialize'] },
-    11: { keynote:'Maximum Gains', effect:'Jupiter in the 11th house maximizes income, social networks, and the fulfillment of desires. The native benefits enormously from social connections, government networks, and elder mentors. Financial gains grow consistently over the long term.',strengths:['Consistent and growing financial gains over the long term','Powerful and beneficial social and professional networks','Desires and goals are fulfilled with Jupiter\'s protective grace'], challenges:['Over-generosity depletes accumulated gains','Too many social obligations from too large a network','Complacency reduces the effort needed to maintain high gains'] },
-  },
-  Venus: {
-    1:  { keynote:'Beauty & Grace', effect:'Venus in the 1st house creates a beautiful, charming, and artistically gifted personality. The native has natural aesthetic sense and attracts love and admiration easily. Comfort, luxury, and refinement are important life themes.',       strengths:['Natural physical beauty and personal charm','Strong artistic talent and aesthetic sensitivity','Easily attracts love, admiration, and social opportunities'],          challenges:['Vanity and excessive focus on appearance','Over-indulgence in pleasure and comfort','Dependency on external validation for self-worth'] },
-    2:  { keynote:'Artistic Wealth', effect:'Venus in the 2nd house blesses the family with beauty, wealth, and pleasurable experiences. Income from arts, beauty, fashion, and luxury goods is indicated. Speech is sweet, charming, and persuasive.',                               strengths:['Income from beauty, arts, and luxury industries','Sweet, charming, and persuasive communication style','Family environment is beautiful, harmonious, and refined'],   challenges:['Overspending on luxury and beauty products','Voice problems from excessive indulgence in rich foods or substances','Financial decisions driven by aesthetics rather than value'] },
-    4:  { keynote:'Luxurious Home', effect:'Venus in the 4th house creates a beautiful, comfortable, and luxurious home environment. The mother is charming and artistically gifted. Real estate involves beautiful properties. Vehicles are quality and aesthetically pleasing.',      strengths:['Beautiful and luxurious home environment','Charming, artistically gifted, and loving mother','Real estate involving beautiful properties and quality vehicles'],      challenges:['Over-spending on home décor and luxuries','Emotional attachment to comfort creates resistance to necessary change','Mother\'s charm may conceal important practical realities'] },
-    5:  { keynote:'Creative Expression', effect:'Venus in the 5th house is excellent for arts, romance, and creative expression. Relationships are beautiful and idealistic. Children are artistically talented. Investments in the creative arts and entertainment fields perform well.',strengths:['Exceptional creative talent in arts, music, and entertainment','Beautiful, romantic, and idealistic relationships','Children are charming, beautiful, and artistically gifted'],challenges:['Idealized romance leads to disappointment','Over-investment in speculative aesthetic ventures','Difficulty accepting the practical realities of creative business'] },
-    7:  { keynote:'Beautiful Partnership', effect:'Venus in the 7th house (its natural domain) brings a beautiful, charming, and artistically gifted spouse. Partnerships are harmonious and mutually beneficial. The native thrives in collaborative creative and luxury business environments.',strengths:['Beautiful, charming, and artistically gifted life partner','Harmonious and mutually beneficial partnerships','Business success in luxury, beauty, arts, and creative fields'],challenges:['Over-idealized expectations of the partner leading to disappointment','Excessive relationship dependency for emotional stability','Business partnerships in luxury sectors vulnerable to economic downturns'] },
-    10: { keynote:'Career In Beauty', effect:'Venus in the 10th house creates career success in arts, beauty, fashion, entertainment, and diplomacy. The native is known professionally for their charm, aesthetic sense, and creative contribution. Public recognition for beauty work.',  strengths:['Career success in arts, fashion, beauty, and creative industries','Known professionally for charm, aesthetics, and creative leadership','Fame through beauty, entertainment, or diplomatic work'],challenges:['Professional relationships complicated by romantic overtones','Career path may shift from practical to purely aesthetic concerns','Fame in beauty fields is vulnerable to age or changing aesthetic standards'] },
-    11: { keynote:'Social Gains', effect:'Venus in the 11th house brings financial gains through social charm, beautiful networks, and connections in creative and luxury industries. Income from arts, events, hospitality, and entertainment is particularly strong.',                   strengths:['Income through social charm and creative networking','Financial gains from beauty, fashion, events, and entertainment','Excellent social life with beautiful and talented connections'],challenges:['Over-spending on social events and social image','Relationships motivated by financial gain rather than genuine connection','Social energy depletes focus needed for sustained financial building'] },
-  },
-  Saturn: {
-    1:  { keynote:'Karmic Discipline', effect:'Saturn in the 1st house brings karmic lessons through the body, identity, and life path. The native develops slowly but builds remarkable endurance and wisdom. Success comes later in life but is lasting and deeply earned.',           strengths:['Exceptional endurance, patience, and inner discipline','Long-term success built through consistent effort over years','Wisdom gained through personal hardship transforms others\' lives'],challenges:['Slow start to life — early years are often difficult','Physical body requires careful maintenance; chronic conditions possible','Tendency toward pessimism and difficulty trusting positive outcomes'] },
-    2:  { keynote:'Earned Wealth', effect:'Saturn in the 2nd house creates slow but steady wealth accumulation through disciplined, systematic effort. Financial success comes through hard work rather than luck. Speech is serious, deliberate, and sometimes overly critical.',         strengths:['Disciplined and systematic approach to wealth building','Serious, authoritative, and trustworthy communication style','Excellent long-term financial planning and delayed gratification'], challenges:['Wealth accumulation is slow and requires sustained effort','Speech can be harsh, critical, or overly pessimistic','Family environment is structured and duty-bound rather than warm and spontaneous'] },
-    3:  { keynote:'Disciplined Communication', effect:'Saturn in the 3rd house develops communication through serious effort and discipline. Writing, technical communication, and structured expression develop over time. Sibling relationships involve duty, responsibility, or distance.',strengths:['Excellent technical and structured communication that develops over time','Disciplined approach to skills and short-term endeavors','Sibling relationships based on mutual duty and responsibility'], challenges:['Communication is initially slow or constrained — develops with age','Sibling relationships involve burden or responsibility rather than ease','Short journeys and communication efforts require extra patience and effort'] },
-    7:  { keynote:'Karmic Partnership', effect:'Saturn in the 7th house brings karmic and duty-based partnerships. The spouse may be older, more serious, or from a different background. Partnerships are built on structure and responsibility. Marriage comes later and lasts.',       strengths:['Deeply karmic and committed long-term partnerships','Spouse or partner is responsible, reliable, and practical','Business partnerships based on structure and mutual obligation are enduring'], challenges:['Marriage is often delayed or comes with significant challenges','Partner may be emotionally reserved, older, or overly serious','Partnership satisfaction grows slowly — requiring patience and deep commitment'] },
-    10: { keynote:'Slow But Lasting Career', effect:'Saturn in the 10th house (its most powerful placement) creates slow but exceptionally lasting career success. Recognition comes after sustained effort and often after age 36. The native becomes a pillar of their industry.',     strengths:['Exceptional long-term career success — one of the most powerful Saturn placements','Leadership through discipline, structure, and proven expertise','Recognition by institutions and authority figures grows over decades'], challenges:['Career success comes very slowly — early career frustrations are significant','Heavy professional responsibilities weigh on personal life','Authority figures are initially obstacles rather than supporters'] },
-    11: { keynote:'Slow Steady Gains', effect:'Saturn in the 11th house brings financial gains through disciplined, systematic effort over many years. Income from older people, government structures, and long-term investments grows steadily. Social networks are small but deeply loyal.',strengths:['Steady and reliable income growth through disciplined effort','Financial gains from long-term investments, real estate, and government sources','Small, loyal, and high-quality social network that delivers real support'],challenges:['Income grows slowly — requires sustained and patient effort','Social network is limited compared to natural social desire','Elder siblings may be a source of obligation rather than pure support'] },
-  },
-  Rahu: {
-    1:  { keynote:'Unconventional Identity', effect:'Rahu in the 1st house creates an intense, ambitious, and somewhat unconventional personality. The native has magnetic presence but an identity that is always evolving and sometimes difficult to pin down. Foreign influences shape the self.',strengths:['Magnetic and intense personal presence','Extraordinary ambition and ability to manifest material desires','Success in foreign lands and unconventional fields'],           challenges:['Identity confusion and existential searching','Excessive ambition can lead to ethical compromises','Health affected by Rahu\'s shadowy and illusory influence'] },
-    4:  { keynote:'Foreign Roots', effect:'Rahu in the 4th house creates unconventional home environments, foreign real estate, or displacement from the homeland. Property matters are complex. The mother relationship has an unusual quality. The native may live far from their birthplace.',strengths:['Success in foreign real estate and properties','Unconventional and internationally oriented home life','Innovative and non-traditional approaches to domestic happiness'], challenges:['Restlessness in the home — difficulty feeling truly settled','Mother relationship is complex, unusual, or distant','Property matters involve unexpected complications'] },
-    7:  { keynote:'Foreign Partner', effect:'Rahu in the 7th house often brings a foreign, unconventional, or unusual partner. Partnerships are intensely karmic. Business partnerships in foreign or technology-driven domains can succeed, though they require careful management.',       strengths:['Intensely karmic and transformative partnerships','Business partnerships in foreign and technology-driven fields thrive','Magnetic attraction that creates powerful partnership bonds'], challenges:['Marriage is complex and requires significant adjustments','Business partnerships may be deceitful or unstable without careful due diligence','Obsessive attachment to partner and fear of abandonment'] },
-    10: { keynote:'Ambition & Fame', effect:'Rahu in the 10th house is one of the most powerful career placements. It creates exceptional professional ambition and the ability to reach the very top through unconventional means. Fame in technology, foreign affairs, and modern industries.',strengths:['Exceptional career ambition and ability to break through conventional barriers','Fame in modern, foreign, or technological industries','Rapid career rise through bold and unconventional strategies'], challenges:['Career built on image rather than substance can collapse suddenly','Ethical compromises in career create long-term consequences','Authority figures are threatened by the native\'s rise and may actively obstruct'] },
-    11: { keynote:'Extraordinary Gains', effect:'Rahu in the 11th house is one of its most powerful positions for material gain. The native acquires wealth through foreign sources, technology, and unconventional networks. Social connections are global and extraordinarily diverse.',  strengths:['Extraordinary financial gains from foreign and technology sources','Global, diverse, and powerful social networks','Exceptional ability to manifest material desires and ambitious goals'], challenges:['Gains can be as sudden as they are large — and reversals are equally sudden','Social connections are not always trustworthy or aligned with the native\'s real values','Insatiable desire for more can prevent genuine contentment with achieved success'] },
-  },
-  Ketu: {
-    1:  { keynote:'Spiritual Identity', effect:'Ketu in the 1st house creates a mystical, spiritually oriented, and somewhat detached personality. The native has unusual abilities from past lives but struggles with identity definition. A strong pull toward inner rather than outer achievement.',strengths:['Past-life spiritual abilities and intuitive gifts','Strong meditative and healing capacities','Magnetic, mysterious, and deeply spiritual presence'],              challenges:['Identity confusion — difficulty knowing who one truly is in this life','Physical health needs careful monitoring — Ketu weakens the house it occupies','Detachment can appear as aloofness or lack of ambition to others'] },
-    4:  { keynote:'Inner Peace Seeker', effect:'Ketu in the 4th house creates psychological detachment from the home, mother, and material comforts. The native finds that worldly security is not the source of lasting peace. Spiritual and meditative home environments bring the most peace.',strengths:['Past-life gifts in psychological and inner work','Ability to find peace through meditation and spiritual home practice','Liberation from attachment to property and material comfort'], challenges:['Disconnection from mother relationship and home environment','Difficulty achieving emotional and domestic stability','Property matters are complex or feel ultimately unsatisfying'] },
-    7:  { keynote:'Karmic Relationships', effect:'Ketu in the 7th house creates deeply karmic partnerships. The native and their partner have a strong past-life connection. Relationships are spiritually significant but may feel incomplete or unfulfilling at the worldly level.',       strengths:['Deeply karmic and spiritually significant relationships','Partner connects the native with past-life karma and wisdom','Detachment from partnership outcomes leads to genuine inner freedom'], challenges:['Difficulty committing fully to relationships at the material level','Partner may be detached, spiritual, or emotionally unavailable','Relationships feel destined but also incomplete or ending in loss'] },
-    10: { keynote:'Career Detachment', effect:'Ketu in the 10th house creates detachment from conventional career definitions. Past-life expertise in specific technical or spiritual domains surfaces as unconventional career abilities. Fame is not sought but sometimes comes unexpectedly.',strengths:['Past-life technical or spiritual mastery that manifests as unique career abilities','Fame that arises unexpectedly through research, occult, or spiritual work','Detachment from career ego creates inner freedom not available to ambitious peers'],challenges:['Career success lacks conventional recognition and material reward','Difficulty maintaining consistent career motivation from within','Authority figures are confused or threatened by the native\'s unconventional approach'] },
-    12: { keynote:'Liberation Seeker', effect:'Ketu in the 12th house in the house of liberation creates one of the most powerful placements for moksha, spiritual freedom, and liberation from karmic cycles. The native is powerfully drawn to spirituality, meditation, and transcendence.',strengths:['Most powerful placement for spiritual liberation and transcendence','Natural meditative gifts and ability to access deep inner states','Past-life spiritual practice surfaces as profound natural wisdom in this life'], challenges:['Complete detachment from worldly life can make practical functioning difficult','Mysterious health conditions from past-life karma','Foreign lands or isolation become unavoidable aspects of life'] },
-  },
-};
 
 // ─── Public Analysis Function ──────────────────────────────────────────────
 
@@ -545,7 +369,10 @@ export interface PlanetAnalysis {
   dignity: DignityLevel;
   dignityInfo: typeof DIGNITY_LABELS[DignityLevel];
   isRetrograde: boolean;
-  retrogradeEffect: typeof RETROGRADE_EFFECTS[string] | null;
+  retrogradeEffect: {
+    general: string; health: string; wealth: string; career: string; relationships: string;
+    intensified: string[]; remedies: string[];
+  } | null;
   placement: { effect: string; strengths: string[]; challenges: string[]; keynote: string } | null;
   moolatrikona: boolean;
   digBala: DigBalaInfo;
@@ -573,35 +400,57 @@ export function analyzePlanet(
   isRetrograde: boolean,
   degreeInSign?: number,
   context?: ChartContext,
+  lang: Lang = 'en',
 ): PlanetAnalysis {
   const house = ((rashiIndex - ascendantRashiIndex + 12) % 12) + 1;
   const houseData = HOUSE_DATA[house] ?? HOUSE_DATA[1];
   const dignity = getDignity(planet, rashiIndex);
-  const dignityInfo = DIGNITY_LABELS[dignity];
+  const dignityInfo = {
+    ...DIGNITY_LABELS[dignity],
+    label: pick(DIGNITY_LABEL[dignity], lang),
+    desc: pick(DIGNITY_DESC[dignity], lang),
+  };
 
   const pd = PLANET_SIGNIFICATIONS[planet] ?? {};
   const planetKey = planet.charAt(0).toUpperCase() + planet.slice(1).toLowerCase();
 
-  const retrogradeEffect = isRetrograde ? (RETROGRADE_EFFECTS[planetKey] ?? null) : null;
-  const placement = PLANET_IN_HOUSE[planetKey]?.[house] ?? null;
+  const retroText = isRetrograde ? (RETROGRADE_TEXT[planetKey] ?? null) : null;
+  const retrogradeEffect = retroText ? {
+    general: pick(retroText.general, lang),
+    health: pick(retroText.health, lang),
+    wealth: pick(retroText.wealth, lang),
+    career: pick(retroText.career, lang),
+    relationships: pick(retroText.relationships, lang),
+    intensified: pickList(retroText.intensified, lang),
+    remedies: pickList(retroText.remedies, lang),
+  } : null;
+
+  const placementText = PLANET_IN_HOUSE_TEXT[planetKey]?.[house] ?? null;
+  const placement = placementText ? {
+    effect: pick(placementText.effect, lang),
+    strengths: pickList(placementText.strengths, lang),
+    challenges: pickList(placementText.challenges, lang),
+    keynote: pick(placementText.keynote, lang),
+  } : null;
 
   const moolatrikona = degreeInSign !== undefined
     ? inMoolatrikona(planetKey, rashiIndex, degreeInSign, dignity)
     : false;
-  const digBala = getDigBala(planetKey, house);
-  const functional = getFunctionalNature(planetKey, ascendantRashiIndex);
+  const digBala = getDigBala(planetKey, house, lang);
+  const functional = getFunctionalNature(planetKey, ascendantRashiIndex, lang);
 
   const combustion = (context?.longitude !== undefined && context?.sunLongitude !== undefined)
-    ? getCombustion(planetKey, context.longitude, context.sunLongitude, isRetrograde)
+    ? getCombustion(planetKey, context.longitude, context.sunLongitude, isRetrograde, lang)
     : null;
   const neechaBhanga = (dignity === 'debilitated' && context?.signByPlanet)
-    ? getNeechaBhanga({ planet: planetKey, rashiIndex, ascIndex: ascendantRashiIndex, isRetrograde, signByPlanet: context.signByPlanet })
+    ? getNeechaBhanga({ planet: planetKey, rashiIndex, ascIndex: ascendantRashiIndex, isRetrograde, signByPlanet: context.signByPlanet, lang })
     : null;
 
   const strength = assessStrength({
     planet: planetKey, dignity, moolatrikona, dig: digBala, functional, isRetrograde,
     combust: combustion?.isCombust ?? false,
     neechaBhanga: neechaBhanga?.cancelled ?? false,
+    lang,
   });
 
   return {

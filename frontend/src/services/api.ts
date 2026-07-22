@@ -4,6 +4,7 @@
 
 import type { BirthData, Chart, DashaTimeline, CurrentDasha } from '../types/astrology';
 export type { BirthData } from '../types/astrology';
+import { type Lang, getStoredLang } from '../lib/core/i18n';
 import { chartService } from '../lib/services/chartService';
 import type { YogaResult } from '../lib/core/yogas';
 import {
@@ -140,20 +141,20 @@ export async function healthCheck() {
 
 // ─── Predictions ─────────────────────────────────────────────────────────────
 
-export async function getCurrentPrediction(birthData: BirthData, targetDate?: Date): Promise<DashaPredictionData> {
-  return getCurrentPeriodPrediction(birthData, targetDate);
+export async function getCurrentPrediction(birthData: BirthData, targetDate?: Date, lang?: Lang): Promise<DashaPredictionData> {
+  return getCurrentPeriodPrediction(birthData, targetDate, lang ?? getStoredLang());
 }
 
-export async function getMahadashaPrediction(birthData: BirthData, dashaLord: string): Promise<DashaPredictionData> {
-  return libGetMD(birthData, dashaLord);
+export async function getMahadashaPrediction(birthData: BirthData, dashaLord: string, lang?: Lang): Promise<DashaPredictionData> {
+  return libGetMD(birthData, dashaLord, lang ?? getStoredLang());
 }
 
-export async function getAntardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string): Promise<DashaPredictionData> {
-  return libGetAD(birthData, mahadasha, antardasha);
+export async function getAntardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string, lang?: Lang): Promise<DashaPredictionData> {
+  return libGetAD(birthData, mahadasha, antardasha, lang ?? getStoredLang());
 }
 
-export async function getPratyantardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string): Promise<DashaPredictionData> {
-  return libGetPD(birthData, mahadasha, antardasha, pratyantardasha);
+export async function getPratyantardashaPrediction(birthData: BirthData, mahadasha: string, antardasha: string, pratyantardasha: string, lang?: Lang): Promise<DashaPredictionData> {
+  return libGetPD(birthData, mahadasha, antardasha, pratyantardasha, lang ?? getStoredLang());
 }
 
 /**
@@ -165,8 +166,9 @@ export async function getAntardashaDepth(
   birthData: BirthData,
   antardashaStart: string,
   asOf?: Date,
+  lang?: Lang,
 ): Promise<AntardashaDepthReport | null> {
-  return libGetAntardashaDepth(birthData, antardashaStart, asOf);
+  return libGetAntardashaDepth(birthData, antardashaStart, asOf, lang ?? getStoredLang());
 }
 
 export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult> {
@@ -183,8 +185,9 @@ export async function getCurrentPeriodSnapshot(
   birthData: BirthData,
   currentLocation?: CurrentLocation,
   asOf?: Date,
+  lang?: Lang,
 ): Promise<PeriodSnapshot> {
-  return getPeriodSnapshot(birthData, currentLocation, asOf);
+  return getPeriodSnapshot(birthData, currentLocation, asOf, lang ?? getStoredLang());
 }
 
 export async function getSookshmaPeriods(birthData: BirthData, targetDate?: Date): Promise<SookshmaPeriodList | null> {
@@ -192,9 +195,9 @@ export async function getSookshmaPeriods(birthData: BirthData, targetDate?: Date
 }
 
 /** Gochara (planetary transits) for a chart at a given date (defaults to now). */
-export async function getGochara(birthData: BirthData, asOf?: Date): Promise<GocharaSnapshot> {
+export async function getGochara(birthData: BirthData, asOf?: Date, lang?: Lang): Promise<GocharaSnapshot> {
   const positions = await getRawPositions(birthData.date, birthData.latitude, birthData.longitude, birthData.timezone, birthData.ayanamsa);
-  return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf, undefined, positions);
+  return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf, undefined, positions, lang ?? getStoredLang());
 }
 
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */
@@ -212,11 +215,11 @@ export async function getPanchanga(birthData: BirthData, asOf?: Date): Promise<P
   return getPanchangaReport(birthData, asOf);
 }
 
-export async function getTimelineWithPredictions(birthData: BirthData, yearsAhead = 80): Promise<unknown[]> {
-  return libGetTimeline(birthData, yearsAhead);
+export async function getTimelineWithPredictions(birthData: BirthData, yearsAhead = 80, lang?: Lang): Promise<unknown[]> {
+  return libGetTimeline(birthData, yearsAhead, lang ?? getStoredLang());
 }
 
-export async function getRemedies(birthData: BirthData): Promise<{
+export async function getRemedies(birthData: BirthData, lang?: Lang): Promise<{
   currentPeriods: unknown;
   gemstone: string | null;
   mantra: string | null;
@@ -227,7 +230,7 @@ export async function getRemedies(birthData: BirthData): Promise<{
   combinationWarning?: string;
   combinationBonus?: string;
 }> {
-  const pred = await getCurrentPrediction(birthData);
+  const pred = await getCurrentPrediction(birthData, undefined, lang);
   const areaRemedies: Record<string, string[]> = {};
   for (const [area, p] of Object.entries(pred.predictions)) {
     areaRemedies[area] = p.remedies;

@@ -386,11 +386,11 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
 // ── Deeper predictions — dasha–gochara synthesis, aspects, dignity, timing ──────
 
 const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLords }> = ({ gochara, dashaLords }) => {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const predictions = useMemo(() => {
     const signs = computeSignAnalysis(gochara);
-    return buildTransitPredictions(gochara, signs, dashaLords);
-  }, [gochara, dashaLords]);
+    return buildTransitPredictions(gochara, signs, dashaLords, lang);
+  }, [gochara, dashaLords, lang]);
 
   return (
     <div className="glass-card rounded-2xl p-5">
@@ -682,7 +682,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export const DeepInsights: React.FC<Props> = ({ birthData }) => {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const minDate = useMemo(() => new Date(birthData.date), [birthData.date]);
   const maxDate = useMemo(() => addYears(new Date(birthData.date), 100), [birthData.date]); // life max = 100 years
 
@@ -691,13 +691,13 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
   const dateKey = target.isCurrent ? 'now' : target.date.toISOString().slice(0, 10);
 
   const { data: prediction, isLoading, error } = useQuery({
-    queryKey: ['currentPrediction', birthData, dateKey],
-    queryFn: () => getCurrentPrediction(birthData, effectiveDate),
+    queryKey: ['currentPrediction', birthData, dateKey, lang],
+    queryFn: () => getCurrentPrediction(birthData, effectiveDate, lang),
     enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
   });
   const { data: gochara } = useQuery({
-    queryKey: ['gochara', birthData, dateKey],
-    queryFn: () => getGochara(birthData, effectiveDate),
+    queryKey: ['gochara', birthData, dateKey, lang],
+    queryFn: () => getGochara(birthData, effectiveDate, lang),
     enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
   });
 
