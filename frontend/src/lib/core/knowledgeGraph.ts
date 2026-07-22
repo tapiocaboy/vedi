@@ -96,6 +96,25 @@ export function buildKnowledgeGraphMarkdown(prediction: DashaPredictionData): st
     push();
   }
 
+  // ── Natal foundation ────────────────────────────────────────────────────────
+  // The chart's standing footing, independent of the running dasha. Without it
+  // the rest of this section reads as though the period alone decides outcomes.
+  const foundation = prediction.natalFoundation ?? [];
+  if (foundation.length) {
+    push('### Birth-chart Foundation (standing condition, not current weather)');
+    push();
+    push('_This is what the chart promises in each area regardless of which period is running. A supportive dasha over weak footing still has to push uphill; a hard dasha over solid footing is a delay, not a loss._');
+    push();
+    push('| Area | Footing | Score (−3…+3) | Why |');
+    push('| --- | --- | --- | --- |');
+    for (const f of foundation) {
+      const label = f.weak ? 'Weak' : f.strong ? 'Solid' : 'Mixed';
+      const area = labelArea(f.area === 'relationship' ? 'relationships' : f.area, 'en');
+      push(`| ${area} | ${label} | ${f.score > 0 ? '+' : ''}${f.score} | ${f.notes.slice(0, 2).join(' ') || '—'} |`);
+    }
+    push();
+  }
+
   // ── Life areas ──────────────────────────────────────────────────────────────
   const areaKeys = ['career', 'wealth', 'relationships', 'health'] as const;
   push('### Life Areas (current trend)');

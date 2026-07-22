@@ -151,7 +151,12 @@ function hasNeechaBhanga(planet: string, input: StrengthInput): boolean {
     return [1, 4, 7, 10].includes(house);
   };
 
-  return inKendraFrom(input.ascendantRashi) || inKendraFrom(input.moonRashi);
+  // The Moon route is only meaningful when the Moon is not itself the
+  // dispositor: any body is trivially in the 1st house from itself, so
+  // "dispositor in a kendra from the Moon" would otherwise be unconditionally
+  // true for every planet debilitated in Cancer.
+  const viaMoon = dispositor !== 'Moon' && inKendraFrom(input.moonRashi);
+  return inKendraFrom(input.ascendantRashi) || viaMoon;
 }
 
 // ─── Main assessment ────────────────────────────────────────────────────────
@@ -206,7 +211,12 @@ export function assessPlanetStrength(planet: string, input: StrengthInput, lang:
     if (dignity === 'debilitated') {
       neechaBhanga = hasNeechaBhanga(planet, input);
       if (neechaBhanga) {
-        dignityMod = 0.5; // cancellation turns weakness into latent strength
+        // Cancellation lifts the damage; it does not make a debilitated planet
+        // behave like a dignified one. The classical reading is "struggle
+        // first, unusual strength later" — which is a reduced penalty, not a
+        // bonus. Scoring it positive made every cancelled debilitation read as
+        // an asset from day one.
+        dignityMod = -0.5;
         notes.push(NOTE.neechaBhanga(pName, rName, lang));
       } else {
         notes.push(NOTE.debilitated(pName, rName, lang));

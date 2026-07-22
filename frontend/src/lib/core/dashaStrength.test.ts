@@ -88,7 +88,24 @@ describe('assessPlanetStrength — dignity', () => {
     });
     expect(s.dignity).toBe('debilitated');
     expect(s.neechaBhanga).toBe(true);
-    expect(s.dignityMod).toBe(0.5);
+    // Cancellation lifts the debilitation penalty but does not invert it —
+    // "struggle first, strength later", not "strong from the start".
+    expect(s.dignityMod).toBe(-0.5);
+  });
+
+  it('ignores the Moon route when the Moon is itself the dispositor', () => {
+    // Mars debilitated in Cancer; its dispositor is the Moon. A body is always
+    // in the 1st house from itself, so the Moon route must not fire here —
+    // and with a Gemini ascendant the Moon in Cancer is in house 2, not a
+    // kendra, so no bhanga applies at all.
+    const s = assessPlanetStrength('Mars', {
+      planetRashis: { Mars: 3, Moon: 3 },
+      ascendantRashi: 2,
+      moonRashi: 3,
+    });
+    expect(s.dignity).toBe('debilitated');
+    expect(s.neechaBhanga).toBe(false);
+    expect(s.dignityMod).toBe(-2);
   });
 });
 

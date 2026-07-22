@@ -74,6 +74,16 @@ export interface LordStrengthData {
   notes: string[];
 }
 
+/** The birth chart's standing condition for one life area, before any dasha. */
+export interface FoundationData {
+  area: 'career' | 'wealth' | 'relationship' | 'health';
+  /** −3 … +3. */
+  score: number;
+  weak: boolean;
+  strong: boolean;
+  notes: string[];
+}
+
 export interface DashaPredictionData {
   dashaLord: string;
   antardasha?: string;
@@ -93,6 +103,7 @@ export interface DashaPredictionData {
   unfavorableActivities: string[];
   importantTransits?: string[];
   lordStrengths?: LordStrengthData[];
+  natalFoundation?: FoundationData[];
   remedies: {
     gemstone: string | null;
     mantra: string | null;

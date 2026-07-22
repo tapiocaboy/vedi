@@ -54,9 +54,12 @@ function strengthInfo(score: number, t: Tr) {
   return            { pct, raw, label: t('graph.strength.challenged'), color: '#f43f5e' };
 }
 
+// Each band gets its own colour. "Excellent" and "Good" previously shared one
+// green, so a 6/10 was indistinguishable from a 9/10 at a glance — the number
+// was the only thing separating them and the eye reads the colour first.
 function outlookInfo(rating: number, t: Tr) {
   if (rating >= 8) return { word: t('graph.outlook.excellent'),   color: '#34d399' };
-  if (rating >= 6) return { word: t('graph.outlook.good'),        color: '#34d399' };
+  if (rating >= 6) return { word: t('graph.outlook.good'),        color: '#a3d977' };
   if (rating >= 4) return { word: t('graph.outlook.mixed'),       color: '#ffcb3a' };
   return            { word: t('graph.outlook.challenging'), color: '#f43f5e' };
 }
@@ -83,7 +86,7 @@ interface NodeDetail {
 interface GNode {
   id: string; type: NodeType; glyph: string; label: string; tooltip: string;
   x: number; y: number; r: number; color: string;
-  critical: boolean; important: boolean; detail: NodeDetail;
+  critical: boolean; important: boolean; demanding?: boolean; detail: NodeDetail;
 }
 interface GEdge { from: string; to: string; critical: boolean; dashed?: boolean; }
 interface Summary {
@@ -103,16 +106,24 @@ function polar(cx: number, cy: number, r: number, deg: number) {
   return { x: cx + r * Math.cos(t), y: cy + r * Math.sin(t) };
 }
 
-function classifyPlanet(ls?: LordStrengthData) {
-  if (!ls) return { critical: false, important: false };
-  return {
-    critical:
-      ls.strengthScore < 0 || ls.dignity === 'debilitated' || ls.dignity === 'enemy-sign' ||
-      ls.isCombust || ls.functionalNature === 'functional-malefic',
-    important:
-      ls.strengthScore >= 1 || ls.dignity === 'exalted' || ls.dignity === 'own-sign' ||
-      ls.functionalNature === 'yogakaraka' || ls.functionalNature === 'functional-benefic',
-  };
+/**
+ * Planets that work by subtraction. A dignified Saturn is genuinely strong, but
+ * marking it plain "Supportive" mislabels the period being lived: its dignity
+ * makes results durable, not comfortable. These get their own band so a strong
+ * separative lord reads as demanding rather than as good news.
+ */
+const SEPARATIVE = new Set(['Saturn', 'Rahu', 'Ketu']);
+
+function classifyPlanet(lord: string, ls?: LordStrengthData) {
+  if (!ls) return { critical: false, important: false, demanding: false };
+  const critical =
+    ls.strengthScore < 0 || ls.dignity === 'debilitated' || ls.dignity === 'enemy-sign' ||
+    ls.isCombust || ls.functionalNature === 'functional-malefic';
+  const capable =
+    ls.strengthScore >= 1 || ls.dignity === 'exalted' || ls.dignity === 'own-sign' ||
+    ls.functionalNature === 'yogakaraka' || ls.functionalNature === 'functional-benefic';
+  const demanding = !critical && SEPARATIVE.has(lord);
+  return { critical, important: capable && !demanding, demanding: demanding && capable };
 }
 
 function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
@@ -152,7 +163,7 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
     const deg = n === 1 ? 180 : 106 + ((250 - 106) * i) / (n - 1);
     const { x, y } = polar(CX, CY, R1, deg);
     const ls = lords.find(l => l.planet === d.lord && l.role === d.role) ?? lords.find(l => l.planet === d.lord);
-    const { critical, important } = classifyPlanet(ls);
+    const { critical, important, demanding } = classifyPlanet(d.lord, ls);
     const id = `planet-${i}`;
     planetIds.push(id);
 
@@ -172,15 +183,18 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
       if (ls.isCombust)    chips.push(t('insights.combust'));
       if (ls.isRetrograde) chips.push(t('planet.retrograde'));
       if (ls.neechaBhanga) chips.push(t('insights.neechaBhanga'));
+      if (demanding)       chips.push(t('graph.demanding'));
     }
-    const takeaway = critical ? t('graph.take.planetWeak') : important ? t('graph.take.planetStrong') : t('graph.take.planetSteady');
+    const takeaway = critical ? t('graph.take.planetWeak')
+      : demanding ? t('graph.take.planetDemanding')
+      : important ? t('graph.take.planetStrong') : t('graph.take.planetSteady');
 
     nodes.push({
       id, type: 'planet', glyph: PLANET_GLYPH[d.lord] ?? '●',
       label: labelPlanet(d.lord, lang),
       tooltip: `${labelPlanet(d.lord, lang)} — ${meaning}`,
       x, y, r: 28, color: LORD_HEX[d.lord] ?? '#94a3b8',
-      critical, important,
+      critical, important, demanding,
       detail: { meaning, strength, lines: lines.filter(Boolean), chips, takeaway },
     });
     edges.push({ from: 'period', to: id, critical });
@@ -191,7 +205,17 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
       ls.lordedHouses.forEach(h => houseMap.set(h, { rules: true, placed: houseMap.get(h)?.placed ?? false }));
       if (ls.natalHouse != null)
         houseMap.set(ls.natalHouse, { rules: houseMap.get(ls.natalHouse)?.rules ?? false, placed: true });
-      const houses = [...houseMap.entries()].slice(0, 2);
+      // Only two fit around a planet, so choose which two rather than taking
+      // whichever happened to be inserted first: where the planet actually sits
+      // matters most, and a sensitive (dusthana) theme must never be the one
+      // silently dropped.
+      const houses = [...houseMap.entries()]
+        .sort(([ha, ra], [hb, rb]) => {
+          const rank = (h: number, rel: { placed: boolean }) =>
+            (rel.placed ? 0 : 2) + (DUSTHANA.has(h) ? 0 : 1);
+          return rank(ha, ra) - rank(hb, rb);
+        })
+        .slice(0, 2);
       const hN = houses.length;
       houses.forEach(([h, rel], k) => {
         const hDeg = deg + (hN === 1 ? 0 : 30 * (k - (hN - 1) / 2));
@@ -253,7 +277,7 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
 
   // ── Plain summary ───────────────────────────────────────────────────────────
   const mainLs = cp ? (lords.find(l => l.planet === cp.mahadasha.lord && l.role === 'mahadasha') ?? lords.find(l => l.planet === cp.mahadasha.lord)) : undefined;
-  const mainCls = classifyPlanet(mainLs);
+  const mainCls = cp ? classifyPlanet(cp.mahadasha.lord, mainLs) : { critical: false, important: false, demanding: false };
   const summary: Summary = {
     main: cp ? {
       label: labelPlanet(cp.mahadasha.lord, lang),
@@ -296,7 +320,9 @@ const GraphCanvas: React.FC<{ graph: Graph; isLight: boolean; selected: string |
 
       {graph.nodes.map((node, i) => {
         const isSel = selected === node.id;
-        const ring = node.critical ? '#f43f5e' : node.important ? '#34d399' : 'transparent';
+        const ring = node.critical ? '#f43f5e'
+          : node.demanding ? '#f59e0b'
+          : node.important ? '#34d399' : 'transparent';
         return (
           <g key={node.id} transform={`translate(${node.x},${node.y})`} className="cursor-pointer"
             onClick={ev => { ev.stopPropagation(); onSelect(isSel ? null : node.id); }}>
@@ -308,7 +334,7 @@ const GraphCanvas: React.FC<{ graph: Graph; isLight: boolean; selected: string |
                 transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                 style={{ originX: '0px', originY: '0px' } as React.CSSProperties} />
             )}
-            {(node.critical || node.important || isSel) && (
+            {(node.critical || node.important || node.demanding || isSel) && (
               <circle r={node.r + 4} fill="none" stroke={isSel ? 'var(--c-accent)' : ring} strokeWidth={2} />
             )}
             <motion.circle r={node.r} fill={node.color} fillOpacity={node.type === 'period' ? 0.95 : 0.9}
@@ -409,6 +435,7 @@ const Legend: React.FC<{ isLight: boolean }> = ({ isLight }) => {
   const txt = isLight ? 'text-slate-500' : 'text-white/45';
   const items = [
     { c: '#f43f5e', k: 'graph.critical' as const },
+    { c: '#f59e0b', k: 'graph.demanding' as const },
     { c: '#34d399', k: 'graph.important' as const },
     { c: '#64748b', k: 'graph.legendTheme' as const },
     { c: 'var(--c-accent)', k: 'graph.legendPeriod' as const },
@@ -463,7 +490,12 @@ const DetailPanel: React.FC<{ graph: Graph; selected: string | null; isLight: bo
               {t('graph.critical')}
             </span>
           )}
-          {node.important && !node.critical && (
+          {node.demanding && !node.critical && (
+            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">
+              {t('graph.demanding')}
+            </span>
+          )}
+          {node.important && !node.critical && !node.demanding && (
             <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-400">
               {t('graph.important')}
             </span>
@@ -531,6 +563,61 @@ const DetailPanel: React.FC<{ graph: Graph; selected: string | null; isLight: bo
   );
 };
 
+// ── Natal foundation ────────────────────────────────────────────────────────────
+
+/**
+ * The chart's standing footing per life area. Without this the graph shows a
+ * supportive dasha chain next to a middling outlook and gives no account of the
+ * gap — which is precisely the part a reader needs in order to trust the number.
+ */
+const FoundationCard: React.FC<{ prediction: DashaPredictionData; isLight: boolean }> = ({ prediction, isLight }) => {
+  const { lang, t } = useLang();
+  const rows = prediction.natalFoundation ?? [];
+  if (!rows.length) return null;
+
+  const head = isLight ? 'text-gray-800' : 'text-white';
+  const sub = isLight ? 'text-slate-500' : 'text-white/45';
+  const body = isLight ? 'text-slate-600' : 'text-white/60';
+
+  const info = (f: (typeof rows)[number]) =>
+    f.weak ? { color: '#f43f5e', label: t('graph.foundation.weak') }
+    : f.strong ? { color: '#34d399', label: t('graph.foundation.strong') }
+    : { color: '#ffcb3a', label: t('graph.foundation.mixed') };
+
+  return (
+    <div className="rounded-2xl border p-4"
+      style={{ borderColor: 'rgba(var(--c-accent-rgb),0.20)', background: 'rgba(var(--c-accent-rgb),0.04)' }}>
+      <div className="flex items-center gap-2 mb-1">
+        <Info className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
+        <span className={`text-xs font-bold uppercase tracking-wider ${head}`}>{t('graph.foundationTitle')}</span>
+      </div>
+      <p className={`text-[11px] leading-relaxed mb-3 ${sub}`}>{t('graph.foundationHint')}</p>
+
+      <div className="space-y-2.5">
+        {rows.map(f => {
+          const { color, label } = info(f);
+          // −3…+3 mapped onto the bar's width.
+          const pct = ((f.score + 3) / 6) * 100;
+          return (
+            <div key={f.area}>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className={`text-xs font-semibold ${head}`}>
+                  {labelArea(f.area === 'relationship' ? 'relationships' : f.area, lang)}
+                </span>
+                <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
+              </div>
+              <div className={`h-1.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-white/10'}`}>
+                <div className="h-full rounded-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, backgroundColor: color }} />
+              </div>
+              {f.notes[0] && <p className={`text-[11px] leading-relaxed mt-1 ${body}`}>{f.notes[0]}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ── Good-to-do / avoid tips ─────────────────────────────────────────────────────
 
 const ActivitiesCard: React.FC<{ prediction: DashaPredictionData; isLight: boolean }> = ({ prediction, isLight }) => {
@@ -583,6 +670,7 @@ const GraphView: React.FC<{ graph: Graph; prediction: DashaPredictionData; isLig
       </div>
       <Legend isLight={isLight} />
       <DetailPanel graph={graph} selected={selected} isLight={isLight} />
+      <FoundationCard prediction={prediction} isLight={isLight} />
       <ActivitiesCard prediction={prediction} isLight={isLight} />
     </div>
   );

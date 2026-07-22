@@ -34,6 +34,7 @@ export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
     unfavorableActivities: pred.unfavorableActivities,
     importantTransits: pred.importantTransits,
     lordStrengths: pred.lordStrengths,
+    natalFoundation: pred.natalFoundation,
     remedies: { gemstone: pred.gemstone, mantra: pred.mantra, deity: pred.deity },
     combinationWarning: pred.combinationWarning,
     combinationBonus: pred.combinationBonus,

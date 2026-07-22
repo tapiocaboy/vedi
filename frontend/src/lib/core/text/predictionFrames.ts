@@ -311,7 +311,8 @@ export const F_LORDED_HOUSE: Frame2 = {
 
 /** Prefix applied to the antardasha lord's house annotation. */
 export const F_SUB_PERIOD_PREFIX: Frame1 = {
-  en: note => `Sub-period ${note.charAt(0).toLowerCase()}${note.slice(1)}`,
+  // Not lower-cased: the note always opens with the planet's name.
+  en: note => `Sub-period — ${note}`,
   si: note => `අන්තර් දශාව — ${note}`,
 };
 
