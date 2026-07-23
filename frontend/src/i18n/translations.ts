@@ -69,7 +69,7 @@ const en = {
   'theme.dark': 'Dark',
   'theme.light': 'Light',
   'theme.azure': 'Azure',
-  'theme.mono': 'Black & White',
+  'theme.mono': 'Chalkboard',
   'lang.englishTitle': 'English',
   'lang.sinhalaTitle': 'සිංහල (Sinhala)',
 
@@ -778,7 +778,7 @@ const si: Record<keyof typeof en, string> = {
   'theme.dark': 'අඳුරු',
   'theme.light': 'සැහැල්ලු',
   'theme.azure': 'නිල්',
-  'theme.mono': 'කළු සහ සුදු',
+  'theme.mono': 'කළු ලෑල්ල',
   'lang.englishTitle': 'English',
   'lang.sinhalaTitle': 'සිංහල',
 

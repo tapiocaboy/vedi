@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Contrast, Droplet, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Moon, Sun, Presentation, Droplet, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -57,8 +57,9 @@ function AppContent() {
     return saved === 'mono' ? 'mono' : saved === 'azure' ? 'azure' : saved === 'light' ? 'light' : 'dark';
   });
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  // The "mono" enterprise theme rides on top of the light layout.
-  const isLight = theme !== 'dark';
+  // "mono" is the chalkboard theme — it rides on the DARK layout (a blackboard
+  // is a dark surface), so it counts as not-light here and in useTheme().
+  const isLight = theme !== 'dark' && theme !== 'mono';
   // Hide all chat affordances when the NVIDIA key is missing/empty.
   const chatConfigured = isChatConfigured();
   // Legal gate — shown on every site load / refresh / first visit
@@ -86,13 +87,13 @@ function AppContent() {
 
 
   // Apply theme classes to <html> so body background + tokens respond.
-  // "mono" applies alongside "theme-light" (it inherits the light layout and
-  // only recolours the accent to greyscale + disables motion).
+  // "mono" is the chalkboard: it rides on top of the DARK layout and repaints
+  // the surface as a school blackboard with chalk-coloured ink.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('theme-dark', theme === 'dark');
-    // "mono" and "azure" both ride on top of the light layout.
-    root.classList.toggle('theme-light', theme === 'light' || theme === 'mono' || theme === 'azure');
+    root.classList.toggle('theme-dark', theme === 'dark' || theme === 'mono');
+    // "azure" rides on top of the light layout.
+    root.classList.toggle('theme-light', theme === 'light' || theme === 'azure');
     root.classList.toggle('theme-mono', theme === 'mono');
     root.classList.toggle('theme-azure', theme === 'azure');
     localStorage.setItem('trytellme_theme', theme);
@@ -102,7 +103,7 @@ function AppContent() {
     { id: 'dark',  label: t('theme.dark'),  icon: Moon },
     { id: 'light', label: t('theme.light'), icon: Sun },
     { id: 'azure', label: t('theme.azure'), icon: Droplet },
-    { id: 'mono',  label: t('theme.mono'),  icon: Contrast },
+    { id: 'mono',  label: t('theme.mono'),  icon: Presentation },
   ];
   const activeTheme = themeOptions.find(o => o.id === theme) ?? themeOptions[0];
 
@@ -114,8 +115,8 @@ function AppContent() {
       setActiveTab('chart');
       // Reveal the lagna as particles before the chart is seen. The chart
       // mounts underneath straight away; the overlay simply covers it until the
-      // figure has morphed into the chart lattice. Skipped for the motionless
-      // mono theme and for anyone who asked for reduced motion.
+      // figure has dispersed. Skipped for the motionless chalkboard theme and
+      // for anyone who asked for reduced motion.
       const wantsMotion =
         theme !== 'mono' &&
         !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

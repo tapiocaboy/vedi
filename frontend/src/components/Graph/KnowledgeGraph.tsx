@@ -13,13 +13,15 @@
  *
  * Anything that needs attention is highlighted. A plain-English summary, a
  * tap-for-details panel, and "good to do / avoid" tips make it understandable
- * at a glance. Renders inline with an "Expand" button for a full-screen view.
+ * at a glance. "Expand" pops out the graph alone — the canvas at full screen
+ * height — leaving the surrounding cards on the page rather than duplicating
+ * them into a modal.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Maximize2, X, Share2, AlertTriangle, Sparkles, CheckCircle2, Ban, Info } from 'lucide-react';
+import { Loader2, Maximize2, X, Share2, AlertTriangle, Sparkles, CheckCircle2, Ban, Info, MousePointerClick } from 'lucide-react';
 import { getCurrentPrediction } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
 import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
@@ -101,6 +103,14 @@ interface Graph { nodes: GNode[]; edges: GEdge[]; criticals: GNode[]; summary: S
 
 const W = 700, H = 520, CX = 350, CY = 255, R1 = 150, R2 = 86;
 
+/**
+ * The centre "now" node. On light surfaces it stays on the brand accent; on
+ * dark it burns luminous indigo instead, which separates the one node that is
+ * not an influence from the palette every other node draws from.
+ */
+const PERIOD_LIGHT = 'var(--c-accent)';
+const PERIOD_DARK  = '#818cf8';
+
 function polar(cx: number, cy: number, r: number, deg: number) {
   const t = (deg * Math.PI) / 180;
   return { x: cx + r * Math.cos(t), y: cy + r * Math.sin(t) };
@@ -126,7 +136,7 @@ function classifyPlanet(lord: string, ls?: LordStrengthData) {
   return { critical, important: capable && !demanding, demanding: demanding && capable };
 }
 
-function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
+function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr, isLight: boolean): Graph {
   const nodes: GNode[] = [];
   const edges: GEdge[] = [];
   const lords = prediction.lordStrengths ?? [];
@@ -139,7 +149,8 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
   nodes.push({
     id: 'period', type: 'period', glyph: String(prediction.overallRating),
     label: t('graph.period'), tooltip: `${t('graph.outlookLabel')}: ${outlook.word}`,
-    x: CX, y: CY, r: 38, color: 'var(--c-accent)', critical: false, important: false,
+    x: CX, y: CY, r: 38, color: isLight ? PERIOD_LIGHT : PERIOD_DARK,
+    critical: false, important: false,
     detail: {
       meaning: `${outlook.word} · ${prediction.overallRating}/10`,
       strength: { pct: prediction.overallRating * 10, label: outlook.word, color: outlook.color, raw: `${prediction.overallRating}/10` },
@@ -302,55 +313,370 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
 
 // ── Canvas ────────────────────────────────────────────────────────────────────
 
-const GraphCanvas: React.FC<{ graph: Graph; isLight: boolean; selected: string | null; onSelect: (id: string | null) => void }> =
-({ graph, isLight, selected, onSelect }) => {
+/**
+ * True when nothing on this canvas should move: the chalkboard theme (whose
+ * whole contract is that nothing animates) or an explicit reduced-motion
+ * preference. Framer's own reducedMotion only suppresses transform/layout
+ * animations, and neither it nor CSS `animation: none` touches the SMIL packets
+ * or the stroke-dash flow here, so they need this opt-out.
+ */
+function useStill(): boolean {
+  const read = () =>
+    document.documentElement.classList.contains('theme-mono') ||
+    (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+
+  const [still, setStill] = useState(read);
+  useEffect(() => {
+    const update = () => setStill(read());
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    mq?.addEventListener?.('change', update);
+    return () => { obs.disconnect(); mq?.removeEventListener?.('change', update); };
+  }, []);
+  return still;
+}
+
+/** Evenly spaced tick marks around a circle, as a dash pattern. */
+const dialDashes = (r: number, ticks: number) => {
+  const circumference = 2 * Math.PI * r;
+  const gap = circumference / ticks;
+  return `2 ${gap - 2}`;
+};
+
+/**
+ * Four corner arcs around a circle of radius r — a camera-style focus reticle.
+ * Rendered as a dash pattern that repeats exactly four times, rotated 45° so the
+ * brackets sit on the diagonals and never collide with a node's label.
+ */
+const reticleDashes = (r: number) => {
+  const quarter = (2 * Math.PI * r) / 4;
+  return `${quarter * 0.30} ${quarter * 0.70}`;
+};
+
+/**
+ * Spin/scale about the element's own centre. Without `transform-box: fill-box`
+ * an SVG transform-origin resolves against the whole viewBox, so a ring nested
+ * in a translated <g> would orbit the canvas corner instead of turning in place.
+ */
+const SPIN_IN_PLACE: React.CSSProperties = {
+  transformBox: 'fill-box',
+  transformOrigin: 'center',
+};
+
+const GraphCanvas: React.FC<{
+  graph: Graph; isLight: boolean; selected: string | null;
+  onSelect: (id: string | null) => void;
+  /** Cap the drawing height (expanded view). preserveAspectRatio keeps the
+      scene centred and undistorted inside whatever box it ends up with. */
+  maxHeight?: string;
+}> = ({ graph, isLight, selected, onSelect, maxHeight }) => {
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map(node => [node.id, node])), [graph]);
-  const edgeBase = isLight ? 'rgba(15,23,42,0.16)' : 'rgba(255,255,255,0.13)';
-  const labelFill = isLight ? '#334155' : 'rgba(255,255,255,0.72)';
+  const still = useStill();
+  // Pointer hover and keyboard focus drive the same "this is interactive" state.
+  const [hot, setHot] = useState<string | null>(null);
+
+  /** Who is wired to whom — drives the connection highlight on hover/select. */
+  const neighbours = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    for (const e of graph.edges) {
+      (map[e.from] ??= new Set()).add(e.to);
+      (map[e.to] ??= new Set()).add(e.from);
+    }
+    return map;
+  }, [graph]);
+
+  // Hovering or selecting a node isolates its actual chain of influence: the
+  // node, whatever it connects to, and the links between them stay lit while
+  // everything else recedes.
+  const focus = hot ?? selected;
+  const related = focus ? neighbours[focus] : undefined;
+
+  const edgeBase  = isLight ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.10)';
+  const labelFill = isLight ? '#334155' : 'rgba(255,255,255,0.80)';
+  const labelHalo = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.62)';
+  const gridLine  = isLight ? 'rgba(15,23,42,0.055)' : 'rgba(var(--c-accent-rgb),0.10)';
+  const orbitLine = isLight ? 'rgba(15,23,42,0.10)'  : 'rgba(var(--c-accent-rgb),0.16)';
+  const hudLine   = isLight ? 'rgba(15,23,42,0.20)'  : 'rgba(var(--c-accent-rgb),0.35)';
+  const glowAmt   = isLight ? 0.22 : 0.55;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img" onClick={() => onSelect(null)}>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img"
+      style={maxHeight ? { maxHeight, height: '100%', width: 'auto', maxWidth: '100%' } : undefined}
+      preserveAspectRatio="xMidYMid meet"
+      onClick={() => onSelect(null)}>
+      <defs>
+        {/* Wide, soft halo under each node. This is the only blur filter in the
+            scene: edges and packets fake their glow with a wide translucent
+            stroke under a narrow bright one, because a real filter on ~40
+            continuously animating elements is what actually costs frames. */}
+        <filter id="kg-halo" x="-120%" y="-120%" width="340%" height="340%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
+        {/* Spherical shading — colour-independent, so one pair serves every node */}
+        <radialGradient id="kg-hi" cx="32%" cy="26%" r="72%">
+          <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="55%"  stopColor="#ffffff" stopOpacity="0.07" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="kg-sh" cx="72%" cy="80%" r="70%">
+          <stop offset="0%"   stopColor="#000000" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+        </radialGradient>
+        {/* Dot-matrix over hairlines — reads as a sensor field rather than
+            graph paper. */}
+        <pattern id="kg-grid" width="28" height="28" patternUnits="userSpaceOnUse">
+          <path d="M28 0H0v28" fill="none" stroke={gridLine} strokeWidth="0.5" />
+          <circle cx="0" cy="0" r="0.9" fill={gridLine} />
+          <circle cx="28" cy="28" r="0.9" fill={gridLine} />
+        </pattern>
+        {/* Sweep band — a soft bar of light that crosses the field on a cycle */}
+        <linearGradient id="kg-sweep" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="var(--c-accent)" stopOpacity="0" />
+          <stop offset="45%"  stopColor="var(--c-accent)" stopOpacity={isLight ? 0.05 : 0.10} />
+          <stop offset="55%"  stopColor="var(--c-accent)" stopOpacity={isLight ? 0.05 : 0.10} />
+          <stop offset="100%" stopColor="var(--c-accent)" stopOpacity="0" />
+        </linearGradient>
+        {/* One gradient per edge: it fades from the source node's colour into
+            the target's, so a link reads as influence travelling along it. */}
+        {graph.edges.map((e, i) => {
+          const a = byId[e.from]; const b = byId[e.to];
+          if (!a || !b) return null;
+          return (
+            <linearGradient key={i} id={`kg-e${i}`} gradientUnits="userSpaceOnUse"
+              x1={a.x} y1={a.y} x2={b.x} y2={b.y}>
+              <stop offset="0%"   stopColor={a.color} stopOpacity={isLight ? 0.55 : 0.75} />
+              <stop offset="100%" stopColor={b.color} stopOpacity={isLight ? 0.55 : 0.75} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+
+      {/* ── Backdrop: grid, orbit rings, and a slowly turning outer dial ── */}
+      <rect width={W} height={H} fill="url(#kg-grid)" />
+
+      {/* Sweep — the field being read, left to right, on a long cycle */}
+      {!still && (
+        <motion.rect
+          y={0} width={190} height={H} fill="url(#kg-sweep)"
+          initial={{ x: -190 }}
+          animate={{ x: W }}
+          transition={{ duration: 5.5, repeat: Infinity, repeatDelay: 3.5, ease: 'linear' }}
+        />
+      )}
+      <circle cx={CX} cy={CY} r={R1} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
+      <circle cx={CX} cy={CY} r={R2} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
+      <circle cx={CX} cy={CY} r={R1 + 34} fill="none" stroke={orbitLine} strokeWidth="0.75" />
+
+      <motion.g
+        style={SPIN_IN_PLACE}
+        animate={still ? undefined : { rotate: 360 }}
+        transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+      >
+        <circle cx={CX} cy={CY} r={R1 + 34} fill="none" stroke={hudLine} strokeWidth="3"
+          strokeDasharray={dialDashes(R1 + 34, 48)} strokeLinecap="round" opacity={0.5} />
+      </motion.g>
+
+      {/* HUD corner brackets */}
+      {([[14, 14, 1, 1], [W - 14, 14, -1, 1], [W - 14, H - 14, -1, -1], [14, H - 14, 1, -1]] as const)
+        .map(([x, y, sx, sy], i) => (
+          <path key={i} d={`M${x} ${y + sy * 22} L${x} ${y} L${x + sx * 22} ${y}`}
+            fill="none" stroke={hudLine} strokeWidth="1.25" strokeLinecap="round" opacity={0.7} />
+        ))}
+
+      {/* ── Edges ── */}
       {graph.edges.map((e, i) => {
         const a = byId[e.from]; const b = byId[e.to];
         if (!a || !b) return null;
+        const stroke = e.critical ? 'rgba(244,63,94,0.85)' : `url(#kg-e${i})`;
+        const lit = !focus || focus === e.from || focus === e.to;
         return (
-          <line key={i} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-            stroke={e.critical ? 'rgba(244,63,94,0.5)' : edgeBase}
-            strokeWidth={e.critical ? 2 : 1.25} strokeDasharray={e.dashed ? '4 4' : undefined} />
+          <g key={i} opacity={lit ? 1 : 0.28} style={{ transition: 'opacity 0.2s ease' }}>
+            {/* The rail a packet rides. Also the motion path for the packet. */}
+            <path id={`kg-p${i}`} d={`M${a.x} ${a.y}L${b.x} ${b.y}`}
+              fill="none" stroke={edgeBase} strokeWidth={e.critical ? 2.5 : 1.5} />
+            {/* Live signal — a wide soft pass under a narrow bright one */}
+            <motion.line
+              x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+              stroke={stroke} strokeWidth={e.critical ? 7 : 5} strokeLinecap="round"
+              strokeDasharray={e.dashed ? '3 10' : '5 14'}
+              opacity={isLight ? 0.14 : 0.20}
+              animate={still ? undefined : { strokeDashoffset: [0, e.critical ? -38 : -19] }}
+              transition={{ duration: e.critical ? 1.1 : 2.2, repeat: Infinity, ease: 'linear' }}
+            />
+            <motion.line
+              x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+              stroke={stroke} strokeWidth={e.critical ? 2.5 : 1.75} strokeLinecap="round"
+              strokeDasharray={e.dashed ? '3 10' : '5 14'}
+              opacity={isLight ? 0.75 : 0.95}
+              animate={still ? undefined : { strokeDashoffset: [0, e.critical ? -38 : -19] }}
+              transition={{ duration: e.critical ? 1.1 : 2.2, repeat: Infinity, ease: 'linear' }}
+            />
+            {/* Packet — a bead of data actually travelling the link. SMIL rather
+                than a JS tween: the browser drives it without touching React,
+                and the halo is a translucent stroke rather than a blur. */}
+            {!still && (
+              <circle r={e.critical ? 2.6 : 2}
+                fill={e.critical ? '#f43f5e' : b.color}
+                stroke={e.critical ? '#f43f5e' : b.color} strokeWidth={3} strokeOpacity={0.28}>
+                <animateMotion dur={`${e.critical ? 1.8 : 3.2}s`} repeatCount="indefinite"
+                  begin={`${(i % 6) * 0.45}s`}>
+                  <mpath href={`#kg-p${i}`} xlinkHref={`#kg-p${i}`} />
+                </animateMotion>
+              </circle>
+            )}
+          </g>
         );
       })}
 
+      {/* ── Nodes ── */}
       {graph.nodes.map((node, i) => {
         const isSel = selected === node.id;
+        const isHot = hot === node.id;
+        const live = isSel || isHot;
+        const isCore = node.type === 'period';
+        // Connected to whatever is focused — the astrological link being shown.
+        const isLinked = !!focus && focus !== node.id && !!related?.has(node.id);
+        const isMuted  = !!focus && focus !== node.id && !isLinked;
         const ring = node.critical ? '#f43f5e'
           : node.demanding ? '#f59e0b'
           : node.important ? '#34d399' : 'transparent';
         return (
-          <g key={node.id} transform={`translate(${node.x},${node.y})`} className="cursor-pointer"
-            onClick={ev => { ev.stopPropagation(); onSelect(isSel ? null : node.id); }}>
+          <g key={node.id} transform={`translate(${node.x},${node.y})`}
+            className="cursor-pointer focus:outline-none"
+            role="button" tabIndex={0} aria-label={node.tooltip}
+            onClick={ev => { ev.stopPropagation(); onSelect(isSel ? null : node.id); }}
+            onKeyDown={ev => {
+              if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault(); ev.stopPropagation();
+                onSelect(isSel ? null : node.id);
+              }
+            }}
+            onMouseEnter={() => setHot(node.id)}
+            onMouseLeave={() => setHot(h => (h === node.id ? null : h))}
+            onFocus={() => setHot(node.id)}
+            onBlur={() => setHot(h => (h === node.id ? null : h))}
+            opacity={isMuted ? 0.3 : 1}
+            style={{ transition: 'opacity 0.2s ease' }}
+          >
             <title>{node.tooltip}</title>
-            {node.critical && (
-              <motion.circle r={node.r + 5} fill="none" stroke="#f43f5e" strokeWidth={1.5}
-                initial={{ opacity: 0.5, scale: 1 }}
-                animate={{ opacity: [0.5, 0, 0.5], scale: [1, 1.35, 1] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ originX: '0px', originY: '0px' } as React.CSSProperties} />
-            )}
-            {(node.critical || node.important || node.demanding || isSel) && (
-              <circle r={node.r + 4} fill="none" stroke={isSel ? 'var(--c-accent)' : ring} strokeWidth={2} />
-            )}
-            <motion.circle r={node.r} fill={node.color} fillOpacity={node.type === 'period' ? 0.95 : 0.9}
-              stroke={isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.35)'} strokeWidth={1.5}
-              initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: i * 0.02, type: 'spring', stiffness: 260, damping: 20 }} />
-            <text textAnchor="middle" dominantBaseline="central"
-              fontSize={node.type === 'period' ? 22 : node.type === 'house' ? 14 : node.type === 'area' ? 22 : 19}
-              fontWeight={700} fill={node.type === 'house' ? '#fff' : 'rgba(0,0,0,0.78)'}
-              style={{ pointerEvents: 'none' }}>
-              {node.glyph}
-            </text>
-            <text y={node.r + 14} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={labelFill}
-              className="si-svg-label" style={{ pointerEvents: 'none' }}>
+
+            {/* Everything circular lifts together on hover/focus. The scale
+                lives on an inner group because a CSS transform would otherwise
+                override this element's translate() attribute outright, and the
+                node would snap to the canvas origin. The label stays outside so
+                text does not grow with it. */}
+            <motion.g
+              animate={{ scale: live ? 1.09 : 1 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+              style={SPIN_IN_PLACE}
+            >
+              {/* Halo — the node sits in its own pool of light, brighter when
+                  live. The centre burns hotter on dark: it is the one node that
+                  is a reading rather than an influence, so it should read as the
+                  light source of the scene. */}
+              <circle r={node.r * (isCore && !isLight ? 1.7 : 1.35)} fill={node.color}
+                opacity={(live ? Math.min(1, glowAmt + 0.3) : glowAmt) * (isCore && !isLight ? 1.5 : 1)}
+                filter="url(#kg-halo)"
+                style={{ transition: 'opacity 0.2s ease' }} />
+
+              {/* Clickability. Every node carries a faint four-bracket reticle
+                  at rest, which brightens on hover/focus. It does not spin: a
+                  ring orbiting a node implies a relationship the chart is not
+                  actually claiming, and there is nothing here for it to mean. */}
+              <circle
+                r={node.r + 8} fill="none"
+                transform="rotate(45)"
+                stroke={live ? 'var(--c-accent)' : hudLine}
+                strokeWidth={live ? 2 : 1.1}
+                strokeDasharray={reticleDashes(node.r + 8)}
+                strokeLinecap="round"
+                opacity={live ? 1 : 0.55}
+                style={{ transition: 'stroke 0.18s ease, opacity 0.18s ease' }}
+              />
+
+              {/* Connected to what is focused: a solid ring in the focused
+                  node's direction of influence. This is the one ring on the
+                  canvas that carries meaning — it marks the chain the reading
+                  actually runs along. */}
+              {isLinked && (
+                <circle r={node.r + 5} fill="none" stroke="var(--c-accent)" strokeWidth={1.5}
+                  opacity={0.75} />
+              )}
+
+              {node.critical && (
+                <motion.circle r={node.r + 5} fill="none" stroke="#f43f5e" strokeWidth={1.5}
+                  initial={{ opacity: 0.5, scale: 1 }}
+                  animate={still ? undefined : { opacity: [0.5, 0, 0.5], scale: [1, 1.35, 1] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                  style={SPIN_IN_PLACE} />
+              )}
+
+              {/* Open node — a solid accent ring, held still */}
+              {isSel && (
+                <circle r={node.r + 13} fill="none" stroke="var(--c-accent)" strokeWidth={2} opacity={0.9} />
+              )}
+              {(node.critical || node.important || node.demanding) && (
+                <circle r={node.r + 4} fill="none" stroke={ring} strokeWidth={2} />
+              )}
+
+              {/* Body: flat fill, then colour-independent sphere shading, then rim */}
+              <motion.g
+                initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: i * 0.02, type: 'spring', stiffness: 260, damping: 20 }}
+                style={SPIN_IN_PLACE}
+              >
+                <circle r={node.r} fill={node.color} fillOpacity={isCore ? 0.98 : 0.94} />
+                <circle r={node.r} fill="url(#kg-hi)" />
+                <circle r={node.r} fill="url(#kg-sh)" />
+                <circle r={node.r} fill="none" strokeWidth={1.25}
+                  stroke={isLight ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.45)'} />
+
+                {/* The centre gets an instrument dial around it, tinted to its
+                    own colour so the indigo carries through on dark. */}
+                {isCore && (
+                  <>
+                    <circle r={node.r + 7} fill="none" strokeWidth="1"
+                      stroke={isLight ? hudLine : node.color} opacity={isLight ? 1 : 0.75}
+                      strokeDasharray={dialDashes(node.r + 7, 24)} strokeLinecap="round" />
+                    <circle r={node.r + 12} fill="none" strokeWidth="0.75"
+                      stroke={isLight ? hudLine : node.color} opacity={isLight ? 0.7 : 0.45} />
+                  </>
+                )}
+              </motion.g>
+
+              <text textAnchor="middle" dominantBaseline="central"
+                fontSize={isCore ? 22 : node.type === 'house' ? 14 : node.type === 'area' ? 22 : 19}
+                fontWeight={700} fill={node.type === 'house' ? '#fff' : 'rgba(0,0,0,0.80)'}
+                style={{ pointerEvents: 'none' }}>
+                {node.glyph}
+              </text>
+
+              {/* "+" badge — the unambiguous "there is more behind this" cue,
+                  language-free, and only while the node is live. */}
+              {live && (
+                <g transform={`translate(${(node.r + 8) * 0.707},${(node.r + 8) * 0.707})`}
+                  style={{ pointerEvents: 'none' }}>
+                  <circle r={7} fill="var(--c-accent)" />
+                  <path d="M-3 0H3M0 -3V3" stroke={isLight ? '#fff' : '#0b0e18'}
+                    strokeWidth={1.8} strokeLinecap="round" />
+                </g>
+              )}
+            </motion.g>
+
+            {/* Labels are knocked out of the background so they stay readable
+                where they cross an edge or a halo. */}
+            <text y={node.r + 17} textAnchor="middle" fontSize={11.5}
+              fontWeight={live ? 700 : 600}
+              fill={live ? 'var(--c-accent)' : labelFill}
+              className="si-svg-label"
+              style={{
+                pointerEvents: 'none',
+                paintOrder: 'stroke',
+                stroke: labelHalo,
+                strokeWidth: 3,
+                strokeLinejoin: 'round',
+              }}>
               {node.label}
             </text>
           </g>
@@ -657,21 +983,84 @@ const ActivitiesCard: React.FC<{ prediction: DashaPredictionData; isLight: boole
   );
 };
 
+// ── Graph stage ───────────────────────────────────────────────────────────────
+
+/**
+ * The canvas itself plus everything that belongs to it: the interaction hint,
+ * the legend and the panel for whatever node is open. Kept separate from the
+ * page view so the Expand button can pop out just the graph — the summary and
+ * the guidance cards stay behind on the page rather than being duplicated into
+ * a modal that then has to scroll.
+ *
+ * Selection is local, so the expanded stage starts fresh and closing it does
+ * not disturb what was open underneath.
+ */
+const GraphStage: React.FC<{ graph: Graph; isLight: boolean; big?: boolean }> =
+({ graph, isLight, big = false }) => {
+  const { t } = useLang();
+  const [selected, setSelected] = useState<string | null>(null);
+  return (
+    <div className={big ? 'flex flex-col h-full min-h-0 gap-3' : 'space-y-4'}>
+      {/* The canvas sits in a lit well rather than a flat box — a faint accent
+          bloom from the centre, an accent hairline, and an inner edge.
+          `relative` anchors the interactive-hint chip to its corner. */}
+      <div className={`relative rounded-2xl p-2 sm:p-3 overflow-hidden ${big ? 'flex-1 min-h-0 flex items-center justify-center' : ''}`}
+        style={{
+          background: isLight
+            ? 'radial-gradient(ellipse 80% 70% at 50% 45%, rgba(var(--c-accent-rgb),0.05) 0%, rgba(15,23,42,0.02) 70%)'
+            : 'radial-gradient(ellipse 80% 70% at 50% 45%, rgba(var(--c-accent-rgb),0.09) 0%, rgba(0,0,0,0.32) 70%)',
+          border: isLight
+            ? '1px solid rgba(var(--c-accent-rgb),0.14)'
+            : '1px solid rgba(var(--c-accent-rgb),0.18)',
+          boxShadow: isLight
+            ? 'inset 0 1px 0 rgba(255,255,255,0.6)'
+            : 'inset 0 0 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
+        }}>
+        {/* The nodes are the primary interaction and the hint for it used to sit
+            far below in the criticals card, where it was easy to miss. Put it on
+            the canvas, and retire it once the user has actually opened a node. */}
+        <AnimatePresence>
+          {!selected && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full pointer-events-none"
+              style={{
+                background: isLight ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.45)',
+                border: '1px solid rgba(var(--c-accent-rgb),0.35)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              <MousePointerClick className="w-3 h-3 shrink-0" style={{ color: 'var(--c-accent)' }} />
+              <span className={`text-[10.5px] font-semibold ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
+                {t('graph.tapHint')}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <GraphCanvas graph={graph} isLight={isLight} selected={selected} onSelect={setSelected}
+          maxHeight={big ? '100%' : undefined} />
+      </div>
+
+      <div className={big ? 'shrink-0 overflow-y-auto max-h-[30vh] space-y-3 pr-1' : 'space-y-4'}>
+        <Legend isLight={isLight} />
+        <DetailPanel graph={graph} selected={selected} isLight={isLight} />
+      </div>
+    </div>
+  );
+};
+
 // ── Shared inner view ─────────────────────────────────────────────────────────
 
 const GraphView: React.FC<{ graph: Graph; prediction: DashaPredictionData; isLight: boolean }> = ({ graph, prediction, isLight }) => {
   const { t } = useLang();
-  const [selected, setSelected] = useState<string | null>(null);
   return (
     <div className="space-y-4">
       <SummaryBanner summary={graph.summary} isLight={isLight} />
       <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{t('graph.howToRead')}</p>
-      <div className="rounded-2xl p-2 sm:p-3"
-        style={{ background: isLight ? 'rgba(15,23,42,0.02)' : 'rgba(0,0,0,0.25)', border: isLight ? '1px solid rgba(15,23,42,0.06)' : '1px solid rgba(255,255,255,0.05)' }}>
-        <GraphCanvas graph={graph} isLight={isLight} selected={selected} onSelect={setSelected} />
-      </div>
-      <Legend isLight={isLight} />
-      <DetailPanel graph={graph} selected={selected} isLight={isLight} />
+      <GraphStage graph={graph} isLight={isLight} />
       <FoundationCard prediction={prediction} isLight={isLight} />
       <ActivitiesCard prediction={prediction} isLight={isLight} />
     </div>
@@ -692,7 +1081,10 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
     staleTime: 5 * 60 * 1000,
   });
 
-  const graph = useMemo(() => (prediction ? buildGraph(prediction, lang, t) : null), [prediction, lang, t]);
+  const graph = useMemo(
+    () => (prediction ? buildGraph(prediction, lang, t, isLight) : null),
+    [prediction, lang, t, isLight],
+  );
 
   if (isLoading) {
     return (
@@ -730,14 +1122,18 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
 
       <AnimatePresence>
         {expanded && (
-          <motion.div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-6"
+          <motion.div className="fixed inset-0 z-[60] flex items-start justify-center p-2 sm:p-3"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setExpanded(false)} />
+            {/* Expand pops out the GRAPH, not the whole tab. The summary banner
+                and guidance cards stay on the page behind it; duplicating them
+                here just produced a second scrolling copy of the page in which
+                the graph was no bigger than before. */}
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="relative glass-card rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden mt-12 sm:mt-0">
-              <div className="flex items-center gap-3 p-4 sm:p-5 border-b border-white/8 shrink-0">
+              className="relative glass-card rounded-2xl w-full max-w-[1500px] h-[95vh] flex flex-col overflow-hidden">
+              <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-white/8 shrink-0">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}>
                   <Share2 className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
@@ -747,12 +1143,14 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
                   <p className={`text-[11px] truncate ${isLight ? 'text-slate-500' : 'text-white/45'}`}>{t('graph.subtitle')}</p>
                 </div>
                 <button onClick={() => setExpanded(false)} aria-label={t('graph.close')}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white hover:bg-white/8 transition-colors shrink-0">
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
+                    isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-black/5' : 'text-white/50 hover:text-white hover:bg-white/8'
+                  }`}>
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="overflow-y-auto p-4 sm:p-5">
-                <GraphView graph={graph} prediction={prediction} isLight={isLight} />
+              <div className="flex-1 min-h-0 p-3 sm:p-4">
+                <GraphStage graph={graph} isLight={isLight} big />
               </div>
             </motion.div>
           </motion.div>

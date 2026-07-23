@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Caveat is the chalkboard theme's hand-lettering; the rest are the UI faces. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -953,65 +954,192 @@ html[lang='si'] .si-svg-label   { font-size: 13px; }
 html[lang='si'] .si-svg-label-s { font-size: 10.5px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   MONO — Black & white enterprise theme (no animations)
-   Applied alongside .theme-light, so it inherits the light layout/tokens and
-   only (a) recolours the accent palette to neutral greys and (b) disables all
-   motion. Data-viz colours (planet, dignity, strength, trend) are intentionally
-   left untouched so charts stay readable.
+   CHALKBOARD (theme id: "mono") — a classroom blackboard drawn in chalk.
+   Rides on the default (dark) token set rather than .theme-light, because a
+   blackboard is a dark surface and the light layer's dark-text rules would
+   fight it at every turn. On top of that base it repaints every surface: the
+   page becomes near-black slate with chalk-dust grain, cards become chalk-
+   outlined boxes, and the accent is pale yellow chalk. Motion stays disabled —
+   chalk does not animate. Data-viz colours (planet, dignity, trend) are left
+   untouched so charts stay readable.
    ══════════════════════════════════════════════════════════════════════════ */
 :root.theme-mono {
   scroll-behavior: auto;
 
-  --c-accent:            #404040;
-  --c-accent-2:          #525252;
-  --c-accent-dark:       #262626;
-  --c-accent-darker:     #171717;
-  --c-accent-3:          #737373;
-  --c-accent-4:          #a3a3a3;
-  --c-accent-5:          #d4d4d4;
-  --c-accent-edge:       #d4d4d4;
+  /* Yellow chalk — the stick you reach for to underline something */
+  --c-accent:            #f0dc94;
+  --c-accent-2:          #fbf1c6;
+  --c-accent-dark:       #d9c079;
+  --c-accent-darker:     #bda45f;
+  --c-accent-3:          #e9e5d6;
+  --c-accent-4:          #f3f0e5;
+  --c-accent-5:          #faf9f2;
+  --c-accent-edge:       #8a8880;
 
-  --c-accent-rgb:        64,64,64;
-  --c-accent2-rgb:       82,82,82;
-  --c-accent-dark-rgb:   38,38,38;
-  --c-accent-darker-rgb: 23,23,23;
-  --c-accent3-rgb:       115,115,115;
-  --c-accent4-rgb:       163,163,163;
-  --c-accent5-rgb:       212,212,212;
+  --c-accent-rgb:        240,220,148;
+  --c-accent2-rgb:       251,241,198;
+  --c-accent-dark-rgb:   217,192,121;
+  --c-accent-darker-rgb: 189,164,95;
+  --c-accent3-rgb:       233,229,214;
+  --c-accent4-rgb:       243,240,229;
+  --c-accent5-rgb:       250,249,242;
+
+  /* Chalk white is never pure white — it is warm and slightly dusty */
+  --text-primary:     240,240,234;
+  --text-muted:       206,208,199;
+  --text-subtle:      168,172,164;
+
+  /* The board itself — near-black slate, warmed a shade so it reads as a
+     board rather than as an unpainted #000 panel */
+  --bg-page:          #1a1a19;
+  --bg-page-grid:     rgba(240,240,234,0.045);
+
+  /* On a black board a "recessed" surface cannot go darker and still be seen,
+     so insets lift away from the board instead of sinking into it. */
+  --bg-card:          rgba(255,255,255,0.030);
+  --bg-card-hover:    rgba(255,255,255,0.055);
+  --bg-inset:         rgba(255,255,255,0.035);
+  --bg-inset-hover:   rgba(255,255,255,0.060);
+
+  --border-card:      rgba(240,240,234,0.26);
+  --border-subtle:    rgba(240,240,234,0.14);
+
+  --bg-header:        rgba(20,20,19,0.94);
+  --border-header:    rgba(240,240,234,0.22);
+
+  --scrollbar-track:  #141413;
+  --scrollbar-thumb:  rgba(240,240,234,0.32);
+
+  --shadow-card:      inset 0 0 0 1px rgba(240,240,234,0.05),
+                      0 8px 26px rgba(0,0,0,0.30);
 }
 
-/* Accent-filled buttons (active tabs, chart-style toggle, Generate, language)
-   keep WHITE labels on the dark-grey accent fill in mono. Without this the
-   light layer's `.text-white → navy` rule makes the label invisible (dark on
-   dark). Scoped to mono only — light/dark keep their existing label colours. */
+/* ── The board surface ─────────────────────────────────────────────────────
+   Three stacked layers: fine chalk-dust grain (SVG turbulence), the ghost of
+X   board fall into shadow the way a real one does under classroom lights. */
+.theme-mono body {
+  background-color: var(--bg-page);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(
+      98deg,
+      rgba(255,255,255,0.016) 0px,
+      rgba(255,255,255,0.016) 3px,
+      transparent 3px,
+      transparent 34px
+    ),
+    radial-gradient(ellipse 120% 80% at 50% 40%, rgba(255,255,255,0.035) 0%, transparent 60%),
+    radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.42) 100%);
+  background-size: 180px 180px, auto, auto, auto;
+  background-attachment: fixed;
+  /* Every glyph gets a faint bloom — chalk never sits flat on the board */
+  text-shadow: 0 0 1.1px rgba(255,255,255,0.22);
+}
+
+/* The app shell paints --bg-page as an inline style, which would sit on top of
+   the board texture and hide it. Punch it back to transparent (a stylesheet
+   !important outranks an inline declaration) so the grain and vignette show,
+   and let the chalk grid ride over them. */
+.theme-mono .tech-grid {
+  background-color: transparent !important;
+}
+
+/* Headings are hand-lettered. Body copy deliberately stays in the UI sans:
+   this app renders a lot of 9–11px labels, and a script face at that size is
+   decoration at the cost of legibility. */
+.theme-mono h1,
+.theme-mono h2,
+.theme-mono h3,
+.theme-mono h4,
+.theme-mono h5,
+.theme-mono h6,
+.theme-mono .font-display,
+.theme-mono .brand-title {
+  font-family: 'Caveat', 'Patrick Hand', 'Comic Sans MS', cursive;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+
+/* Cards are boxes drawn on the board, not panes of glass */
+.theme-mono .glass-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: rgba(240,240,234,0.26);
+  box-shadow: var(--shadow-card);
+}
+.theme-mono .glass-card:hover {
+  border-color: rgba(240,240,234,0.38);
+}
+
+/* The modals and the privacy banner hard-code a deep-navy fill for the dark
+   theme; against the black board that reads as a hole, so repaint them as a
+   slightly darker patch of the same board with a chalk outline. */
+.theme-mono .disclaimer-modal,
+.theme-mono .privacy-banner {
+  background: #1f1f1e;
+  border-color: rgba(240,240,234,0.28);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+/* Chalk-filled controls: pale yellow stick on slate, so the label must be
+   BOARD-coloured rather than white or it disappears into the fill. */
 .theme-mono .on-accent,
 .theme-mono .on-accent * {
-  color: #fff !important;
-  fill: #fff !important;
+  color: #141413 !important;
+  fill: #141413 !important;
+  text-shadow: none;
 }
 
-/* Timeline (Dasha) — the Mahadasha header backgrounds resolve to dark greys in
-   mono, but the light layer turns `.text-white` navy, leaving the label dark-on-
-   dark. Pin the header to a neutral dark fill and force WHITE text so it stays
-   legible, and flatten the per-lord colour dots to grey. */
+/* Timeline (Dasha) — Mahadasha headers become a chalk-yellow band with board-
+   dark lettering; the per-lord dots flatten to chalk. */
 .theme-mono .dasha-md-header {
-  background-color: var(--c-accent-dark) !important;
+  background-color: var(--c-accent) !important;
   background-image: none !important;
 }
 .theme-mono .dasha-md-header,
 .theme-mono .dasha-md-header * {
-  color: #fff !important;
-  fill: #fff !important;
+  color: #141413 !important;
+  fill: #141413 !important;
+  text-shadow: none;
 }
 .theme-mono .dasha-dot {
   background-color: var(--c-accent-3) !important;
 }
 
-/* Flatten the accent gradient text/borders into a single neutral in mono */
+/* Gradient text flattens to plain chalk */
 .theme-mono .text-gradient {
   background-image: none;
-  color: #262626 !important;
-  -webkit-text-fill-color: #262626;
+  color: #f0f0ea !important;
+  -webkit-text-fill-color: #f0f0ea;
+}
+
+/* Anything filled with the accent is a chalk-yellow block, so its label has to
+   be board-dark. Covers the primary CTA, the attention buttons and the modal
+   accept button, all of which hard-code white text for the other themes. */
+.theme-mono .btn-primary,
+.theme-mono .btn-primary *,
+.theme-mono .btn-cta,
+.theme-mono .btn-cta *,
+.theme-mono .disclaimer-cta,
+.theme-mono .disclaimer-cta * {
+  color: #141413 !important;
+  fill: #141413 !important;
+  text-shadow: none;
+}
+.theme-mono .btn-cta {
+  border-color: rgba(240,240,234,0.45);
+  box-shadow: none;
+}
+
+/* Inputs read as ruled boxes chalked onto the board */
+.theme-mono .form-field {
+  background: rgba(255,255,255,0.035);
+  border-color: rgba(240,240,234,0.28);
+  color: #f0f0ea;
+}
+.theme-mono .form-field:hover:not(:focus) {
+  border-color: rgba(240,240,234,0.42);
+  background: rgba(255,255,255,0.06);
 }
 
 /* Kill every animation + transition. Loading spinners are functional, so they
