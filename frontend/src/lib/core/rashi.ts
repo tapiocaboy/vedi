@@ -1,7 +1,7 @@
 /** Rashi (Zodiac Sign) calculations — direct port of backend/src/core/rashi.py */
 
 export const RASHIS = [
-  'Mesha', 'Vrishabha', 'Mithuna', 'Karka',
+  'Mesha', 'Vrishabha', 'Mithuna', 'Kataka',
   'Simha', 'Kanya', 'Tula', 'Vrischika',
   'Dhanu', 'Makara', 'Kumbha', 'Meena',
 ] as const;
@@ -20,19 +20,19 @@ export const RASHI_SI = [
 ] as const;
 
 export const RASHI_LORDS: Record<string, string> = {
-  Mesha:'Mars', Vrishabha:'Venus', Mithuna:'Mercury', Karka:'Moon',
+  Mesha:'Mars', Vrishabha:'Venus', Mithuna:'Mercury', Kataka:'Moon',
   Simha:'Sun', Kanya:'Mercury', Tula:'Venus', Vrischika:'Mars',
   Dhanu:'Jupiter', Makara:'Saturn', Kumbha:'Saturn', Meena:'Jupiter',
 };
 
 export const RASHI_ELEMENTS: Record<string, string> = {
-  Mesha:'Fire', Vrishabha:'Earth', Mithuna:'Air', Karka:'Water',
+  Mesha:'Fire', Vrishabha:'Earth', Mithuna:'Air', Kataka:'Water',
   Simha:'Fire', Kanya:'Earth', Tula:'Air', Vrischika:'Water',
   Dhanu:'Fire', Makara:'Earth', Kumbha:'Air', Meena:'Water',
 };
 
 export const RASHI_MODALITIES: Record<string, string> = {
-  Mesha:'Movable', Vrishabha:'Fixed', Mithuna:'Dual', Karka:'Movable',
+  Mesha:'Movable', Vrishabha:'Fixed', Mithuna:'Dual', Kataka:'Movable',
   Simha:'Fixed', Kanya:'Dual', Tula:'Movable', Vrischika:'Fixed',
   Dhanu:'Dual', Makara:'Movable', Kumbha:'Fixed', Meena:'Dual',
 };

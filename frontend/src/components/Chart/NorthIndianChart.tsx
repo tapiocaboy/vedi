@@ -161,7 +161,7 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
                 transition={{ delay: 0.4 + idx * 0.08 }}
                 fontSize="8.5" fontWeight="900"
                 fontFamily="monospace"
-                className="select-none"
+                className="select-none si-svg-label-s"
                 style={{ paintOrder: 'stroke', stroke: isLight ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.55)', strokeWidth: 0.6 }}
               >
                 <title>{`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}</title>
@@ -176,11 +176,11 @@ export const NorthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         {/* Center ASC label */}
         <text x="75" y="70" textAnchor="middle" fontSize="10"
           fill={ascLabelClr} fontFamily="monospace" fontWeight="900"
-          className="pointer-events-none select-none">
+          className="pointer-events-none select-none si-svg-label-s">
           {t('chart.ascAbbrev')}
         </text>
         <text x="75" y="84" textAnchor="middle" fontSize="11" fontWeight="900"
-          fill={ascRashiClr} className="pointer-events-none select-none">
+          fill={ascRashiClr} className="pointer-events-none select-none si-svg-label">
           {labelRashi(ascendantRashi, lang, RASHIS[ascendantRashi])}
         </text>
       </svg>

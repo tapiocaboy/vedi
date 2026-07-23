@@ -15,7 +15,7 @@ import {
   CheckCircle,
   AlertTriangle,
   MinusCircle,
-  Gem,
+  // Gem, // used only by the hidden remedies section
   Heart,
   Wallet,
   Briefcase,
@@ -120,7 +120,7 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
                         </ul>
                       </div>
 
-                      {/* Remedies */}
+                      {/* Remedies — hidden for now, kept for when they come back
                       {data.remedies.length > 0 && (
                         <div>
                           <h6 className="font-medium text-white/70 text-sm mb-2">{t('common.remedies')}</h6>
@@ -134,6 +134,7 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
                           </ul>
                         </div>
                       )}
+                      */}
                     </div>
                   </motion.div>
                 )}
@@ -143,9 +144,9 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
         })}
       </div>
 
-      {/* Remedies & Activities */}
+      {/* Activities */}
       <div className="px-4 pb-4 space-y-3">
-        {/* Main Remedies */}
+        {/* Main Remedies — hidden for now, kept for when they come back
         <div className="p-3 bg-white/3 rounded-lg border border-white/6">
           <h5 className="text-sm font-semibold text-white/70 mb-2 flex items-center gap-2">
             <Gem className="w-4 h-4 text-purple-400" />
@@ -172,6 +173,7 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
             )}
           </div>
         </div>
+        */}
 
         {/* Activities */}
         <button

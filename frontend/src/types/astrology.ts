@@ -110,7 +110,7 @@ export interface Chart {
 
 // Rashi names
 export const RASHIS = [
-  'Mesha', 'Vrishabha', 'Mithuna', 'Karka',
+  'Mesha', 'Vrishabha', 'Mithuna', 'Kataka',
   'Simha', 'Kanya', 'Tula', 'Vrischika',
   'Dhanu', 'Makara', 'Kumbha', 'Meena'
 ] as const;

@@ -543,7 +543,7 @@ function AppContent() {
                     onClick={() => setSidebarHidden(true)}
                     title={t('form.hidePanel')}
                     aria-label={t('form.hidePanel')}
-                    className={`ml-auto w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${isLight ? 'text-gray-400 hover:bg-gray-100 hover:text-gray-700' : 'text-white/40 hover:bg-white/8 hover:text-white'}`}
+                    className={`ml-auto w-7 h-7 rounded-lg border flex items-center justify-center transition-colors ${isLight ? 'border-gray-300 bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-900' : 'border-white/25 bg-white/5 text-white/70 hover:bg-white/12 hover:border-white/40 hover:text-white'}`}
                   >
                     <PanelLeftClose className="w-4 h-4" />
                   </button>

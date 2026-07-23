@@ -96,7 +96,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
 export interface DashaBarRowProps {
   label: string;
+  /** Raw English planet name — LORD_HEX is keyed on it, so it must not be
+      translated or every bar falls back to the default colour. */
   lord: string;
+  /** Display name for the lord. Defaults to `lord` (i.e. English). */
+  lordLabel?: string;
   start: string;
   end: string;
   nowMs: number;
@@ -104,7 +108,7 @@ export interface DashaBarRowProps {
 }
 
 export const DashaBarRow: React.FC<DashaBarRowProps> = ({
-  label, lord, start, end, nowMs, index = 0,
+  label, lord, lordLabel, start, end, nowMs, index = 0,
 }) => {
   const startMs  = new Date(start).getTime();
   const endMs    = new Date(end).getTime();
@@ -128,7 +132,7 @@ export const DashaBarRow: React.FC<DashaBarRowProps> = ({
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
           <span className="text-[9px] uppercase tracking-[0.18em] text-white/30">{label}</span>
-          <span className="text-sm font-bold text-white">{lord}</span>
+          <span className="text-sm font-bold text-white">{lordLabel ?? lord}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-bold tabular-nums" style={{ color }}>

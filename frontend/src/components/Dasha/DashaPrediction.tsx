@@ -15,8 +15,8 @@ import {
   AlertTriangle,
   CheckCircle,
   MinusCircle,
-  Gem,
-  Moon,
+  // Gem,   // used only by the hidden remedies section
+  // Moon,  // used only by the hidden remedies section
   Star
 } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
@@ -77,7 +77,7 @@ const AREA_CONFIG = {
 export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }) => {
   const { lang, t } = useLang();
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
-  const [showRemedies, setShowRemedies] = useState(false);
+  // const [showRemedies, setShowRemedies] = useState(false); // hidden remedies section
   const [showActivities, setShowActivities] = useState(false);
 
   const renderRating = (rating: number) => {
@@ -155,7 +155,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
                 </ul>
               </div>
 
-              {/* Remedies */}
+              {/* Remedies — hidden for now, kept for when they come back
               {data.remedies.length > 0 && (
                 <div>
                   <h5 className="font-medium text-white/70 mb-2">{t('common.remedies')}</h5>
@@ -169,6 +169,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
                   </ul>
                 </div>
               )}
+              */}
 
               {/* Keywords */}
               {data.keywords.length > 0 && (
@@ -250,7 +251,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
         )}
       </div>
 
-      {/* Remedies Section */}
+      {/* Remedies Section — hidden for now, kept for when they come back
       <div className="px-6 pb-6">
         <button
           onClick={() => setShowRemedies(!showRemedies)}
@@ -294,6 +295,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           </motion.div>
         )}
       </div>
+      */}
 
       {/* Activities Section */}
       <div className="px-6 pb-6">

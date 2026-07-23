@@ -93,7 +93,7 @@ function HierarchyCard({ prediction }: { prediction: DashaPredictionData }) {
 
       <div className="space-y-5">
         {rows.map((r, i) => (
-          <DashaBarRow key={r.label} {...r} lord={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
+          <DashaBarRow key={r.label} {...r} lordLabel={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
         ))}
       </div>
 
@@ -475,6 +475,7 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
                         </div>
                       )}
 
+                      {/* Remedies — hidden for now, kept for when they come back
                       {data.remedies.length > 0 && (
                         <div className="pt-1 border-t border-white/5">
                           <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1.5">{t('common.remedies')}</p>
@@ -488,6 +489,7 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
                           </ul>
                         </div>
                       )}
+                      */}
                     </div>
                   </motion.div>
                 )}
@@ -606,9 +608,11 @@ function SookshmaTimeline({ birthData, targetDate, refDate, dateKey }: { birthDa
 
 function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
   const { t } = useLang();
-  const { remedies, favorableActivities, unfavorableActivities } = prediction;
-  const hasRemedies = !!remedies.gemstone || !!remedies.mantra;
-  if (!hasRemedies && !favorableActivities.length) return null;
+  // Remedies are hidden for now — only the activities guide is rendered.
+  // const { remedies } = prediction;
+  // const hasRemedies = !!remedies.gemstone || !!remedies.mantra;
+  const { favorableActivities, unfavorableActivities } = prediction;
+  if (!favorableActivities.length && !unfavorableActivities.length) return null;
 
   return (
     <div className="glass-card rounded-2xl p-5">
@@ -617,7 +621,8 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
         <span className="text-sm font-semibold text-white">{t('insights.guidanceTitle')}</span>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid gap-4">
+        {/* Remedies — hidden for now, kept for when they come back
         {hasRemedies && (
           <div className="space-y-3">
             <p className="text-[10px] text-white/30 uppercase tracking-widest font-mono">{t('insights.recommendations')}</p>
@@ -645,6 +650,7 @@ function RemediesSummary({ prediction }: { prediction: DashaPredictionData }) {
             )}
           </div>
         )}
+        */}
 
         <div className="space-y-3">
           {favorableActivities.length > 0 && (

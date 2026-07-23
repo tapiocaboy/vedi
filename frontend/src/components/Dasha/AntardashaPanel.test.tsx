@@ -212,15 +212,18 @@ describe('AntardashaPanel', () => {
     expect(screen.getByText('Saturn – Ketu – Venus').closest('button')).toBeDisabled();
   });
 
-  it('states the outlook, remedies and activities once, under Outlook', async () => {
+  it('states the outlook and activities once, under Outlook', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
     await screen.findByText('Saturn – Ketu – Ketu');
     fireEvent.click(screen.getByRole('tab', { name: 'Outlook' }));
 
-    expect(await screen.findByText('Blue Sapphire')).toBeInTheDocument();
-    expect(screen.getByText('Om Shanaishcharaya Namah')).toBeInTheDocument();
+    expect(await screen.findByText('Life Area Outlook')).toBeInTheDocument();
+    expect(screen.getByText('Activities Guide')).toBeInTheDocument();
+    // Remedies are commented out of the UI for now.
+    expect(screen.queryByText('Blue Sapphire')).not.toBeInTheDocument();
+    expect(screen.queryByText('Om Shanaishcharaya Namah')).not.toBeInTheDocument();
     // The sub-period list is not rendered alongside it.
     expect(screen.queryByText('Saturn – Ketu – Ketu')).not.toBeInTheDocument();
   });

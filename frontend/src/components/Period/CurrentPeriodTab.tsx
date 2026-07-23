@@ -67,7 +67,7 @@ const PeriodBanner: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
 
       <div className="space-y-5">
         {rows.map((r, i) => (
-          <DashaBarRow key={r.label} {...r} lord={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
+          <DashaBarRow key={r.label} {...r} lordLabel={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
         ))}
       </div>
 
@@ -292,6 +292,7 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
         </div>
       </div>
 
+      {/* Daily practice / remedies — hidden for now, kept for when they come back
       <div className="rounded-xl border border-white/8 bg-black/30 p-3">
         <div className="text-[10px] uppercase tracking-wider text-white/40 mb-1">{t('now.dailyPractice')}</div>
         <div className="text-[11px] text-white/75"><span className="text-violet-300">{t('now.mantra')}:</span> {pb.dailyPractice.mantra || '—'}</div>
@@ -303,6 +304,7 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
           <div className="text-[11px] text-white/75 mt-0.5"><span className="text-violet-300">{t('now.deity')}:</span> {snap.prediction.remedies.deity}</div>
         )}
       </div>
+      */}
     </div>
   );
 };

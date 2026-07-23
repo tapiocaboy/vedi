@@ -268,7 +268,9 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr): Graph {
       detail: {
         trend: { label: trendLabel, color: TREND_HEX[trend] ?? TREND_HEX.neutral },
         lines: [a.data.summary, ...(a.data.details?.slice(0, 1) ?? [])].filter(Boolean),
-        chips: a.data.remedies?.slice(0, 1) ?? [],
+        // Remedy chip hidden for now, kept for when remedies come back
+        // chips: a.data.remedies?.slice(0, 1) ?? [],
+        chips: [],
         takeaway: take,
       },
     });
@@ -348,7 +350,7 @@ const GraphCanvas: React.FC<{ graph: Graph; isLight: boolean; selected: string |
               {node.glyph}
             </text>
             <text y={node.r + 14} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={labelFill}
-              style={{ pointerEvents: 'none' }}>
+              className="si-svg-label" style={{ pointerEvents: 'none' }}>
               {node.label}
             </text>
           </g>

@@ -893,6 +893,37 @@ html[lang='si'] * {
   letter-spacing: normal !important;
 }
 
+/* Sinhala glyphs carry stacked vowel signs above and below the base letter, so
+   at the Latin sizes used across the UI they render noticeably smaller and the
+   marks collide. Bump every text size (and its leading) whenever the UI language
+   is Sinhala — hardest at the small end (the 9–11px labels inside chart boxes,
+   timeline rows and dasha bars), tapering off for display type. Spacing
+   utilities are deliberately left alone so the layout does not shift — only
+   type gets bigger. */
+html[lang='si'] body           { font-size: 18px; }
+html[lang='si'] .text-\[7px\]  { font-size: 10px; line-height: 1.55; }
+html[lang='si'] .text-\[8px\]  { font-size: 11px; line-height: 1.55; }
+html[lang='si'] .text-\[9px\]  { font-size: 12px; line-height: 1.55; }
+html[lang='si'] .text-\[10px\] { font-size: 13px; line-height: 1.55; }
+html[lang='si'] .text-\[11px\] { font-size: 14px; line-height: 1.55; }
+html[lang='si'] .text-\[12px\] { font-size: 15px; line-height: 1.55; }
+html[lang='si'] .text-\[13px\] { font-size: 16px; line-height: 1.55; }
+html[lang='si'] .text-\[14px\] { font-size: 17px; line-height: 1.55; }
+html[lang='si'] .text-\[15px\] { font-size: 18px; line-height: 1.55; }
+html[lang='si'] .text-xs       { font-size: 15px; line-height: 1.5rem; }
+html[lang='si'] .text-sm       { font-size: 17px; line-height: 1.75rem; }
+html[lang='si'] .text-base     { font-size: 19px; line-height: 1.9rem; }
+html[lang='si'] .text-lg       { font-size: 21px; line-height: 2rem; }
+html[lang='si'] .text-xl       { font-size: 23px; line-height: 2.15rem; }
+html[lang='si'] .text-2xl      { font-size: 27px; line-height: 2.4rem; }
+html[lang='si'] .text-3xl      { font-size: 34px; line-height: 2.6rem; }
+
+/* SVG charts size their labels with presentation attributes, which CSS wins
+   against — scale those up for Sinhala too (North Indian chart house/planet
+   labels, knowledge-graph node labels). */
+html[lang='si'] .si-svg-label   { font-size: 13px; }
+html[lang='si'] .si-svg-label-s { font-size: 10.5px; }
+
 /* ══════════════════════════════════════════════════════════════════════════
    MONO — Black & white enterprise theme (no animations)
    Applied alongside .theme-light, so it inherits the light layout/tokens and

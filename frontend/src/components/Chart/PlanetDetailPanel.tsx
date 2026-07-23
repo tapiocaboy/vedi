@@ -442,7 +442,7 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
         )}
       </div>
 
-      {/* Remedies */}
+      {/* Remedies — hidden for now, kept for when they come back
       {(analysis.gemstone || analysis.mantra || (planet.isRetrograde && analysis.retrogradeEffect?.remedies.length)) && (
         <div className="rounded-xl p-4" style={{ background: 'rgba(255,175,97,0.06)', border: '1px solid rgba(255,175,97,0.20)' }}>
           <p className="text-[10px] font-mono uppercase mb-3" style={{ color: mutedClr }}>{t('planet.remedies')}</p>
@@ -472,6 +472,7 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
           </div>
         </div>
       )}
+      */}
 
       {/* Degree detail */}
       <div className="flex flex-wrap gap-3">

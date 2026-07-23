@@ -52,7 +52,7 @@ export const CurrentDasha: React.FC<Props> = ({ currentDasha }) => {
 
       <div className="space-y-5">
         {rows.map((r, i) => (
-          <DashaBarRow key={r.label} {...r} lord={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
+          <DashaBarRow key={r.label} {...r} lordLabel={labelPlanet(r.lord, lang)} nowMs={nowMs} index={i} />
         ))}
       </div>
     </motion.div>

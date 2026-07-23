@@ -34,7 +34,7 @@ export const HOUSE_DATA: Record<number, {
 
 // ─── Dignity data ──────────────────────────────────────────────────────────
 
-// rashiIndex: 0=Mesha, 1=Vrishabha, 2=Mithuna, 3=Karka, 4=Simha, 5=Kanya,
+// rashiIndex: 0=Mesha, 1=Vrishabha, 2=Mithuna, 3=Kataka, 4=Simha, 5=Kanya,
 //             6=Tula, 7=Vrischika, 8=Dhanu, 9=Makara, 10=Kumbha, 11=Meena
 
 export const DIGNITY: Record<string, {

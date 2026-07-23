@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldAlert, ShieldCheck, Loader2, Activity, AlertTriangle, CheckCircle2, Sparkles, CircleDot } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Loader2, Activity, AlertTriangle, CheckCircle2, /* Sparkles, */ CircleDot } from 'lucide-react';
 import { getDoshas } from '../../services/api';
 import type { BirthData, DoshaCheck, SadeSatiPeriod } from '../../services/api';
 import { useTheme } from '../../hooks/useTheme';
@@ -80,12 +80,14 @@ function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
         </div>
       )}
 
+      {/* Remedy — hidden for now, kept for when they come back
       <div className="mt-3 pl-12">
         <div className="text-[10px] uppercase tracking-wider text-violet-300/70 mb-1 flex items-center gap-1">
           <Sparkles className="w-3 h-3" /> Remedy
         </div>
         <p className={`text-[11.5px] leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/55'}`}>{d.remedy}</p>
       </div>
+      */}
     </div>
   );
 }

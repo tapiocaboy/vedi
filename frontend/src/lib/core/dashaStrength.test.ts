@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { assessPlanetStrength, functionalNatureFor, lordedHousesFor } from './dashaStrength';
 
 // Rashi indices: 0=Mesha(Aries), 1=Vrishabha(Taurus), 2=Mithuna(Gemini),
-// 3=Karka(Cancer), 4=Simha(Leo), 5=Kanya(Virgo), 6=Tula(Libra),
+// 3=Kataka(Cancer), 4=Simha(Leo), 5=Kanya(Virgo), 6=Tula(Libra),
 // 7=Vrischika(Scorpio), 8=Dhanu(Sag), 9=Makara(Cap), 10=Kumbha(Aqu), 11=Meena(Pisces)
 
 describe('lordedHousesFor', () => {
