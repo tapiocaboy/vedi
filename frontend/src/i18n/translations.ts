@@ -810,7 +810,7 @@ const si: Record<keyof typeof en, string> = {
   // Planets
   'planet.sun': 'සූර්ය',
   'planet.moon': 'චන්ද්‍ර',
-  'planet.mars': 'කුජ / අංගාරක',
+  'planet.mars': 'කුජ / අඟහරු',
   'planet.mercury': 'බුධ',
   'planet.jupiter': 'ගුරු',
   'planet.venus': 'ශුක්‍ර',
@@ -840,7 +840,7 @@ const si: Record<keyof typeof en, string> = {
   'trend.favorable': 'හිතකර',
   'trend.challenging': 'අභියෝගාත්මක',
   'trend.mixed': 'මිශ්‍ර',
-  'trend.neutral': 'නිරපේක්ෂ',
+  'trend.neutral': 'මධ්‍යස්ථ',
 
   // Dasha levels
   'dasha.mahadasha': 'මහා දශා',
