@@ -816,7 +816,7 @@ const si: Record<keyof typeof en, string> = {
   'planet.venus': 'ශුක්‍ර',
   'planet.saturn': 'ශනි',
   'planet.rahu': 'රාහු',
-  'planet.ketu': 'කෙටු',
+  'planet.ketu': 'කේතු',
   'planet.ascendant': 'ලග්න',
   'planet.retrograde': 'වක්‍ර ℞',
   'planet.ascendantTitle': 'ලග්න (ආරම්භක රාශිය)',
