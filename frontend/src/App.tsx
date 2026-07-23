@@ -33,6 +33,7 @@ import { PrivacyBanner } from './components/PrivacyBanner';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Logo, BrandTitle } from './components/Logo';
 import { ParticleField } from './components/ParticleField';
+import { LagnaIntro } from './components/LagnaIntro';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
 import { LanguageProvider, useLang } from './i18n/LanguageContext';
 import type { Lang } from './i18n/translations';
@@ -75,6 +76,8 @@ function AppContent() {
     () => localStorage.getItem('trytellme_cookie_consent') === null
   );
   const [pendingBirthData, setPendingBirthData] = useState<BirthData | null>(null);
+  // Ascendant sign being revealed by the particle intro, or null when idle.
+  const [lagnaIntroRashi, setLagnaIntroRashi] = useState<number | null>(null);
 
   const generateChart = useGenerateChart();
   const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(birthData, 80);
@@ -109,6 +112,14 @@ function AppContent() {
       const result = await generateChart.mutateAsync(data);
       setChartData(result);
       setActiveTab('chart');
+      // Reveal the lagna as particles before the chart is seen. The chart
+      // mounts underneath straight away; the overlay simply covers it until the
+      // figure has morphed into the chart lattice. Skipped for the motionless
+      // mono theme and for anyone who asked for reduced motion.
+      const wantsMotion =
+        theme !== 'mono' &&
+        !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (wantsMotion) setLagnaIntroRashi(result.ascendant.rashiIndex);
     } catch (err) {
       console.error('Failed to generate chart:', err);
     }
@@ -197,6 +208,9 @@ function AppContent() {
 
       {/* Disclaimer — shown on every Generate Chart press */}
       <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />
+
+      {/* Lagna particle reveal — plays over the freshly mounted chart */}
+      <LagnaIntro rashiIndex={lagnaIntroRashi} onDone={() => setLagnaIntroRashi(null)} />
 
       {/* Experimental notice — shown when opening Match tab */}
       <ExperimentalMatchModal
