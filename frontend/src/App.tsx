@@ -171,7 +171,9 @@ function AppContent() {
   }: { id: ViewTab; label: string; icon: React.ElementType }) => (
     <button
       onClick={() => handleTabClick(id)}
-      className={`relative flex items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-colors duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
+      // min-h-[40px] on touch: the tab strip was ~32px tall, under a comfortable
+      // tap target. Desktop keeps the tighter height.
+      className={`relative flex items-center justify-center gap-1 sm:gap-1.5 min-h-[40px] sm:min-h-0 py-2.5 sm:py-2.5 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-colors duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
         activeTab === id
           ? 'text-white on-accent'
           : isLight
@@ -343,7 +345,7 @@ function AppContent() {
               <button
                 onClick={() => downloadChartMarkdown(chartData)}
                 title={t('header.exportTitle')}
-                className="btn-cta btn-cta-blink flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-bold transition-all duration-200"
+                className="btn-cta btn-cta-blink flex items-center gap-1.5 text-xs px-3 h-9 rounded-xl font-bold transition-all duration-200"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden xs:inline">{t('header.export')}</span>
@@ -558,7 +560,7 @@ function AppContent() {
                     onClick={() => setSidebarHidden(true)}
                     title={t('form.hidePanel')}
                     aria-label={t('form.hidePanel')}
-                    className="btn-cta btn-cta-blink ml-auto w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
+                    className="btn-cta btn-cta-blink ml-auto w-9 h-9 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center transition-all duration-200"
                   >
                     <PanelLeftClose className="w-4 h-4" />
                   </button>

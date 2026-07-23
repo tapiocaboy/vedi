@@ -33,7 +33,7 @@ const FIGURE_EMOJI = [
   '👬', // Mithuna    — twins
   '🦀', // Kataka     — crab
   '🦁', // Simha      — lion
-  '👸', // Kanya      — maiden
+  '💃', // Kanya      — the maiden (a whole figure; 👸 is a head and reads as a blob)
   '⚖️', // Tula       — scales
   '🦂', // Vrischika  — scorpion
   '🏹', // Dhanu      — archer
@@ -57,12 +57,30 @@ const TOTAL    = ASSEMBLE + HOLD + DISSOLVE;
 
 /**
  * Particle budget. At 1250 the silhouette sat ~8px between particles, which
- * reads as a scatter of dots rather than a figure; 2400 closes that to ~6px
+ * reads as a scatter of dots rather than a figure; 3000 closes that to ~5px
  * and still strokes comfortably inside a frame.
  */
-const MAX_PARTICLES = 2400;
-/** Offscreen sampling resolution — larger = finer silhouette, slower sample. */
-const SAMPLE_SIZE = 260;
+const MAX_PARTICLES = 3000;
+/** Phone budget — half the points over roughly half the figure diameter. */
+const MOBILE_PARTICLES = 1500;
+/**
+ * Offscreen sampling resolution and grid step. 420/2 gives roughly four times
+ * the candidate points of the original 260/3, so thinning has real detail to
+ * choose from instead of inventing it.
+ */
+const SAMPLE_SIZE = 420;
+const SAMPLE_STRIDE = 2;
+/**
+ * How the particle budget is split. The contour identifies the figure — a
+ * crab's claws, the archer's bow — so it takes the largest share; interior
+ * detail lines come next; flat fill gets the remainder.
+ */
+const OUTLINE_SHARE = 0.44;
+const DETAIL_SHARE  = 0.31;
+/** Alpha above which a pixel counts as ink, and the luminance step that marks
+    an internal feature line. */
+const ALPHA_MIN = 110;
+const LUM_STEP  = 46;
 
 /** Gold, three tiers: core, deep amber, pale highlight. */
 const GOLD: [number, number, number][] = [
@@ -99,16 +117,29 @@ const easeInOutCubic = (t: number) =>
 const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
 
 /**
- * Render `text` to an offscreen canvas and return one point per opaque pixel
- * on a `stride` grid, in a normalised -0.5…0.5 box.
+ * Render `text` to an offscreen canvas and return its opaque pixels on a
+ * `stride` grid, in a normalised -0.5…0.5 box, split into three tiers:
+ *
+ *   outline — a pixel with a transparent neighbour: the silhouette
+ *   detail  — an interior pixel sitting on a luminance step: eyes, fins, the
+ *             crab's shell seams, the lion's muzzle inside its mane
+ *   fill    — flat interior
+ *
+ * Sampling on alpha alone throws away everything inside the shape, which is why
+ * a face-type emoji (Leo is a lion's *head*) came out as a featureless blob.
+ * Reading luminance as well recovers the internal drawing, and spending the
+ * budget outline-first, detail-second keeps the figure legible instead of
+ * pouring particles into flat interior.
  */
-function samplePoints(text: string, font: string, stride: number): Pt[] {
+function samplePoints(text: string, font: string, stride: number): {
+  outline: Pt[]; detail: Pt[]; fill: Pt[];
+} {
   const S = SAMPLE_SIZE;
   const c = document.createElement('canvas');
   c.width = S;
   c.height = S;
   const g = c.getContext('2d', { willReadFrequently: true });
-  if (!g) return [];
+  if (!g) return { outline: [], detail: [], fill: [] };
 
   g.clearRect(0, 0, S, S);
   g.textAlign = 'center';
@@ -118,39 +149,75 @@ function samplePoints(text: string, font: string, stride: number): Pt[] {
   // maxWidth keeps two-glyph figures (the fishes, the twins) inside the box.
   g.fillText(text, S / 2, S / 2, S * 0.94);
 
-  const data = g.getImageData(0, 0, S, S).data;
-  const pts: Pt[] = [];
+  const d = g.getImageData(0, 0, S, S).data;
+  const inside = (x: number, y: number) => x >= 0 && y >= 0 && x < S && y < S;
+  const alphaAt = (x: number, y: number) => (inside(x, y) ? d[(y * S + x) * 4 + 3] : 0);
+  const lumAt = (x: number, y: number) => {
+    const i = (y * S + x) * 4;
+    return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  };
+
+  const outline: Pt[] = [];
+  const detail: Pt[] = [];
+  const fill: Pt[] = [];
+  const NEIGHBOURS: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
   for (let y = 0; y < S; y += stride) {
     for (let x = 0; x < S; x += stride) {
-      if (data[(y * S + x) * 4 + 3] > 110) {
-        pts.push({ x: x / S - 0.5, y: y / S - 0.5 });
+      if (alphaAt(x, y) <= ALPHA_MIN) continue;
+      const pt = { x: x / S - 0.5, y: y / S - 0.5 };
+
+      let onOutline = false;
+      for (const [dx, dy] of NEIGHBOURS) {
+        if (alphaAt(x + dx * stride, y + dy * stride) <= ALPHA_MIN) { onOutline = true; break; }
       }
+      if (onOutline) { outline.push(pt); continue; }
+
+      const l = lumAt(x, y);
+      let onDetail = false;
+      for (const [dx, dy] of NEIGHBOURS) {
+        const nx = x + dx * stride, ny = y + dy * stride;
+        if (!inside(nx, ny)) continue;
+        if (Math.abs(l - lumAt(nx, ny)) > LUM_STEP) { onDetail = true; break; }
+      }
+      (onDetail ? detail : fill).push(pt);
     }
   }
-  return pts;
+  return { outline, detail, fill };
+}
+
+/** Take n points spread evenly through the list rather than the first n. */
+function thin(pts: Pt[], n: number): Pt[] {
+  if (n <= 0) return [];
+  if (pts.length <= n) return pts;
+  const step = pts.length / n;
+  const out: Pt[] = [];
+  for (let i = 0; i < n; i++) out.push(pts[Math.floor(i * step)]);
+  return out;
 }
 
 /**
- * Figure targets for a sign, with a monochrome-glyph fallback.
- *
- * The sample is thinned by taking every k-th point rather than the first N —
- * the raw points arrive in scan order, so slicing would light up the animal's
- * head and leave its legs dark.
+ * Figure targets for a sign — outline, then interior detail, then flat fill,
+ * with a monochrome-glyph fallback. The two counts tell the caller where each
+ * tier starts so it can render them at different weights.
  */
-function figurePoints(rashiIndex: number): Pt[] {
+function figurePoints(rashiIndex: number, budget: number): { pts: Pt[]; outlineCount: number; detailCount: number } {
   const emoji = FIGURE_EMOJI[rashiIndex] ?? FIGURE_EMOJI[0];
   const emojiFont = `${Math.round(SAMPLE_SIZE * 0.74)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","EmojiOne Color",sans-serif`;
-  let pts = samplePoints(emoji, emojiFont, 2);
-  if (pts.length < 260) {
+  let s = samplePoints(emoji, emojiFont, SAMPLE_STRIDE);
+  if (s.outline.length + s.detail.length + s.fill.length < 400) {
     const glyph = SIGN_GLYPH[rashiIndex] ?? SIGN_GLYPH[0];
-    pts = samplePoints(glyph, `${Math.round(SAMPLE_SIZE * 0.82)}px serif`, 2);
+    s = samplePoints(glyph, `${Math.round(SAMPLE_SIZE * 0.82)}px serif`, SAMPLE_STRIDE);
   }
-  if (pts.length <= MAX_PARTICLES) return pts;
 
-  const step = pts.length / MAX_PARTICLES;
-  const thinned: Pt[] = [];
-  for (let i = 0; i < MAX_PARTICLES; i++) thinned.push(pts[Math.floor(i * step)]);
-  return thinned;
+  const outline = thin(s.outline, Math.round(budget * OUTLINE_SHARE));
+  const detail  = thin(s.detail,  Math.round(budget * DETAIL_SHARE));
+  const fill    = thin(s.fill,    budget - outline.length - detail.length);
+  return {
+    pts: [...outline, ...detail, ...fill],
+    outlineCount: outline.length,
+    detailCount: detail.length,
+  };
 }
 
 interface Props {
@@ -179,8 +246,11 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
     let w = 0, h = 0, scale = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const figure = figurePoints(rashiIndex);
-    const count = Math.min(MAX_PARTICLES, figure.length);
+    // Phones do this on a smaller canvas and a tighter power budget, and the
+    // figure is physically smaller there, so it needs fewer points to read.
+    const budget = window.innerWidth < 640 ? MOBILE_PARTICLES : MAX_PARTICLES;
+    const { pts: figure, outlineCount, detailCount } = figurePoints(rashiIndex, budget);
+    const count = Math.min(budget, figure.length);
 
     const particles: Particle[] = [];
 
@@ -192,7 +262,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       // The figure occupies ~62% of the smaller viewport axis, capped so it
       // never becomes a wall of particles on a desktop monitor.
-      scale = Math.min(Math.min(w, h) * 0.62, 460);
+      scale = Math.min(Math.min(w, h) * (w < 640 ? 0.72 : 0.62), 460);
     };
 
     const seed = () => {
@@ -201,6 +271,8 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
       const ring = Math.hypot(w, h) * 0.55;
       for (let i = 0; i < count; i++) {
         const f = figure[i];
+        // 0 = silhouette, 1 = interior feature line, 2 = flat fill
+        const tier = i < outlineCount ? 0 : i < outlineCount + detailCount ? 1 : 2;
         const a = (i / count) * Math.PI * 2 + Math.random() * 0.8;
         const r = ring * (0.75 + Math.random() * 0.6);
         const sx = cxp + Math.cos(a) * r;
@@ -220,9 +292,13 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
           release: (0.5 - f.y) * 0.34 + Math.random() * 0.14,
           drift: 0.6 + Math.random() * 1.1,
           flowPhase: Math.random() * Math.PI * 2,
-          size: 1.0 + Math.random() * 1.0,
-          tint: i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0,
-          lead: i % 10 === 0,
+          // Weighted by tier: the silhouette is drawn boldest, feature lines
+          // sit just under it, flat fill is the faintest wash.
+          size: tier === 0 ? 1.05 + Math.random() * 0.85
+              : tier === 1 ? 0.85 + Math.random() * 0.6
+              : 0.7 + Math.random() * 0.55,
+          tint: tier === 0 ? (i % 4 === 0 ? 2 : 0) : tier === 1 ? 0 : 1,
+          lead: tier === 0 && i % 8 === 0,
         });
       }
     };

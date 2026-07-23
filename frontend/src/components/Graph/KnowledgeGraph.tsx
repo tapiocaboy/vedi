@@ -1040,11 +1040,15 @@ const GraphStage: React.FC<{ graph: Graph; isLight: boolean; big?: boolean }> =
           )}
         </AnimatePresence>
 
-        <GraphCanvas graph={graph} isLight={isLight} selected={selected} onSelect={setSelected}
-          maxHeight={big ? '100%' : undefined} />
+        {/* graph-scroll: below 700px the canvas keeps a legible minimum width
+            and pans sideways rather than shrinking its labels to ~5px. */}
+        <div className={`graph-scroll w-full ${big ? 'h-full flex items-center justify-center' : ''}`}>
+          <GraphCanvas graph={graph} isLight={isLight} selected={selected} onSelect={setSelected}
+            maxHeight={big ? '100%' : undefined} />
+        </div>
       </div>
 
-      <div className={big ? 'shrink-0 overflow-y-auto max-h-[30vh] space-y-3 pr-1' : 'space-y-4'}>
+      <div className={big ? 'shrink-0 overflow-y-auto max-h-[38vh] sm:max-h-[30vh] space-y-3 pr-1' : 'space-y-4'}>
         <Legend isLight={isLight} />
         <DetailPanel graph={graph} selected={selected} isLight={isLight} />
       </div>
@@ -1129,9 +1133,14 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
                 and guidance cards stay on the page behind it; duplicating them
                 here just produced a second scrolling copy of the page in which
                 the graph was no bigger than before. */}
+            {/* Height is 95dvh where supported — a mobile browser's toolbars
+                shrink the visual viewport, so vh overshoots the screen. Engines
+                that do not know dvh drop the inline value and fall back to the
+                h-[95vh] class. */}
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              style={{ height: '95dvh' }}
               className="relative glass-card rounded-2xl w-full max-w-[1500px] h-[95vh] flex flex-col overflow-hidden">
               <div className="flex items-center gap-3 px-4 sm:px-5 py-3 border-b border-white/8 shrink-0">
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"

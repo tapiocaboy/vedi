@@ -894,6 +894,21 @@ input:focus, select:focus, textarea:focus {
   .tab-bar-mobile::-webkit-scrollbar { display: none; }
 }
 
+/* ── Knowledge graph on small screens ──────────────────────────────────────
+   The graph is drawn in a fixed 700×520 viewBox. Letting it shrink to a phone's
+   width scales the 11.5px labels down to about 5px, which is unreadable — so
+   below 700px it keeps a usable minimum width and pans horizontally instead. */
+@media (max-width: 700px) {
+  .graph-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .graph-scroll::-webkit-scrollbar { display: none; }
+  .graph-scroll > svg { min-width: 620px; }
+}
+
 /* Reduce heavy animations on mobile and when user prefers reduced motion */
 @media (max-width: 640px), (prefers-reduced-motion: reduce) {
   .particle-field-canvas {
@@ -904,7 +919,10 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* Reduce ambient orbs on mobile */
+/* Reduce ambient orbs on mobile. The orbs carry a 150–200px blur, which is one
+   of the most expensive things a phone GPU can be asked to composite — shrink
+   the element AND the blur radius. (`blur: 80px` was a no-op: blur is a filter
+   function, not a property, so the full-size blur was still being painted.) */
 @media (max-width: 640px) {
   .ambient-orbs {
     opacity: 0.4;
@@ -912,7 +930,7 @@ input:focus, select:focus, textarea:focus {
   .ambient-orbs > div {
     width: 200px !important;
     height: 200px !important;
-    blur: 80px;
+    filter: blur(70px) !important;
   }
 }
 
