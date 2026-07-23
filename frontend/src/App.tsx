@@ -157,7 +157,11 @@ function AppContent() {
   };
 
   const handleTabClick = (id: ViewTab) => {
-    if (id === 'match') setMatchExperimentalVisible(true);
+    // Match is gated on the NVIDIA key, same as the chat button.
+    if (id === 'match') {
+      if (!chatConfigured) return;
+      setMatchExperimentalVisible(true);
+    }
     setActiveTab(id);
   };
 
@@ -338,11 +342,7 @@ function AppContent() {
               <button
                 onClick={() => downloadChartMarkdown(chartData)}
                 title={t('header.exportTitle')}
-                className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
-                  isLight
-                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-                }`}
+                className="btn-cta btn-cta-blink flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-bold transition-all duration-200"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden xs:inline">{t('header.export')}</span>
@@ -557,7 +557,7 @@ function AppContent() {
                     onClick={() => setSidebarHidden(true)}
                     title={t('form.hidePanel')}
                     aria-label={t('form.hidePanel')}
-                    className={`ml-auto w-7 h-7 rounded-lg border flex items-center justify-center transition-colors ${isLight ? 'border-gray-300 bg-white text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-900' : 'border-white/25 bg-white/5 text-white/70 hover:bg-white/12 hover:border-white/40 hover:text-white'}`}
+                    className="btn-cta btn-cta-blink ml-auto w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200"
                   >
                     <PanelLeftClose className="w-4 h-4" />
                   </button>
@@ -610,7 +610,11 @@ function AppContent() {
                     <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
                     <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
-                    <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
+                    {/* Match rides on the same NVIDIA key as the chat button —
+                        hidden entirely when the key is missing/empty. */}
+                    {chatConfigured && (
+                      <TabBtn id="match"  label={t('tab.match')}    icon={Heart}      />
+                    )}
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
                     <TabBtn id="doshas"   label={t('tab.doshas')}   icon={ShieldAlert} />
@@ -705,7 +709,7 @@ function AppContent() {
                   )}
 
                   {/* ── Match (Horoscope compatibility) ──────────── */}
-                  {activeTab === 'match' && birthData && (
+                  {activeTab === 'match' && birthData && chatConfigured && (
                     <motion.div key="match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <MatchTab person={birthData} />
                     </motion.div>

@@ -687,6 +687,34 @@ input:focus, select:focus, textarea:focus {
 .theme-light .disclaimer-cta       { background: var(--c-accent); color: #ffffff; }
 .theme-light .disclaimer-cta:hover { background: var(--c-accent-dark); }
 
+/* ── Attention buttons (Download, Hide panel) ──────────────────────────────
+   Accent-filled and bold so they read as primary affordances rather than
+   chrome, with a slow pulse to catch the eye. The mono theme's blanket
+   `animation: none` (see :root.theme-mono) stops the pulse there, and reduced
+   motion callers opt out below — the highlight itself always stays. */
+.btn-cta {
+  font-weight: 700 !important;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-2) 100%);
+  border: 1px solid rgba(var(--c-accent-rgb),0.85);
+  box-shadow: 0 2px 10px rgba(var(--c-accent-rgb),0.30);
+}
+.btn-cta:hover {
+  background: linear-gradient(135deg, var(--c-accent-dark) 0%, var(--c-accent) 100%);
+  box-shadow: 0 3px 14px rgba(var(--c-accent-rgb),0.45);
+}
+
+@keyframes cta-blink {
+  0%, 100% { opacity: 1;    box-shadow: 0 0 0 0 rgba(var(--c-accent-rgb),0.55), 0 2px 10px rgba(var(--c-accent-rgb),0.30); }
+  50%      { opacity: 0.72; box-shadow: 0 0 0 7px rgba(var(--c-accent-rgb),0),   0 2px 10px rgba(var(--c-accent-rgb),0.30); }
+}
+.btn-cta-blink { animation: cta-blink 1.5s ease-in-out infinite; }
+.btn-cta-blink:hover { animation-play-state: paused; opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-cta-blink { animation: none; }
+}
+
 .privacy-banner {
   background: #0e111e;
   border: 1px solid rgba(var(--c-accent-rgb),0.10);

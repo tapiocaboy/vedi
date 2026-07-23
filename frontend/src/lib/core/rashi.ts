@@ -14,7 +14,7 @@ export const RASHI_ENGLISH = [
 
 /** Sinhala (Sanskrit-derived) rashi names, index-aligned with RASHIS. */
 export const RASHI_SI = [
-  'මේෂ', 'වෘෂභ', 'මිථුන', 'කර්කටක',
+  'මේෂ', 'වෘෂභ', 'මිථුන', 'කටක',
   'සිංහ', 'කන්‍යා', 'තුලා', 'වෘශ්චික',
   'ධනු', 'මකර', 'කුම්භ', 'මීන',
 ] as const;

@@ -54,14 +54,14 @@ export function labelPlanetShort(code: string, lang: Lang): string {
 
 /** Sanskrit rashi names (Mesha … Meena) */
 export const RASHI_SANSKRIT_SI = [
-  'මේෂ', 'වෘෂභ', 'මිථුන', 'කර්ක',
+  'මේෂ', 'වෘෂභ', 'මිථුන', 'කටක',
   'සිංහ', 'කන්‍යා', 'තුලා', 'වෘශ්චික',
   'ධනු', 'මකර', 'කුම්භ', 'මීන',
 ] as const;
 
 /** Western zodiac names */
 export const RASHI_WESTERN_SI = [
-  'ඔව්', 'වෘෂභ', 'මිථුන', 'කර්කටක',
+  'ඔව්', 'වෘෂභ', 'මිථුන', 'කටක',
   'සිංහ', 'කන්‍යා', 'තුලා', 'වෘශ්චික',
   'ධනු', 'මකර', 'කුම්භ', 'මීන',
 ] as const;
