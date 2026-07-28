@@ -16,7 +16,7 @@
 import type { GocharaSnapshot, PlanetTransit } from './transits';
 import { RASHIS } from './rashi';
 import { NAKSHATRAS } from './nakshatra';
-import { getDignity, type DignityLevel } from './planetaryAnalysis';
+import { getDignity, getGandanta, type DignityLevel } from './planetaryAnalysis';
 import { computeAshtakavarga, type Contributor, type Planet as AvPlanet } from './ashtakavarga';
 import { type Lang, rashiName, joinAnd } from './i18n';
 import { TP, TARA_DESC, RETRO_TEXT, joinPlanets, transitPlanet as P } from './text/transitText';
@@ -190,14 +190,12 @@ export function annotateGrahaYuddha(transits: PlanetTransit[]): void {
 
 // ── Gandanta (water–fire sign junction) ─────────────────────────────────────────
 
-const GANDANTA_WATER = new Set([3, 7, 11]); // Cancer, Scorpio, Pisces — last 3°20'
-const GANDANTA_FIRE = new Set([0, 4, 8]);   // Aries, Leo, Sagittarius — first 3°20'
-
-/** True if a position falls in the karmic water–fire junction (last/first 3°20'). */
+/**
+ * True if a position falls in the karmic water–fire junction (last/first 3°20').
+ * Shares the natal band definition so transit and natal readings cannot drift.
+ */
 export function isGandanta(rashi: number, rashiDegree: number): boolean {
-  if (GANDANTA_WATER.has(rashi) && rashiDegree >= 26.6667) return true;
-  if (GANDANTA_FIRE.has(rashi) && rashiDegree <= 3.3333) return true;
-  return false;
+  return getGandanta(rashi, rashiDegree) !== null;
 }
 
 export function annotateGandanta(transits: PlanetTransit[]): void {

@@ -7,6 +7,7 @@ import { VimshottariDasha } from '../core/dasha';
 import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '../core/predictions';
 import { type Lang, getStoredLang } from '../core/i18n';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
+import { getNakshatra } from '../core/nakshatra';
 import { getCurrentTransits, summarizeGocharaForPrediction } from '../core/transits';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
@@ -29,6 +30,7 @@ export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
     periodType: pred.periodType,
     overallTheme: pred.overallTheme,
     overallRating: pred.overallRating,
+    overallScore: pred.overallScore,
     predictions,
     favorableActivities: pred.favorableActivities,
     unfavorableActivities: pred.unfavorableActivities,
@@ -72,6 +74,10 @@ export function buildChartContext(positions: Record<string, PlanetPosition>): Ch
     planetLongitudes[name] = p.longitude;
     planetRetro[name] = p.isRetrograde;
   }
+  // The Moon's nakshatra lord is the planet the whole Vimshottari cycle is keyed
+  // to, so the engine needs it to spot a dasha lord that is also that lord.
+  const moonNakshatra = getNakshatra(positions['MOON'].longitude);
+
   return {
     ashtakavarga: computeAshtakavarga(rashis),
     planetHouses,
@@ -80,14 +86,16 @@ export function buildChartContext(positions: Record<string, PlanetPosition>): Ch
     planetLongitudes,
     planetRetro,
     moonRashi: positions['MOON'].rashi,
+    moonNakshatraLord: moonNakshatra.lord,
+    moonNakshatraName: moonNakshatra.name,
   };
 }
 
 async function getCurrentDashaContext(bd: BirthData): Promise<{
-  moonLon: number; ctx: ChartContext;
+  moonLon: number; ctx: ChartContext; positions: Record<string, PlanetPosition>;
 }> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
-  return { moonLon: positions['MOON'].longitude, ctx: buildChartContext(positions) };
+  return { moonLon: positions['MOON'].longitude, ctx: buildChartContext(positions), positions };
 }
 
 const engine = new DashaPredictionEngine();
@@ -128,18 +136,22 @@ export async function getAshtakavargaForChart(bd: BirthData) {
 }
 
 export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
-  const { moonLon, ctx } = await getCurrentDashaContext(bd);
+  const { moonLon, ctx, positions } = await getCurrentDashaContext(bd);
   const calc = new VimshottariDasha(moonLon, new Date(bd.date));
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
   if ('error' in current) throw new Error(current.error);
 
   // Fold current transits (Sade Sati, Guru blessing…) into the prediction.
+  // Natal positions are passed so the summary can see transits landing on natal
+  // placements — without them a slow mover crossing a natal stellium is
+  // indistinguishable from one crossing empty sky.
   try {
-    const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td, undefined, undefined, lang);
+    const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td, undefined, positions, lang);
     const transitSummary = summarizeGocharaForPrediction(gochara, lang);
     ctx.transitNotes = transitSummary.notes;
     ctx.transitScoreMod = transitSummary.scoreMod;
+    ctx.transitDiverges = transitSummary.diverges;
   } catch {
     // Transits are an enhancement — never block the core prediction.
   }

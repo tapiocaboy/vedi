@@ -24,13 +24,16 @@
  */
 
 import { assessPlanetStrength, type PlanetStrength, type StrengthInput } from './dashaStrength';
-import { RASHI_LORDS, getDignity, type DignityLevel } from './planetaryAnalysis';
-import { type Lang, pick, planetName, houseLabel, houseLabelLocative } from './i18n';
+import { RASHI_LORDS, getDignity, getGandanta, type DignityLevel } from './planetaryAnalysis';
+import { getNakshatra } from './nakshatra';
+import { areaYogas } from './areaYogas';
+import { type Lang, pick, planetName, houseLabel, houseLabelLocative, joinAnd, nakshatraPadaLabel } from './i18n';
 import { HOUSE_TEXT } from './text/predictionVocab';
 import {
   F_OCCUPANT_WEAK, F_OCCUPANT_STRONG, F_OCCUPANT_MALEFIC, F_OCCUPANT_UPACHAYA,
-  F_LORD_STRONG, F_LORD_WEAK, F_LORD_DUSTHANA,
+  F_LORD_STRONG, F_LORD_WEAK, F_LORD_WEAK_DIGNITY, F_LORD_DUSTHANA, F_LORD_WELL_DEPLOYED,
   F_KARAKA_STRONG, F_KARAKA_WEAK, F_KARAKA_IN_OWN_BHAVA,
+  F_YOGA_SUPPORT, F_YOGA_DEFERRED, F_STELLIUM, F_COMBUST_RETENTION, F_MOON_GANDANTA,
   F_MOON_MALEFIC_CONJ, F_MOON_SATURN_ASPECT, F_MOON_MARS_ASPECT, F_MOON_NODE,
   F_MOON_UNSUPPORTED, F_MOON_WANING, F_MOON_STRONG,
   AREA_NAME,
@@ -70,8 +73,32 @@ const AREA_SPEC: Record<LifeArea, { houses: [number, number]; karakas: Array<[st
   health:       { houses: [1, 6],   karakas: [['Sun', 0.8]] },
 };
 
+/**
+ * Houses where an area's own bhavesha is classically *deployed* rather than
+ * displaced. The 2nd lord in the 11th is the standard wealth placement, not a
+ * weakness — but a scoring pass that only reads dignity and dusthana cannot see
+ * that, and ends up describing the best available placement as strain.
+ *
+ * This applies to the *primary* house's lord only. Extending it to an area's
+ * secondary house credits things like a 6th lord in the 3rd as a career asset,
+ * which is not a claim any classical source makes.
+ */
+const AREA_LORD_DEPLOYMENT: Record<LifeArea, number[]> = {
+  career: [1, 10, 11],            // self, karma and gains — where work pays off
+  wealth: [2, 5, 9, 11],          // the dhana quartet (Phaladeepika Ch. 14)
+  relationship: [1, 2, 4, 7, 11], // partnership needs the household houses
+  health: [1, 4, 5, 9, 10],       // kendra / trikona sustain the body
+};
+
+/** Credit for a bhavesha sitting in one of its area's deployment houses. */
+const LORD_DEPLOYMENT_BONUS = 0.4;
+
 /** Weight of the secondary house relative to the primary. */
 const SECONDARY_HOUSE_WEIGHT = 0.4;
+
+/** Occupants needed in one upachaya house before it reads as a stellium. */
+const STELLIUM_MIN = 3;
+const STELLIUM_BONUS = 0.3;
 
 /**
  * When a house has no occupants its lord is the only voice describing it, so
@@ -132,6 +159,9 @@ export function aspectsRashi(planet: string, fromRashi: number, toRashi: number)
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
+/** 'VENUS' → 'Venus'. The yoga detector works in upper case; prose does not. */
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
 interface Ctx {
   input: StrengthInput;
   lang: Lang;
@@ -158,7 +188,7 @@ interface Factor { points: number; note: string | null }
  * Condition of one bhava: its occupants and its lord.
  * Returns points on roughly a −2 … +2 scale.
  */
-function assessBhava(house: number, ctx: Ctx): Factor[] {
+function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: boolean): Factor[] {
   const { lang } = ctx;
   const out: Factor[] = [];
   const hLabel = houseLabelLocative(house, lang);
@@ -166,6 +196,18 @@ function assessBhava(house: number, ctx: Ctx): Factor[] {
 
   // ── Occupants ──
   const occupants = occupantsOf(house, ctx);
+
+  // A crowd in a growth house is a statement in its own right: whatever the
+  // individual dignities, the chart's output is concentrated there. Scoring the
+  // occupants one by one can only ever subtract, so the concentration itself
+  // has to be counted.
+  if (UPACHAYA.has(house) && occupants.length >= STELLIUM_MIN) {
+    out.push({
+      points: STELLIUM_BONUS * (occupants.length - STELLIUM_MIN + 1),
+      note: F_STELLIUM[lang](String(occupants.length), hLabel, hTheme),
+    });
+  }
+
   for (const planet of occupants) {
     const rashi = ctx.input.planetRashis![planet];
     const dignity = getDignity(planet, rashi);
@@ -225,14 +267,33 @@ function assessBhava(house: number, ctx: Ctx): Factor[] {
     const lordInDusthana = DUSTHANA.has(lordHouse) && !DUSTHANA.has(house);
     if (lordInDusthana) points -= 0.75;
 
-    if (lordDignity === 'debilitated' || s.total <= -0.5) {
+    // Deployment: the lord standing in a house that serves this area is a
+    // positive statement about the area even when the lord itself is weak.
+    const deployed = isPrimaryHouse && AREA_LORD_DEPLOYMENT[area].includes(lordHouse) && lordHouse !== house;
+    if (deployed) points += LORD_DEPLOYMENT_BONUS;
+
+    const lordWeak = lordDignity === 'debilitated' || s.total <= -0.5;
+    if (lordWeak && deployed) {
+      // Both true: the placement is right and the planet is not. Naming only
+      // the weakness pins it on the placement, which is the wrong diagnosis.
+      note = F_LORD_WEAK_DIGNITY[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
+    } else if (lordWeak) {
       note = F_LORD_WEAK[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     } else if (lordInDusthana) {
       note = F_LORD_DUSTHANA[lang](planetName(lord, lang), houseLabel(house, lang));
+    } else if (deployed) {
+      note = F_LORD_WELL_DEPLOYED[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     } else if (s.total >= 1) {
       note = F_LORD_STRONG[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     }
     out.push({ points, note });
+
+    // Combustion of the bhavesha is a statement about holding, not getting —
+    // and that distinction is the whole difference between "weak area" and
+    // "area that produces but leaks".
+    if (s.isCombust) {
+      out.push({ points: -0.2, note: F_COMBUST_RETENTION[lang](planetName(lord, lang)) });
+    }
   }
 
   return out;
@@ -342,7 +403,26 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
     }
   }
 
-  return { score: clamp(score, -2, 1.5), notes, afflicted: score <= -0.75 };
+  // Gandanta on the Moon. This is invisible to every other check here — a
+  // gandanta Moon can be exalted, well aspected and benefic-supported — yet
+  // classically it outranks all of them for the mind's own foundation, so it is
+  // scored last and its note leads.
+  if (lons?.Moon != null) {
+    const gan = getGandanta(moonRashi, lons.Moon % 30, '', lang);
+    if (gan) {
+      score -= gan.severity === 'deep' ? 1.1 : gan.severity === 'moderate' ? 0.8 : 0.55;
+      const nak = getNakshatra(lons.Moon);
+      const moonHouse = input.ascendantRashi != null
+        ? houseOfRashi(moonRashi, input.ascendantRashi)
+        : null;
+      notes.unshift(F_MOON_GANDANTA[lang](
+        nakshatraPadaLabel(nak.name, nak.pada, lang),
+        moonHouse != null ? houseLabelLocative(moonHouse, lang) : houseLabelLocative(4, lang),
+      ));
+    }
+  }
+
+  return { score: clamp(score, -2.5, 1.5), notes, afflicted: score <= -0.75 };
 }
 
 // ─── Public entry point ────────────────────────────────────────────────────
@@ -390,6 +470,12 @@ export function assessNatalFoundation(input: StrengthInput, lang: Lang = 'en'): 
   };
 
   const moon = assessMoonCondition(input, lang);
+  const yogas = areaYogas({
+    planetRashis: input.planetRashis,
+    ascendantRashi: input.ascendantRashi,
+    planetLongitudes: input.planetLongitudes,
+    planetRetro: input.planetRetro,
+  });
   const out = {} as NatalFoundation;
 
   for (const area of Object.keys(AREA_SPEC) as LifeArea[]) {
@@ -398,10 +484,26 @@ export function assessNatalFoundation(input: StrengthInput, lang: Lang = 'en'): 
 
     houses.forEach((h, i) => {
       const weight = i === 0 ? 1 : SECONDARY_HOUSE_WEIGHT;
-      for (const f of assessBhava(h, ctx)) factors.push({ ...f, weight });
+      // Deployment credit is a claim about the area's own lord, so it is offered
+      // for the primary house only.
+      for (const f of assessBhava(h, area, ctx, i === 0)) factors.push({ ...f, weight });
     });
     for (const [karaka, weight] of karakas) {
       factors.push({ ...assessKaraka(karaka, area, ctx), weight });
+    }
+
+    // Yogas enter as ordinary factors so they take part in the same
+    // strongest-first ordering as everything else — a decisive combination
+    // should lead the reasons, not trail them.
+    const areaYoga = yogas?.[area];
+    if (areaYoga && areaYoga.yogas.length) {
+      const lead = areaYoga.yogas[0];
+      const frame = lead.deferred ? F_YOGA_DEFERRED : F_YOGA_SUPPORT;
+      factors.push({
+        points: areaYoga.points,
+        weight: 1,
+        note: frame[lang](lead.name, joinAnd(lead.planets.map(p => planetName(titleCase(p), lang)), lang)),
+      });
     }
 
     let score = factors.reduce((sum, f) => sum + f.points * f.weight, 0);

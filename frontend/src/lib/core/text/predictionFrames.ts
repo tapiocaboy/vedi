@@ -321,6 +321,43 @@ export const F_SUB_PERIOD_LORD: Frame1 = {
   si: note => `අන්තර් දශා අධිපතියා: ${note}`,
 };
 
+// ─── Dasha-lord resonance ──────────────────────────────────────────────────
+//
+// A planet can be the running dasha lord *and* structurally tied to the chart in
+// other ways at the same time. When those pile up on one planet, its period hits
+// far harder than the lord's generic description implies — and a reading that
+// scores each factor separately never notices the pile-up.
+
+/** The lord of the natal Moon's nakshatra is running a level of the chain. */
+export const F_RESONANCE_NAKSHATRA_LORD: Record<Lang, (planet: string, nakshatra: string, level: string) => string> = {
+  en: (planet, nakshatra, level) =>
+    `${planet} is the lord of your birth nakshatra (${nakshatra}) and also holds the ${level} — the whole Vimshottari cycle is keyed to this planet, so its periods land with more force on you than the same period does on other charts.`,
+  si: (planet, nakshatra, level) =>
+    `${planet} ඔබේ ජන්ම නැකතේ (${nakshatra}) අධිපතියා වන අතර ${level} ද දරයි — සමස්ත විංශෝත්තරී චක්‍රයම මෙම ග්‍රහයාට බැඳී ඇති බැවින්, එහි දශා ඔබට අන් කේන්දරවලට වඩා ප්‍රබල ලෙස දැනේ.`,
+};
+
+/** The dasha lord occupies the lagna — it acts on the self directly. */
+export const F_RESONANCE_IN_LAGNA: Record<Lang, (planet: string, level: string) => string> = {
+  en: (planet, level) =>
+    `${planet} sits in your Ascendant and holds the ${level} — this period acts on the sense of self directly rather than through one area of life.`,
+  si: (planet, level) =>
+    `${planet} ඔබේ ලග්නයේ සිටින අතර ${level} ද දරයි — මෙම දශාව ජීවිතයේ එක් ක්ෂේත්‍රයක් හරහා නොව, ආත්ම හැඟීම මතම කෙලින්ම ක්‍රියා කරයි.`,
+};
+
+/** Two or more resonances stacking on the same planet. */
+export const F_RESONANCE_STACKED: Record<Lang, (planet: string, count: number) => string> = {
+  en: (planet, count) =>
+    `${count} separate structural ties to ${planet} are active at once. Treat this as a ${planet} chapter in the strong sense — withdrawal, reorientation and loss of interest in what previously mattered are the expected texture, not a sign something has gone wrong.`,
+  si: (planet, count) =>
+    `${planet} සමඟ වෙන් වෙන් ව්‍යුහාත්මක බැඳීම් ${count}ක් එකවර සක්‍රියයි. මෙය තීව්‍ර ${planet} පරිච්ඡේදයක් ලෙස සලකන්න — පසුබැසීම, දිශානතිය වෙනස් වීම හා පෙර වැදගත් වූ දේ කෙරෙහි ඇල්ම නැති වීම අපේක්ෂිත ස්වභාවයයි, යමක් වැරදී ගිය ලකුණක් නොවේ.`,
+};
+
+/** Outward and inward transit signals disagree during this period. */
+export const F_TRANSIT_DIVERGES: Record<Lang, () => string> = {
+  en: () => `The transits are pulling in two directions this period — see the transit notes: what is on offer and how it feels are not the same reading right now.`,
+  si: () => `මෙම කාලයේ ගෝචර දෙපැත්තට ඇද ගනී — ගෝචර සටහන් බලන්න: ලැබෙන දේ හා එය දැනෙන ආකාරය දැන් එකම කියවීමක් නොවේ.`,
+};
+
 // ─── Discrete labels ───────────────────────────────────────────────────────
 
 export const INTENSITY_LABEL: Record<string, Record<Lang, string>> = {

@@ -152,9 +152,17 @@ describe('the whole dasha chain reaches the rating', () => {
     expect(ratings.size).toBeGreaterThan(1);
   });
 
-  it('changes the rating when only the sookshma lord changes', () => {
-    const withVenus = rate('Venus', 'Saturn', 'Venus', 'Venus');
-    const withKetu = rate('Venus', 'Saturn', 'Venus', 'Ketu');
-    expect(withVenus).not.toBe(withKetu);
+  it('changes the outlook when only the sookshma lord changes', () => {
+    // The sookshma is the lightest-weighted level in the chain, so its effect is
+    // often smaller than the rounding step of the displayed rating. Asserting on
+    // the integer therefore only catches the cases that happen to straddle a
+    // boundary; the unrounded score is where the property actually lives.
+    const score = (...chain: Array<string | undefined>) =>
+      engine.generateCompletePrediction(chain[0]!, chain[1], chain[2], chain[3], ctx, 'en').overallScore;
+    const withVenus = score('Venus', 'Saturn', 'Venus', 'Venus');
+    const withKetu = score('Venus', 'Saturn', 'Venus', 'Ketu');
+    expect(withVenus).not.toBeCloseTo(withKetu, 3);
+    // A benefic sookshma must not read worse than a separative one.
+    expect(withVenus).toBeGreaterThan(withKetu);
   });
 });

@@ -36,18 +36,80 @@ const OWN_SIGNS: Record<string, number[]> = {
   SUN:[4], JUPITER:[8,11], SATURN:[9,10],
 };
 
+/** "2nd", "11th" — house numbers appear inside yoga names. */
+function ordinal(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return `${n}th`;
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
+}
+
+// Debilitation is the sign opposite exaltation for every graha.
+const DEBILITATION: Record<string, number> = Object.fromEntries(
+  Object.entries(EXALTATION).map(([p, r]) => [p, (r + 6) % 12]),
+);
+
+/** Combustion (asta) orbs in degrees from the Sun; tighter when retrograde. */
+const COMBUSTION_ORB: Record<string, { direct: number; retro: number }> = {
+  MOON:    { direct: 12, retro: 12 },
+  MARS:    { direct: 17, retro: 17 },
+  MERCURY: { direct: 14, retro: 12 },
+  JUPITER: { direct: 11, retro: 11 },
+  VENUS:   { direct: 10, retro: 8 },
+  SATURN:  { direct: 15, retro: 15 },
+};
+
+/**
+ * Optional refinements. Yogas are detected from whole-sign positions alone, but
+ * their *strength* depends on the condition of the planets forming them — which
+ * needs longitudes (combustion) and retrograde flags.
+ */
+export interface YogaRefinements {
+  /** Sidereal longitude (0–360) per planet, keyed as `positions` is. */
+  longitudes?: Record<string, number>;
+  /** Retrograde flags per planet. */
+  retro?: Record<string, boolean>;
+}
+
 export class YogaCalculator {
   positions: Record<string, number>; // planet → rashi index 0-11
   ascendantRashi: number;
   houses: Record<string, number>;   // planet → house 1-12
+  private _refine: YogaRefinements;
 
-  constructor(positions: Record<string, number>, ascendantRashi: number) {
+  constructor(positions: Record<string, number>, ascendantRashi: number, refinements: YogaRefinements = {}) {
     this.positions = positions;
     this.ascendantRashi = ascendantRashi;
+    this._refine = refinements;
     this.houses = {};
     for (const [planet, rashi] of Object.entries(positions)) {
       this.houses[planet] = ((rashi - ascendantRashi + 12) % 12) + 1;
     }
+  }
+
+  private _isDebilitated(planet: string): boolean {
+    return DEBILITATION[planet] === (this.positions[planet] ?? -1);
+  }
+
+  /**
+   * Condition of a planet forming a yoga. A yoga is present or absent on
+   * whole-sign geometry alone, but how much it actually delivers depends on the
+   * state of the planets making it — so callers weighing a yoga need this
+   * separately from `isPresent`.
+   */
+  planetCondition(planet: string): { combust: boolean; debilitated: boolean } {
+    return { combust: this._isCombust(planet), debilitated: this._isDebilitated(planet) };
+  }
+
+  /** False (rather than unknown) when longitudes were not supplied. */
+  private _isCombust(planet: string): boolean {
+    const orb = COMBUSTION_ORB[planet];
+    const lons = this._refine.longitudes;
+    if (!orb || !lons) return false;
+    const pLon = lons[planet], sunLon = lons['SUN'];
+    if (pLon == null || sunLon == null) return false;
+    const d = Math.abs(pLon - sunLon) % 360;
+    const sep = d > 180 ? 360 - d : d;
+    return sep <= (this._refine.retro?.[planet] ? orb.retro : orb.direct);
   }
 
   private _getPlanetsInHouse(house: number): string[] {
@@ -193,6 +255,46 @@ export class YogaCalculator {
     check(5,9,'Lakshmi Yoga','Lakshmi Yoga','Divine grace, wealth through merit and fortune, spiritual abundance');
     check(1,2,'Dhana Yoga (1-2)','Dhana Yoga','Personal wealth through self-effort and individual initiative');
     check(9,11,'Dhana Yoga (9-11)','Dhana Yoga','Fortune and income combine — exceptional wealth from dharmic sources');
+    yogas.push(...this.detectDhanaLordDeposits());
+    return yogas;
+  }
+
+  /**
+   * A dhana-house lord deposited in another dhana house.
+   *
+   * Phaladeepika (Ch. 14) treats the 2nd, 5th, 9th and 11th as the
+   * wealth-giving quartet: the lord of one of them sitting in another is the
+   * plainest wealth combination there is. The pairwise lord-conjunction checks
+   * above miss it entirely — they only fire when two *lords* meet, so a 2nd
+   * lord parked in the 11th registers as nothing at all.
+   *
+   * Dignity is folded into the strength rather than the detection, because the
+   * combination is present either way: a combust lord in an enemy sign still
+   * brings the money in, it just cannot hold it.
+   */
+  detectDhanaLordDeposits(): YogaResult[] {
+    const DHANA_HOUSES = [2, 5, 9, 11];
+    const yogas: YogaResult[] = [];
+    for (const owned of DHANA_HOUSES) {
+      const lord = this._getHouseLord(owned);
+      const sits = this.houses[lord] ?? 0;
+      if (!sits || sits === owned || !DHANA_HOUSES.includes(sits)) continue;
+
+      let strengthScore = 7;
+      if (this._isExalted(lord) || this._isInOwnSign(lord)) strengthScore += 2;
+      if (this._isDebilitated(lord)) strengthScore -= 2;
+      if (this._isCombust(lord)) strengthScore -= 1;
+      strengthScore = Math.max(3, Math.min(10, strengthScore));
+
+      const strength = strengthScore >= 9 ? 'very strong' : strengthScore >= 7 ? 'strong' : strengthScore >= 5 ? 'medium' : 'weak';
+      yogas.push({
+        name: `Dhana Yoga (${ordinal(owned)} lord in ${ordinal(sits)})`, sanskritName: 'Dhana Yoga', category: 'dhana',
+        planetsInvolved: [lord], housesInvolved: [owned, sits],
+        strength, strengthScore,
+        effects: 'The lord of one wealth house occupies another — income arrives through the affairs of both houses, and the two reinforce each other',
+        isPresent: true,
+      });
+    }
     return yogas;
   }
 

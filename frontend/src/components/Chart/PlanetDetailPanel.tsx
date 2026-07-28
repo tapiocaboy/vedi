@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCcw, Home, ShieldAlert, ShieldCheck, Minus, ChevronRight, Flame } from 'lucide-react';
+import { X, RotateCcw, Home, ShieldAlert, ShieldCheck, Minus, ChevronRight, Flame, Link2 } from 'lucide-react';
 import type { PlanetPosition } from '../../types/astrology';
 import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { analyzePlanet, type DignityLevel } from '../../lib/core/planetaryAnalysis';
@@ -43,11 +43,15 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
   const { lang, t } = useLang();
 
   // Chart context for combustion (Sun's longitude) + Neecha Bhanga (all signs).
+  // `planet` keys arrive upper case from the chart layer, so the Sun is matched
+  // case-insensitively — a title-case comparison here silently yields no Sun
+  // longitude, and combustion then never registers for any planet.
   const chartContext = allPlanets && planet
     ? {
         longitude: planet.longitude,
-        sunLongitude: allPlanets.find(p => p.planet === 'Sun')?.longitude,
+        sunLongitude: allPlanets.find(p => p.planet.toUpperCase() === 'SUN')?.longitude,
         signByPlanet: Object.fromEntries(allPlanets.map(p => [p.planet, p.rashiIndex])),
+        nakshatraName: planet.nakshatra,
       }
     : undefined;
 
@@ -282,6 +286,21 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
             </span>
           </div>
           <p className="text-xs leading-snug" style={{ color: bodyClr }}>{analysis.combustion.desc}</p>
+        </div>
+      )}
+
+      {/* Gandanta — the sign-junction knot. Invisible to dignity, so it needs
+          its own card or it never reaches the reader. */}
+      {analysis.gandanta && (
+        <div className="rounded-xl p-4" style={{ background: 'rgba(168,85,247,0.07)', border: '1px solid rgba(168,85,247,0.28)' }}>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Link2 className="w-4 h-4" style={{ color: '#a855f7' }} />
+            <span className="text-xs font-bold" style={{ color: '#a855f7' }}>{t('planet.gandanta')}</span>
+            <span className="text-[10px] font-mono ml-auto" style={{ color: mutedClr }}>
+              {analysis.gandanta.fromJunction.toFixed(2)}°
+            </span>
+          </div>
+          <p className="text-xs leading-snug" style={{ color: bodyClr }}>{analysis.gandanta.desc}</p>
         </div>
       )}
 

@@ -4,7 +4,7 @@ import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Pla
 import { assessPlanetStrength, type PlanetStrength } from './dashaStrength';
 import { assessNatalFoundation, type NatalFoundation, type LifeArea } from './natalFoundation';
 import {
-  type Lang, pick, pickList, planetName, houseLabel, houseLabelLocative, joinAnd, joinComma,
+  type Lang, LEVEL, pick, pickList, planetName, houseLabel, houseLabelLocative, joinAnd, joinComma,
 } from './i18n';
 import {
   F_FOUNDATION_PREFIX, F_FOUNDATION_TENSION, F_SEPARATIVE_TONE, F_POTENTIAL_ONLY, LEVEL_NAME, AREA_NAME,
@@ -28,6 +28,7 @@ import {
   F_THEME_BASE, F_THEME_AD, F_THEME_PD, F_THEME_SD, F_THEME_BINDUS,
   F_THEME_EXALTED, F_THEME_NEECHA_BHANGA, F_THEME_DEBILITATED, F_THEME_YOGAKARAKA,
   F_HOUSE_ANNOTATION, F_LORDSHIP_ANNOTATION, F_LORDED_HOUSE, F_SUB_PERIOD_PREFIX, F_SUB_PERIOD_LORD,
+  F_RESONANCE_NAKSHATRA_LORD, F_RESONANCE_IN_LAGNA, F_RESONANCE_STACKED, F_TRANSIT_DIVERGES,
   intensityLabel, binduLabel, BONUS_MARK,
 } from './text/predictionFrames';
 
@@ -46,10 +47,19 @@ export interface ChartContext {
   planetRetro?: Record<string, boolean>;
   /** Natal Moon rashi (0–11) — used for neecha bhanga checks. */
   moonRashi?: number;
+  /**
+   * Lord of the natal Moon's nakshatra — the planet the whole Vimshottari cycle
+   * is keyed to. Needed to detect when a running dasha lord is also that lord.
+   */
+  moonNakshatraLord?: string;
+  /** Name of the natal Moon's nakshatra, for the resonance note's prose. */
+  moonNakshatraName?: string;
   /** Current transit highlights (Sade Sati, Guru transit, nodal axis…). */
   transitNotes?: string[];
   /** Aggregate transit auspiciousness modifier (≈ −1.5 … +1). */
   transitScoreMod?: number;
+  /** True when the Lagna-side and Moon-side transit readings materially disagree. */
+  transitDiverges?: boolean;
 }
 
 // House quality per bhava (kendra/trikona/…). The display prose (theme,
@@ -103,6 +113,15 @@ export interface DashaPrediction {
   periodType: string;
   overallTheme: string;
   overallRating: number;
+  /**
+   * `overallRating` before rounding, 1–10.
+   *
+   * The deepest chain levels are weighted lightly by design, so a change of
+   * sookshma lord can move the outlook by well under half a point — real, but
+   * invisible once rounded to an integer. Anything comparing two nearby periods
+   * has to read this rather than the displayed rating.
+   */
+  overallScore: number;
   /**
    * How much of the rating comes from the birth chart's own promise versus the
    * running dasha. Lets the UI show *why* a strong dasha can still feel hard.
@@ -408,6 +427,53 @@ export class DashaPredictionEngine {
   private _separativeMod(): number {
     return this._chain.reduce(
       (mod, lord, i) => mod + (SEPARATIVE.has(lord) ? (SEPARATIVE_LEVEL_MOD[i] ?? 0) : 0), 0);
+  }
+
+  /**
+   * Structural ties between a running dasha lord and the chart itself.
+   *
+   * Vimshottari is keyed to the Moon's nakshatra, so the lord of that nakshatra
+   * is not just another planet in the rotation — its periods are the ones the
+   * chart is built around. Independently, a lord sitting in the lagna acts on
+   * the self rather than on one department of life. Either alone is worth
+   * saying; together they describe a period that will not feel like the generic
+   * description of that lord, and nothing else in the engine can see them
+   * because both are facts about the *pairing* rather than about either part.
+   */
+  private _resonanceNotes(): string[] {
+    const ctx = this._ctx;
+    if (!ctx) return [];
+    const lang = this._lang;
+    const out: string[] = [];
+    const stacked = new Map<string, number>();
+    const bump = (p: string) => stacked.set(p, (stacked.get(p) ?? 0) + 1);
+
+    // Level names, so the note can say which link of the chain is involved.
+    const levels: Array<[string | undefined, string]> = [
+      [this._chain[0], pick(LEVEL.maha, lang)],
+      [this._chain[1], pick(LEVEL.antar, lang)],
+      [this._chain[2], pick(LEVEL.pratyantar, lang)],
+      [this._chain[3], pick(LEVEL.sookshma, lang)],
+    ];
+
+    for (const [lord, levelName] of levels) {
+      if (!lord) continue;
+      const pName = planetName(lord, lang);
+
+      if (ctx.moonNakshatraLord && lord === ctx.moonNakshatraLord) {
+        out.push(F_RESONANCE_NAKSHATRA_LORD[lang](pName, ctx.moonNakshatraName ?? '', levelName));
+        bump(lord);
+      }
+      if (ctx.planetHouses?.[lord] === 1) {
+        out.push(F_RESONANCE_IN_LAGNA[lang](pName, levelName));
+        bump(lord);
+      }
+    }
+
+    for (const [planet, count] of stacked) {
+      if (count >= 2) out.push(F_RESONANCE_STACKED[lang](planetName(planet, lang), count));
+    }
+    return out;
   }
 
   private _foundationFor(area: string) {
@@ -777,7 +843,8 @@ export class DashaPredictionEngine {
     const transitMod = this._ctx?.transitScoreMod ?? 0;
     if (transitMod !== 0) weightedAvg = clampScore(weightedAvg + transitMod);
 
-    const overallRating = Math.min(10, Math.max(1, Math.round(weightedAvg)));
+    const overallScore = Math.min(10, Math.max(1, weightedAvg));
+    const overallRating = Math.round(overallScore);
     const nature = (pd.nature as string) ?? 'neutral';
 
     let overallTheme = pairEff
@@ -843,6 +910,16 @@ export class DashaPredictionEngine {
       }
     }
 
+    // Resonance leads the general reading: when the chart is structurally tied
+    // to the lord now running, that outranks anything the generic per-planet
+    // copy has to say about it.
+    const resonance = this._resonanceNotes();
+    if (resonance.length) general.details.unshift(...resonance);
+
+    // Flag a split transit picture so the single rating is not read as the whole
+    // story — the detail is in importantTransits.
+    if (this._ctx?.transitDiverges) general.details.push(F_TRANSIT_DIVERGES[lang]());
+
     // Structured strength summaries for UI display.
     const lordStrengths: LordStrengthSummary[] = [];
     const toSummary = (planet: string, role: LordStrengthSummary['role']): LordStrengthSummary | null => {
@@ -888,7 +965,7 @@ export class DashaPredictionEngine {
     const sig = SIG_TEXT[mahadasha];
     return {
       dashaLord: mahadasha, antardasha, pratyantardasha, sookshmaDasha,
-      periodType, overallTheme, overallRating,
+      periodType, overallTheme, overallRating, overallScore,
       natalFoundation: natalFoundation.length ? natalFoundation : undefined,
       predictions: { health, wealth, career, relationships, general },
       favorableActivities: this._favorable(mahadasha),

@@ -173,6 +173,7 @@ const en = {
   'chart.table.colDegree': 'Degree',
   'chart.table.colNakshatra': 'Nakshatra',
   'chart.table.colPada': 'Pada',
+  'chart.table.colCondition': 'Condition',
   'chart.houseTooltip': 'House {n} — {rashi} ({english})',
 
   // House panel
@@ -262,6 +263,10 @@ const en = {
   'planet.rulesHouses': 'Rules',
   'planet.moolatrikona': 'Moolatrikona',
   'planet.combust': 'Combust (Astangata)',
+  'planet.gandanta': 'Gandanta (sign junction)',
+  'planet.gandantaShort': 'GND',
+  'planet.combustShort': 'ASTA',
+  'planet.nbShort': 'NB',
   'planet.neechaBhanga': 'Neecha Bhanga',
 
   // Nakshatra
@@ -882,6 +887,7 @@ const si: Record<keyof typeof en, string> = {
   'chart.table.colDegree': 'අංශ',
   'chart.table.colNakshatra': 'නැකත',
   'chart.table.colPada': 'පාද',
+  'chart.table.colCondition': 'තත්ත්වය',
   'chart.houseTooltip': '{n} වන ගෘහ — {rashi} ({english})',
 
   // House panel
@@ -971,6 +977,10 @@ const si: Record<keyof typeof en, string> = {
   'planet.rulesHouses': 'අධිපති',
   'planet.moolatrikona': 'මූලත්‍රිකෝණ',
   'planet.combust': 'අස්තංගත (දහනය)',
+  'planet.gandanta': 'ගණ්ඩාන්ත (රාශි සන්ධිය)',
+  'planet.gandantaShort': 'ගණ්ඩ',
+  'planet.combustShort': 'අස්ත',
+  'planet.nbShort': 'නීභ',
   'planet.neechaBhanga': 'නීච භංග',
 
   // Nakshatra

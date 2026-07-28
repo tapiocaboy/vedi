@@ -108,6 +108,16 @@ export function houseLabelLocative(n: number, lang: Lang): string {
   return lang === 'si' ? `${n} වන භාවයේ` : `${n}${ordinalSuffix(n)} house`;
 }
 
+/**
+ * "Mula pada 1" / "මූල නැකත, පාදය 1".
+ *
+ * Nakshatra names stay in their standard transliterated form in both languages —
+ * that is how Sri Lankan almanacs print them — so only the frame is localised.
+ */
+export function nakshatraPadaLabel(name: string, pada: number, lang: Lang): string {
+  return lang === 'si' ? `${name} නැකත, පාදය ${pada}` : `${name} pada ${pada}`;
+}
+
 /** Rashi (sign) name by index 0–11, in the given language. */
 export function rashiName(index: number, lang: Lang): string {
   return lang === 'si' ? RASHI_SI[index] : RASHIS[index];

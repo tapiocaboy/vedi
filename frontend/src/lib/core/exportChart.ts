@@ -12,7 +12,8 @@ import type { DashaPredictionData } from '../../services/api';
 import { RASHIS, RASHI_ENGLISH } from './rashi';
 import { computeVargas, EXTRA_VARGAS } from './vargas';
 import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, plainPlanetEffect } from './vargaMeanings';
-import { RASHI_LORDS } from './planetaryAnalysis';
+import { RASHI_LORDS, analyzePlanet } from './planetaryAnalysis';
+import { assessVargaBackbone } from './vargaStrength';
 import { buildKnowledgeGraphMarkdown } from './knowledgeGraph';
 import { marriageInsights, careerInsights } from '../services/vargaService';
 import { getCurrentPeriodPrediction } from '../services/predictionService';
@@ -39,6 +40,12 @@ function fmtIsoDate(iso: string): string {
 
 function dignityLabel(d: string): string {
   return d.split('-').map(titleCase).join(' ');
+}
+
+function ordSuffix(n: number): string {
+  const v = n % 100;
+  if (v >= 11 && v <= 13) return 'th';
+  return ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
 }
 
 export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionData): string {
@@ -96,14 +103,85 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
   push();
 
   // ── D1 planetary table ────────────────────────────────────────────────
+  //
+  // Dignity and condition belong in this table, not only in the per-planet
+  // panels. A debilitated combust lord that appears here as a plain sign and
+  // degree drops out of every summary built from the export, and whoever reads
+  // it downstream has no way to know it was ever there.
+  const sunLon = sun?.longitude;
+  const signByPlanet: Record<string, number> = {};
+  for (const p of chart.planets) signByPlanet[titleCase(p.planet)] = p.rashiIndex;
+
+  const analyses = chart.planets.map(p => ({
+    p,
+    a: analyzePlanet(
+      p.planet, p.rashiIndex, ascIndex, p.isRetrograde, p.rashiDegree,
+      { longitude: p.longitude, sunLongitude: sunLon, signByPlanet, nakshatraName: p.nakshatra },
+    ),
+  }));
+
   push('## Planetary Positions (D1 / Rashi)');
   push();
-  push('| Planet | Sign | Degree | House | Nakshatra | Pada | Retro |');
-  push('| --- | --- | --- | --- | --- | --- | --- |');
-  for (const p of chart.planets) {
-    push(`| ${titleCase(p.planet)} | ${p.rashi} | ${p.rashiDegree.toFixed(2)}° | ${houseFrom(p.rashiIndex, ascIndex)} | ${p.nakshatra} | ${p.nakshatraPada} | ${p.isRetrograde ? 'R' : '—'} |`);
+  push('| Planet | Sign | Degree | House | Nakshatra | Pada | Retro | Dignity | From Sun | Condition |');
+  push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const { p, a } of analyses) {
+    const flags: string[] = [];
+    if (a.combustion?.isCombust) flags.push(`**Combust** (asta, orb ${a.combustion.limit}°)`);
+    if (a.gandanta) flags.push(`**Gandanta** (${a.gandanta.severity}, ${a.gandanta.fromJunction.toFixed(2)}° from junction)`);
+    if (a.neechaBhanga?.applies) flags.push(a.neechaBhanga.cancelled ? '**Neecha Bhanga** (cancelled)' : 'debilitation not cancelled');
+    if (a.moolatrikona) flags.push('Moolatrikona');
+    const fromSun = a.combustion ? `${a.combustion.separation.toFixed(2)}°` : '—';
+    push(
+      `| ${titleCase(p.planet)} | ${p.rashi} | ${p.rashiDegree.toFixed(2)}° | ${houseFrom(p.rashiIndex, ascIndex)} ` +
+      `| ${p.nakshatra} | ${p.nakshatraPada} | ${p.isRetrograde ? 'R' : '—'} | ${dignityLabel(a.dignity)} ` +
+      `| ${fromSun} | ${flags.length ? flags.join('; ') : '—'} |`,
+    );
   }
   push();
+
+  // ── Conditions worth naming outright ─────────────────────────────────
+  const conditions: string[] = [];
+  for (const { p, a } of analyses) {
+    const name = titleCase(p.planet);
+    const lordship = a.functional.rulesHouses.length
+      ? ` (lord of the ${a.functional.rulesHouses.map(h => `${h}${ordSuffix(h)}`).join(' & ')})`
+      : '';
+    if (a.dignity === 'debilitated') {
+      conditions.push(
+        `**${name} is debilitated**${lordship} in ${p.rashi} ${p.rashiDegree.toFixed(2)}°. ` +
+        (a.neechaBhanga?.cancelled
+          ? `Neecha Bhanga applies — ${a.neechaBhanga.reasons[0]} — so the weakness converts into strength late rather than early, typically through crisis rather than initiative.`
+          : 'No classical cancellation applies.'),
+      );
+    }
+    if (a.combustion?.isCombust) {
+      conditions.push(
+        `**${name} is combust**${lordship} — ${a.combustion.separation.toFixed(2)}° from the Sun, inside the ${a.combustion.limit}° orb. ` +
+        'Outward results are burnt even where dignity is sound.',
+      );
+    }
+    if (a.gandanta) {
+      conditions.push(
+        `**${name} is gandanta** — ${p.rashi} ${p.rashiDegree.toFixed(2)}°, ${p.nakshatra} pada ${p.nakshatraPada}, ` +
+        `${a.gandanta.fromJunction.toFixed(2)}° from the water–fire sign junction (${a.gandanta.severity}). ` +
+        'A karmic knot around what this planet governs.',
+      );
+    }
+    if (a.combustion && !a.combustion.isCombust && a.combustion.separation - a.combustion.limit < 1) {
+      conditions.push(
+        `${name} **clears combustion by ${(a.combustion.separation - a.combustion.limit).toFixed(2)}°** ` +
+        `(${a.combustion.separation.toFixed(2)}° against a ${a.combustion.limit}° orb) — a fine margin, but it stands.`,
+      );
+    }
+  }
+  if (conditions.length) {
+    push('### Conditions');
+    push();
+    push('The states that sign and degree alone do not show — debilitation, combustion (asta), sign-junction knots, and any cancellation of them.');
+    push();
+    for (const c of conditions) push(`- ${c}`);
+    push();
+  }
 
   // ── D9 Navamsa ────────────────────────────────────────────────────────
   push(`## D9 — Navamsa Chart (Marriage & Dharma)`);
@@ -135,6 +213,35 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
   push('**Career reading:**');
   push();
   for (const ins of careerInsights(vargas)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
+  push();
+
+  // ── Cross-varga standing ──────────────────────────────────────────────
+  //
+  // Read one chart at a time, the vargas cannot answer the question they exist
+  // to answer: which planet actually holds this chart together. A planet
+  // unremarkable in D1 but dignified across the divisions is the real engine of
+  // a life, and that pattern only appears when the vargas are scored together.
+  const backbone = assessVargaBackbone({ chart: vargas, longitudes });
+
+  push('## Cross-Varga Standing (Vimsopaka Bala)');
+  push();
+  push(
+    'Vimsopaka Bala scores each planet across the Saptavarga (D1, D2, D3, D7, D9, D12, D30) out of 20, ' +
+    'weighting each division classically. The dignity column beside it counts the four charts practice leans on ' +
+    'most for life direction — D1, D9, D10, D30 — because a planet holding its own across those is making a ' +
+    'structural statement no single chart reveals.',
+  );
+  push();
+  push('| Planet | Vimsopaka /20 | Grade | Own sign / exalted in | Vargottama |');
+  push('| --- | --- | --- | --- | --- |');
+  for (const p of backbone.planets) {
+    push(
+      `| ${p.planet} | ${p.vimsopaka.toFixed(1)} | ${titleCase(p.grade)} ` +
+      `| ${p.dignifiedIn.length ? p.dignifiedIn.join(', ') : '—'} | ${p.isVargottama ? 'Yes' : '—'} |`,
+    );
+  }
+  push();
+  for (const n of backbone.notes) push(`- ${n}`);
   push();
 
   // ── Other divisional charts (D2, D3, D4, D7, D12, D24, D30, D60) ───────

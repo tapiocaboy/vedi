@@ -6,7 +6,7 @@ import { PLANET_SIGNIFICATIONS, PLANETARY_RELATIONSHIPS } from './predictions';
 import { type Lang, pick, pickList } from './i18n';
 import {
   DIGNITY_LABEL, DIGNITY_DESC, FUNCTIONAL_LABEL, VERDICT_LABEL,
-  DIG_BALA_FRAMES, FUNCTIONAL_DESC, COMBUSTION_FRAMES, NB_FRAMES,
+  DIG_BALA_FRAMES, FUNCTIONAL_DESC, COMBUSTION_FRAMES, NB_FRAMES, GANDANTA_FRAMES,
   strengthSummary, FACTOR_LABEL, ordHouse,
 } from './text/planetaryText';
 import { PLANET_IN_HOUSE_TEXT, RETROGRADE_TEXT } from './text/planetHouseText';
@@ -58,15 +58,28 @@ export const RASHI_LORDS: Record<number, string> = {
 
 export type DignityLevel = 'exalted' | 'own-sign' | 'friend-sign' | 'neutral-sign' | 'enemy-sign' | 'debilitated';
 
+/**
+ * 'MARS' / 'mars' / 'Mars' → 'Mars'.
+ *
+ * The tables in this module are keyed in title case, while the chart layer keys
+ * planets in upper case ('SUN'…'KETU'). Every lookup here normalises first: a
+ * miss returns a plausible-looking neutral result rather than an error, so a
+ * casing mismatch does not fail loudly — it quietly reports every planet as
+ * dignity-neutral and never detects combustion or Neecha Bhanga at all.
+ */
+export function normalizePlanetKey(planet: string): string {
+  return planet.charAt(0).toUpperCase() + planet.slice(1).toLowerCase();
+}
+
 export function getDignity(planet: string, rashiIndex: number): DignityLevel {
-  if (planet === 'ASCENDANT') return 'neutral-sign';
-  const d = DIGNITY[planet];
+  if (planet.toUpperCase() === 'ASCENDANT') return 'neutral-sign';
+  const d = DIGNITY[normalizePlanetKey(planet)];
   if (!d) return 'neutral-sign';
   if (d.exalted === rashiIndex) return 'exalted';
   if (d.debilitated === rashiIndex) return 'debilitated';
   if (d.ownSigns.includes(rashiIndex)) return 'own-sign';
   const rashiLord = RASHI_LORDS[rashiIndex];
-  const rel = PLANETARY_RELATIONSHIPS[planet];
+  const rel = PLANETARY_RELATIONSHIPS[normalizePlanetKey(planet)];
   if (!rel) return 'neutral-sign';
   if (rel.friends?.includes(rashiLord)) return 'friend-sign';
   if (rel.enemies?.includes(rashiLord)) return 'enemy-sign';
@@ -210,9 +223,10 @@ export function assessStrength(args: {
   isRetrograde: boolean;
   combust?: boolean;
   neechaBhanga?: boolean;
+  gandanta?: GandantaSeverity | null;
   lang?: Lang;
 }): StrengthAssessment {
-  const { planet, dignity, moolatrikona, dig, functional, isRetrograde, combust = false, neechaBhanga = false, lang = 'en' } = args;
+  const { planet, dignity, moolatrikona, dig, functional, isRetrograde, combust = false, neechaBhanga = false, gandanta = null, lang = 'en' } = args;
 
   let sthana = DIGNITY_LABELS[dignity].strength / 10;          // 0.1 .. 1.0
   if (moolatrikona) sthana = Math.min(1, sthana + 0.1);
@@ -227,6 +241,9 @@ export function assessStrength(args: {
     cheshta * 10,             // motional (retrograde Cheshta Bala)
   );
   if (combust) score = Math.max(8, score - 14);               // burnt significations
+  // Gandanta is an instability, not a dignity — it applies on top of whatever
+  // sign strength the planet has, so it is subtracted last.
+  if (gandanta) score = Math.max(8, score - GANDANTA_PENALTY[gandanta]);
 
   const verdict: StrengthVerdict =
     score >= 75 ? 'very-strong' :
@@ -286,6 +303,73 @@ export function getCombustion(planet: string, planetLongitude: number, sunLongit
   };
 }
 
+// Gandanta (ගණ්ඩාන්ත) — the karmic "knot" at the three water→fire sign
+// junctions: Cancer→Leo, Scorpio→Sagittarius, Pisces→Aries. The band is the
+// last 3°20′ of the water sign plus the first 3°20′ of the fire sign, i.e. one
+// continuous 6°40′ stretch that is also the junction of two nakshatras
+// (Ashlesha/Magha, Jyeshtha/Mula, Revati/Ashwini).
+//
+// This matters most for the Moon and the Lagna, where classical texts treat it
+// as a knot around emotional foundations and the constitution respectively. It
+// is invisible to dignity alone — a gandanta planet can be exalted — so it has
+// to be checked separately or it silently vanishes from a reading.
+
+const GANDANTA_WATER = new Set([3, 7, 11]);  // Cancer, Scorpio, Pisces — last 3°20′
+const GANDANTA_FIRE = new Set([0, 4, 8]);    // Aries, Leo, Sagittarius — first 3°20′
+const GANDANTA_BAND = 10 / 3;                // 3°20′
+
+export type GandantaSeverity = 'deep' | 'moderate' | 'mild';
+
+export interface GandantaInfo {
+  /** Which side of the junction: closing a water sign or opening a fire sign. */
+  side: 'water-end' | 'fire-start';
+  /** Degrees from the exact junction — 0 is the junction itself. */
+  fromJunction: number;
+  /** How close to the junction: within 1° / 2° / the rest of the band. */
+  severity: GandantaSeverity;
+  desc: string;
+}
+
+/**
+ * Gandanta state of a position, or null when it is clear of the junction bands.
+ * `nakshatraName` only feeds the prose, so callers without it may pass ''.
+ */
+export function getGandanta(
+  rashiIndex: number,
+  degreeInSign: number,
+  nakshatraName = '',
+  lang: Lang = 'en',
+): GandantaInfo | null {
+  let side: GandantaInfo['side'];
+  let fromJunction: number;
+  if (GANDANTA_WATER.has(rashiIndex) && degreeInSign >= 30 - GANDANTA_BAND) {
+    side = 'water-end';
+    fromJunction = 30 - degreeInSign;
+  } else if (GANDANTA_FIRE.has(rashiIndex) && degreeInSign <= GANDANTA_BAND) {
+    side = 'fire-start';
+    fromJunction = degreeInSign;
+  } else {
+    return null;
+  }
+
+  const severity: GandantaSeverity = fromJunction <= 1 ? 'deep' : fromJunction <= 2 ? 'moderate' : 'mild';
+  return {
+    side,
+    fromJunction,
+    severity,
+    desc: GANDANTA_FRAMES.desc({
+      fromJunction: fromJunction.toFixed(2),
+      severity,
+      atSignEnd: side === 'water-end',
+      nakshatra: nakshatraName,
+      lang,
+    }),
+  };
+}
+
+/** Strength penalty for a gandanta placement, by how close the junction is. */
+const GANDANTA_PENALTY: Record<GandantaSeverity, number> = { deep: 10, moderate: 7, mild: 4 };
+
 // Neecha Bhanga — cancellation of debilitation. When a debilitated planet meets
 // any of the classical conditions, its weakness is lifted (and often becomes a
 // Raja Yoga: a rise after early struggle).
@@ -307,9 +391,17 @@ export function getNeechaBhanga(args: {
   signByPlanet: Record<string, number>;    // planet -> rashiIndex for all grahas
   lang?: Lang;
 }): NeechaBhangaInfo {
-  const { planet, rashiIndex, ascIndex, isRetrograde, signByPlanet, lang = 'en' } = args;
+  const { planet, rashiIndex, ascIndex, isRetrograde, lang = 'en' } = args;
   if (getDignity(planet, rashiIndex) !== 'debilitated') {
     return { applies: false, cancelled: false, statusLabel: '', reasons: [], desc: '' };
+  }
+
+  // The dispositor and exaltation lookups below come from RASHI_LORDS / DIGNITY,
+  // which are title-cased, so the caller's map has to be brought to the same
+  // keying or every lookup misses and no cancellation is ever found.
+  const signByPlanet: Record<string, number> = {};
+  for (const [key, sign] of Object.entries(args.signByPlanet)) {
+    signByPlanet[normalizePlanetKey(key)] = sign;
   }
 
   const debilSign = rashiIndex;
@@ -379,6 +471,8 @@ export interface PlanetAnalysis {
   functional: FunctionalInfo;
   combustion: CombustionInfo | null;
   neechaBhanga: NeechaBhangaInfo | null;
+  /** Set only when the planet falls in a water–fire sign-junction band. */
+  gandanta: GandantaInfo | null;
   strength: StrengthAssessment;
   keywords: string[];
   bodyParts: string[];
@@ -391,6 +485,7 @@ export interface ChartContext {
   longitude?: number;                    // this planet's absolute longitude (0–360)
   sunLongitude?: number;                 // the Sun's absolute longitude (0–360)
   signByPlanet?: Record<string, number>; // every graha -> its rashiIndex
+  nakshatraName?: string;                // this planet's nakshatra, for gandanta prose
 }
 
 export function analyzePlanet(
@@ -404,15 +499,15 @@ export function analyzePlanet(
 ): PlanetAnalysis {
   const house = ((rashiIndex - ascendantRashiIndex + 12) % 12) + 1;
   const houseData = HOUSE_DATA[house] ?? HOUSE_DATA[1];
-  const dignity = getDignity(planet, rashiIndex);
+  const dignity = getDignity(planet, rashiIndex);   // tolerates either casing
   const dignityInfo = {
     ...DIGNITY_LABELS[dignity],
     label: pick(DIGNITY_LABEL[dignity], lang),
     desc: pick(DIGNITY_DESC[dignity], lang),
   };
 
-  const pd = PLANET_SIGNIFICATIONS[planet] ?? {};
-  const planetKey = planet.charAt(0).toUpperCase() + planet.slice(1).toLowerCase();
+  const planetKey = normalizePlanetKey(planet);
+  const pd = PLANET_SIGNIFICATIONS[planetKey] ?? {};
 
   const retroText = isRetrograde ? (RETROGRADE_TEXT[planetKey] ?? null) : null;
   const retrogradeEffect = retroText ? {
@@ -446,10 +541,15 @@ export function analyzePlanet(
     ? getNeechaBhanga({ planet: planetKey, rashiIndex, ascIndex: ascendantRashiIndex, isRetrograde, signByPlanet: context.signByPlanet, lang })
     : null;
 
+  const gandanta = degreeInSign !== undefined
+    ? getGandanta(rashiIndex, degreeInSign, context?.nakshatraName ?? '', lang)
+    : null;
+
   const strength = assessStrength({
     planet: planetKey, dignity, moolatrikona, dig: digBala, functional, isRetrograde,
     combust: combustion?.isCombust ?? false,
     neechaBhanga: neechaBhanga?.cancelled ?? false,
+    gandanta: gandanta?.severity ?? null,
     lang,
   });
 
@@ -467,6 +567,7 @@ export function analyzePlanet(
     functional,
     combustion,
     neechaBhanga,
+    gandanta,
     strength,
     keywords: (pd.keywords as string[]) ?? [],
     bodyParts: (pd.bodyParts as string[]) ?? [],

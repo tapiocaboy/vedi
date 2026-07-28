@@ -5,7 +5,8 @@ import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { formatDegree } from '../../utils/dateUtils';
 import { PlanetDetailPanel } from './PlanetDetailPanel';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelPlanet, labelRashi } from '../../i18n/astroLabels';
+import { labelPlanet, labelRashi, labelDignity } from '../../i18n/astroLabels';
+import { analyzePlanet, getGandanta, type DignityLevel } from '../../lib/core/planetaryAnalysis';
 import { useTheme } from '../../hooks/useTheme';
 
 const ACCENT = 'var(--c-accent)';
@@ -13,6 +14,25 @@ const ACCENT = 'var(--c-accent)';
 interface Props {
   planets: PlanetPosition[];
   ascendant: PlanetPosition;
+}
+
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+
+interface Badge { short: string; title: string; color: string }
+interface PlanetCondition { dignity: DignityLevel | null; badges: Badge[] }
+
+/** Colour per dignity, matched to the detail panel's scale. */
+const DIGNITY_COLOR: Record<DignityLevel, string> = {
+  'exalted': '#10b981', 'own-sign': '#22c55e', 'friend-sign': '#60a5fa',
+  'neutral-sign': '#94a3b8', 'enemy-sign': '#f59e0b', 'debilitated': '#f43f5e',
+};
+
+function gandantaBadge(gan: NonNullable<ReturnType<typeof getGandanta>>, t: ReturnType<typeof useLang>['t']): Badge {
+  return {
+    short: t('planet.gandantaShort'),
+    title: `${t('planet.gandanta')} — ${gan.fromJunction.toFixed(2)}°`,
+    color: '#a855f7',
+  };
 }
 
 export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
@@ -26,6 +46,36 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   ];
 
   const ascendantRashiIndex = ascendant.rashiIndex;
+
+  // Condition per row. Sign and degree alone hide debilitation, combustion and
+  // sign-junction knots — states that change the reading of a planet completely
+  // and that a reader scanning this table has no other way to notice.
+  const sunLongitude = planets.find(p => p.planet === 'SUN')?.longitude;
+  const signByPlanet = Object.fromEntries(planets.map(p => [titleCase(p.planet), p.rashiIndex]));
+
+  const conditionFor = (p: PlanetPosition): PlanetCondition | null => {
+    if (p.planet === 'ASCENDANT') {
+      const gan = getGandanta(p.rashiIndex, p.rashiDegree, p.nakshatra, lang);
+      return gan ? { dignity: null, badges: [gandantaBadge(gan, t)] } : null;
+    }
+    const a = analyzePlanet(
+      p.planet, p.rashiIndex, ascendantRashiIndex, p.isRetrograde, p.rashiDegree,
+      { longitude: p.longitude, sunLongitude, signByPlanet, nakshatraName: p.nakshatra }, lang,
+    );
+    const badges: Badge[] = [];
+    if (a.combustion?.isCombust) {
+      badges.push({
+        short: t('planet.combustShort'),
+        title: `${t('planet.combust')} — ${a.combustion.separation.toFixed(2)}° / ${a.combustion.limit}°`,
+        color: '#f59e0b',
+      });
+    }
+    if (a.gandanta) badges.push(gandantaBadge(a.gandanta, t));
+    if (a.neechaBhanga?.cancelled) {
+      badges.push({ short: t('planet.nbShort'), title: t('planet.neechaBhanga'), color: '#10b981' });
+    }
+    return { dignity: a.dignity, badges };
+  };
 
   // Theme tokens
   const headerBg    = isLight
@@ -62,12 +112,14 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colDegree')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white hidden sm:table-cell">{t('chart.table.colNakshatra')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colPada')}</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center rounded-tr-lg font-bold text-white">℞</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold text-white">℞</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left rounded-tr-lg font-bold text-white">{t('chart.table.colCondition')}</th>
             </tr>
           </thead>
           <tbody>
             {allPositions.map((planet, idx) => {
               const isSel = selected?.planet === planet.planet;
+              const cond = conditionFor(planet);
               return (
                 <motion.tr
                   key={planet.planet}
@@ -115,6 +167,29 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                         ℞
                       </span>
                     )}
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="flex flex-wrap items-center gap-1">
+                      {cond?.dignity && (
+                        <span className="text-[10px] sm:text-xs font-semibold whitespace-nowrap"
+                          style={{ color: DIGNITY_COLOR[cond.dignity] }}>
+                          {labelDignity(cond.dignity, lang)}
+                        </span>
+                      )}
+                      {cond?.badges.map(b => (
+                        <span
+                          key={b.short}
+                          title={b.title}
+                          className="inline-flex items-center px-1.5 py-0.5 rounded font-bold text-[9px] sm:text-[10px] whitespace-nowrap"
+                          style={{ color: b.color, background: `${b.color}1f`, border: `1px solid ${b.color}55` }}
+                        >
+                          {b.short}
+                        </span>
+                      ))}
+                      {!cond?.dignity && !cond?.badges.length && (
+                        <span className="text-xs" style={{ color: mutedTxt }}>—</span>
+                      )}
+                    </div>
                   </td>
                 </motion.tr>
               );

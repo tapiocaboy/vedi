@@ -16,8 +16,11 @@ import {
   type MoonPhase, type TaraBala,
 } from './transitAnalysis';
 import type { DignityLevel } from './planetaryAnalysis';
-import { type Lang, rashiName } from './i18n';
-import { TRANSIT_NOTE, SADE_SATI_DESC, JUPITER_BLESSING, NODAL_NOTE, NOTE_PREFIX } from './text/transitText';
+import { type Lang, rashiName, planetName, houseLabel, joinAnd } from './i18n';
+import { TRANSIT_NOTE, SADE_SATI_DESC, JUPITER_BLESSING, NODAL_NOTE, NOTE_PREFIX, LAGNA_TRANSIT } from './text/transitText';
+
+/** 'SATURN' → 'Saturn'. Transit keys are upper case; prose helpers are not. */
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 
 export type AyanamsaSystem = BirthData['ayanamsa'];
 
@@ -169,39 +172,108 @@ export interface GocharaPredictionSummary {
   notes: string[];
   /** Aggregate auspiciousness modifier, clamped to [−1.5, +1]. */
   scoreMod: number;
+  /**
+   * The two halves of the reading kept apart. `outward` is the Lagna-relative
+   * picture — what is being offered; `inward` is the Moon-relative one — how it
+   * feels. Callers that only want one number can ignore these, but averaging
+   * them destroys the most useful thing a transit reading has to say.
+   */
+  outwardMod: number;
+  inwardMod: number;
+  /** Set when outward and inward disagree materially. */
+  diverges: boolean;
 }
 
+/** Slow movers are the only transits worth reading from the Lagna for a dasha. */
+const SLOW_MOVERS = ['JUPITER', 'SATURN'] as const;
+
+/** How far outward and inward must part before it counts as a split period. */
+const DIVERGENCE_THRESHOLD = 0.6;
 
 /**
  * Distil a Gochara snapshot into the handful of signals that should colour
  * a dasha prediction: Sade Sati, Saturn 4th/8th, Jupiter's blessing, and any
  * other flagged transits.
+ *
+ * Read from the Moon *and* from the Lagna. A Moon-only summary can only report
+ * how a period feels, so a chart being handed a once-in-years opportunity during
+ * an emotionally flat stretch comes out looking uniformly bad — the transit
+ * dignity, the house from the Lagna, and any pass over a natal stellium all go
+ * unmentioned because none of them is a Moon-relative fact.
  */
 export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = 'en'): GocharaPredictionSummary {
   const notes: string[] = [];
-  let mod = 0;
+  // Inward: how the period feels, judged from the natal Moon.
+  let inward = 0;
+  // Outward: what is on offer, judged from the Lagna and from transit dignity.
+  let outward = 0;
 
   if (g.sadeSati.active) {
     notes.push(g.sadeSati.description);
-    mod -= 0.75;
+    inward -= 0.75;
   }
 
   const saturn = g.transits.find(t => t.planet === 'SATURN');
   if (saturn && !g.sadeSati.active) {
-    if (saturn.houseFromMoon === 8) mod -= 0.5;
-    else if (saturn.houseFromMoon === 4) mod -= 0.25;
-    else if ([3, 6, 11].includes(saturn.houseFromMoon)) mod += 0.25;
+    if (saturn.houseFromMoon === 8) inward -= 0.5;
+    else if (saturn.houseFromMoon === 4) inward -= 0.25;
+    else if ([3, 6, 11].includes(saturn.houseFromMoon)) inward += 0.25;
     if (saturn.note) notes.push(NOTE_PREFIX('SATURN', saturn.note, lang));
   }
 
   notes.push(g.jupiterBlessing.reason);
-  mod += g.jupiterBlessing.auspicious ? 0.5 : -0.25;
+  inward += g.jupiterBlessing.auspicious ? 0.5 : -0.25;
 
   // Ashtakavarga refinement: bindu support in the transited sign softens or
   // sharpens the slow planets' verdicts (≥5 bindus helps, ≤3 hinders).
   for (const t of g.transits) {
     if ((t.planet === 'SATURN' || t.planet === 'JUPITER') && t.bindus != null) {
-      mod += (t.bindus - 4) * 0.05;
+      inward += (t.bindus - 4) * 0.05;
+    }
+  }
+
+  // ── Lagna-relative reading of the slow movers ──
+  const natalBySign = new Map<number, string[]>();
+  for (const n of g.natalPlanets) {
+    if (n.planet === 'ASCENDANT') continue;
+    const list = natalBySign.get(n.rashi) ?? [];
+    list.push(n.planet);
+    natalBySign.set(n.rashi, list);
+  }
+
+  for (const key of SLOW_MOVERS) {
+    const t = g.transits.find(x => x.planet === key);
+    if (!t) continue;
+    const pName = planetName(titleCase(key), lang);
+    const houseLbl = houseLabel(t.houseFromLagna, lang);
+
+    // Transit dignity is a fact about the planet, not about the person, and it
+    // scales everything else the transit does.
+    if (t.dignity === 'exalted' || t.dignity === 'own-sign') {
+      outward += t.dignity === 'exalted' ? 0.5 : 0.3;
+      notes.push(LAGNA_TRANSIT.slowMoverDignified(pName, t.dignity === 'exalted' ? 'exalted' : 'own', houseLbl, lang));
+    } else if (t.dignity === 'debilitated') {
+      outward -= 0.4;
+      notes.push(LAGNA_TRANSIT.slowMoverAfflicted(pName, houseLbl, lang));
+    }
+
+    // Artha and upachaya houses from the Lagna are where a benefic transit
+    // actually delivers something.
+    if (key === 'JUPITER' && [2, 5, 9, 10, 11].includes(t.houseFromLagna)) outward += 0.35;
+    if (key === 'SATURN' && [3, 6, 11].includes(t.houseFromLagna)) outward += 0.2;
+    if (key === 'SATURN' && [1, 4, 7, 8].includes(t.houseFromLagna)) outward -= 0.2;
+
+    // Passing over a natal group activates whatever those planets carry — a
+    // stellium transit is a much bigger event than a transit over empty sky.
+    const over = natalBySign.get(t.rashi);
+    if (over && over.length) {
+      outward += Math.min(0.3, 0.1 * over.length);
+      notes.push(LAGNA_TRANSIT.overNatal(
+        pName,
+        joinAnd(over.map(p => planetName(titleCase(p), lang)), lang),
+        houseLbl,
+        lang,
+      ));
     }
   }
 
@@ -211,7 +283,25 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = '
     }
   }
 
-  return { notes, scoreMod: Math.max(-1.5, Math.min(1, mod)) };
+  const diverges = Math.abs(outward - inward) >= DIVERGENCE_THRESHOLD;
+  if (diverges) {
+    const [pos, neg] = outward > inward ? [outward, inward] : [inward, outward];
+    notes.push(LAGNA_TRANSIT.divergence(
+      pos.toFixed(2).replace(/\.00$/, ''),
+      neg.toFixed(2).replace(/\.00$/, ''),
+      lang,
+    ));
+  }
+
+  return {
+    notes,
+    // The two halves are averaged for the single score the engine consumes, but
+    // both are returned so callers can say *why* one number is misleading.
+    scoreMod: Math.max(-1.5, Math.min(1, (inward + outward) / 2)),
+    outwardMod: outward,
+    inwardMod: inward,
+    diverges,
+  };
 }
 
 /** Sample current planetary positions for Gochara analysis. */

@@ -40,6 +40,39 @@ export const JUPITER_BLESSING = {
     : `Guru is transiting your ${house}th from Moon — period of learning rather than gain in that area.`,
 };
 
+/**
+ * Transit signals read from the Lagna rather than the Moon.
+ *
+ * A Moon-only summary answers "how does this feel" and nothing else. Whether
+ * anything is actually being *offered* is a question about the houses from the
+ * Lagna, and the two routinely disagree — which is the single most useful thing
+ * a transit reading can say when it happens.
+ */
+export const LAGNA_TRANSIT = {
+  slowMoverDignified: (planet: string, dignity: 'exalted' | 'own', house: string, lang: Lang) => lang === 'si'
+    ? `${planet} ගෝචරයේ ${dignity === 'exalted' ? 'උච්ච' : 'ස්වක්ෂේත්‍ර'} වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — වර්ෂ ගණනාවකට මෙම කේන්දරය ලබන ප්‍රබලම ගෝචරවලින් එකකි.`
+    : `${planet} is transiting ${dignity === 'exalted' ? 'exalted' : 'in its own sign'} through your ${house} from the Lagna — among the strongest transits this chart sees for years.`,
+
+  slowMoverAfflicted: (planet: string, house: string, lang: Lang) => lang === 'si'
+    ? `${planet} ගෝචරයේ නීච වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — එම භාවයේ කරුණු මෙම කාලයේ අඩු සහායක් ලබයි.`
+    : `${planet} is transiting debilitated through your ${house} from the Lagna — that house's affairs get less support while it lasts.`,
+
+  /** A slow mover passing over a group of natal planets. */
+  overNatal: (planet: string, natal: string, house: string, lang: Lang) => lang === 'si'
+    ? `${planet} ඔබේ ජන්ම ${natal} මතින් (${house}) ගමන් කරයි — එම ග්‍රහයන් දරන කරුණු මෙම කාලයේ සක්‍රීය වේ.`
+    : `${planet} is passing over your natal ${natal} in your ${house} — the matters those planets carry are live right now.`,
+
+  /**
+   * External conditions and internal state pulling in opposite directions. This
+   * is a common, specific and genuinely useful configuration, and a summary that
+   * averages the two into one number destroys exactly the information that makes
+   * it worth reporting.
+   */
+  divergence: (outward: string, inward: string, lang: Lang) => lang === 'si'
+    ? `මෙම කාලය බෙදී ඇත: ලග්නයෙන් බලන විට බාහිර තත්ත්වය හිතකරයි (${outward}), නමුත් චන්ද්‍රයාගෙන් බලන විට අභ්‍යන්තර තත්ත්වය පීඩනයට ලක්ව ඇත (${inward}). යමක් ලැබෙන්නට ඉඩ ඇති නමුත් එය භාර ගැනීමට උවමනාවක් නොදැනෙන කාලයකි — අවස්ථාව ප්‍රතික්ෂේප නොකර, එය ගැලපෙන වේගයකින් භාර ගන්න.`
+    : `This period is split: from the Lagna the outward conditions are unusually good (${outward}), while from the Moon the inner state is under pressure (${inward}). Something significant may well be handed to you in a stretch where you do not much feel like taking it — the useful move is to accept it at a pace that fits, not to decline it.`,
+};
+
 export const NODAL_NOTE = (rahu: string, ketu: string, lang: Lang) => lang === 'si'
   ? `වර්තමාන රාහු-කේතු අක්ෂය: ${rahu} / ${ketu} — ඡායා ග්‍රහයෝ මාස 18කට වරක් පමණ රාශිය මාරු කරති.`
   : `Current Rahu-Ketu axis: ${rahu} / ${ketu} — the nodes shift rashi roughly every 18 months.`;

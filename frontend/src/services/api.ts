@@ -92,6 +92,12 @@ export interface DashaPredictionData {
   periodType: string;
   overallTheme: string;
   overallRating: number;
+  /**
+   * `overallRating` before rounding. The deepest dasha levels move the outlook
+   * by less than half a point, so comparing two adjacent sub-periods has to read
+   * this rather than the rounded rating.
+   */
+  overallScore?: number;
   predictions: {
     health: AreaPrediction;
     wealth: AreaPrediction;

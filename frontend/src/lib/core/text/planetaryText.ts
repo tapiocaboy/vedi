@@ -129,6 +129,38 @@ export const COMBUSTION_FRAMES = {
     : `${sep}° from the Sun, clear of the ${limit}° combustion orb — not burnt.`,
 };
 
+/** Gandanta (sign-junction knot) description. */
+export const GANDANTA_FRAMES = {
+  severityWord: (s: 'deep' | 'moderate' | 'mild', lang: Lang) =>
+    ({
+      deep: { en: 'deep', si: 'ගැඹුරු' },
+      moderate: { en: 'moderate', si: 'මධ්‍යස්ථ' },
+      mild: { en: 'shallow', si: 'නොගැඹුරු' },
+    }[s][lang]),
+  desc: (args: {
+    fromJunction: string;
+    severity: 'deep' | 'moderate' | 'mild';
+    atSignEnd: boolean;
+    nakshatra: string;
+    lang: Lang;
+  }): string => {
+    const { fromJunction, severity, atSignEnd, nakshatra, lang } = args;
+    const sev = GANDANTA_FRAMES.severityWord(severity, lang);
+    if (lang === 'si') {
+      return `${nakshatra} නැකතේ, ජල–අග්නි රාශි සන්ධියේ අංශක ${fromJunction} ක් ${atSignEnd ? 'පෙර' : 'පසු'} — ගණ්ඩාන්තයකි (${sev}). සම්භාව්‍ය ලෙස මෙය කාර්මික ගැටයකි: මෙම ග්‍රහයා පාලනය කරන කරුණු ජීවිතයේ මුල් භාගයේ අස්ථිර වන අතර, ලිහා ගැනීමට සවිඥානික වෙහෙසක් අවශ්‍ය වේ.`;
+    }
+    return `In ${nakshatra}, ${fromJunction}° ${atSignEnd ? 'before' : 'past'} the water–fire sign junction — this is gandanta (${sev}). Classically a karmic knot: what this planet governs feels unstable early in life and asks to be consciously untied rather than simply outgrown.`;
+  },
+  /** Extra weight when the knot lands on the Moon — the mind's own foundation. */
+  moon: (lang: Lang) => lang === 'si'
+    ? 'ගණ්ඩාන්තය චන්ද්‍රයා මතම වැටේ — චිත්ත පදනම, මුල් නිවෙස හා මව සමඟ සම්බන්ධය කේන්දරයේ ලිහා ගැනීමට ඇති ප්‍රධාන ගැටයයි.'
+    : 'The knot falls on the Moon itself — the emotional foundation, early home, and the relationship with the mother are the chart\'s central thing to untie.',
+  /** Extra weight when the knot lands on the lagna — the self. */
+  lagna: (lang: Lang) => lang === 'si'
+    ? 'ගණ්ඩාන්තය ලග්නය මතම වැටේ — ආත්ම හැඟීම හා ශරීර ස්වභාවය මුල් වර්ෂවල අස්ථිර වේ.'
+    : 'The knot falls on the Ascendant itself — the sense of self and the constitution both settle late.',
+};
+
 /** Neecha Bhanga description. */
 export const NB_FRAMES = {
   cancelled: (firstReason: string, extra: number, lang: Lang): string => lang === 'si'
@@ -162,11 +194,12 @@ export function strengthSummary(args: {
   digLevel: 'strong' | 'moderate' | 'weak' | 'na';
   cheshta: boolean;
   combust: boolean;
+  gandanta?: 'deep' | 'moderate' | 'mild' | null;
   functionalLabel: string;
   functionalScore: number;
   lang: Lang;
 }): string {
-  const { verdictLabel, dignityLabel, moolatrikona, neechaBhanga, digLevel, cheshta, combust, functionalLabel, functionalScore, lang } = args;
+  const { verdictLabel, dignityLabel, moolatrikona, neechaBhanga, digLevel, cheshta, combust, gandanta = null, functionalLabel, functionalScore, lang } = args;
   const lean = functionalScore >= 0.7
     ? (lang === 'si' ? 'දැඩි ලෙස සහායක' : 'strongly supportive')
     : functionalScore >= 0.5
@@ -185,6 +218,7 @@ export function strengthSummary(args: {
       cheshta ? ', හා එහි වක්‍ර ගමනින් අමතර චලන ශක්තියක් ද ඇත' : '',
       '. ',
       combust ? 'එය අස්තංගතයි — සූර්යයාට ඉතා ළං — එය එහි බාහිර කරුණු දවා දමයි. ' : '',
+      gandanta ? `එය රාශි සන්ධියේ (ගණ්ඩාන්ත, ${GANDANTA_FRAMES.severityWord(gandanta, lang)}) සිටී — එහි කරුණු ස්ථාවර වන්නේ ප්‍රමාද වීය. ` : '',
       `මෙම ලග්නයට ${functionalLabel} ග්‍රහයෙකු ලෙස, එහි දශාවලදී එය ${lean} වේ.`,
     ].join('');
   }
@@ -196,6 +230,7 @@ export function strengthSummary(args: {
     cheshta ? ', and extra motional strength from its retrograde motion' : '',
     '. ',
     combust ? 'It is combust — too close to the Sun — which burns its outward significations. ' : '',
+    gandanta ? `It sits at a sign junction (gandanta, ${GANDANTA_FRAMES.severityWord(gandanta, lang)}) — what it governs steadies late. ` : '',
     `As a ${functionalLabel.toLowerCase()} for this Ascendant, it leans ${lean} over its periods.`,
   ].join('');
 }

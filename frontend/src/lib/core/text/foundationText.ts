@@ -62,6 +62,69 @@ export const F_LORD_WEAK: F3 = {
     `ඔබේ ${house} අධිපති ${lord} පීඩනයට ලක්ව ඇත (${where} පිහිටා ඇත) — මෙම ක්ෂේත්‍රයට වාසනාවට වඩා දැනුවත් වෑයමක් අවශ්‍යය.`,
 };
 
+/**
+ * Bhavesha well *placed* but weak by dignity. Saying "under strain (placed in
+ * your 11th)" of a 2nd lord sitting in the 11th blames the placement for a
+ * problem that belongs to the dignity — and the 11th is the best house a 2nd
+ * lord can occupy. The two statements have to be kept apart.
+ */
+export const F_LORD_WEAK_DIGNITY: F3 = {
+  en: (lord, house, where) =>
+    `${lord}, the lord of your ${house}, is well placed in your ${where} but weak in itself — the area delivers, yet what it delivers is harder to hold on to than to obtain.`,
+  si: (lord, house, where) =>
+    `ඔබේ ${house} අධිපති ${lord} ${where} හොඳින් පිහිටා ඇතත් තමා දුර්වලය — මෙම ක්ෂේත්‍රය ඵල දෙයි, එහෙත් ලැබෙන දේ ලබා ගැනීමට වඩා රඳවා ගැනීම අපහසුය.`,
+};
+
+/** Bhavesha deployed into a house that classically serves this same area. */
+export const F_LORD_WELL_DEPLOYED: F3 = {
+  en: (lord, house, where) =>
+    `${lord} rules your ${house} and sits in your ${where} — a classical placement for this area: the lord is working in territory that serves it.`,
+  si: (lord, house, where) =>
+    `${lord} ඔබේ ${house} අධිපති වන අතර ${where} සිටී — මෙම ක්ෂේත්‍රයට සම්භාව්‍ය පිහිටීමකි: අධිපතියා එයට උපකාරී භූමියේ ක්‍රියා කරයි.`,
+};
+
+/** A recognised classical combination (yoga) bearing on this area. */
+export const F_YOGA_SUPPORT: F2 = {
+  en: (name, planets) =>
+    `${name} is formed in your chart (${planets}) — a recognised classical combination for this area, and it counts for more than the individual placements that make it up.`,
+  si: (name, planets) =>
+    `ඔබේ කේන්දරයේ ${name} සැදී ඇත (${planets}) — මෙම ක්ෂේත්‍රය සඳහා පිළිගත් සම්භාව්‍ය සංයෝගයකි, එය එය සාදන තනි පිහිටීම්වලට වඩා වැදගත් වේ.`,
+};
+
+/**
+ * A yoga that pays out through adversity — Neecha Bhanga, Viparita Rajayoga.
+ * The promise is real; the route to it is not comfortable, and saying only
+ * "combination present" turns a hard chart into a reassuring one.
+ */
+export const F_YOGA_DEFERRED: F2 = {
+  en: (name, planets) =>
+    `${name} is formed in your chart (${planets}) — the damage here is cancelled rather than absent. Classically this converts into unusual strength late rather than early, and it tends to arrive through crisis rather than through initiative.`,
+  si: (name, planets) =>
+    `ඔබේ කේන්දරයේ ${name} සැදී ඇත (${planets}) — මෙහි හානිය නැති වී නොව භංග වී ඇත. සම්භාව්‍ය ලෙස මෙය මුල් කාලයේ නොව පසු කාලයේ අසාමාන්‍ය ශක්තියක් බවට හැරෙන අතර, එය ලැබෙන්නේ මුලපිරීමෙන් නොව අර්බුදයක් හරහාය.`,
+};
+
+/** Several planets crowded into one growth house. */
+export const F_STELLIUM: F3 = {
+  en: (count, house, theme) =>
+    `${count} planets are gathered in your ${house} (${theme}) — this much weight in one growth house concentrates the chart's output here, through networks and collective structures rather than solo effort.`,
+  si: (count, house, theme) =>
+    `ග්‍රහයන් ${count} දෙනෙක් ඔබේ ${house} (${theme}) එක්රැස් වී ඇත — එක් උපචය භාවයක මෙපමණ බරක් කේන්දරයේ ඵලය මෙහි කේන්ද්‍රගත කරයි; තනි වෑයමට වඩා ජාල හා සාමූහික ව්‍යුහ හරහා.`,
+};
+
+/** Combustion of a wealth-significator: acquisition survives, retention does not. */
+export const F_COMBUST_RETENTION: F1 = {
+  en: p => `${p} is combust — burnt by proximity to the Sun. For this area that reads as retention and enjoyment rather than acquisition: what arrives does not sit still.`,
+  si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. මෙම ක්ෂේත්‍රයට එය අදාළ වන්නේ ලබා ගැනීමට නොව රඳවා ගැනීමට හා භුක්ති විඳීමටයි: එන දේ එහි නොනවතී.`,
+};
+
+/** The Moon at a sign junction — the mind's own foundation is knotted. */
+export const F_MOON_GANDANTA: F2 = {
+  en: (nakshatra, house) =>
+    `Your Moon is gandanta — at the water–fire sign junction, in ${nakshatra}, in your ${house}. Classically a knot rather than a wound: emotional foundations, early home life and the bond with the mother are what this chart is here to untie, and they settle later than they do for most.`,
+  si: (nakshatra, house) =>
+    `ඔබේ චන්ද්‍රයා ගණ්ඩාන්තයේ සිටී — ජල–අග්නි රාශි සන්ධියේ, ${nakshatra} නැකතේ, ඔබේ ${house}. සම්භාව්‍ය ලෙස මෙය තුවාලයක් නොව ගැටයකි: චිත්ත පදනම, මුල් නිවෙස හා මව සමඟ බැඳීම මෙම කේන්දරය ලිහා ගැනීමට ඇති දෙයයි, ඒවා බොහෝ දෙනාට වඩා ප්‍රමාද වී ස්ථාවර වේ.`,
+};
+
 /** Bhavesha in 6/8/12 from the lagna — the classical weakener. */
 export const F_LORD_DUSTHANA: F2 = {
   en: (lord, house) =>
