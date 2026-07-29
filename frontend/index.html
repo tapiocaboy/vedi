@@ -12,6 +12,8 @@
     <meta name="author" content="trytellme.xyz" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <link rel="canonical" href="https://trytellme.xyz/" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
     <meta name="theme-color" content="#0b0e18" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)" />
 
@@ -25,7 +27,15 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="trytellme.xyz — Vedic astrology birth chart with planetary positions" />
-    <meta property="og:locale" content="en_US" />
+    <!-- The app ships English and Sinhala and is aimed at India and Europe, but
+         every locale is served from this one URL, so hreflang would be invalid:
+         it requires a distinct URL per locale. These are the signals that are
+         truthful without one. Region-specific content lives on /vedic-astrology-india
+         and /vedic-astrology-europe, which are separate pages rather than locale
+         variants of this one. -->
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:locale:alternate" content="en_IN" />
+    <meta property="og:locale:alternate" content="si_LK" />
 
     <!-- ── Twitter / X card ────────────────────────────────────────────── -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -39,6 +49,35 @@
       "@context": "https://schema.org",
       "@graph": [
         {
+          "@type": "WebSite",
+          "@id": "https://trytellme.xyz/#website",
+          "url": "https://trytellme.xyz/",
+          "name": "trytellme.xyz",
+          "description": "Free sidereal Vedic astrology: birth chart, dasha forecast, transits and kundli matching, computed locally in the browser.",
+          "inLanguage": ["en", "si"],
+          "publisher": { "@id": "https://trytellme.xyz/#org" },
+          "hasPart": [
+            { "@type": "WebPage", "url": "https://trytellme.xyz/birth-chart-reading", "name": "Vedic birth chart reading" },
+            { "@type": "WebPage", "url": "https://trytellme.xyz/horoscope", "name": "Vedic horoscope reading" },
+            { "@type": "WebPage", "url": "https://trytellme.xyz/future-forecast", "name": "Future forecast and dasha timeline" },
+            { "@type": "WebPage", "url": "https://trytellme.xyz/kundli-matching", "name": "Kundli matching and compatibility" },
+            { "@type": "WebPage", "url": "https://trytellme.xyz/vedic-astrology-india", "name": "Vedic astrology for India" },
+            { "@type": "WebPage", "url": "https://trytellme.xyz/vedic-astrology-europe", "name": "Vedic astrology for Europe" }
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://trytellme.xyz/#org",
+          "name": "trytellme.xyz",
+          "url": "https://trytellme.xyz/",
+          "logo": "https://trytellme.xyz/logo.svg",
+          "areaServed": [
+            { "@type": "Country", "name": "India" },
+            { "@type": "Place", "name": "Europe" },
+            { "@type": "Country", "name": "Sri Lanka" }
+          ]
+        },
+        {
           "@type": "WebApplication",
           "@id": "https://trytellme.xyz/#app",
           "name": "trytellme.xyz — Vedic Astrology Birth Chart Calculator",
@@ -47,6 +86,9 @@
           "applicationCategory": "LifestyleApplication",
           "operatingSystem": "Any",
           "browserRequirements": "Requires JavaScript",
+          "isPartOf": { "@id": "https://trytellme.xyz/#website" },
+          "inLanguage": ["en", "si"],
+          "isAccessibleForFree": true,
           "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
           "featureList": [
             "South & North Indian birth chart styles",
@@ -91,7 +133,19 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Loaded without blocking the first paint. A stylesheet on a third-party
+         origin sits on the critical path and delays render by however long that
+         round trip takes, which lands directly on Largest Contentful Paint —
+         a Core Web Vital and a ranking input. The families already carry
+         `display=swap`, so text paints in the fallback and swaps when they land. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      media="print"
+      onload="this.media='all'">
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    </noscript>
     <!-- Google Analytics (GA4) — Consent Mode v2: no cookies are set until the
          user accepts via the in-app cookie banner (trytellme_cookie_consent). -->
     <script>
@@ -121,8 +175,20 @@
         trytellme.xyz generates your complete Vedic astrology birth chart (kundli) from your
         birth date, time and place — including planetary positions, Vimshottari Dasha timeline,
         yogas, doshas, nakshatra readings, divisional charts and horoscope matching.
-        All calculations run privately in your browser. Please enable JavaScript to use the app.
+        All calculations run privately in your browser.
       </p>
+      <p>
+        The calculator needs JavaScript, because the Swiss Ephemeris runs on your own device
+        rather than on a server. These guides are plain pages and work without it:
+      </p>
+      <ul>
+        <li><a href="/birth-chart-reading">Vedic birth chart reading — what the chart contains and how to read it</a></li>
+        <li><a href="/horoscope">Vedic horoscope reading — rashi, lagna and current transits</a></li>
+        <li><a href="/future-forecast">Future forecast — the Vimshottari dasha timeline explained</a></li>
+        <li><a href="/kundli-matching">Kundli matching — the eight kootas and what they miss</a></li>
+        <li><a href="/vedic-astrology-india">Vedic astrology for India — IST, Lahiri ayanamsa, regional terms</a></li>
+        <li><a href="/vedic-astrology-europe">Vedic astrology for Europe — how sidereal differs from your star sign</a></li>
+      </ul>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

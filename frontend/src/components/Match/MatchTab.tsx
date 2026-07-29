@@ -7,36 +7,72 @@ import {
 } from 'lucide-react';
 import { BirthDataForm } from '../Forms/BirthDataForm';
 import { getMatchReport } from '../../services/api';
-import type { BirthData, MatchSummary, KootaScore, DoshaResult } from '../../services/api';
 import type {
-  MatchDimension, DimensionBand, DimensionKey, MarriageProspect, Friction,
+  BirthData, MatchSummary, KootaScore, DoshaResult, DoshaSeverity, Conflict,
+  MarriagePromise, SynastryContact,
+} from '../../services/api';
+import type {
+  MatchDimension, DimensionBand, DimensionKey, Friction,
 } from '../../lib/core/matchInsights';
+import { formatOrb } from '../../lib/core/matchSynastry';
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
 import { BAR_PALETTE, ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelMatchVerdict, labelRashiWestern } from '../../i18n/astroLabels';
+import { labelRashiWestern } from '../../i18n/astroLabels';
 
 interface Props {
   person: BirthData;
 }
 
-function verdictClass(v: MatchSummary['report']['verdict']): string {
-  switch (v) {
-    case 'excellent':       return 'bg-emerald-500/20 text-emerald-200 border-emerald-400/40';
-    case 'very good':       return 'bg-emerald-500/12 text-emerald-200 border-emerald-400/30';
-    case 'good':            return 'bg-violet-500/15 text-violet-200 border-violet-400/30';
-    case 'acceptable':      return 'bg-amber-500/15 text-amber-200 border-amber-400/30';
-    case 'not recommended': return 'bg-rose-500/20 text-rose-200 border-rose-400/40';
+function severityClass(s: DoshaSeverity): string {
+  switch (s) {
+    case 'none':      return 'bg-emerald-500/15 text-emerald-200 border-emerald-400/30';
+    case 'mitigated': return 'bg-amber-500/15 text-amber-200 border-amber-400/30';
+    case 'active':    return 'bg-rose-500/20 text-rose-200 border-rose-400/40';
   }
 }
 
-const ScoreGauge: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
+/**
+ * The four-layer header.
+ *
+ * Deliberately not a single score. The koota total leads only as a gate, labelled
+ * with what it measures, because a lone 29.5/36 with a verdict badge is read as a
+ * grade for the relationship when it is a filter over two Moon positions. The
+ * layer strip and the conflicts below it are the actual reading.
+ */
+const LayerPanel: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
   const { lang, t } = useLang();
   const r = summary.report;
-  const pct = r.percent;
+  const l1 = r.layer1Temperament;
+  const pass = l1.gate === 'GATE_PASS';
+
+  const promiseBand = (p: MarriagePromise | null): string => {
+    if (!p) return '—';
+    const sup = p.dimensions.filter(d => d.band === 'supportive').length;
+    const test = p.dimensions.filter(d => d.band === 'testing').length;
+    return sup > test ? t('match.promiseSupportive') : test > sup ? t('match.promiseTesting') : t('match.promiseMixed');
+  };
+
+  const rows: Array<{ label: string; a: string; b: string; tone: string }> = [
+    {
+      label: t('match.layerDoshas'),
+      a: t(`match.severity.${r.layer2Doshas.netA}`),
+      b: t(`match.severity.${r.layer2Doshas.netB}`),
+      tone: severityClass(
+        r.layer2Doshas.netA === 'active' || r.layer2Doshas.netB === 'active' ? 'active'
+          : r.layer2Doshas.netA === 'mitigated' || r.layer2Doshas.netB === 'mitigated' ? 'mitigated' : 'none'),
+    },
+    {
+      label: t('match.layerPromise'),
+      a: promiseBand(r.layer3Promise.a),
+      b: promiseBand(r.layer3Promise.b),
+      tone: 'bg-violet-500/15 text-violet-200 border-violet-400/30',
+    },
+  ];
+
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <div className="flex items-center gap-2.5 mb-4">
+    <div className="glass-card rounded-2xl p-6 space-y-4">
+      <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-lg bg-rose-400/10 border border-rose-400/20 flex items-center justify-center">
           <Heart className="w-4 h-4 text-rose-300" />
         </div>
@@ -46,18 +82,44 @@ const ScoreGauge: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-4">
-        <div className="text-5xl font-mono font-bold text-white tabular-nums">
-          {r.totalObtained}
-          <span className="text-2xl text-white/30">/{r.totalMax}</span>
+      {/* Layer 1 — a gate, and labelled as one. */}
+      <div>
+        <div className="flex items-center gap-4 mb-1.5">
+          <div className="text-4xl font-mono font-bold text-white tabular-nums">
+            {l1.total}
+            <span className="text-xl text-white/30">/36</span>
+          </div>
+          <div className={`px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider ${
+            pass ? 'bg-emerald-500/15 text-emerald-200 border-emerald-400/30'
+                 : 'bg-rose-500/20 text-rose-200 border-rose-400/40'}`}>
+            {pass ? t('match.gatePass') : t('match.gateFail')}
+          </div>
         </div>
-        <div className={`px-3 py-1.5 rounded-lg border text-xs font-semibold uppercase tracking-wider ${verdictClass(r.verdict)}`}>
-          {labelMatchVerdict(r.verdict, lang)}
+        <p className="text-[11px] text-white/45 leading-relaxed">{t('match.gateCaveat')}</p>
+      </div>
+
+      {/* Layers 2–4 at a glance. */}
+      <div className="space-y-1.5">
+        {rows.map(row => (
+          <div key={row.label} className="flex items-center gap-2 text-[11.5px]">
+            <div className="w-24 shrink-0 text-white/40 uppercase tracking-wider text-[10px]">{row.label}</div>
+            <div className={`px-2 py-0.5 rounded border text-[10.5px] ${row.tone}`}>{row.a}</div>
+            <span className="text-white/20">·</span>
+            <div className={`px-2 py-0.5 rounded border text-[10.5px] ${row.tone}`}>{row.b}</div>
+          </div>
+        ))}
+        <div className="flex items-center gap-2 text-[11.5px]">
+          <div className="w-24 shrink-0 text-white/40 uppercase tracking-wider text-[10px]">{t('match.layerSynastry')}</div>
+          <div className={`px-2 py-0.5 rounded border text-[10.5px] ${
+            r.layer4Synastry.asymmetric
+              ? 'bg-amber-500/15 text-amber-200 border-amber-400/30'
+              : 'bg-violet-500/15 text-violet-200 border-violet-400/30'}`}>
+            {r.layer4Synastry.asymmetric ? t('match.nonMutual') : t('match.mutual')}
+          </div>
         </div>
       </div>
 
-      <ProgressBar pct={pct} color={BAR_PALETTE.pink} index={0} />
-      <div className="grid grid-cols-2 gap-2 mt-4 text-[11px]">
+      <div className="grid grid-cols-2 gap-2 text-[11px]">
         <div className="rounded-lg bg-black/30 border border-white/8 px-3 py-2">
           <div className="text-white/40 uppercase tracking-wider text-[10px]">{t('match.person')}</div>
           <div className="text-white">{labelRashiWestern(summary.person.rashi, lang, RASHI_ENGLISH[summary.person.rashi])} · {summary.person.nakshatraName}</div>
@@ -69,6 +131,93 @@ const ScoreGauge: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
           {summary.partner.isManglik && <div className="text-amber-300 text-[10px] mt-0.5">{t('match.manglik')}</div>}
         </div>
       </div>
+    </div>
+  );
+};
+
+/** Cross-layer conflicts — the most informative field in the report. */
+const ConflictStrip: React.FC<{ conflicts: Conflict[] }> = ({ conflicts }) => {
+  const { t } = useLang();
+  if (!conflicts.length) return null;
+  return (
+    <div className="glass-card rounded-2xl p-5 space-y-2.5">
+      <div>
+        <h4 className="text-sm font-semibold text-white">{t('match.conflictsTitle')}</h4>
+        <p className="text-[11px] text-white/40">{t('match.conflictsSubtitle')}</p>
+      </div>
+      {conflicts.map(c => (
+        <div key={c.code} className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-3 flex gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-300/80" />
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-amber-200/60 mb-0.5">{c.code}</div>
+            <p className="text-[11.5px] text-white/70 leading-relaxed">{c.explanation}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/** One chart's own marriage promise — Layer 3, which guna matching cannot see. */
+const PromiseCard: React.FC<{ title: string; p: MarriagePromise }> = ({ title, p }) => {
+  const bandTone: Record<string, string> = {
+    supportive: 'text-emerald-300/80', mixed: 'text-white/45', testing: 'text-rose-300/80',
+  };
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/25 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/35 mb-1">{title}</div>
+      <div className="space-y-1 mb-2">
+        {p.dimensions.map(d => (
+          <div key={d.key} className="flex items-baseline gap-2 text-[11px]">
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${
+              d.band === 'supportive' ? 'bg-emerald-400/70' : d.band === 'testing' ? 'bg-rose-400/70' : 'bg-white/25'}`} />
+            <span className="text-white/55 flex-1">{d.label}</span>
+            <span className={bandTone[d.band]}>{d.band}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-white/60 leading-relaxed">{p.synthesis}</p>
+      <ul className="mt-2 space-y-1">
+        {p.dimensions.flatMap(d => d.notes).slice(0, 4).map((n, i) => (
+          <li key={i} className="text-[10.5px] text-white/45 leading-relaxed flex gap-1.5">
+            <span className="text-violet-300/50 shrink-0">•</span><span>{n}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+/** Layer 4 — one direction of the overlay, with orb and strength shown. */
+const SynastryList: React.FC<{ title: string; contacts: SynastryContact[]; net: number }> = ({ title, contacts, net }) => {
+  const { t } = useLang();
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/25 p-3">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <div className="text-[10px] uppercase tracking-wider text-white/35">{title}</div>
+        <div className={`text-[10px] font-mono ${net < 0 ? 'text-rose-300/70' : net > 0 ? 'text-emerald-300/70' : 'text-white/30'}`}>
+          {net > 0 ? '+' : ''}{net.toFixed(2)}
+        </div>
+      </div>
+      {contacts.length === 0 ? (
+        <div className="text-[11px] text-white/35">{t('common.none')}</div>
+      ) : (
+        <ul className="space-y-1.5">
+          {contacts.slice(0, 6).map((c, i) => (
+            <li key={i} className="text-[11px] leading-relaxed">
+              <div className="flex items-baseline gap-1.5">
+                <span className={c.valence === 'adverse' ? 'text-rose-300/80' : c.valence === 'supportive' ? 'text-emerald-300/80' : 'text-white/50'}>
+                  {c.graha} → {c.target}
+                </span>
+                <span className="text-white/25 text-[10px] font-mono">
+                  {c.orb != null ? formatOrb(c.orb) : '—'} · {c.strength.toFixed(2)}
+                </span>
+              </div>
+              <div className="text-white/50 text-[10.5px]">{c.interpretation}</div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
@@ -199,21 +348,6 @@ const FrictionCard: React.FC<{ f: Friction }> = ({ f }) => {
   );
 };
 
-const ProspectCard: React.FC<{ title: string; p: MarriageProspect }> = ({ title, p }) => (
-  <div className="rounded-xl border border-white/8 bg-black/25 p-3">
-    <div className="text-[10px] uppercase tracking-wider text-white/35 mb-0.5">{title}</div>
-    <div className="text-xs font-semibold text-white mb-2">{p.headline}</div>
-    <ul className="space-y-1.5">
-      {p.notes.map((n, i) => (
-        <li key={i} className="text-[11px] text-white/60 leading-relaxed flex gap-1.5">
-          <span className="text-violet-300/60 shrink-0">•</span>
-          <span>{n}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
 const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ summary, onReset }) => {
   const { t } = useLang();
   const [showClassical, setShowClassical] = useState(false);
@@ -222,7 +356,7 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <ScoreGauge summary={summary} />
+      <LayerPanel summary={summary} />
 
       {/* An honest paragraph on what the number does and does not mean —
           shown before any of the detail, because it frames all of it. */}
@@ -231,14 +365,13 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
           <Info className="w-4 h-4 mt-0.5 shrink-0 text-violet-300" />
           <div>
             <p className="text-[12px] text-white/75 leading-relaxed">{ins.guidance.framing}</p>
-            {r.overrideNote && (
-              <p className="text-[11.5px] text-rose-200/80 leading-relaxed mt-2">{r.overrideNote}</p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* The five dimensions — the headline reading. */}
+      <ConflictStrip conflicts={r.conflicts} />
+
+      {/* The five dimensions — the Layer 1 reading, regrouped. */}
       <div className="glass-card rounded-2xl p-6 space-y-3">
         <div>
           <h4 className="text-sm font-semibold text-white">{t('match.dimensionsTitle')}</h4>
@@ -282,25 +415,44 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
         </div>
       )}
 
-      {/* Each chart read on its own, before the pairing. */}
-      {(ins.personProspect || ins.partnerProspect) && (
+      {/* Layer 3 — each chart's own promise, which Layer 1 cannot see. */}
+      {(r.layer3Promise.a || r.layer3Promise.b) && (
         <div className="glass-card rounded-2xl p-6 space-y-3">
           <div>
-            <h4 className="text-sm font-semibold text-white">{t('match.prospectsTitle')}</h4>
-            <p className="text-[11px] text-white/40">{t('match.prospectsSubtitle')}</p>
+            <h4 className="text-sm font-semibold text-white">{t('match.promiseTitle')}</h4>
+            <p className="text-[11px] text-white/40">{t('match.promiseSubtitle')}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            {ins.personProspect && <ProspectCard title={t('match.yourChart')} p={ins.personProspect} />}
-            {ins.partnerProspect && <ProspectCard title={t('match.partnerChart')} p={ins.partnerProspect} />}
+            {r.layer3Promise.a && <PromiseCard title={t('match.yourChart')} p={r.layer3Promise.a} />}
+            {r.layer3Promise.b && <PromiseCard title={t('match.partnerChart')} p={r.layer3Promise.b} />}
           </div>
         </div>
       )}
 
+      {/* Layer 4 — the overlay, kept directional. */}
+      <div className="glass-card rounded-2xl p-6 space-y-3">
+        <div>
+          <h4 className="text-sm font-semibold text-white">{t('match.synastryTitle')}</h4>
+          <p className="text-[11px] text-white/40">{t('match.synastrySubtitle')}</p>
+        </div>
+        <p className="text-[11.5px] text-white/70 leading-relaxed">{r.layer4Synastry.summary}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          <SynastryList title={t('match.aToB')} contacts={r.layer4Synastry.aToB.contacts} net={r.layer4Synastry.aToB.netValence} />
+          <SynastryList title={t('match.bToA')} contacts={r.layer4Synastry.bToA.contacts} net={r.layer4Synastry.bToA.netValence} />
+        </div>
+      </div>
+
       <div className="glass-card rounded-2xl p-6 space-y-3">
         <h4 className="text-sm font-semibold text-white">{t('match.doshasTitle')}</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          {r.doshas.map(d => <DoshaCard key={d.name} d={d} />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {([['match.yourChart', r.layer2Doshas.a], ['match.partnerChart', r.layer2Doshas.b]] as const).map(([key, chart]) => (
+            <div key={key} className="space-y-2">
+              <div className="text-[10px] uppercase tracking-wider text-white/35">{t(key)}</div>
+              {chart.doshas.map(d => <DoshaCard key={d.name} d={d} />)}
+            </div>
+          ))}
         </div>
+        <p className="text-[11px] text-white/50 leading-relaxed">{r.layer2Doshas.mutualKuja.description}</p>
       </div>
 
       {/* The raw 8-koota breakdown, folded away. Every point in it is already
@@ -318,7 +470,7 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
         </button>
         {showClassical && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
-            {r.kootas.map((k, i) => <KootaCard key={k.name} k={k} index={i} />)}
+            {r.layer1Temperament.kootas.map((k: KootaScore, i: number) => <KootaCard key={k.name} k={k} index={i} />)}
           </div>
         )}
       </div>

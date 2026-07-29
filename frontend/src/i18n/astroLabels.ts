@@ -183,19 +183,6 @@ export function labelYogaStrength(strength: string, lang: Lang): string {
   return tk ? tKey(tk, lang) : strength;
 }
 
-const MATCH_VERDICT_KEYS: Record<string, TranslationKey> = {
-  excellent: 'match.verdict.excellent',
-  'very good': 'match.verdict.veryGood',
-  good: 'match.verdict.good',
-  acceptable: 'match.verdict.acceptable',
-  'not recommended': 'match.verdict.notRecommended',
-};
-
-export function labelMatchVerdict(v: string, lang: Lang): string {
-  const tk = MATCH_VERDICT_KEYS[v];
-  return tk ? tKey(tk, lang) : v;
-}
-
 // ── Plain-language meanings (for the Knowledge Graph / general audience) ─────────
 
 /** One-line plain meaning of each planet — what it represents in everyday life. */

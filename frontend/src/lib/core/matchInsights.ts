@@ -23,9 +23,10 @@
  * what it does and does not mean.
  */
 
-import { getDignity, RASHI_LORDS, type DignityLevel } from './planetaryAnalysis';
-import { RASHIS, RASHI_ENGLISH } from './rashi';
-import { analyseManglik, type KootaScore, type MatchInput, type MatchReport } from './matching';
+import { RASHI_LORDS } from './planetaryAnalysis';
+import { RASHI_ENGLISH } from './rashi';
+import { analyseManglik, type KootaScore, type MatchInput, type GunaMilanDetail } from './matching';
+import type { LayeredMatchReport } from './matchReport';
 
 // ─── Dimensions ────────────────────────────────────────────────────────────
 
@@ -63,10 +64,10 @@ const GANA_PLAIN: Record<string, string> = {
   Rakshasa: 'forceful and blunt, quick to act on your own judgement',
 };
 
-function ganaOf(reason: string, which: 'A' | 'B'): string {
-  // The koota reason carries "Ganas: A=Deva, B=Manushya".
-  const m = reason.match(/A=(\w+), B=(\w+)/);
-  return m ? (which === 'A' ? m[1] : m[2]) : '';
+/** Structured koota inputs. Never parse `reason` — see KootaScore.detail. */
+function str(k: KootaScore | undefined, field: string): string {
+  const v = k?.detail?.[field];
+  return typeof v === 'string' ? v : '';
 }
 
 function bhakootPattern(a: MatchInput, b: MatchInput): { name: string; meaning: string } | null {
@@ -107,8 +108,8 @@ function emotionalDimension(k: Record<string, KootaScore>, a: MatchInput, b: Mat
   const obtained = bhakoot.obtained + gana.obtained;
   const pattern = bhakootPattern(a, b);
 
-  const ga = ganaOf(gana.reason, 'A');
-  const gb = ganaOf(gana.reason, 'B');
+  const ga = str(gana, 'boyGana');
+  const gb = str(gana, 'girlGana');
   const ganaLine =
     ga && gb
       ? ga === gb
@@ -147,9 +148,9 @@ function mentalDimension(k: Record<string, KootaScore>): MatchDimension {
   const obtained = gm.obtained + tara.obtained;
   const band = bandFor(obtained, 8);
 
-  const lords = gm.reason.match(/A=(\w+), B=(\w+)/);
-  const lordLine = lords
-    ? `Your two Moon signs are ruled by ${lords[1]} and ${lords[2]}, and how those two planets get on is what governs whether your minds meet easily.`
+  const boyLord = str(gm, 'boyLord'), girlLord = str(gm, 'girlLord');
+  const lordLine = boyLord && girlLord
+    ? `Your two Moon signs are ruled by ${boyLord} and ${girlLord}, and how those two planets get on is what governs whether your minds meet easily.`
     : 'The rulers of your Moon signs set how easily your minds meet.';
 
   const taraLine =
@@ -180,7 +181,7 @@ function mentalDimension(k: Record<string, KootaScore>): MatchDimension {
 function physicalDimension(k: Record<string, KootaScore>): MatchDimension {
   const yoni = k.Yoni;
   const band = bandFor(yoni.obtained, 4);
-  const animals = yoni.reason.match(/(\w+)[/ ](?:and )?(\w+) yoni/i);
+  const animals = [str(yoni, 'boyAnimal'), str(yoni, 'girlAnimal')];
 
   return {
     key: 'physical',
@@ -193,8 +194,8 @@ function physicalDimension(k: Record<string, KootaScore>): MatchDimension {
       band === 'strong'
         ? 'Your birth stars share the same animal symbol, which is the tradition’s strongest reading for physical and instinctive compatibility.'
         : band === 'workable'
-          ? `Your birth stars carry different animal symbols${animals ? ` (${animals[1]} and ${animals[2]})` : ''} that neither clash nor especially match — physical compatibility is ordinary rather than remarkable.`
-          : `Your birth stars carry animal symbols the tradition treats as naturally opposed${animals ? ` (${animals[1]} and ${animals[2]})` : ''}, which points at friction in intimacy.`,
+          ? `Your birth stars carry different animal symbols${animals[0] ? ` (${animals[0]} and ${animals[1]})` : ''} that neither clash nor especially match — physical compatibility is ordinary rather than remarkable.`
+          : `Your birth stars carry animal symbols the tradition treats as naturally opposed${animals[0] ? ` (${animals[0]} and ${animals[1]})` : ''}, which points at friction in intimacy.`,
     inPractice:
       band === 'strong'
         ? 'Attraction is unlikely to be the problem in this relationship.'
@@ -208,7 +209,7 @@ function physicalDimension(k: Record<string, KootaScore>): MatchDimension {
 function vitalityDimension(k: Record<string, KootaScore>): MatchDimension {
   const nadi = k.Nadi;
   const band = bandFor(nadi.obtained, 8);
-  const cancelled = /cancels/.test(nadi.reason);
+  const cancelled = nadi.detail?.cancelled === true;
 
   return {
     key: 'vitality',
@@ -258,8 +259,8 @@ function everydayDimension(k: Record<string, KootaScore>): MatchDimension {
   };
 }
 
-export function buildDimensions(report: MatchReport, a: MatchInput, b: MatchInput): MatchDimension[] {
-  const k: Record<string, KootaScore> = Object.fromEntries(report.kootas.map(x => [x.name, x]));
+export function buildDimensions(layer1: GunaMilanDetail, a: MatchInput, b: MatchInput): MatchDimension[] {
+  const k: Record<string, KootaScore> = Object.fromEntries(layer1.kootas.map((x: KootaScore) => [x.name, x]));
   return [
     emotionalDimension(k, a, b),
     mentalDimension(k),
@@ -267,138 +268,6 @@ export function buildDimensions(report: MatchReport, a: MatchInput, b: MatchInpu
     vitalityDimension(k),
     everydayDimension(k),
   ];
-}
-
-// ─── Each person's own marriage indications ────────────────────────────────
-
-const MALEFICS = ['Sun', 'Mars', 'Saturn', 'Rahu', 'Ketu'];
-const BENEFICS = ['Jupiter', 'Venus', 'Moon', 'Mercury'];
-
-export interface MarriageProspect {
-  /** Sign on the 7th house — the house of marriage and partnership. */
-  seventhRashi: number;
-  seventhRashiName: string;
-  seventhLord: string;
-  /** House (1–12) the 7th lord occupies. */
-  seventhLordHouse: number | null;
-  beneficsInSeventh: string[];
-  maleficsInSeventh: string[];
-  /** Venus is the significator of marriage and of the spouse. */
-  venusDignity: DignityLevel | null;
-  venusHouse: number | null;
-  /** The Navamsa ascendant — classically the foundation of the marriage chart. */
-  d9Ascendant: number | null;
-  d9AscendantLord: string | null;
-  headline: string;
-  notes: string[];
-}
-
-function ordinal(n: number): string {
-  const v = n % 100;
-  if (v >= 11 && v <= 13) return `${n}th`;
-  switch (n % 10) {
-    case 1: return `${n}st`;
-    case 2: return `${n}nd`;
-    case 3: return `${n}rd`;
-    default: return `${n}th`;
-  }
-}
-
-/** What the person's own chart says about marriage, before any partner is considered. */
-export function marriageProspect(m: MatchInput): MarriageProspect | null {
-  const asc = m.ascendantRashi;
-  const rashis = m.planetRashis;
-  if (asc == null || !rashis) return null;
-
-  const houseOf = (r: number) => ((r - asc + 12) % 12) + 1;
-  const seventhRashi = (asc + 6) % 12;
-  const seventhLord = RASHI_LORDS[seventhRashi];
-  const lordRashi = rashis[seventhLord];
-  const seventhLordHouse = lordRashi != null ? houseOf(lordRashi) : null;
-
-  const occupants = Object.entries(rashis)
-    .filter(([, r]) => r === seventhRashi)
-    .map(([p]) => p);
-  const beneficsInSeventh = occupants.filter(p => BENEFICS.includes(p));
-  const maleficsInSeventh = occupants.filter(p => MALEFICS.includes(p));
-
-  const venusRashi = rashis.Venus;
-  const venusDignity = venusRashi != null ? getDignity('Venus', venusRashi) : null;
-  const venusHouse = venusRashi != null ? houseOf(venusRashi) : null;
-
-  const d9Ascendant = m.d9Ascendant ?? null;
-  const d9AscendantLord = d9Ascendant != null ? RASHI_LORDS[d9Ascendant] : null;
-
-  const notes: string[] = [];
-
-  notes.push(
-    `Your house of marriage carries ${RASHI_ENGLISH[seventhRashi]} (${RASHIS[seventhRashi]}), ruled by ${seventhLord}` +
-    (seventhLordHouse
-      ? `, and ${seventhLord} sits in your ${ordinal(seventhLordHouse)} house — that is where your partnership life is most active.`
-      : '.'),
-  );
-
-  if (beneficsInSeventh.length) {
-    notes.push(
-      `${beneficsInSeventh.join(' and ')} ${beneficsInSeventh.length > 1 ? 'occupy' : 'occupies'} your house of marriage. ` +
-      'The tradition reads a natural benefic there as protective — the relationship tends to be looked after.',
-    );
-  }
-  if (maleficsInSeventh.length) {
-    notes.push(
-      `${maleficsInSeventh.join(' and ')} ${maleficsInSeventh.length > 1 ? 'occupy' : 'occupies'} your house of marriage. ` +
-      'That does not predict failure; it points at a partnership that asks more of you, and often at a partner with a strong will of their own.',
-    );
-  }
-  if (!occupants.length) {
-    notes.push(
-      `No planet sits in your house of marriage, which is the ordinary case. Your partnership life is read through ${seventhLord} instead` +
-      (seventhLordHouse ? `, in your ${ordinal(seventhLordHouse)} house.` : '.'),
-    );
-  }
-
-  if (venusDignity && venusHouse) {
-    const venusLine: Record<DignityLevel, string> = {
-      'exalted': 'Venus, the significator of marriage, is at full strength in your chart — a strong indication for partnership generally.',
-      'own-sign': 'Venus, the significator of marriage, is on home ground in your chart, which supports partnership steadily.',
-      'friend-sign': 'Venus, the significator of marriage, is well supported in your chart.',
-      'neutral-sign': 'Venus, the significator of marriage, is neither helped nor hindered in your chart.',
-      'enemy-sign': 'Venus, the significator of marriage, is under some strain in your chart — affection needs tending rather than assuming.',
-      'debilitated': 'Venus, the significator of marriage, is weakened in your chart. This is worth knowing rather than fearing: it tends to mean you undervalue what you have, more than that you lack it.',
-    };
-    notes.push(`${venusLine[venusDignity]} It sits in your ${ordinal(venusHouse)} house.`);
-  }
-
-  if (d9Ascendant != null) {
-    notes.push(
-      `Your Navamsa — the divisional chart that classically governs marriage — rises in ${RASHI_ENGLISH[d9Ascendant]}, ruled by ${d9AscendantLord}. ` +
-      'This is the lens the tradition reads a marriage through once the surface promises of the main chart are set aside.',
-    );
-  }
-
-  const supportive = beneficsInSeventh.length + (venusDignity === 'exalted' || venusDignity === 'own-sign' ? 1 : 0);
-  const testing = maleficsInSeventh.length + (venusDignity === 'debilitated' ? 1 : 0);
-  const headline =
-    supportive > testing
-      ? 'Your own chart supports partnership'
-      : testing > supportive
-        ? 'Your own chart asks more of partnership'
-        : 'Your own chart is balanced on partnership';
-
-  return {
-    seventhRashi,
-    seventhRashiName: RASHIS[seventhRashi],
-    seventhLord,
-    seventhLordHouse,
-    beneficsInSeventh,
-    maleficsInSeventh,
-    venusDignity,
-    venusHouse,
-    d9Ascendant,
-    d9AscendantLord,
-    headline,
-    notes,
-  };
 }
 
 // ─── Navamsa cross-check ───────────────────────────────────────────────────
@@ -452,6 +321,7 @@ export function navamsaHarmony(a: MatchInput, b: MatchInput): NavamsaHarmony | n
   return { aLagna: a.d9Ascendant, bLagna: b.d9Ascendant, aLord, bLord, relation, summary };
 }
 
+
 // ─── Synthesis ─────────────────────────────────────────────────────────────
 
 export interface Friction {
@@ -466,7 +336,7 @@ export interface Strength {
 }
 
 export interface MatchGuidance {
-  /** An honest paragraph on what this score does and does not mean. */
+  /** What Layer 1 does and does not measure, stated before anything else. */
   framing: string;
   /** What genuinely works, as consequences rather than scores. */
   strengths: Strength[];
@@ -478,80 +348,108 @@ export interface MatchInsights {
   dimensions: MatchDimension[];
   guidance: MatchGuidance;
   navamsa: NavamsaHarmony | null;
-  personProspect: MarriageProspect | null;
-  partnerProspect: MarriageProspect | null;
 }
 
-function framingFor(report: MatchReport): string {
-  const score = `${report.totalObtained} of 36`;
-  switch (report.verdict) {
-    case 'excellent':
-    case 'very good':
-      return `${score}. On the classical count this is a strong match, and the areas below say where that strength actually sits. A high guna score is a good starting position, not a guarantee — it describes compatibility of temperament, not the effort either of you will put in.`;
-    case 'good':
-      return `${score}. This clears the threshold the tradition treats as a sound match. Most established marriages sit in this range rather than at the top of it.`;
-    case 'acceptable':
-      return `${score}. This is a workable match with identifiable weak points rather than a poor one. The dimensions below show which parts carry the shortfall, and those are the parts worth being deliberate about.`;
-    case 'not recommended':
-      return `${score}. Classical matching does not endorse this pairing, and it is more honest to say so plainly than to soften it. What that means in practice: the tradition is flagging specific, named difficulties — not predicting unhappiness. Many couples with low guna scores build good marriages, usually by knowing where the friction lies and dealing with it directly rather than being surprised by it. Read the frictions below as a list of things to discuss, not a verdict on the two of you.`;
-  }
+/**
+ * The framing paragraph.
+ *
+ * It leads on what the koota total is *for*, because the number is the thing
+ * users over-read. Guna Milan is a gate over one variable — the Moon — and
+ * saying so up front is the difference between a reader treating 29.5/36 as a
+ * grade and treating it as a filter that has been passed.
+ */
+function framingFor(report: LayeredMatchReport): string {
+  const l1 = report.layer1Temperament;
+  const count = `${l1.total} of 36`;
+  const gate = l1.gate === 'GATE_PASS'
+    ? `${count}, which clears the classical gate of 18.`
+    : `${count}, which falls below the classical gate of 18.`;
+
+  const scope =
+    'That number measures one thing: whether two temperaments run on a compatible rhythm. It is computed ' +
+    'entirely from the position of the two Moons, so it says nothing about either chart’s own promise for ' +
+    'marriage, nothing about afflictions, and nothing about what happens when the two charts are overlaid. ' +
+    'Those are the three layers below, and classically they carry more weight than this count does.';
+
+  const conflictNote = report.conflicts.length
+    ? ' The layers do not all agree here — see the conflicts, which are the most useful part of this reading.'
+    : ' The layers broadly agree with each other here.';
+
+  return `${gate} ${scope}${conflictNote}`;
 }
 
 export function buildGuidance(
-  report: MatchReport,
+  report: LayeredMatchReport,
   dimensions: MatchDimension[],
-  a: MatchInput,
-  b: MatchInput,
   navamsa: NavamsaHarmony | null,
 ): MatchGuidance {
   const strengths: Strength[] = [];
   const frictions: Friction[] = [];
+  const kootas: Record<string, KootaScore> = Object.fromEntries(
+    report.layer1Temperament.kootas.map((x: KootaScore) => [x.name, x]));
 
-  // Strengths — the consequence, not the score.
   for (const d of dimensions) {
     if (d.band === 'strong') strengths.push({ label: d.label, text: d.inPractice });
   }
   if (navamsa && (navamsa.relation === 'same' || navamsa.relation === 'friend')) {
     strengths.push({ label: 'The marriage chart itself', text: navamsa.summary });
   }
-  const manglik = report.doshas.find(d => d.name.startsWith('Mangal'));
-  if (manglik && !manglik.present) {
+
+  // Layer 2 — Kuja dosha, read from the per-chart analysis rather than a pair score.
+  const { a: doshaA, b: doshaB, mutualKuja, netA, netB } = report.layer2Doshas;
+  if (!doshaA.manglik.isManglik && !doshaB.manglik.isManglik) {
     strengths.push({
-      label: 'No Mangal Dosha',
-      text: 'The Mars affliction that classical matching treats as a deal-breaker is absent from both charts.',
+      label: 'No Kuja dosha',
+      text: 'The Mars affliction classical matching treats as decisive is absent from both charts.',
     });
-  } else if (manglik?.mitigated) {
-    strengths.push({ label: 'Mangal Dosha resolved', text: manglik.description });
+  } else if (mutualKuja.applies) {
+    strengths.push({ label: 'Kuja dosha mutually cancelled', text: mutualKuja.description });
   }
 
-  // Frictions — concrete picture, concrete response.
-  //
-  // Two quite different things can drag this dimension down, and they need
-  // different advice: a Bhakoot mismatch is about money, health and giving,
-  // whereas a Gana mismatch is about temperament. Giving money advice for a
-  // temperament clash would be worse than saying nothing.
+  // Layer 3 — each chart's own promise, which Ashtakoot cannot see at all.
+  for (const [label, promise] of [['First chart', report.layer3Promise.a], ['Second chart', report.layer3Promise.b]] as const) {
+    if (!promise) continue;
+    const supportive = promise.dimensions.filter(d => d.band === 'supportive');
+    const testing = promise.dimensions.filter(d => d.band === 'testing');
+    if (supportive.length > testing.length) {
+      strengths.push({ label: `${label}: own marriage promise`, text: promise.synthesis });
+    } else if (testing.length > supportive.length) {
+      frictions.push({
+        area: `${label}: own marriage promise`,
+        whatItLooksLike:
+          `${testing.map(d => d.label).join(', ')} read as testing in this chart, independently of the pairing. ` +
+          (promise.seventhLordCombust ? 'The 7th lord is combust, which guna matching cannot see. ' : '') +
+          promise.synthesis,
+        whatHelps:
+          'This is a property of the chart, not of the match — it would show up against any partner. ' +
+          'Treat it as something to be aware of in this person rather than as a reason about the two of you.',
+      });
+    }
+  }
+
+  // Emotional dimension — Bhakoot and Gana pull it down for different reasons and
+  // need different advice, so the cause decides the counsel.
   const emotional = dimensions.find(d => d.key === 'emotional')!;
-  const kootas: Record<string, KootaScore> = Object.fromEntries(report.kootas.map(x => [x.name, x]));
   if (emotional.band !== 'strong') {
-    const pattern = kootas.Bhakoot.passed ? null : bhakootPattern(a, b);
-    if (pattern) {
+    const axis = String(kootas.Bhakoot?.detail?.axis ?? '');
+    const bhakootStands = kootas.Bhakoot?.obtained === 0;
+    if (bhakootStands) {
       frictions.push({
         area: emotional.label,
         whatItLooksLike:
-          pattern.name === '6–8'
+          axis === '6/8'
             ? 'Money and health are where this surfaces — an illness, a debt, or one person quietly carrying a burden the other does not see.'
-            : pattern.name === '2–12'
+            : axis === '2/12'
               ? 'One of you steadily gives more — time, money, or emotional labour — and it goes unremarked until it becomes resentment.'
               : 'Disagreement about children, or about a creative or financial risk one of you wants to take.',
         whatHelps:
-          pattern.name === '5–9'
-            ? 'Decide the question of children explicitly rather than assuming you already agree. On everything else this pattern is considered well matched.'
-            : 'Keep money and health visible to each other rather than managed separately. Most of the damage in this pattern comes from one person not knowing, not from the thing itself.',
+          axis === '5/9'
+            ? 'Decide the question of children explicitly rather than assuming you already agree. On everything else this axis is considered well matched.'
+            : 'Keep money and health visible to each other rather than managed separately. Most of the damage in this pattern comes from one person not knowing.',
       });
     } else {
-      // Bhakoot is fine, so the shortfall is temperament.
-      const ga = ganaOf(kootas.Gana.reason, 'A');
-      const gb = ganaOf(kootas.Gana.reason, 'B');
+      const ga = str(kootas.Gana, 'boyGana');
+      const gb = str(kootas.Gana, 'girlGana');
       const opposed = (ga === 'Deva' && gb === 'Rakshasa') || (ga === 'Rakshasa' && gb === 'Deva');
       frictions.push({
         area: emotional.label,
@@ -570,9 +468,10 @@ export function buildGuidance(
     frictions.push({
       area: vitality.label,
       whatItLooksLike:
-        'The classical concern is health and children. It is the heaviest single item in the system, so it drags the total score down sharply on its own.',
+        'The classical concern is health and children. It is the heaviest single koota, 8 of 36 points on its own.',
       whatHelps:
-        'Traditional practice has remedies for this. The modern counterpart is straightforward: if children are part of the plan, ordinary pre-conception genetic screening addresses the substance of what the tradition was pointing at.',
+        'Traditional practice has remedies for this. The modern counterpart is straightforward: if children are part of ' +
+        'the plan, ordinary pre-conception genetic screening addresses the substance of what the tradition was pointing at.',
     });
   }
 
@@ -592,49 +491,76 @@ export function buildGuidance(
     frictions.push({
       area: physical.label,
       whatItLooksLike: physical.inPractice,
-      whatHelps: 'This is one of the few areas where the classical reading and ordinary relationship advice agree completely: it improves by being spoken about, and worsens by being left alone.',
+      whatHelps:
+        'This is one of the few areas where the classical reading and ordinary relationship advice agree completely: ' +
+        'it improves by being spoken about, and worsens by being left alone.',
     });
   }
 
-  if (manglik?.present && !manglik.mitigated) {
+  // Layer 2 frictions — only where the dosha is genuinely active after cancellation.
+  for (const [label, net, chart] of [['First chart', netA, doshaA], ['Second chart', netB, doshaB]] as const) {
+    if (net !== 'active') continue;
+    const active = chart.doshas.filter(d => d.severity === 'active');
     frictions.push({
-      area: 'Mangal (Manglik) Dosha',
-      whatItLooksLike:
-        'One chart carries the Mars affliction and the other does not. The tradition reads this as an imbalance of drive and temper between the two of you rather than as a curse.',
+      area: `${label}: ${active.map(d => d.name).join(', ')}`,
+      whatItLooksLike: active.map(d => d.description).join(' '),
       whatHelps:
-        'The classical counsel is Mars remedies and not marrying young. The practical translation is that this pairing does better with a longer runway — time to see each other under pressure before committing.',
+        'The classical counsel for an active Mars affliction is Mars remedies and not marrying young. The practical ' +
+        'translation is a longer runway — time to see each other under pressure before committing.',
     });
   }
 
-  if (navamsa?.relation === 'enemy') {
+  // Layer 4 — the overlay. This is the layer with the highest diagnostic value,
+  // so an adverse defining contact gets named rather than averaged away.
+  const { defining, asymmetric, aToB, bToA } = report.layer4Synastry;
+  const adverseDefining = defining.filter(c => c.valence === 'adverse');
+  if (adverseDefining.length) {
     frictions.push({
-      area: 'The marriage chart itself',
-      whatItLooksLike:
-        'The Navamsa is the chart classical astrology reads a marriage through, and yours are ruled by planets at odds. This can sit underneath an otherwise decent guna score.',
+      area: 'The chart overlay (synastry)',
+      whatItLooksLike: adverseDefining.map(c => c.interpretation).join(' '),
       whatHelps:
-        'Nothing mechanical fixes this one. It is a reason to weigh the lived evidence — how you actually handle a bad week together — above the headline number.',
+        'Contacts like these describe a structural pull rather than a behaviour, so there is nothing to fix directly. ' +
+        'What helps is recognising the pattern when it recurs instead of treating each instance as a fresh argument.',
+    });
+  } else if (defining.length) {
+    strengths.push({
+      label: 'The chart overlay (synastry)',
+      text: defining.map(c => c.interpretation).join(' '),
+    });
+  }
+  if (asymmetric) {
+    frictions.push({
+      area: 'Non-mutual overlay',
+      whatItLooksLike:
+        `One direction of the overlay reads ${aToB.netValence.toFixed(2)} and the other ${bToA.netValence.toFixed(2)}. ` +
+        'In practice that is one partner feeling more met by the relationship than the other does, without either of them doing anything wrong.',
+      whatHelps:
+        'Ask the question directly rather than inferring it: whether each of you feels the relationship gives back what you put in. ' +
+        'An asymmetry that is named is manageable; one that is not tends to surface as unexplained resentment.',
     });
   }
 
   if (!strengths.length) {
     strengths.push({
-      label: 'Nothing scores strongly on the classical count',
-      text: 'That is worth stating plainly rather than padding the list — but it describes eight traditional measures taken from birth data, not the two of you.',
+      label: 'Nothing scores strongly across the four layers',
+      text: 'That is worth stating plainly rather than padding the list — but it describes four classical instruments applied to birth data, not the two of you.',
     });
   }
 
   return { framing: framingFor(report), strengths, frictions };
 }
 
-export function buildMatchInsights(report: MatchReport, a: MatchInput, b: MatchInput): MatchInsights {
-  const dimensions = buildDimensions(report, a, b);
+export function buildMatchInsights(
+  report: LayeredMatchReport,
+  a: MatchInput,
+  b: MatchInput,
+): MatchInsights {
+  const dimensions = buildDimensions(report.layer1Temperament, a, b);
   const navamsa = navamsaHarmony(a, b);
   return {
     dimensions,
     navamsa,
-    guidance: buildGuidance(report, dimensions, a, b, navamsa),
-    personProspect: marriageProspect(a),
-    partnerProspect: marriageProspect(b),
+    guidance: buildGuidance(report, dimensions, navamsa),
   };
 }
 

@@ -1,0 +1,16 @@
+{
+  "name": "trytellme.xyz — Vedic Astrology Birth Chart & Forecast",
+  "short_name": "trytellme",
+  "description": "Free sidereal Vedic birth chart, Vimshottari dasha forecast, transits and kundli matching. Computed in your browser — no birth data leaves your device.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0e18",
+  "theme_color": "#0b0e18",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["lifestyle", "education", "utilities"],
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

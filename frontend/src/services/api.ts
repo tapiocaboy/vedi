@@ -42,7 +42,10 @@ export type { DoshaCheck, SadeSatiPeriod, SadeSatiPhase } from '../lib/core/dosh
 
 export type { PeriodSnapshot, CurrentLocation, MatchSummary, GocharaSnapshot };
 export type { PlanetTransit } from '../lib/core/transits';
-export type { MatchReport, KootaScore, DoshaResult } from '../lib/core/matching';
+export type { KootaScore, DoshaResult, DoshaSeverity, GunaMilanDetail, ManglikDetail } from '../lib/core/matching';
+export type { LayeredMatchReport, Conflict, ConflictCode } from '../lib/core/matchReport';
+export type { MarriagePromise, PromiseDimension, PromiseBand } from '../lib/core/matchPromise';
+export type { SynastryResult, SynastryContact, DirectedEdges } from '../lib/core/matchSynastry';
 
 export type { SookshmaPeriodList };
 
@@ -192,9 +195,19 @@ export async function getAshtakavarga(birthData: BirthData): Promise<Ashtakavarg
   return getAshtakavargaForChart(birthData);
 }
 
-/** Ashtakoot Milan + dosha report between two birth charts. */
-export async function getMatchReport(person: BirthData, partner: BirthData): Promise<MatchSummary> {
-  return runMatching(person, partner);
+/**
+ * Four-layer compatibility report between two birth charts: temperament (guna),
+ * doshas, each chart's own marriage promise, and the directional synastry overlay.
+ *
+ * `personIsFemale` sets the roles the asymmetric kootas score against — Varna,
+ * Vashya and Gana all give a different answer when swapped.
+ */
+export async function getMatchReport(
+  person: BirthData,
+  partner: BirthData,
+  personIsFemale = true,
+): Promise<MatchSummary> {
+  return runMatching(person, partner, personIsFemale);
 }
 
 /** Full snapshot for the "Now" tab: dasha tree + chart-aware prediction + transits + optional relocation + playbook. */
