@@ -72,7 +72,10 @@ const DIGNITY_FRACTION: Record<DignityLevel, number> = {
 /** Dignities that count as "holding its own" in a varga. */
 const PILLAR_DIGNITIES = new Set<DignityLevel>(['own-sign', 'exalted']);
 
-/** Dignified in this many of the four consistency vargas makes a planet a pillar. */
+/**
+ * Dignified in this many of the four consistency vargas is the *repetition*
+ * condition for a pillar. It is necessary and not sufficient — see below.
+ */
 const PILLAR_MIN_VARGAS = 3;
 
 export type VimsopakaGrade = 'exceptional' | 'strong' | 'moderate' | 'weak';
@@ -168,13 +171,31 @@ export function assessVargaBackbone(input: VargaStrengthInput, lang: Lang = 'en'
     };
   }).sort((a, b) => b.vimsopaka - a.vimsopaka);
 
-  // Pillars rank by how many of the four load-bearing vargas they hold, not by
-  // Vimsopaka — a planet dignified in three of them is the backbone even when a
-  // planet with one lucky Hora placement outscores it.
+  // A pillar needs repetition *and* strength.
+  //
+  // Ranking on repetition alone is a real bug with a real symptom: a planet can
+  // hold own sign in three minor divisions while scoring near the bottom on
+  // Vimsopaka, and then gets announced as "this chart's structural pillar" in a
+  // sentence that quotes its own low score two clauses later. Counting divisions
+  // is a proxy for strength, and Vimsopaka is the measurement — so the proxy
+  // cannot be allowed to overrule it.
+  //
+  // The median is the bar rather than a fixed score because Vimsopaka is only
+  // meaningful within a chart: charts differ in overall level, and "strong here"
+  // is a claim about this chart's own distribution.
+  const sorted = [...planets].map(p => p.vimsopaka).sort((a, b) => a - b);
+  const medianVimsopaka = sorted[Math.floor(sorted.length / 2)] ?? 0;
+
   const pillarPlanets = planets
-    .filter(p => p.dignifiedIn.length >= PILLAR_MIN_VARGAS)
-    .sort((a, b) => b.dignifiedIn.length - a.dignifiedIn.length || b.vimsopaka - a.vimsopaka);
+    .filter(p => p.dignifiedIn.length >= PILLAR_MIN_VARGAS && p.vimsopaka >= medianVimsopaka)
+    .sort((a, b) => b.vimsopaka - a.vimsopaka);
   const pillars = pillarPlanets.map(p => p.planet);
+
+  // Repetition without strength is still worth reporting — it is a genuine
+  // pattern — but as the narrower statement it actually is.
+  const repeatersWithoutStrength = planets
+    .filter(p => p.dignifiedIn.length >= PILLAR_MIN_VARGAS && p.vimsopaka < medianVimsopaka);
+
   const vargottama = planets.filter(p => p.isVargottama).map(p => p.planet);
 
   // The navamsa's own lord. When the D9 lagna lord is dignified in D9 — and
@@ -192,12 +213,33 @@ export function assessVargaBackbone(input: VargaStrengthInput, lang: Lang = 'en'
 
   const notes: string[] = [];
 
+  // The strongest planet by the measure leads, always. Whether it is also a
+  // pillar is a refinement of that statement, never a replacement for it.
+  const strongest = planets[0];
   if (pillarPlanets.length) {
     const top = pillarPlanets[0];
     notes.push(VS_FRAMES.pillar({
       planet: planetName(top.planet, lang),
       vargas: top.dignifiedIn.map(String),
       vimsopaka: top.vimsopaka.toFixed(1),
+      lang,
+    }));
+  } else if (strongest) {
+    notes.push(VS_FRAMES.strongest({
+      planet: planetName(strongest.planet, lang),
+      vimsopaka: strongest.vimsopaka.toFixed(1),
+      grade: strongest.grade,
+      vargottama: strongest.isVargottama,
+      dignifiedIn: strongest.dignifiedIn.map(String),
+      lang,
+    }));
+  }
+
+  for (const r of repeatersWithoutStrength) {
+    notes.push(VS_FRAMES.repetitionWithoutStrength({
+      planet: planetName(r.planet, lang),
+      vargas: r.dignifiedIn.map(String),
+      vimsopaka: r.vimsopaka.toFixed(1),
       lang,
     }));
   }

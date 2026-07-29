@@ -60,6 +60,8 @@ export interface ChartContext {
   transitScoreMod?: number;
   /** True when the Lagna-side and Moon-side transit readings materially disagree. */
   transitDiverges?: boolean;
+  /** Divisional signs per varga code, for the area-varga precedence rule. */
+  divisionalRashis?: Record<string, Record<string, number>>;
 }
 
 // House quality per bhava (kendra/trikona/…). The display prose (theme,

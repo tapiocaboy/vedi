@@ -233,7 +233,24 @@ export function assessMarriagePromise(m: MatchInput, femaleNativity = false): Ma
     + (seventhLordHouse && [1, 4, 5, 7, 9, 10, 11].includes(seventhLordHouse) ? 1 : 0);
   const lordTesting = (seventhLordDignity && WEAK_DIGNITY.has(seventhLordDignity) ? 1 : 0)
     + (combust ? 1 : 0) + (seventhLordHouse && [6, 8, 12].includes(seventhLordHouse) ? 1 : 0);
-  const lordBand = bandFromCounts(lordSupport, lordTesting);
+
+  // Navamsa dignity of the 7th lord outranks its rashi dignity, so the precedence
+  // is applied here and not only in the navamsa dimension below. A reader looking
+  // at "7th lord" should see the rule that governs the 7th lord, rather than
+  // having to cross-reference two dimensions to discover that the D1 verdict was
+  // superseded. Applied as a cap on the band rather than as extra points, so the
+  // same fact is not counted twice.
+  const d9OfSeventhLord = m.d9Rashis?.[seventhLord];
+  const d9SeventhWeak = d9OfSeventhLord != null
+    && WEAK_DIGNITY.has(getDignity(seventhLord, d9OfSeventhLord));
+  const rawLordBand = bandFromCounts(lordSupport, lordTesting);
+  const lordBand: PromiseBand = d9SeventhWeak && rawLordBand === 'supportive' ? 'mixed' : rawLordBand;
+  if (d9SeventhWeak && rawLordBand === 'supportive') {
+    lordNotes.push(
+      `The rashi chart reads well here, but ${seventhLord} is ` +
+      `${DIGNITY_WORD[getDignity(seventhLord, d9OfSeventhLord!)]} in the navamsa, which outranks it for ` +
+      'marriage. Read this as promise made and not confirmed underneath, rather than as a clean strength.');
+  }
 
   // ── Karaka condition (Venus always; Jupiter as patikaraka for a female chart) ──
   const karakaNotes: string[] = [];

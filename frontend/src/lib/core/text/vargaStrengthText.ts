@@ -58,6 +58,38 @@ export const VS_FRAMES = {
     return `The navamsa lagna is ${a.navamsaLagna} and its lord ${a.planet} is ${a.exalted ? 'exalted' : 'in its own sign'} in the navamsa${a.inLagna ? ' — and in the navamsa lagna itself' : ''}. The whole varga structure resolves back to ${a.planet}.`;
   },
 
+  /**
+   * The strongest planet by Vimsopaka, used when no planet clears both the
+   * repetition and the strength bar for pillar status.
+   */
+  strongest: (a: {
+    planet: string; vimsopaka: string; grade: string;
+    vargottama: boolean; dignifiedIn: string[]; lang: Lang;
+  }): string => {
+    const g = VS_FRAMES.gradeWord(a.grade, a.lang);
+    const extras: string[] = [];
+    if (a.vargottama) extras.push(a.lang === 'si' ? 'වර්ගෝත්තමයි' : 'vargottama');
+    if (a.dignifiedIn.length) {
+      extras.push(a.lang === 'si'
+        ? `${a.dignifiedIn.join(', ')} වල ස්වක්ෂේත්‍ර හෝ උච්ච`
+        : `own sign or exalted in ${a.dignifiedIn.join(', ')}`);
+    }
+    const tail = extras.length ? ` (${extras.join('; ')})` : '';
+    if (a.lang === 'si') {
+      return `වර්ග හරහා ප්‍රබලම ග්‍රහයා ${a.planet} ය — විංශෝපක බලය ${a.vimsopaka}/20, ${g}${tail}. කිසිදු ග්‍රහයෙක් වර්ග කිහිපයක පුනරාවර්තනය හා සමස්ත ශක්තිය යන දෙකම එකවර නොදරන බැවින්, මෙම කේන්දරයට එක් පැහැදිලි ව්‍යුහාත්මක කුලුනක් නොමැත.`;
+    }
+    return `${a.planet} is the strongest planet across the vargas — Vimsopaka Bala ${a.vimsopaka}/20, ${g}${tail}. No planet holds both cross-varga repetition and overall strength at once, so this chart has no single structural pillar.`;
+  },
+
+  /**
+   * Dignified across several divisions but weak on the measure. Reported because
+   * the repetition is real, and phrased so it cannot be mistaken for strength.
+   */
+  repetitionWithoutStrength: (a: { planet: string; vargas: string[]; vimsopaka: string; lang: Lang }): string =>
+    a.lang === 'si'
+      ? `${a.planet} ${a.vargas.join(', ')} වල ස්වක්ෂේත්‍ර හෝ උච්ච වේ, එහෙත් විංශෝපක බලය ${a.vimsopaka}/20 පමණි — කේන්දරයේ මධ්‍යස්ථ අගයට වඩා පහළ. පුනරාවර්තනය සැබෑ නමුත් එය ශක්තිය නොවේ; මෙය කුලුනක් ලෙස නොකියවන්න.`
+      : `${a.planet} holds own sign or exaltation in ${a.vargas.join(', ')}, but scores only ${a.vimsopaka}/20 — below this chart's median. The repetition is real and it is not strength; do not read it as a pillar.`,
+
   vargottamaPresent: (planets: string, plural: boolean, lang: Lang): string => lang === 'si'
     ? `${planets} වර්ගෝත්තමයි — D1 හා D9 එකම රාශියේ. ${plural ? 'මෙම පිහිටීම්' : 'මෙම පිහිටීම'} ජීවිතය පුරා ස්ථිරව පවතී.`
     : `${planets} ${plural ? 'are' : 'is'} vargottama — the same sign in D1 and D9. ${plural ? 'These placements hold' : 'This placement holds'} firm across a lifetime.`,

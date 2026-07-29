@@ -75,8 +75,24 @@ describe('buildChartMarkdown — divisional charts', () => {
   it('includes the D9 marriage and D10 career readings', () => {
     expect(MD).toContain('**Marriage reading:**');
     expect(MD).toContain('**Career reading:**');
-    expect(MD).toContain('Venus in Navamsa');
-    expect(MD).toContain('Dasamsa Lagna');
+    expect(MD).toContain('Venus, significator of marriage');
+    expect(MD).toContain('Dasamsa lagna');
+  });
+
+  it('leads both divisional readings on lordship, not on divisional sign dignity', () => {
+    // The readings used to be computed from divisional dignity alone, which cannot
+    // see that a 7th lord also rules the 12th or that a 10th lord sits in the 8th.
+    expect(MD).toMatch(/\*\*7th lord: \w+\*\*/);
+    expect(MD).toMatch(/\*\*10th lord: \w+\*\*/);
+    expect(MD).toMatch(/rules your 7th house/);
+    expect(MD).toMatch(/rules your 10th house/);
+  });
+
+  it('reports what the birth time can support before interpreting anything', () => {
+    const confidenceAt = MD.indexOf('confidence');
+    const d1TableAt = MD.indexOf('## Planetary Positions');
+    expect(confidenceAt).toBeGreaterThan(-1);
+    expect(confidenceAt).toBeLessThan(d1TableAt);
   });
 
   it('never breaks the markdown tables with a stray pipe', () => {

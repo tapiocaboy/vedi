@@ -245,6 +245,39 @@ export async function getAyanamsaValue(
 }
 
 /**
+ * Ascendant across a band of birth-time offsets.
+ *
+ * Used to answer "how wrong would the birth time have to be for the rising sign
+ * to change". The nominal rate of one degree per four minutes is only an average:
+ * the true rate varies by more than a factor of two with latitude and with which
+ * sign is rising, and it is furthest from nominal at high latitudes — precisely
+ * where a borderline chart most needs a real number rather than an estimate.
+ * So this measures instead of extrapolating.
+ */
+export async function getAscendantSamples(
+  dateStr: string,
+  latitude: number,
+  longitude: number,
+  timezone: string,
+  ayanamsa: AyanamsaSystem = 'LAHIRI',
+  bandMinutes = 15,
+  stepMinutes = 1,
+): Promise<Array<{ offsetMinutes: number; longitude: number }>> {
+  const swe = await getSwe();
+  swe.set_sid_mode(SID_MODES[ayanamsa], 0, 0);
+  const flags = swe.SEFLG_SWIEPH | swe.SEFLG_SIDEREAL | swe.SEFLG_SPEED;
+  const baseJd = jdFromLocal(swe, dateStr, timezone);
+
+  const out: Array<{ offsetMinutes: number; longitude: number }> = [];
+  for (let m = -bandMinutes; m <= bandMinutes; m += stepMinutes) {
+    const jd = baseJd + m / 1440;          // minutes → fraction of a day
+    const houses = swe.houses_ex(jd, flags, latitude, longitude, 'P');
+    out.push({ offsetMinutes: m, longitude: mod360(houses.ascmc[0]) });
+  }
+  return out;
+}
+
+/**
  * Relocated ascendant: re-cast the chart for a new (lat, lon) at the SAME
  * birth UT. Planet positions don't change with location, only the houses do.
  */

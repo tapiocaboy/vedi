@@ -8,6 +8,7 @@ import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '
 import { type Lang, getStoredLang } from '../core/i18n';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
 import { getNakshatra } from '../core/nakshatra';
+import { computeVargas } from '../core/vargas';
 import { getCurrentTransits, summarizeGocharaForPrediction } from '../core/transits';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
@@ -78,6 +79,21 @@ export function buildChartContext(positions: Record<string, PlanetPosition>): Ch
   // to, so the engine needs it to spot a dasha lord that is also that lord.
   const moonNakshatra = getNakshatra(positions['MOON'].longitude);
 
+  // Each life area has a varga that outranks the rashi chart for it. Without
+  // these the foundation layer reads D1 only, and a 7th lord exalted in the
+  // rashi chart but debilitated in the navamsa scores as a strong relationship
+  // foundation — the navamsa being the exact chart that judgement defers to.
+  const vargas = computeVargas({
+    longitudes: planetLongitudes,
+    retro: planetRetro,
+    ascendantLongitude: positions['ASCENDANT'].longitude,
+  });
+  const divisionalRashis: Record<string, Record<string, number>> = {};
+  for (const code of ['D2', 'D9', 'D10', 'D30'] as const) {
+    divisionalRashis[code] = Object.fromEntries(
+      vargas.planets.map(p => [p.planet, p.divisions[code].rashi]));
+  }
+
   return {
     ashtakavarga: computeAshtakavarga(rashis),
     planetHouses,
@@ -88,6 +104,7 @@ export function buildChartContext(positions: Record<string, PlanetPosition>): Ch
     moonRashi: positions['MOON'].rashi,
     moonNakshatraLord: moonNakshatra.lord,
     moonNakshatraName: moonNakshatra.name,
+    divisionalRashis,
   };
 }
 

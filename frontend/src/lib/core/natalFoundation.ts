@@ -29,11 +29,13 @@ import { getNakshatra } from './nakshatra';
 import { areaYogas } from './areaYogas';
 import { type Lang, pick, planetName, houseLabel, houseLabelLocative, joinAnd, nakshatraPadaLabel } from './i18n';
 import { HOUSE_TEXT } from './text/predictionVocab';
+
 import {
   F_OCCUPANT_WEAK, F_OCCUPANT_STRONG, F_OCCUPANT_MALEFIC, F_OCCUPANT_UPACHAYA,
   F_LORD_STRONG, F_LORD_WEAK, F_LORD_WEAK_DIGNITY, F_LORD_DUSTHANA, F_LORD_WELL_DEPLOYED,
   F_KARAKA_STRONG, F_KARAKA_WEAK, F_KARAKA_IN_OWN_BHAVA,
-  F_YOGA_SUPPORT, F_YOGA_DEFERRED, F_STELLIUM, F_COMBUST_RETENTION, F_MOON_GANDANTA,
+  F_YOGA_SUPPORT, F_YOGA_DEFERRED, F_STELLIUM, F_COMBUST_BY_AREA, F_MOON_GANDANTA,
+  F_DIVISIONAL_WEAK, F_DIVISIONAL_STRONG, F_DIGNITY_INLINE,
   F_MOON_MALEFIC_CONJ, F_MOON_SATURN_ASPECT, F_MOON_MARS_ASPECT, F_MOON_NODE,
   F_MOON_UNSUPPORTED, F_MOON_WANING, F_MOON_STRONG,
   AREA_NAME,
@@ -61,17 +63,31 @@ export type NatalFoundation = Record<LifeArea, AreaFoundation>;
  * Primary house carries full weight; the secondary house half. Karakas are
  * listed most-important first and weighted the same way.
  */
-const AREA_SPEC: Record<LifeArea, { houses: [number, number]; karakas: Array<[string, number]> }> = {
-  career:       { houses: [10, 6],  karakas: [['Sun', 0.8], ['Saturn', 0.4], ['Mercury', 0.4]] },
-  wealth:       { houses: [2, 11],  karakas: [['Jupiter', 0.8], ['Venus', 0.4]] },
+const AREA_SPEC: Record<LifeArea, {
+  houses: [number, number];
+  karakas: Array<[string, number]>;
+  /** The divisional chart classical practice defers to for this area. */
+  varga: string;
+}> = {
+  career:       { houses: [10, 6],  karakas: [['Sun', 0.8], ['Saturn', 0.4], ['Mercury', 0.4]], varga: 'D10' },
+  wealth:       { houses: [2, 11],  karakas: [['Jupiter', 0.8], ['Venus', 0.4]], varga: 'D2' },
   // Venus (love) and Jupiter (the partner in a female chart) are both decisive
   // for marriage, so neither is demoted to a secondary voice.
-  relationship: { houses: [7, 5],   karakas: [['Venus', 0.6], ['Jupiter', 0.6]] },
+  relationship: { houses: [7, 5],   karakas: [['Venus', 0.6], ['Jupiter', 0.6]], varga: 'D9' },
   // The Moon is deliberately absent here — its condition enters through the
   // manas assessment below, which reads it far more thoroughly. Listing it as
   // a karaka too would count the same placement twice.
-  health:       { houses: [1, 6],   karakas: [['Sun', 0.8]] },
+  health:       { houses: [1, 6],   karakas: [['Sun', 0.8]], varga: 'D30' },
 };
+
+/**
+ * Weight on the area-lord's dignity in the area's own varga.
+ *
+ * At parity with the D1 dignity term, because the classical rule is precedence,
+ * not addition — the navamsa is said to *outrank* the rashi chart for marriage,
+ * and the equivalent holds for the dasamsa and career.
+ */
+const DIVISIONAL_DIGNITY_WEIGHT = 0.7;
 
 /**
  * Houses where an area's own bhavesha is classically *deployed* rather than
@@ -292,7 +308,7 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
     // and that distinction is the whole difference between "weak area" and
     // "area that produces but leaks".
     if (s.isCombust) {
-      out.push({ points: -0.2, note: F_COMBUST_RETENTION[lang](planetName(lord, lang)) });
+      out.push({ points: -0.2, note: F_COMBUST_BY_AREA[area][lang](planetName(lord, lang)) });
     }
   }
 
@@ -300,6 +316,46 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
 }
 
 /** Condition of a karaka for an area. */
+/**
+ * The area's lord judged in the varga that outranks the rashi chart for it.
+ *
+ * Returns the factor and whether the divisional reading *contradicts* the rashi
+ * one, because the classical rule is precedence rather than arithmetic: a weak
+ * divisional lord does not merely subtract, it prevents the area from being
+ * reported as strong. Scoring it as one more addend is how a chart with an
+ * exalted 7th lord that is debilitated in the navamsa still came out strong.
+ */
+function assessDivisional(area: LifeArea, ctx: Ctx): { factor: Factor; contradicts: boolean } {
+  const { lang } = ctx;
+  const spec = AREA_SPEC[area];
+  const divisional = ctx.input.divisionalRashis?.[spec.varga];
+  const primaryHouse = spec.houses[0];
+  const houseRashi = (ctx.ascendantRashi + primaryHouse - 1) % 12;
+  const lord = RASHI_LORDS[houseRashi];
+  const divRashi = divisional?.[lord];
+  if (divRashi == null) return { factor: { points: 0, note: null }, contradicts: false };
+
+  const dignity = getDignity(lord, divRashi);
+  const points = RULER_DIGNITY_WEIGHT[dignity] * DIVISIONAL_DIGNITY_WEIGHT;
+  const areaName = pick(AREA_NAME[area], lang);
+  const lordName = planetName(lord, lang);
+  const dignityWord = F_DIGNITY_INLINE[dignity][lang];
+
+  if (dignity === 'debilitated' || dignity === 'enemy-sign') {
+    return {
+      factor: { points, note: F_DIVISIONAL_WEAK[lang](lordName, spec.varga, dignityWord, areaName) },
+      contradicts: true,
+    };
+  }
+  if (dignity === 'exalted' || dignity === 'own-sign') {
+    return {
+      factor: { points, note: F_DIVISIONAL_STRONG[lang](lordName, spec.varga, dignityWord, areaName) },
+      contradicts: false,
+    };
+  }
+  return { factor: { points, note: null }, contradicts: false };
+}
+
 function assessKaraka(karaka: string, area: LifeArea, ctx: Ctx): Factor {
   const { lang } = ctx;
   const s = ctx.strength(karaka);
@@ -492,6 +548,12 @@ export function assessNatalFoundation(input: StrengthInput, lang: Lang = 'en'): 
       factors.push({ ...assessKaraka(karaka, area, ctx), weight });
     }
 
+    // The varga that outranks D1 for this area.
+    const divisional = assessDivisional(area, ctx);
+    if (divisional.factor.points !== 0 || divisional.factor.note) {
+      factors.push({ ...divisional.factor, weight: 1 });
+    }
+
     // Yogas enter as ordinary factors so they take part in the same
     // strongest-first ordering as everything else — a decisive combination
     // should lead the reasons, not trail them.
@@ -524,7 +586,11 @@ export function assessNatalFoundation(input: StrengthInput, lang: Lang = 'en'): 
       score,
       notes: [...new Set(notes)],
       weak: score <= -0.75,
-      strong: score >= 0.75,
+      // Precedence, not arithmetic: when the area's own varga contradicts the
+      // rashi chart, the area is not reported as strong however well the rashi
+      // chart scores. The promise is made in the main chart and not confirmed
+      // underneath it, and that is exactly the case the flag exists to catch.
+      strong: score >= 0.75 && !divisional.contradicts,
     };
   }
 

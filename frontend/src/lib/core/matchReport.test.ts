@@ -153,7 +153,12 @@ describe('Layer 3 — the spec’s expected promise reading', () => {
     // §4.1: a combust 7th lord materially changes the reading and is invisible
     // to Layer 1. Mercury is 8.96° from the Sun against a 14° orb.
     expect(p.seventhLordCombust).toBe(true);
-    expect(p.dimensions.find(d => d.key === 'seventhLord')!.band).toBe('supportive');
+    // Not 'supportive', despite exaltation in a kendra: §4.2's precedence is now
+    // applied on this dimension rather than only in the navamsa one, because a
+    // reader looking at "7th lord" should see the rule that governs the 7th lord.
+    expect(p.dimensions.find(d => d.key === 'seventhLord')!.band).toBe('mixed');
+    expect(p.dimensions.find(d => d.key === 'seventhLord')!.notes.join(' '))
+      .toContain('outranks it for marriage');
   });
 
   it('lets the boy’s navamsa overrule his rashi chart, per §4.2', () => {
@@ -167,12 +172,14 @@ describe('Layer 3 — the spec’s expected promise reading', () => {
     expect(p.seventhLordD9Dignity).toBe('debilitated');
     expect(p.dimensions.find(d => d.key === 'navamsa')!.band).toBe('testing');
 
+    // With the precedence applied consistently the chart reads net testing rather
+    // than mixed — the 7th lord carries both the promise and its withdrawal.
     const supportive = p.dimensions.filter(d => d.band === 'supportive').length;
     const testing = p.dimensions.filter(d => d.band === 'testing').length;
-    expect(supportive).toBe(testing);   // mixed overall, not strong
+    expect(testing).toBeGreaterThan(supportive);
   });
 
-  it('reads the boy as the stronger of the two charts regardless', () => {
+  it('still reads the boy as the stronger of the two charts', () => {
     // Which is the substantive claim §9 is making: A is better disposed than B.
     const a = assessMarriagePromise(boy, false)!;
     const b = assessMarriagePromise(girl, true)!;

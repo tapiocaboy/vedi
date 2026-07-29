@@ -35,10 +35,33 @@ export interface StrengthInput {
   ascendantRashi?: number;
   /** Natal Moon rashi (0–11) — used for neecha bhanga. */
   moonRashi?: number;
+  /**
+   * Divisional sign per planet, keyed by varga code then planet — e.g.
+   * `{ D9: { Mercury: 11 } }`.
+   *
+   * Each life area has a varga that classically outranks the rashi chart for it,
+   * and without these the foundation layer can only read D1. That is how a chart
+   * whose 7th lord is exalted in the rashi chart and debilitated in the navamsa
+   * came out as a strong relationship foundation — the navamsa is precisely the
+   * chart that judgement is supposed to defer to there.
+   */
+  divisionalRashis?: Record<string, Record<string, number>>;
 }
 
 export interface PlanetStrength {
   planet: string;
+  /**
+   * Rules the 2nd or the 7th — classically a maraka for this ascendant.
+   *
+   * Deliberately a flag alongside `functionalNature` rather than a value of it.
+   * The two are independent: a planet ruling the 2nd and the 5th is a functional
+   * benefic *and* a maraka, and folding maraka into the same enum meant the
+   * benefic classification won and the quality disappeared entirely. It carries no
+   * score penalty — a maraka is not a malefic — it marks periods that warrant
+   * more care with vitality than the lord's general reading suggests.
+   */
+  isMaraka: boolean;
+  marakaHouses: number[];
   dignity: DignityLevel | null;
   dignityMod: number;
   neechaBhanga: boolean;
@@ -190,6 +213,9 @@ const NOTE = {
   yogakaraka: (p: string, h: string, lang: Lang) => lang === 'si'
     ? `${p} ඔබේ ලග්නයට යෝගකාරකයාය (කේන්ද්‍රයක් හා ත්‍රිකෝණයක් යන දෙකම අධිපති වේ: ${h}) — එහි දශා ඔබේ ජීවිතයේ ඵලදායීම කාලවලින් වේ.`
     : `${p} is the yogakaraka for your ascendant (rules both a kendra and a trikona: ${h}) — its periods are among the most productive of your life.`,
+  maraka: (p: string, h: string, lang: Lang) => lang === 'si'
+    ? `${p} ඔබේ ${h} අධිපති බැවින් මෙම ලග්නයට මාරක ස්ථානාධිපතියෙකි. එය ස්වභාවයෙන් පාප ග්‍රහයෙක් නොවේ; සම්භාව්‍ය ලෙස මෙය සෞඛ්‍යයට සංවේදී කාල සමඟ බැඳී ඇති බැවින්, එහි දශාවලදී ජීවශක්තිය හා විවේකය ගැන අමතර සැලකිල්ලක් යෝග්‍ය වේ.`
+    : `${p} rules your ${h}, which makes it a maraka lord for this ascendant. That is not a malefic classification — it is the classical marker for health-sensitive timing, so its periods warrant more attention to vitality and rest than its general reading alone suggests.`,
   functionalMalefic: (p: string, h: string, lang: Lang) => lang === 'si'
     ? `${p} ඔබේ ${h} අධිපතියාය — අභියෝගාත්මක භාව අධිපත්‍යය නිසා එහි දශාව ඵල දීමට පෙර පරීක්ෂාවට ලක් කරයි.`
     : `${p} rules your ${h} — challenging house lordship means its period tests before it rewards.`,
@@ -265,6 +291,7 @@ export function assessPlanetStrength(planet: string, input: StrengthInput, lang:
   let lordedHouses: number[] = [];
   let functionalNature: FunctionalNature | null = null;
   let functionalMod = 0;
+  let marakaHouses: number[] = [];
   if (input.ascendantRashi != null) {
     lordedHouses = lordedHousesFor(planet, input.ascendantRashi);
     functionalNature = functionalNatureFor(planet, input.ascendantRashi);
@@ -274,6 +301,12 @@ export function assessPlanetStrength(planet: string, input: StrengthInput, lang:
       notes.push(NOTE.yogakaraka(pName, houseList, lang));
     } else if (functionalNature === 'functional-malefic' && lordedHouses.length) {
       notes.push(NOTE.functionalMalefic(pName, houseList, lang));
+    }
+
+    // Maraka lordship, independent of the nature above.
+    marakaHouses = lordedHouses.filter(h => h === 2 || h === 7);
+    if (marakaHouses.length) {
+      notes.push(NOTE.maraka(pName, joinAnd(marakaHouses.map(h => houseLabel(h, lang)), lang), lang));
     }
   }
 
@@ -287,6 +320,7 @@ export function assessPlanetStrength(planet: string, input: StrengthInput, lang:
     isRetrograde, retroMod,
     natalHouse, houseMod,
     lordedHouses, functionalNature, functionalMod,
+    isMaraka: marakaHouses.length > 0, marakaHouses,
     total, notes,
   };
 }

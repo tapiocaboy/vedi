@@ -8,6 +8,7 @@
  */
 
 import type { Lang } from '../i18n';
+import type { LifeArea } from '../natalFoundation';
 
 type F1 = Record<Lang, (a: string) => string>;
 type F2 = Record<Lang, (a: string, b: string) => string>;
@@ -111,10 +112,61 @@ export const F_STELLIUM: F3 = {
     `ග්‍රහයන් ${count} දෙනෙක් ඔබේ ${house} (${theme}) එක්රැස් වී ඇත — එක් උපචය භාවයක මෙපමණ බරක් කේන්දරයේ ඵලය මෙහි කේන්ද්‍රගත කරයි; තනි වෑයමට වඩා ජාල හා සාමූහික ව්‍යුහ හරහා.`,
 };
 
-/** Combustion of a wealth-significator: acquisition survives, retention does not. */
-export const F_COMBUST_RETENTION: F1 = {
-  en: p => `${p} is combust — burnt by proximity to the Sun. For this area that reads as retention and enjoyment rather than acquisition: what arrives does not sit still.`,
-  si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. මෙම ක්ෂේත්‍රයට එය අදාළ වන්නේ ලබා ගැනීමට නොව රඳවා ගැනීමට හා භුක්ති විඳීමටයි: එන දේ එහි නොනවතී.`,
+/**
+ * Combustion of an area's lord. The consequence differs by area, so the wording
+ * has to: "retention rather than acquisition" is a statement about money and says
+ * nothing intelligible about a marriage or a body, which is what it was being
+ * printed for before.
+ */
+export const F_COMBUST_BY_AREA: Record<LifeArea, F1> = {
+  wealth: {
+    en: p => `${p} is combust — burnt by proximity to the Sun. Here that bears on retention rather than acquisition: what arrives does not sit still.`,
+    si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. මෙහි එය අදාළ වන්නේ ලබා ගැනීමට නොව රඳවා ගැනීමටයි: එන දේ එහි නොනවතී.`,
+  },
+  relationship: {
+    en: p => `${p} is combust — burnt by proximity to the Sun. For partnership that reads as a bond formed readily and sustained with difficulty: the outward promise is warmer than what it holds.`,
+    si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. සම්බන්ධතාවලට එය අදාළ වන්නේ පහසුවෙන් සැදෙන නමුත් අපහසුවෙන් රැක ගන්නා බැඳීමකි: බාහිර පොරොන්දුව එය දරන දෙයට වඩා උණුසුම්ය.`,
+  },
+  career: {
+    en: p => `${p} is combust — burnt by proximity to the Sun. In career that reads as recognition lagging the work: the output is real and the credit for it arrives late or elsewhere.`,
+    si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. වෘත්තියේ එය අදාළ වන්නේ වැඩට පිළිගැනීම පසුබැසීමයි: ඵලය සැබෑ වන නමුත් එහි ගෞරවය ප්‍රමාද වී හෝ වෙන තැනකට ලැබේ.`,
+  },
+  health: {
+    en: p => `${p} is combust — burnt by proximity to the Sun. For vitality that reads as reserves that deplete faster than they look like they should, rather than as illness.`,
+    si: p => `${p} අස්තංගතයි — සූර්යයාට ඉතා ළං වීමෙන් දැවී ඇත. ජීවශක්තියට එය අදාළ වන්නේ රෝගයක් ලෙස නොව, පෙනෙන ආකාරයට වඩා ඉක්මනින් ක්ෂය වන ශක්ති සංචිතයක් ලෙසයි.`,
+  },
+};
+
+/**
+ * Dignity in a sentence, not as a label. The display labels are title-cased for
+ * chips and badges and read wrongly mid-clause ("is Enemy Sign in the D10").
+ */
+export const F_DIGNITY_INLINE: Record<string, Record<Lang, string>> = {
+  'exalted':      { en: 'exalted',              si: 'උච්ච වී' },
+  'own-sign':     { en: 'in its own sign',      si: 'ස්වකීය රාශියේ' },
+  'friend-sign':  { en: 'in a friendly sign',   si: 'මිත්‍ර රාශියක' },
+  'neutral-sign': { en: 'in a neutral sign',    si: 'සම රාශියක' },
+  'enemy-sign':   { en: 'in an enemy sign',     si: 'සතුරු රාශියක' },
+  'debilitated':  { en: 'debilitated',          si: 'නීච වී' },
+};
+
+/**
+ * The area's lord judged in the varga that outranks the rashi chart for it.
+ * A debilitated navamsa 7th lord is the classical reason a marriage that the
+ * rashi chart promises does not hold, and it is invisible to a D1-only reading.
+ */
+export const F_DIVISIONAL_WEAK: Record<Lang, (lord: string, varga: string, dignity: string, area: string) => string> = {
+  en: (lord, varga, dignity, area) =>
+    `${lord}, the lord of this area, is ${dignity} in the ${varga} — the divisional chart classical practice defers to for ${area}. This outranks its rashi-chart dignity: the promise is made in the main chart and not confirmed underneath it, which is the signature of a matter that begins well and does not hold its shape.`,
+  si: (lord, varga, dignity, area) =>
+    `මෙම ක්ෂේත්‍රයේ අධිපති ${lord}, ${area} සඳහා සම්භාව්‍ය ලෙස තීරණාත්මක වන ${varga} වර්ගයේ ${dignity} වී ඇත. මෙය රාශි කේන්දරයේ දිග්නත්වය අභිබවා යයි: පොරොන්දුව ප්‍රධාන කේන්දරයේ දෙනු ලැබුවත් යටින් තහවුරු නොවේ — හොඳින් ආරම්භ වී එහි හැඩය රැක නොගන්නා කරුණක ලකුණයි.`,
+};
+
+export const F_DIVISIONAL_STRONG: Record<Lang, (lord: string, varga: string, dignity: string, area: string) => string> = {
+  en: (lord, varga, dignity, area) =>
+    `${lord}, the lord of this area, is ${dignity} in the ${varga} — the chart that confirms ${area}. The rashi promise is backed up underneath, which is what makes it durable rather than merely present.`,
+  si: (lord, varga, dignity, area) =>
+    `මෙම ක්ෂේත්‍රයේ අධිපති ${lord}, ${area} තහවුරු කරන ${varga} වර්ගයේ ${dignity} වී ඇත. රාශි පොරොන්දුව යටින් තහවුරු වේ — එය හුදෙක් පවතින දෙයක් නොව කල් පවතින දෙයක් වන්නේ එබැවිනි.`,
 };
 
 /** The Moon at a sign junction — the mind's own foundation is knotted. */

@@ -14,9 +14,11 @@ import { computeVargas, EXTRA_VARGAS } from './vargas';
 import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, plainPlanetEffect } from './vargaMeanings';
 import { RASHI_LORDS, analyzePlanet } from './planetaryAnalysis';
 import { assessVargaBackbone } from './vargaStrength';
+import { assessChartConfidence } from './chartConfidence';
 import { buildKnowledgeGraphMarkdown } from './knowledgeGraph';
 import { marriageInsights, careerInsights } from '../services/vargaService';
 import { getCurrentPeriodPrediction } from '../services/predictionService';
+import { getAscendantSamples } from './ephemeris';
 
 function titleCase(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -48,7 +50,12 @@ function ordSuffix(n: number): string {
   return ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
 }
 
-export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionData): string {
+export function buildChartMarkdown(
+  chart: Chart,
+  prediction?: DashaPredictionData,
+  /** Measured ascendant samples across a ±band, for exact minutes-to-boundary. */
+  ascendantSamples?: Array<{ offsetMinutes: number; longitude: number }>,
+): string {
   const bd = chart.birthData;
   const asc = chart.ascendant;
   const ascIndex = asc.rashiIndex;
@@ -62,6 +69,14 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
     retro[titleCase(p.planet)] = p.isRetrograde;
   }
   const vargas = computeVargas({ longitudes, retro, ascendantLongitude: asc.longitude });
+
+  // The D9/D10 readings need lordship and natal house, not just divisional signs.
+  const natalVargaCtx = {
+    ascendantRashi: ascIndex,
+    planetRashis: Object.fromEntries(chart.planets.map(p => [titleCase(p.planet), p.rashiIndex])),
+    planetLongitudes: longitudes,
+    planetRetro: retro,
+  };
 
   const L: string[] = [];
   const push = (s = '') => L.push(s);
@@ -101,6 +116,29 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
   }
   push(`- **Moon Nakshatra:** ${nak.name} (Pada ${nak.pada}) · Lord ${nak.lord}${nak.deity ? ` · Deity ${nak.deity}` : ''}${nak.gana ? ` · ${nak.gana}` : ''}`);
   push();
+
+  // ── What the birth time can support ───────────────────────────────────
+  //
+  // Placed before the chart rather than after it. A reading that turns out to rest
+  // on an indeterminate ascendant needs to say so before the reader has absorbed
+  // twelve house placements, not in a footnote underneath them.
+  if (moon) {
+    const confidence = assessChartConfidence(asc.longitude, moon.longitude, ascendantSamples);
+    if (confidence.warnings.length) {
+      push('## Confidence — read this first');
+      push();
+      push(
+        `Overall: **${confidence.overall}**. The positions below are computed exactly; what is uncertain is ` +
+        'whether the recorded birth time puts them on the side of a boundary this reading assumes.',
+      );
+      push();
+      for (const w of confidence.warnings) push(`- ${w}`);
+      push();
+    } else {
+      push(`_Birth-time confidence: **${confidence.overall}** — ascendant and Moon are both clear of their boundaries._`);
+      push();
+    }
+  }
 
   // ── D1 planetary table ────────────────────────────────────────────────
   //
@@ -196,7 +234,7 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
   push();
   push('**Marriage reading:**');
   push();
-  for (const ins of marriageInsights(vargas)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
+  for (const ins of marriageInsights(vargas, natalVargaCtx)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
   push();
 
   // ── D10 Dasamsa ───────────────────────────────────────────────────────
@@ -212,7 +250,7 @@ export function buildChartMarkdown(chart: Chart, prediction?: DashaPredictionDat
   push();
   push('**Career reading:**');
   push();
-  for (const ins of careerInsights(vargas)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
+  for (const ins of careerInsights(vargas, natalVargaCtx)) push(`- **${ins.title}** (${ins.tone}) — ${ins.text}`);
   push();
 
   // ── Cross-varga standing ──────────────────────────────────────────────
@@ -367,7 +405,18 @@ export async function downloadChartMarkdown(chart: Chart): Promise<void> {
   } catch {
     prediction = undefined;
   }
-  const md = buildChartMarkdown(chart, prediction);
+  // Measured rather than estimated: the ascendant's rate varies by more than a
+  // factor of two with latitude, and the estimate is worst exactly where a
+  // borderline chart most needs a real number.
+  let ascendantSamples: Array<{ offsetMinutes: number; longitude: number }> | undefined;
+  try {
+    const bd = chart.birthData;
+    ascendantSamples = await getAscendantSamples(
+      bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
+  } catch {
+    ascendantSamples = undefined;   // fall back to the nominal-rate estimate
+  }
+  const md = buildChartMarkdown(chart, prediction, ascendantSamples);
   const { date } = fmtDateTime(chart.birthData.date);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);

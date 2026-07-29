@@ -2,10 +2,11 @@
  * Birth data input form component
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
+import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
 
 interface Props {
   onSubmit: (data: BirthData) => void;
@@ -168,8 +169,29 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     } catch {}
   }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa]);
 
+  /**
+   * Input faults that produce a plausible-looking but wrong chart — a western
+   * longitude entered positive, or a fixed-offset zone where the birth place
+   * observed summer time. Neither is visible in the output: the positions table
+   * looks entirely normal and only the ascendant and houses are wrong. So they are
+   * surfaced here, before the chart is cast.
+   */
+  const validation = useMemo(() => {
+    if (!formData.date || !formData.time || !formData.latitude || !formData.longitude) return [];
+    const lat = parseFloat(formData.latitude), lon = parseFloat(formData.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return [];
+    return validateBirthData({
+      date: `${formData.date}T${formData.time}:00`,
+      latitude: lat, longitude: lon,
+      timezone: formData.timezone, ayanamsa: formData.ayanamsa,
+    });
+  }, [formData]);
+
+  const blocked = !canCastChart(validation);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (blocked) return;
     const dateTime = `${formData.date}T${formData.time}:00`;
     const birthData: BirthData = {
       date: dateTime,
@@ -395,10 +417,30 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </select>
       </div>
 
+      {/* Input faults that would silently produce the wrong chart */}
+      {validation.length > 0 && (
+        <div className="space-y-2">
+          {validation.map((issue, i) => (
+            <div
+              key={i}
+              role={issue.severity === 'error' ? 'alert' : 'status'}
+              className={`rounded-xl p-3 flex items-start gap-2 text-[11.5px] leading-relaxed border ${
+                issue.severity === 'error'
+                  ? 'bg-red-500/8 border-red-500/25 text-red-300'
+                  : 'bg-amber-500/8 border-amber-500/25 text-amber-200'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>{issue.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Submit */}
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || blocked}
         className="btn-primary on-accent w-full py-3.5 px-6 text-white text-base font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
