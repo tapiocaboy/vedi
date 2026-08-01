@@ -7,10 +7,11 @@
  */
 
 import React, { useState } from 'react';
-import { CheckCircle2, AlertTriangle, Info, ChevronDown } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import type { TransitPrediction } from '../../lib/core/transitAnalysis';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { TapBadge, tapVars } from './tapTarget';
 
 const TONE_COLOR: Record<TransitPrediction['tone'], string> = {
   good: '#10b981',
@@ -87,10 +88,12 @@ export const TransitPredictionCards: React.FC<Props> = ({ predictions }) => {
                 type="button"
                 onClick={() => toggle(p.id)}
                 aria-expanded={isOpen}
-                className={`mt-2 self-start flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${sub}`}
+                data-open={isOpen}
+                className="mt-2 self-start flex items-center gap-2 pl-3 pr-1.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider tap-row tap-blink"
+                style={{ ...tapVars(TONE_COLOR[p.tone]), color: TONE_COLOR[p.tone] }}
               >
                 {t('now.predDetail')}
-                <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <TapBadge open={isOpen} direction="down" className="!w-5 !h-5" />
               </button>
 
               {isOpen && (

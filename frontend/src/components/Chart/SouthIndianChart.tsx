@@ -6,6 +6,7 @@ import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelPlanetShort, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
+import { TapHint, tapVars } from '../shared/tapTarget';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -113,18 +114,22 @@ export const SouthIndianChart: React.FC<Props> = ({
         whileHover={{ scale: 1.04, zIndex: 10 }}
         whileTap={{ scale: 0.97 }}
         onClick={() => setSelectedHouse(houseNum)}
-        className="relative h-full p-1.5 cursor-pointer select-none overflow-hidden"
+        role="button"
+        tabIndex={0}
+        data-open={isSelected}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedHouse(houseNum); } }}
+        className="tap-row tap-blink h-full py-1.5 pl-2.5 pr-1.5 select-none overflow-hidden"
         style={{
           border: isAscendant
             ? `1.5px solid ${borderAsc}`
             : isSelected
             ? `1.5px solid ${borderSel}`
             : `1px solid ${borderBase}`,
-          background: isAscendant
+          ...tapVars(undefined, isAscendant
             ? lagnaBg
             : isSelected
             ? cellBgSel
-            : cellBgBase,
+            : cellBgBase),
           boxShadow: isAscendant
             ? `inset 0 0 18px rgba(255,175,97,${isLight ? '0.12' : '0.10'})`
             : isSelected
@@ -221,10 +226,11 @@ export const SouthIndianChart: React.FC<Props> = ({
   return (
     <div className="w-full max-w-lg mx-auto">
       <p
-        className="text-sm font-bold mb-4 text-center tracking-wide"
+        className="text-sm font-bold mb-4 flex items-center justify-center gap-2 flex-wrap tracking-wide"
         style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
         {t('chart.clickHouseHint')}
+        <TapHint label={t('common.tapToOpen')} />
       </p>
       <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden aspect-square"
         style={{ border: `1px solid ${gridBorder}`, boxShadow: gridShadow }}>

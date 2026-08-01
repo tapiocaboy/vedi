@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
   Heart, Check, X, AlertTriangle, RefreshCcw, Loader2,
-  ChevronDown, ChevronUp, Brain, Flame, Sparkles, Scale, Info,
+  Brain, Flame, Sparkles, Scale, Info,
 } from 'lucide-react';
 import { BirthDataForm } from '../Forms/BirthDataForm';
 import { getMatchReport } from '../../services/api';
@@ -19,6 +19,7 @@ import { RASHI_ENGLISH } from '../../lib/core/rashi';
 import { BAR_PALETTE, ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelRashiWestern } from '../../i18n/astroLabels';
+import { TapBadge } from '../shared/tapTarget';
 
 interface Props {
   person: BirthData;
@@ -461,12 +462,14 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
       <div className="glass-card rounded-2xl p-4">
         <button
           onClick={() => setShowClassical(v => !v)}
-          className="w-full flex items-center justify-between text-left"
+          aria-expanded={showClassical}
+          data-open={showClassical}
+          className="tap-row tap-blink w-full flex items-center justify-between text-left rounded-lg py-2 pl-5 pr-2"
         >
           <span className="text-xs font-semibold text-white/70">
             {showClassical ? t('match.hideClassical') : t('match.showClassical')}
           </span>
-          {showClassical ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
+          <TapBadge open={showClassical} direction="down" />
         </button>
         {showClassical && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">

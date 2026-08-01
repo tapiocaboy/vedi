@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Sparkles, ChevronDown } from 'lucide-react';
+import { Star, Sparkles } from 'lucide-react';
 import type { NakshatraInfo as NakshatraInfoType } from '../../types/astrology';
 import { getNakshatraItems, type NakshatraItem } from '../../lib/core/nakshatraInsights';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet } from '../../i18n/astroLabels';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 
 interface Props {
   nakshatra: NakshatraInfoType;
@@ -16,12 +17,18 @@ const ItemRow: React.FC<{ item: NakshatraItem; open: boolean; onToggle: () => vo
   const { t } = useLang();
   return (
     <div className={`rounded-lg border bg-white/3 overflow-hidden transition-colors ${open ? 'border-violet-400/35' : 'border-white/6'}`}>
-      <button onClick={onToggle} className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/[0.03] transition-colors">
+      <button
+        onClick={onToggle}
+        aria-expanded={open}
+        data-open={open}
+        className="tap-row tap-blink w-full flex items-center gap-3 pl-5 pr-2.5 py-2.5 text-left transition-colors"
+        style={tapVars(undefined, 'rgba(255,255,255,0.03)')}
+      >
         <div className="flex-1 min-w-0">
           <div className="text-[10px] text-white/30 uppercase tracking-wider">{t(item.labelKey)}</div>
           <div className="font-semibold text-white text-sm truncate">{displayValue}</div>
         </div>
-        <ChevronDown className={`w-4 h-4 text-white/35 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <TapBadge open={open} direction="down" />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -80,8 +87,9 @@ export const NakshatraInfo: React.FC<Props> = ({ nakshatra, title }) => {
         </div>
       </div>
 
-      <p className="text-[11px] text-white/35 mb-3 flex items-center gap-1.5">
-        <ChevronDown className="w-3 h-3" /> {t('nakshatra.tapHint')}
+      <p className="text-[11px] text-white/35 mb-3 flex items-center gap-2 flex-wrap">
+        {t('nakshatra.tapHint')}
+        <TapHint label={t('common.tapToExpand')} />
       </p>
 
       <div className="space-y-2">

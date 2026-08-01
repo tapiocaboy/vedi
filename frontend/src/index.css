@@ -716,6 +716,134 @@ input:focus, select:focus, textarea:focus {
   .btn-cta-blink { animation: none; }
 }
 
+/* ── Anything that opens into more detail ──────────────────────────────────
+   A row or card that expands a detail pane has to announce itself before it is
+   touched — a bare chevron at the far edge does not read as a control. Three
+   signals carry it: a bright rail (rows) or edge (cards) in the target's own
+   colour, a filled chevron badge, and a permanent slow pulse behind both.
+
+   The pulse does not stop once the reader has clicked something. Every one of
+   these opens a *different* pane, so "you have seen one" never means "you know
+   about the rest" — the affordance stays lit for as long as the target exists.
+
+   Colour comes from the component through `--tap-clr`, defaulting to the theme
+   accent: a target with a meaning of its own (a verdict, a planet, a severity)
+   passes that colour so the highlight matches the content beside it rather than
+   introducing a second one. `--tap-tint`/`--tap-tint-strong` are the same hue at
+   low alpha; they are derived here so callers only ever set `--tap-clr`.
+
+   The rail, edge and badge never animate away: mono's blanket `animation: none`
+   and the reduced-motion opt-out below drop only the pulse, never the highlight
+   itself. */
+.tap-row,
+.tap-card,
+.tap-tr {
+  position: relative;
+  cursor: pointer;
+  --tap-clr: var(--c-accent);
+  /* Accent-toned fallbacks first: a browser without color-mix keeps a usable
+     tint (just not the target's own hue) instead of dropping it entirely. */
+  --tap-tint: rgba(var(--c-accent-rgb), 0.14);
+  --tap-tint-strong: rgba(var(--c-accent-rgb), 0.26);
+  --tap-glow: rgba(var(--c-accent-rgb), 0.55);
+  --tap-tint: color-mix(in srgb, var(--tap-clr) 14%, transparent);
+  --tap-tint-strong: color-mix(in srgb, var(--tap-clr) 26%, transparent);
+  --tap-glow: color-mix(in srgb, var(--tap-clr) 55%, transparent);
+}
+.tap-row:focus-visible,
+.tap-card:focus-visible,
+.tap-tr:focus-visible {
+  outline: 2px solid var(--tap-clr);
+  outline-offset: -2px;
+}
+/* Hover lifts the whole target rather than tinting it, so a target that paints
+   its own background (a coloured dasha band, a gradient card) gets the same
+   feedback as a transparent row without the two fighting. */
+.tap-row:hover,
+.tap-card:hover,
+.tap-tr:hover { filter: brightness(1.15); }
+
+/* Rows: a rail down the leading edge, lit at full strength. */
+.tap-row::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 4px;
+  background: var(--tap-clr);
+  box-shadow: 0 0 10px var(--tap-glow);
+}
+
+/* Cards: the whole edge is the rail, since a card has no single leading side. */
+.tap-card {
+  border: 1px solid var(--tap-clr) !important;
+  box-shadow: 0 0 12px var(--tap-glow);
+}
+
+/* Table rows cannot carry a ::before reliably, so the rail rides in as an inset
+   shadow on the first cell. */
+.tap-tr > *:first-child { box-shadow: inset 4px 0 0 0 var(--tap-clr); }
+
+@keyframes tap-pulse {
+  0%, 100% { background-color: var(--tap-base, transparent); }
+  50%      { background-color: var(--tap-tint); }
+}
+/* The pulse owns the resting and open surfaces too, because they are the same
+   property — a target that paints its own background simply leaves this class
+   off and keeps the rail, the edge and the badge.
+   Resting surface arrives as `--tap-base` rather than an inline background: an
+   inline declaration would outrank the open and hover rules below.
+   Hover and the open state are stronger than any pulse frame, so the animation
+   is dropped outright there rather than paused — a held keyframe would fight
+   the background those states set. */
+.tap-blink {
+  background-color: var(--tap-base, transparent);
+  animation: tap-pulse 2.4s ease-in-out infinite;
+}
+.tap-blink:hover,
+.tap-blink[data-open='true'] {
+  animation: none;
+  background-color: var(--tap-tint-strong);
+}
+
+@keyframes tap-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--tap-glow); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+.tap-badge-blink { animation: tap-badge-pulse 2.4s ease-in-out infinite; }
+.tap-row:hover .tap-badge-blink,
+.tap-card:hover .tap-badge-blink,
+.tap-tr:hover .tap-badge-blink { animation: none; }
+
+/* SVG marks cannot carry a ::before rail or a background tint, so inside a
+   diagram the pulse rides on the mark's own opacity. */
+@keyframes tap-svg-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.tap-svg-blink { animation: tap-svg-pulse 2.4s ease-in-out infinite; }
+
+/* The "tap to open" chip that labels a section holding tappable targets. */
+.tap-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--c-accent);
+  background: rgba(var(--c-accent-rgb), 0.16);
+  border: 1px solid rgba(var(--c-accent-rgb), 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tap-blink, .tap-badge-blink { animation: none; }
+}
+
 .privacy-banner {
   background: #0e111e;
   border: 1px solid rgba(var(--c-accent-rgb),0.10);

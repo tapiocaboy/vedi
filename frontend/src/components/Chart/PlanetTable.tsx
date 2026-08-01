@@ -8,6 +8,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi, labelDignity } from '../../i18n/astroLabels';
 import { analyzePlanet, getGandanta, type DignityLevel } from '../../lib/core/planetaryAnalysis';
 import { useTheme } from '../../hooks/useTheme';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -83,8 +84,6 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
     : `linear-gradient(to right, #3b1a00, #c97a2a)`;
   const rowEven     = isLight ? '#ffffff'          : 'rgba(255,255,255,0.008)';
   const rowOdd      = isLight ? '#f8fafc'          : 'rgba(255,255,255,0.004)';
-  const rowSel      = isLight ? 'rgba(255,175,97,0.14)' : 'rgba(255,175,97,0.10)';
-  const rowHover    = isLight ? 'rgba(255,175,97,0.08)' : 'rgba(255,175,97,0.06)';
   const borderClr   = isLight ? '#e2e8f0'          : 'rgba(255,255,255,0.06)';
   const cellTxt     = isLight ? '#0f172a'          : 'rgba(255,255,255,0.88)';
   const mutedTxt    = isLight ? '#64748b'          : 'rgba(255,255,255,0.50)';
@@ -96,8 +95,9 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   return (
     <>
       <div className="overflow-x-auto">
-        <p className="text-sm font-bold mb-3 px-1 tracking-wide" style={{ color: mutedTxt }}>
+        <p className="text-sm font-bold mb-3 px-1 tracking-wide flex items-center gap-2 flex-wrap" style={{ color: mutedTxt }}>
           {t('chart.table.hint')}
+          <TapHint label={t('common.tapToOpen')} />
         </p>
         <motion.table
           className="w-full text-xs sm:text-sm"
@@ -127,13 +127,12 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => setSelected(planet)}
-                  className="cursor-pointer transition-colors duration-150"
+                  data-open={isSel}
+                  className="tap-tr tap-blink transition-colors duration-150"
                   style={{
-                    background: isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd,
                     borderBottom: `1px solid ${borderClr}`,
+                    ...tapVars(PLANET_COLORS[planet.planet], idx % 2 === 0 ? rowEven : rowOdd),
                   }}
-                  onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLElement).style.background = rowHover; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isSel ? rowSel : idx % 2 === 0 ? rowEven : rowOdd; }}
                 >
                   <td className="px-2 sm:px-4 py-2 sm:py-3 font-bold">
                     <div className="flex items-center gap-1.5 sm:gap-2.5">
@@ -168,8 +167,8 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                       </span>
                     )}
                   </td>
-                  <td className="px-2 sm:px-4 py-2 sm:py-3">
-                    <div className="flex flex-wrap items-center gap-1">
+                  <td className="relative px-2 sm:px-4 py-2 sm:py-3">
+                    <div className="flex flex-wrap items-center gap-1 pr-9">
                       {cond?.dignity && (
                         <span className="text-[10px] sm:text-xs font-semibold whitespace-nowrap"
                           style={{ color: DIGNITY_COLOR[cond.dignity] }}>
@@ -190,6 +189,9 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
                         <span className="text-xs" style={{ color: mutedTxt }}>—</span>
                       )}
                     </div>
+                    {/* Absolute so a long condition list cannot push the
+                        affordance off the right edge of a narrow table. */}
+                    <TapBadge open={isSel} className="absolute right-2 top-1/2 -translate-y-1/2" />
                   </td>
                 </motion.tr>
               );

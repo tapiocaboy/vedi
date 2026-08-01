@@ -7,13 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { addYears, format, differenceInYears } from 'date-fns';
 import {
-  Loader2, Layers, ChevronRight, AlertTriangle, Sparkles,
+  Loader2, Layers, AlertTriangle, Sparkles,
   Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays, CalendarClock, RotateCcw,
 } from 'lucide-react';
 import { getSookshmaPeriods, getCurrentPrediction, getGochara } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeSignAnalysis, buildTransitPredictions, type DashaLords } from '../../lib/core/transitAnalysis';
 import { TransitDetailPanel } from './TransitDetailPanel';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 import { ZodiacEffectsCard } from '../Transits/ZodiacEffectsCard';
 import { TransitPredictionCards } from '../shared/TransitPredictionCards';
 import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
@@ -347,6 +348,7 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
       <div className="flex items-center gap-2 mb-1">
         <Orbit className="w-4 h-4 text-violet-400" />
         <span className="text-sm font-semibold text-white">{t('insights.gocharaTitle')}</span>
+        <TapHint label={t('common.tapToOpen')} className="ml-auto" />
       </div>
       <p className="text-[11px] text-white/30 font-mono mb-3">{t('insights.trClickHint')}</p>
 
@@ -364,7 +366,8 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
           <button
             key={tr.planet}
             onClick={() => setSel(tr)}
-            className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg border border-white/6 bg-black/20 hover:bg-white/5 hover:border-white/12 transition-colors text-[11px] flex-wrap"
+            className="tap-row tap-blink w-full text-left flex items-center gap-2 pl-5 pr-2 py-2 rounded-lg border border-white/6 transition-colors text-[11px] flex-wrap"
+            style={tapVars(PLANET_COLORS[tr.planet], 'rgba(0,0,0,0.20)')}
           >
             <span className="text-[14px] font-bold leading-none" style={{ color: PLANET_COLORS[tr.planet] }}>{PLANET_SYMBOLS[tr.planet]}</span>
             <span className="font-semibold text-white w-16">{labelPlanet(tr.planet, lang)}</span>
@@ -373,7 +376,7 @@ const GocharaCard: React.FC<{ gochara: GocharaSnapshot }> = ({ gochara }) => {
             {/* Plain verdict instead of jargon */}
             <span className={`font-semibold ${tone(tr.valence)}`}>· {verdict(tr.valence)}</span>
             <span className="ml-auto text-white/25">{t('insights.trTap')}</span>
-            <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
+            <TapBadge />
           </button>
         ))}
       </div>
@@ -429,7 +432,10 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
             <div key={area} className="rounded-xl border border-white/5 overflow-hidden">
               <button
                 onClick={() => setExpanded(isOpen ? null : area)}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors text-left"
+                aria-expanded={isOpen}
+                data-open={isOpen}
+                className="tap-row tap-blink w-full flex items-center gap-3 pl-5 pr-3 py-3 transition-colors text-left"
+                style={tapVars(ts.color)}
               >
                 <Icon className="w-4 h-4 text-white/40 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -439,7 +445,7 @@ function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
                   </div>
                   <ProgressBar pct={meta.weight * 3} color={ts.color} height="sm" index={0} animate={false} />
                 </div>
-                <ChevronRight className={`w-3.5 h-3.5 text-white/25 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                <TapBadge open={isOpen} direction="down" />
               </button>
 
               <AnimatePresence>

@@ -12,15 +12,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, ChevronRight, ChevronDown, Flame, Swords, Clock, Infinity as InfinityIcon,
+  ArrowLeft, Flame, Swords, Clock, Infinity as InfinityIcon,
   Sparkles, AlertTriangle, X, Link2,
 } from 'lucide-react';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 import type { HouseOccupant, PlanetPairAnalysis } from '../../lib/core/conjunctions';
 import { PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
 import { useLang } from '../../i18n/LanguageContext';
 import {
-  ACTIVATION_COLOR, DRAG_COLOR, POWER_COLOR, VERDICT_COLOR, panelTokens,
+  ACTIVATION_COLOR, DRAG_COLOR, POWER_COLOR, panelTokens, verdictColor,
 } from './panelTokens';
 
 type TFn = ReturnType<typeof useLang>['t'];
@@ -65,7 +66,7 @@ const AngleDial: React.FC<{
 
   const colorA = planetDisplayColor(pair.a, isLight);
   const colorB = planetDisplayColor(pair.b, isLight);
-  const accent = VERDICT_COLOR[pair.verdict];
+  const accent = verdictColor(pair.verdict, isLight);
   const trackClr = isLight ? '#e2e8f0' : 'rgba(255,255,255,0.10)';
   const tickClr = isLight ? '#94a3b8' : 'rgba(255,255,255,0.30)';
   const titleClr = isLight ? '#0f172a' : '#ffffff';
@@ -264,10 +265,11 @@ export const PairListCard: React.FC<{
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${tk.secBdr}` }}>
       <div className="px-4 py-3" style={{ background: tk.secBg }}>
         <div className="flex items-center gap-2">
-          <Link2 className="w-3.5 h-3.5" style={{ color: 'var(--c-accent)' }} />
+          <Link2 className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c-accent)' }} />
           <span className="text-xs font-mono uppercase" style={{ color: tk.mutedClr }}>
             {t('house.combinationsTitle')}
           </span>
+          <TapHint label={t('common.tapToOpen')} className="ml-auto shrink-0" />
         </div>
         <p className="text-[11px] mt-1.5 leading-relaxed" style={{ color: tk.mutedClr }}>
           {t('house.combinationsHint')}
@@ -289,7 +291,7 @@ export const PairListCard: React.FC<{
       <div style={{ borderTop: `1px solid ${tk.divClr}` }}>
         {pairs.map((pair, i) => {
           const selected = selectedIndex === i;
-          const accent = VERDICT_COLOR[pair.verdict];
+          const accent = verdictColor(pair.verdict, isLight);
           return (
             <motion.button
               key={`${pair.a}-${pair.b}`}
@@ -298,11 +300,11 @@ export const PairListCard: React.FC<{
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.05 + i * 0.06 }}
               whileTap={{ scale: 0.985 }}
-              className="w-full text-left px-4 py-3 flex items-center gap-3 transition-colors"
-              style={{
-                borderBottom: `1px solid ${tk.divClr}`,
-                background: selected ? (isLight ? 'rgba(255,175,97,0.10)' : 'rgba(255,175,97,0.07)') : 'transparent',
-              }}
+              aria-expanded={selected}
+              aria-label={`${labelPlanet(pair.a, lang)} + ${labelPlanet(pair.b, lang)} — ${t('house.pairOpen')}`}
+              data-open={selected}
+              className="tap-row tap-blink w-full text-left pl-5 pr-3 py-3 flex items-center gap-3 transition-colors"
+              style={{ borderBottom: `1px solid ${tk.divClr}`, ...tapVars(accent) }}
             >
               <div className="flex items-center shrink-0" style={{ width: 46 }}>
                 <span className="text-xl font-bold" style={{ color: planetDisplayColor(pair.a, isLight) }}>
@@ -340,9 +342,7 @@ export const PairListCard: React.FC<{
                 </div>
               </div>
 
-              <motion.span animate={{ x: selected ? 3 : 0 }} transition={spring}>
-                <ChevronRight className="w-4 h-4 shrink-0" style={{ color: selected ? accent : tk.mutedClr }} />
-              </motion.span>
+              <TapBadge open={selected} />
             </motion.button>
           );
         })}
@@ -411,7 +411,7 @@ export const PairDetail: React.FC<{
   const tk = panelTokens(isLight);
   const [showTech, setShowTech] = useState(false);
 
-  const accent = VERDICT_COLOR[pair.verdict];
+  const accent = verdictColor(pair.verdict, isLight);
   const activationClr = ACTIVATION_COLOR[pair.now.level];
   const colorA = planetDisplayColor(pair.a, isLight);
   const colorB = planetDisplayColor(pair.b, isLight);
@@ -671,13 +671,18 @@ export const PairDetail: React.FC<{
         >
           <button
             onClick={() => setShowTech(v => !v)}
-            className="w-full px-4 py-3 flex items-center justify-between"
-            style={{ background: tk.secBg }}
+            aria-expanded={showTech}
+            data-open={showTech}
+            className="tap-row tap-blink w-full pl-5 pr-3 py-3 flex items-center justify-between gap-2"
+            style={tapVars(accent, tk.secBg)}
           >
             <span className="text-xs font-mono uppercase" style={{ color: tk.mutedClr }}>{t('pair.technical')}</span>
-            <motion.span animate={{ rotate: showTech ? 180 : 0 }} transition={{ duration: 0.25 }}>
-              <ChevronDown className="w-4 h-4" style={{ color: tk.mutedClr }} />
-            </motion.span>
+            <span className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: accent }}>
+                {showTech ? t('common.hide') : t('common.show')}
+              </span>
+              <TapBadge open={showTech} direction="down" />
+            </span>
           </button>
           <AnimatePresence initial={false}>
             {showTech && (

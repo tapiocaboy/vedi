@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, Sparkles, Star, TrendingUp, Shield, AlertTriangle, Loader2 } from 'lucide-react';
+import { Sparkles, Star, TrendingUp, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { getYogas } from '../../services/api';
 import type { BirthData, YogaResult } from '../../services/api';
 import { BAR_PALETTE, ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelYogaCategory, labelYogaStrength } from '../../i18n/astroLabels';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 
 interface Props {
   birthData: BirthData;
 }
 
 const CATEGORY_STYLE = {
-  rajayoga:    { color:'text-violet-300',   bg:'bg-violet-400/8',   border:'border-violet-400/20',   icon:Star },
-  mahapurusha: { color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Sparkles },
-  dhana:       { color:'text-emerald-400', bg:'bg-emerald-500/8', border:'border-emerald-500/20', icon:TrendingUp },
-  spiritual:   { color:'text-purple-400',  bg:'bg-purple-500/8',  border:'border-purple-500/20',  icon:Sparkles },
-  special:     { color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Shield },
-  daridra:     { color:'text-rose-400',    bg:'bg-rose-500/8',    border:'border-rose-500/20',    icon:AlertTriangle },
+  rajayoga:    { color:'text-violet-300',   bg:'bg-violet-400/8',   border:'border-violet-400/20',   icon:Star,          tap:'#c4b5fd' },
+  mahapurusha: { color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Sparkles,      tap:'#a78bfa' },
+  dhana:       { color:'text-emerald-400', bg:'bg-emerald-500/8', border:'border-emerald-500/20', icon:TrendingUp,    tap:'#34d399' },
+  spiritual:   { color:'text-purple-400',  bg:'bg-purple-500/8',  border:'border-purple-500/20',  icon:Sparkles,      tap:'#c084fc' },
+  special:     { color:'text-violet-400',  bg:'bg-violet-500/8',  border:'border-violet-500/20',  icon:Shield,        tap:'#a78bfa' },
+  daridra:     { color:'text-rose-400',    bg:'bg-rose-500/8',    border:'border-rose-500/20',    icon:AlertTriangle, tap:'#fb7185' },
 };
 
 const STRENGTH_CONFIG = {
@@ -53,7 +54,10 @@ const YogaCard: React.FC<YogaCardProps> = ({ yoga, index, lang }) => {
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-start justify-between text-left hover:brightness-110 transition-all"
+        aria-expanded={expanded}
+        data-open={expanded}
+        className="tap-row tap-blink w-full py-4 pl-5 pr-3 flex items-start justify-between text-left transition-all"
+        style={tapVars(catStyle.tap)}
       >
         <div className="flex items-start gap-3 flex-1 min-w-0">
           {/* Strength dots */}
@@ -91,9 +95,7 @@ const YogaCard: React.FC<YogaCardProps> = ({ yoga, index, lang }) => {
         </div>
 
         <div className="ml-3 shrink-0">
-          {expanded
-            ? <ChevronUp className="w-4 h-4 text-white/25" />
-            : <ChevronDown className="w-4 h-4 text-white/25" />}
+          <TapBadge open={expanded} direction="down" />
         </div>
       </button>
 
@@ -220,6 +222,9 @@ export const YogasDisplay: React.FC<Props> = ({ birthData }) => {
       </div>
 
       {/* Cards */}
+      <div className="flex justify-end">
+        <TapHint label={t('common.tapToExpand')} />
+      </div>
       <div className="space-y-2.5">
         {filtered.map((yoga, idx) => (
           <YogaCard key={`${yoga.name}-${idx}`} yoga={yoga} index={idx} lang={lang} />

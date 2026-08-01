@@ -51,6 +51,22 @@ export const VERDICT_COLOR: Record<string, string> = {
   difficult:         '#ef4444',
 };
 
+/**
+ * The same five verdicts darkened for a white panel. The dark-theme yellows and
+ * greens are picked to glow against near-black; on white they wash out, and the
+ * verdict is what the tap affordance is coloured by — it has to stay legible.
+ */
+const VERDICT_COLOR_LIGHT: Record<string, string> = {
+  'very-supportive': '#047857',
+  supportive:        '#15803d',
+  mixed:             '#a16207',
+  straining:         '#b45309',
+  difficult:         '#dc2626',
+};
+
+export const verdictColor = (verdict: string, isLight: boolean): string =>
+  (isLight ? VERDICT_COLOR_LIGHT[verdict] : VERDICT_COLOR[verdict]) ?? VERDICT_COLOR[verdict];
+
 export const ACTIVATION_COLOR: Record<string, string> = {
   peak:       '#10b981',
   high:       '#22c55e',

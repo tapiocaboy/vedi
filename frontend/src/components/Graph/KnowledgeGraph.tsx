@@ -592,6 +592,10 @@ const GraphCanvas: React.FC<{
                 strokeDasharray={reticleDashes(node.r + 8)}
                 strokeLinecap="round"
                 opacity={live ? 1 : 0.55}
+                /* The reticle is already the node's clickability mark, so the
+                   permanent tap pulse rides on it rather than on the node body —
+                   pulsing the bodies would strobe the whole graph. */
+                className={live ? undefined : 'tap-svg-blink'}
                 style={{ transition: 'stroke 0.18s ease, opacity 0.18s ease' }}
               />
 

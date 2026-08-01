@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getFavourabilityForecast, FAVOURABLE_THRESHOLD } from '../../lib/core/favourability';
 import type { Chart } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
+import { tapVars } from '../shared/tapTarget';
 
 interface Props {
   chart: Chart | null;
@@ -66,11 +67,8 @@ export const FavourableForecast: React.FC<Props> = ({ chart, isLight, onClick })
     <button
       onClick={onClick}
       title={t('forecast.tooltip')}
-      className={`hidden md:flex items-center flex-1 min-w-[280px] max-w-[620px] mx-3 lg:mx-5 h-11 px-3 rounded-xl border transition-all duration-200 ${
-        isLight
-          ? 'bg-gray-100 border-gray-200 hover:bg-gray-200'
-          : 'bg-white/5 border-white/8 hover:bg-white/10'
-      }`}
+      className="tap-row tap-blink hidden md:flex items-center flex-1 min-w-[280px] max-w-[620px] mx-3 lg:mx-5 h-11 pl-5 pr-3 rounded-xl border transition-all duration-200"
+      style={tapVars(undefined, isLight ? '#f3f4f6' : 'rgba(255,255,255,0.05)')}
     >
       {/* Headline block */}
       <div className={`shrink-0 text-left pr-3 mr-3 border-r ${isLight ? 'border-gray-300' : 'border-white/10'}`}>

@@ -6,6 +6,7 @@ import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelPlanetShort, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
+import { TapHint } from '../shared/tapTarget';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -101,10 +102,11 @@ export const NorthIndianChart: React.FC<Props> = ({
   return (
     <div className="w-full max-w-md mx-auto">
       <p
-        className="text-sm font-bold mb-4 text-center tracking-wide"
+        className="text-sm font-bold mb-4 flex items-center justify-center gap-2 flex-wrap tracking-wide"
         style={{ color: isLight ? '#1e293b' : '#ffffff' }}
       >
         {t('chart.clickHouseHint')}
+        <TapHint label={t('common.tapToOpen')} />
       </p>
 
       <svg viewBox="0 0 150 150" className="w-full h-auto"
@@ -166,7 +168,10 @@ export const NorthIndianChart: React.FC<Props> = ({
           );
         })}
 
-        {/* House rashi numbers */}
+        {/* House rashi numbers. Each carries the tap pulse: the polygons tile the
+            whole chart, so pulsing them would strobe the entire diagram — the
+            number is the one mark per house that can carry it without burying
+            the chart's own lines. */}
         {Array.from({ length: 12 }, (_, i) => i + 1).map(house => {
           const [tx, ty] = HOUSE_TEXT[house];
           const rashi = rashiForHouse(house);
@@ -174,7 +179,7 @@ export const NorthIndianChart: React.FC<Props> = ({
             <text key={house} x={tx} y={ty} textAnchor="middle"
               fill={houseNumClr(house)}
               fontSize="9" fontWeight="800" fontFamily="monospace"
-              className="pointer-events-none select-none">
+              className="pointer-events-none select-none tap-svg-blink">
               {rashi + 1}
             </text>
           );

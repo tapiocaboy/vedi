@@ -7,13 +7,14 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { ChevronRight, Globe2 } from 'lucide-react';
+import { Globe2 } from 'lucide-react';
 import type { GocharaSnapshot } from '../../lib/core/transits';
 import { computeZodiacEffects, type ZodiacEffects } from '../../lib/core/gocharaPhala';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi, labelRashiWestern, labelOrdinalHouse } from '../../i18n/astroLabels';
+import { TapBadge } from '../shared/tapTarget';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -34,7 +35,6 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
   const sub  = isLight ? 'text-slate-400' : 'text-white/35';
   const rowBorder = isLight ? 'border-slate-200' : 'border-white/8';
   const rowBg = isLight ? 'bg-slate-50' : 'bg-black/20';
-  const rowHover = isLight ? 'hover:bg-slate-100' : 'hover:bg-white/5';
 
   const toneBadge = (tone: ZodiacEffects['tone']) =>
     tone === 'good' ? 'bg-emerald-500/15 text-emerald-400'
@@ -68,7 +68,9 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
               <button
                 type="button"
                 onClick={() => setOpen(isOpen ? null : z.rashi)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${rowHover}`}
+                aria-expanded={isOpen}
+                data-open={isOpen}
+                className="tap-row tap-blink w-full flex items-center gap-2 pl-5 pr-2 py-2 text-left transition-colors"
               >
                 <span className={`text-xs font-bold ${head}`}>{labelRashi(z.rashi, lang, RASHIS[z.rashi])}</span>
                 <span className={`text-[10px] ${sub}`}>{labelRashiWestern(z.rashi, lang, RASHI_ENGLISH[z.rashi])}</span>
@@ -80,7 +82,7 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
                 <span className={`ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${toneBadge(z.tone)}`}>
                   {toneWord(z.tone)}
                 </span>
-                <ChevronRight className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''} ${sub}`} />
+                <TapBadge open={isOpen} direction="down" />
               </button>
 
               {isOpen && (

@@ -10,8 +10,7 @@ import {
   Briefcase, 
   Users, 
   Sparkles, 
-  ChevronDown, 
-  ChevronUp,
+  // ChevronDown, ChevronUp — replaced by the shared TapBadge affordance
   AlertTriangle,
   CheckCircle,
   MinusCircle,
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelArea, labelTrend, labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
+import { TapBadge, tapVars } from '../shared/tapTarget';
 
 interface AreaPrediction {
   trend: 'positive' | 'negative' | 'mixed' | 'neutral';
@@ -114,7 +114,10 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
       <div key={area} className="border border-white/6 rounded-lg overflow-hidden bg-white/3">
         <button
           onClick={() => setExpandedArea(isExpanded ? null : area)}
-          className="w-full p-4 flex items-center justify-between hover:bg-white/4 transition-colors"
+          aria-expanded={isExpanded}
+          data-open={isExpanded}
+          className="tap-row tap-blink w-full py-4 pl-5 pr-3 flex items-center justify-between transition-colors"
+          style={tapVars(undefined, 'rgba(255,255,255,0.03)')}
         >
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${trendStyle.bg} border ${trendStyle.border}`}>
@@ -127,11 +130,7 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           </div>
           <div className="flex items-center gap-3">
             {renderTrendBadge(data.trend)}
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-white/25" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-white/25" />
-            )}
+            <TapBadge open={isExpanded} direction="down" />
           </div>
         </button>
 
@@ -299,19 +298,20 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
 
       {/* Activities Section */}
       <div className="px-6 pb-6">
+        {/* The gradient is the button's own surface, so it takes the rail and
+            badge but not the tinted pulse. */}
         <button
           onClick={() => setShowActivities(!showActivities)}
-          className="w-full p-4 flex items-center justify-between bg-gradient-to-r from-emerald-900/30 to-violet-900/20 rounded-lg hover:from-emerald-800/40 hover:to-violet-800/30 transition-colors border border-emerald-500/20"
+          aria-expanded={showActivities}
+          data-open={showActivities}
+          className="tap-row w-full py-4 pl-5 pr-3 flex items-center justify-between bg-gradient-to-r from-emerald-900/30 to-violet-900/20 rounded-lg transition-colors border border-emerald-500/20"
+          style={tapVars('#34d399')}
         >
           <div className="flex items-center gap-3">
             <Sparkles className="w-5 h-5 text-emerald-400" />
             <span className="font-semibold text-white">{t('dasha.activitiesGuide')}</span>
           </div>
-          {showActivities ? (
-            <ChevronUp className="w-5 h-5 text-white/50" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-white/50" />
-          )}
+          <TapBadge open={showActivities} direction="down" />
         </button>
 
         {showActivities && (

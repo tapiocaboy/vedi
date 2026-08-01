@@ -9,8 +9,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronDown,
-  ChevronUp,
   Sparkles,
   CheckCircle,
   AlertTriangle,
@@ -24,6 +22,7 @@ import {
 import type { DashaPredictionData } from '../../services/api';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelArea, labelTrend } from '../../i18n/astroLabels';
+import { TapBadge, tapVars } from '../shared/tapTarget';
 
 const TREND_ICONS = {
   positive: { icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
@@ -77,7 +76,10 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
             <div key={area} className="rounded-lg border border-white/6 overflow-hidden bg-white/3">
               <button
                 onClick={() => setExpandedArea(isExpanded ? null : area)}
-                className="w-full p-3 flex items-center justify-between hover:bg-white/4 transition-colors"
+                aria-expanded={isExpanded}
+                data-open={isExpanded}
+                className="tap-row tap-blink w-full py-3 pl-5 pr-2 flex items-center justify-between transition-colors"
+                style={tapVars(undefined, 'rgba(255,255,255,0.03)')}
               >
                 <div className="flex items-center gap-3">
                   <div className={`p-1.5 rounded-lg ${config.bgColor} border border-violet-800/25`}>
@@ -90,11 +92,7 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
                 </div>
                 <div className="flex items-center gap-2">
                   {renderTrendBadge(data.trend)}
-                  {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-white/25" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/25" />
-                  )}
+                  <TapBadge open={isExpanded} direction="down" />
                 </div>
               </button>
 
@@ -178,13 +176,16 @@ export const PredictionBody: React.FC<Props> = ({ prediction }) => {
         {/* Activities */}
         <button
           onClick={() => setShowActivities(!showActivities)}
-          className="w-full p-3 flex items-center justify-between bg-white/3 rounded-lg border border-white/6 hover:bg-white/5 transition-colors"
+          aria-expanded={showActivities}
+          data-open={showActivities}
+          className="tap-row tap-blink w-full py-3 pl-5 pr-2 flex items-center justify-between rounded-lg border border-white/6 transition-colors"
+          style={tapVars('#34d399', 'rgba(255,255,255,0.03)')}
         >
           <span className="text-sm font-semibold text-white/70 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-emerald-400" />
             {t('dasha.activitiesGuide')}
           </span>
-          {showActivities ? <ChevronUp className="w-4 h-4 text-white/25" /> : <ChevronDown className="w-4 h-4 text-white/25" />}
+          <TapBadge open={showActivities} direction="down" />
         </button>
 
         <AnimatePresence>

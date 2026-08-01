@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Orbit, X, Loader2, ChevronDown, AlertTriangle, Sparkles } from 'lucide-react';
+import { Orbit, X, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
 import { buildNatalReport, type NatalLine, type NatalSection, type Tone } from '../../lib/core/natal';
 import { PLANET_SYMBOLS } from '../../types/astrology';
 import type { BirthData } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
+import { TapBadge, tapVars } from '../shared/tapTarget';
 
 interface Props {
   visible: boolean;
@@ -66,12 +67,18 @@ const Section: React.FC<{ s: NatalSection }> = ({ s }) => (
 
 const LineRow: React.FC<{ line: NatalLine; open: boolean; onToggle: () => void }> = ({ line, open, onToggle }) => (
   <div className={`rounded-xl border bg-black/30 overflow-hidden transition-colors ${open ? 'border-[rgba(var(--c-accent-rgb),0.35)]' : 'border-white/8'}`}>
-    <button onClick={onToggle} className="w-full flex items-start gap-3 p-3 text-left hover:bg-white/[0.03] transition-colors">
+    <button
+      onClick={onToggle}
+      aria-expanded={open}
+      data-open={open}
+      className="tap-row tap-blink w-full flex items-start gap-3 py-3 pl-5 pr-3 text-left transition-colors"
+      style={tapVars(undefined, 'rgba(0,0,0,0.30)')}
+    >
       <LineIcon icon={line.icon} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h4 className="text-sm font-semibold text-white leading-tight">{line.title}</h4>
-          <ChevronDown className={`w-4 h-4 text-white/40 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <TapBadge open={open} direction="down" />
         </div>
         <p className="text-[11px] text-white/45 mt-0.5">{line.subtitle}</p>
         <div className="flex flex-wrap items-center gap-1.5 mt-2">

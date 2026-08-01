@@ -4,14 +4,15 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import type { DashaWithAntardashas, BirthData } from '../../types/astrology';
-import { DASHA_COLORS } from '../../types/astrology';
+import { DASHA_COLORS, planetDisplayColor } from '../../types/astrology';
 import { formatDate, formatYears, formatDays } from '../../utils/dateUtils';
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet } from '../../i18n/astroLabels';
 import { AntardashaPanel } from './AntardashaPanel';
+import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 
 interface Props {
   timeline: DashaWithAntardashas[];
@@ -77,7 +78,10 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
         <h3 className="text-lg font-display font-semibold text-white">
           {t('dasha.timelineTitle')}
         </h3>
-        <p className="text-xs text-white/25 font-mono">{t('dasha.timelineHint')}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-white/25 font-mono">{t('dasha.timelineHint')}</p>
+          <TapHint label={t('common.tapToExpand')} />
+        </div>
       </div>
 
       {timeline.map((item, idx) => {
@@ -95,15 +99,24 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
             className="rounded-xl overflow-hidden border border-white/6"
           >
             {/* Mahadasha header */}
+            {/* The band paints its own colour, so it takes the rail and the
+                badge but not the tinted pulse — `.tap-blink` would animate the
+                band's own background out from under it. */}
             <div
               onClick={() => toggleExpand(mahadasha.lord, idx)}
+              role="button"
+              tabIndex={0}
+              aria-expanded={isExpanded}
+              data-open={isExpanded}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(mahadasha.lord, idx); } }}
               className={`
-                dasha-md-header
-                p-4 cursor-pointer flex items-center justify-between
-                transition-all hover:brightness-110
+                dasha-md-header tap-row
+                py-4 pl-5 pr-3 flex items-center justify-between
+                transition-all
                 ${DASHA_COLORS[mahadasha.lord] || 'bg-slate-600'}
                 ${isMdCurrent ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900' : ''}
               `}
+              style={tapVars('#ffffff')}
             >
               <div className="flex items-center gap-3">
                 <span className="text-white font-bold text-lg">
@@ -130,11 +143,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                     {formatYears(mahadasha.durationYears)}
                   </div>
                 </div>
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5" />
-                ) : (
-                  <ChevronDown className="w-5 h-5" />
-                )}
+                <TapBadge open={isExpanded} direction="down" />
               </div>
             </div>
 
@@ -161,13 +170,16 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: adIdx * 0.03 }}
                             onClick={() => birthData && handleAntardashaClick(mahadasha.lord, ad.lord, ad.start, idx, adIdx)}
+                            role={birthData ? 'button' : undefined}
+                            tabIndex={birthData ? 0 : undefined}
+                            aria-expanded={birthData ? isSelected : undefined}
+                            data-open={isSelected}
                             className={`
-                              p-3 rounded-lg flex items-center justify-between
-                              bg-white/3 border
+                              py-3 pl-5 pr-3 rounded-lg flex items-center justify-between border
                               ${isAdCurrent ? 'border-violet-400' : 'border-white/6'}
-                              ${birthData ? 'cursor-pointer hover:bg-white/4 transition-all' : ''}
-                              ${isSelected ? 'ring-2 ring-violet-500 bg-white/4' : ''}
+                              ${birthData ? 'tap-row tap-blink transition-all' : 'bg-white/3'}
                             `}
+                            style={birthData ? tapVars(planetDisplayColor(ad.lord.toUpperCase(), false), 'rgba(255,255,255,0.03)') : undefined}
                           >
                             <div className="flex items-center gap-2">
                               <span
@@ -190,9 +202,12 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                               )}
                             </div>
                             
-                            <div className="text-right text-sm text-white/50">
-                              <div className="font-mono text-xs">{formatDate(ad.start)} – {formatDate(ad.end)}</div>
-                              <div className="font-medium text-white/70">{formatDays(ad.durationDays)}</div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right text-sm text-white/50">
+                                <div className="font-mono text-xs">{formatDate(ad.start)} – {formatDate(ad.end)}</div>
+                                <div className="font-medium text-white/70">{formatDays(ad.durationDays)}</div>
+                              </div>
+                              {birthData && <TapBadge open={isSelected} direction="down" />}
                             </div>
                           </motion.div>
 

@@ -11,8 +11,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ChevronDown,
-  ChevronUp,
   Loader2,
   Scale,
   Target,
@@ -35,7 +33,8 @@ import type {
   TransitHit,
 } from '../../services/api';
 import { getAntardashaDepth } from '../../services/api';
-import { DASHA_COLORS } from '../../types/astrology';
+import { DASHA_COLORS, planetDisplayColor } from '../../types/astrology';
+import { TapBadge, tapVars } from '../shared/tapTarget';
 import { formatDate, formatDays } from '../../utils/dateUtils';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelArea, labelTrend } from '../../i18n/astroLabels';
@@ -99,7 +98,10 @@ const PeriodRow: React.FC<{
       <button
         onClick={() => setExpanded(!expanded)}
         disabled={!hasDetail}
-        className={`w-full p-3 text-left transition-colors ${hasDetail ? 'hover:bg-white/4' : 'cursor-default'}`}
+        aria-expanded={hasDetail ? expanded : undefined}
+        data-open={expanded}
+        className={`w-full py-3 pr-3 text-left transition-colors ${hasDetail ? 'tap-row tap-blink pl-5' : 'cursor-default pl-3'}`}
+        style={hasDetail ? tapVars(planetDisplayColor(period.lord.toUpperCase(), false)) : undefined}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -130,8 +132,7 @@ const PeriodRow: React.FC<{
                 <div className={`h-full rounded-full ${band.bar}`} style={{ width: `${period.weight * 10}%` }} />
               </div>
             </div>
-            {hasDetail &&
-              (expanded ? <ChevronUp className="w-4 h-4 text-white/25" /> : <ChevronDown className="w-4 h-4 text-white/25" />)}
+            {hasDetail && <TapBadge open={expanded} direction="down" />}
           </div>
         </div>
       </button>
@@ -377,13 +378,16 @@ export const AntardashaPanel: React.FC<Props> = ({
 
             <button
               onClick={() => setShowDefinition(!showDefinition)}
-              className="w-full p-3 flex items-center justify-between bg-white/3 rounded-lg border border-white/6 hover:bg-white/5 transition-colors"
+              aria-expanded={showDefinition}
+              data-open={showDefinition}
+              className="tap-row tap-blink w-full py-3 pl-5 pr-3 flex items-center justify-between rounded-lg border border-white/6 transition-colors"
+              style={tapVars(undefined, 'rgba(255,255,255,0.03)')}
             >
               <span className="text-sm font-semibold text-white/70 flex items-center gap-2">
                 <Scale className="w-4 h-4 text-violet-400" />
                 {t('depth.whatIsWeight')}
               </span>
-              {showDefinition ? <ChevronUp className="w-4 h-4 text-white/25" /> : <ChevronDown className="w-4 h-4 text-white/25" />}
+              <TapBadge open={showDefinition} direction="down" />
             </button>
 
             <AnimatePresence>

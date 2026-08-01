@@ -6,6 +6,7 @@ import { getVargas } from '../../services/api';
 import type { BirthData } from '../../services/api';
 import type { VargaPlanet, VargaInsight } from '../../services/api';
 import { RASHIS } from '../../lib/core/rashi';
+import { tapVars } from '../shared/tapTarget';
 import { RASHI_LORDS } from '../../lib/core/planetaryAnalysis';
 import { EXTRA_VARGAS, type VargaCode } from '../../lib/core/vargas';
 import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, type VargaStanding } from '../../lib/core/vargaMeanings';
@@ -100,24 +101,17 @@ function VargaGrid({
               onClick={() => onCellClick(rashi)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="aspect-square rounded-md p-1 flex flex-col min-w-0 text-left cursor-pointer transition-colors"
+              className="tap-row tap-blink aspect-square rounded-md py-1 pl-2 pr-1 flex flex-col min-w-0 text-left transition-colors"
               style={{
                 border: isAsc ? `1.5px solid ${ACCENT}` : isLight ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.07)',
-                background: isAsc
+                ...tapVars(undefined, isAsc
                   ? (isLight ? 'rgba(var(--c-accent-rgb),0.06)' : 'rgba(var(--c-accent-rgb),0.10)')
-                  : 'transparent',
+                  : 'transparent'),
               }}
-              onMouseEnter={e => {
-                if (!isAsc) e.currentTarget.style.background = isLight ? 'rgba(var(--c-accent-rgb),0.04)' : 'rgba(255,255,255,0.05)';
-                e.currentTarget.style.borderColor = ACCENT;
-              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; }}
               onMouseLeave={e => {
-                if (!isAsc) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = isLight ? '#E2E8F0' : 'rgba(255,255,255,0.07)';
-                } else {
-                  e.currentTarget.style.borderColor = ACCENT;
-                }
+                e.currentTarget.style.borderColor = isAsc ? ACCENT
+                  : isLight ? '#E2E8F0' : 'rgba(255,255,255,0.07)';
               }}
             >
               <span className={`text-[8px] font-bold leading-none flex items-center justify-between gap-0.5 ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
@@ -126,7 +120,7 @@ function VargaGrid({
                   {isAsc && <span style={{ color: ACCENT }}> ·{ascMarker}</span>}
                 </span>
                 {/* Persistent affordance: every box opens a reading */}
-                <MousePointerClick className="w-2.5 h-2.5 shrink-0 opacity-45" style={{ color: ACCENT }} />
+                <MousePointerClick className="w-2.5 h-2.5 shrink-0" style={{ color: ACCENT }} />
               </span>
               <div className="flex flex-wrap gap-x-1 items-start content-start flex-1 mt-0.5">
                 {occupants.map(p => (

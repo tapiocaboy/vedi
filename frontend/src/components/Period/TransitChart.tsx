@@ -21,6 +21,7 @@ import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, PLANET_COLORS } from '../../type
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelRashi, labelRashiWestern, labelDignity } from '../../i18n/astroLabels';
+import { TapHint, tapVars } from '../shared/tapTarget';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -129,9 +130,10 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         onClick={() => setSelected(isSel ? null : rashi)}
         onMouseEnter={() => setHovered(rashi)}
         onMouseLeave={() => setHovered(h => (h === rashi ? null : h))}
-        className="relative h-full w-full p-1 text-left cursor-pointer transition-all duration-150 select-none focus:outline-none"
+        data-open={isSel}
+        className="tap-row tap-blink h-full w-full py-1 pl-2 pr-1 text-left transition-all duration-150 select-none"
         style={{
-          background: tone.bg,
+          ...tapVars(undefined, tone.bg),
           border: isSel
             ? `2px solid ${ACCENT}`
             : isLagna
@@ -142,7 +144,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         }}
         title={tip}
       >
-        <span className="absolute top-0.5 left-1 text-[10px] font-mono font-bold" style={{ color: isLagna ? ACCENT : houseClr }}>
+        <span className="absolute top-0.5 left-2 text-[10px] font-mono font-bold" style={{ color: isLagna ? ACCENT : houseClr }}>
           {houseOf(rashi)}
         </span>
         {isLagna && <span className="absolute top-0.5 right-1 text-[10px] font-bold" style={{ color: ACCENT }}>↑</span>}
@@ -285,6 +287,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         <div>
           {selected == null ? (
             <div className={`rounded-xl border p-4 text-xs leading-relaxed ${isLight ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-white/8 text-white/50 bg-black/20'}`}>
+              <div className="mb-2"><TapHint label={t('common.tapToOpen')} /></div>
               {t('now.transitChartHint')}
             </div>
           ) : (

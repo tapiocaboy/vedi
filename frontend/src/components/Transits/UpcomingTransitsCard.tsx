@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarClock, Loader2, ArrowRight, RotateCcw, ChevronDown, Sparkles } from 'lucide-react';
+import { CalendarClock, Loader2, ArrowRight, RotateCcw, Sparkles } from 'lucide-react';
 import { getUpcomingTransits, type UpcomingTransitEvent } from '../../lib/core/monthlyTransits';
 import { gocharaEffect } from '../../lib/core/gocharaPhala';
 import type { AyanamsaSystem } from '../../lib/core/transits';
@@ -16,6 +16,7 @@ import { PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet } from '../../i18n/astroLabels';
+import { TapBadge, tapVars } from '../shared/tapTarget';
 
 interface Props {
   ayanamsa: AyanamsaSystem;
@@ -95,7 +96,9 @@ export const UpcomingTransitsCard: React.FC<Props> = ({ ayanamsa, natalMoonRashi
                   type="button"
                   onClick={() => setOpen(isOpen ? null : key)}
                   aria-expanded={isOpen}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors ${isLight ? 'hover:bg-slate-100' : 'hover:bg-white/5'}`}
+                  data-open={isOpen}
+                  className="tap-row tap-blink w-full flex items-center gap-2 pl-5 pr-2 py-2.5 text-left transition-colors"
+                  style={tapVars(color)}
                 >
                   <span className="text-[15px] font-bold leading-none shrink-0" style={{ color }}>
                     {PLANET_SYMBOLS[ev.planet]}
@@ -108,7 +111,7 @@ export const UpcomingTransitsCard: React.FC<Props> = ({ ayanamsa, natalMoonRashi
                   <span className={`ml-auto text-[10px] font-mono shrink-0 ${sub}`}>
                     {fmtDate(ev.date)} · {ev.daysUntil === 0 ? t('upcoming.today') : t('upcoming.inDays', { n: ev.daysUntil })}
                   </span>
-                  <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''} ${sub}`} />
+                  <TapBadge open={isOpen} direction="down" />
                 </button>
 
                 {isOpen && (
