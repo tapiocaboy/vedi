@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { PlanetPosition } from '../../types/astrology';
+import type { CurrentDasha, DashaPeriod, PlanetPosition } from '../../types/astrology';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { HouseDetailPanel } from './HouseDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
@@ -12,6 +12,10 @@ const ACCENT = 'var(--c-accent)';
 interface Props {
   planets: PlanetPosition[];
   ascendantRashi: number;
+  /** Passed through to the house panel so planet pairs can be timed. */
+  currentDasha?: CurrentDasha | null;
+  mahadashaTimeline?: DashaPeriod[] | null;
+  birthDate?: string | null;
 }
 
 const RASHI_GRID_POSITIONS: Record<number, [number, number]> = {
@@ -37,7 +41,9 @@ function getRashiForPosition(row: number, col: number): number | null {
   return null;
 }
 
-export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) => {
+export const SouthIndianChart: React.FC<Props> = ({
+  planets, ascendantRashi, currentDasha = null, mahadashaTimeline = null, birthDate = null,
+}) => {
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
   const isLight = useTheme();
   const { lang, t } = useLang();
@@ -247,6 +253,9 @@ export const SouthIndianChart: React.FC<Props> = ({ planets, ascendantRashi }) =
         houseNumber={selectedHouse}
         ascendantRashiIndex={ascendantRashi}
         planets={planets}
+        currentDasha={currentDasha}
+        mahadashaTimeline={mahadashaTimeline}
+        birthDate={birthDate}
         onClose={() => setSelectedHouse(null)}
       />
     </div>

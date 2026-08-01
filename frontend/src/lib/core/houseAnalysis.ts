@@ -1,6 +1,6 @@
-import { HOUSE_DATA, RASHI_LORDS, getDignity } from './planetaryAnalysis';
+import { HOUSE_DATA, RASHI_LORDS, getDignity, normalizePlanetKey } from './planetaryAnalysis';
 import { RASHIS, RASHI_ENGLISH } from '../../types/astrology';
-import { type Lang, pick, planetName } from './i18n';
+import { type Lang, pick, pickList, planetName } from './i18n';
 import { SIG_TEXT } from './text/predictionVocab';
 import { HOUSE_DISPLAY } from './text/planetaryText';
 import { HOUSE_LORD_IN_HOUSE, NOTABLE_COMBOS, HOUSE_FRAMES } from './text/houseText';
@@ -15,6 +15,10 @@ export interface HouseAnalysis {
   rashiName: string;
   rashiEnglish: string;
   houseData: typeof HOUSE_DATA[1];
+  /** Localised house theme — houseData.theme stays English for the engines. */
+  themeLabel: string;
+  /** Localised list of what the house governs, aligned with houseData.rules. */
+  ruleLabels: string[];
   rashiLord: string;
   lordDignity: ReturnType<typeof getDignity>;
   lordHouse: number;
@@ -29,7 +33,8 @@ export interface HouseAnalysis {
 /** Localised planet-combination reading for the planets sharing a house. */
 function planetCombinationEffect(planetNames: string[], houseNumber: number, lang: Lang): string | null {
   if (planetNames.length < 2) return null;
-  const sorted = [...planetNames].sort();
+  // NOTABLE_COMBOS is keyed in title case; the chart layer supplies 'SATURN'.
+  const sorted = planetNames.map(normalizePlanetKey).sort();
   for (let i = 0; i < sorted.length; i++) {
     for (let j = i + 1; j < sorted.length; j++) {
       const combo = NOTABLE_COMBOS[`${sorted[i]}-${sorted[j]}`] ?? NOTABLE_COMBOS[`${sorted[j]}-${sorted[i]}`];
@@ -59,8 +64,15 @@ export function analyzeHouse(
   const rashiLord = RASHI_LORDS[rashiIndex] ?? 'Unknown';
   const rashiLordLabel = planetName(rashiLord, lang);
 
-  // Where is the rashi lord placed?
-  const lordRashiIndex = allPlanetRashiMap[rashiLord] ?? -1;
+  // Where is the rashi lord placed? RASHI_LORDS is title-cased while the chart
+  // layer keys this map 'SUN'…'KETU', so it is normalised first — a raw lookup
+  // misses every time and the reading claims the lord "is placed in house 0"
+  // with a default-neutral dignity.
+  const signByPlanet: Record<string, number> = {};
+  for (const [key, sign] of Object.entries(allPlanetRashiMap)) {
+    signByPlanet[normalizePlanetKey(key)] = sign;
+  }
+  const lordRashiIndex = signByPlanet[rashiLord] ?? -1;
   const lordHouse = lordRashiIndex >= 0
     ? ((lordRashiIndex - ascendantRashiIndex + 12) % 12) + 1
     : 0;
@@ -78,13 +90,17 @@ export function analyzeHouse(
 
   const houseTheme = pick(HOUSE_DISPLAY[houseNumber].theme, lang).toLowerCase();
   const planetEffects = planetsInHouse.map(pName => {
-    const sig = SIG_TEXT[pName];
+    // SIG_TEXT and PLANET_NAME are keyed in title case while the chart layer
+    // keys planets in upper case — without normalising, the keyword list comes
+    // back empty and the sentence reads "SATURN brings  into transformation".
+    const key = normalizePlanetKey(pName);
+    const sig = SIG_TEXT[key];
     const keywords = sig ? (lang === 'si' ? sig.keywords.si : sig.keywords.en).slice(0, 3).join(', ') : '';
     const isRetro = planets.find(p => p.planet === pName)?.isRetrograde ?? false;
     return {
       planet: pName,
       isRetrograde: isRetro,
-      effect: HOUSE_FRAMES.planetEffect(planetName(pName, lang), keywords, houseTheme, isRetro, lang),
+      effect: HOUSE_FRAMES.planetEffect(planetName(key, lang), keywords, houseTheme, isRetro, lang),
     };
   });
 
@@ -98,6 +114,8 @@ export function analyzeHouse(
     rashiName,
     rashiEnglish,
     houseData,
+    themeLabel: pick(HOUSE_DISPLAY[houseNumber].theme, lang),
+    ruleLabels: pickList(HOUSE_DISPLAY[houseNumber].rules, lang),
     rashiLord,
     lordDignity,
     lordHouse,

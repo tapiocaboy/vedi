@@ -658,8 +658,20 @@ function AppContent() {
 
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         {chartStyle === 'south'
-                          ? <SouthIndianChart planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
-                          : <NorthIndianChart  planets={chartData.planets} ascendantRashi={chartData.ascendant.rashiIndex} />
+                          ? <SouthIndianChart
+                              planets={chartData.planets}
+                              ascendantRashi={chartData.ascendant.rashiIndex}
+                              currentDasha={chartData.currentDasha}
+                              mahadashaTimeline={chartData.mahadashaTimeline}
+                              birthDate={chartData.birthData.date}
+                            />
+                          : <NorthIndianChart
+                              planets={chartData.planets}
+                              ascendantRashi={chartData.ascendant.rashiIndex}
+                              currentDasha={chartData.currentDasha}
+                              mahadashaTimeline={chartData.mahadashaTimeline}
+                              birthDate={chartData.birthData.date}
+                            />
                         }
                       </div>
 
