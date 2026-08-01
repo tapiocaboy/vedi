@@ -158,11 +158,9 @@ function AppContent() {
   };
 
   const handleTabClick = (id: ViewTab) => {
-    // Match is gated on the NVIDIA key, same as the chat button.
-    if (id === 'match') {
-      if (!chatConfigured) return;
-      setMatchExperimentalVisible(true);
-    }
+    // Match runs entirely on the local ephemeris — no API key involved — so it
+    // is always available. The experimental notice still shows on entry.
+    if (id === 'match') setMatchExperimentalVisible(true);
     setActiveTab(id);
   };
 
@@ -613,11 +611,7 @@ function AppContent() {
                     <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
                     <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
-                    {/* Match rides on the same NVIDIA key as the chat button —
-                        hidden entirely when the key is missing/empty. */}
-                    {chatConfigured && (
-                      <TabBtn id="match"  label={t('tab.match')}    icon={Heart}      />
-                    )}
+                    <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
                     <TabBtn id="doshas"   label={t('tab.doshas')}   icon={ShieldAlert} />
@@ -724,7 +718,7 @@ function AppContent() {
                   )}
 
                   {/* ── Match (Horoscope compatibility) ──────────── */}
-                  {activeTab === 'match' && birthData && chatConfigured && (
+                  {activeTab === 'match' && birthData && (
                     <motion.div key="match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <MatchTab person={birthData} />
                     </motion.div>
