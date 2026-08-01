@@ -265,6 +265,52 @@ describe('Layer 4 — the spec’s expected synastry', () => {
   });
 });
 
+describe('poruthams — the Southern-tradition checks on the reference case', () => {
+  const by = Object.fromEntries(report.poruthams.checks.map(c => [c.key, c]));
+
+  it('computes all four checks', () => {
+    expect(report.poruthams.checks).toHaveLength(4);
+  });
+
+  it('Rajju passes — Mula (Pada) against Dhanishta (Siro)', () => {
+    expect(by.rajju.passed).toBe(true);
+    expect(report.poruthams.rajjuFailed).toBe(false);
+  });
+
+  it('Vedha passes — not an obstruction pair', () => {
+    expect(by.vedha.passed).toBe(true);
+  });
+
+  it('Mahendra fails on a count of 5 from the girl’s star', () => {
+    expect(by.mahendra.passed).toBe(false);
+    expect(by.mahendra.detail.count).toBe(5);
+  });
+
+  it('Stree-Deergha fails below the 9 band', () => {
+    expect(by.streeDeergha.passed).toBe(false);
+  });
+});
+
+describe('Layer 4 — the widened contact set', () => {
+  const syn = computeSynastry(boy, girl);
+
+  it('reports the boy’s Rahu in the girl’s 7th house as adverse', () => {
+    // Boy's Rahu in Meena; girl's lagna Kanya → her 7th. The dusthana branch
+    // cannot see house 7, so before the malefic-in-7th contact this placement
+    // was silent.
+    const hit = syn.aToB.contacts.find(c => c.graha === 'Rahu' && c.type === 'malefic in 7th house');
+    expect(hit).toBeDefined();
+    expect(hit!.valence).toBe('adverse');
+  });
+
+  it('does not invent opposition contacts the reference charts lack', () => {
+    const oppTypes = ['Moon opposite Moon', 'Venus–Mars opposition', 'Saturn opposite Moon/Venus'];
+    for (const c of [...syn.aToB.contacts, ...syn.bToA.contacts]) {
+      expect(oppTypes).not.toContain(c.type);
+    }
+  });
+});
+
 describe('the output contract', () => {
   it('emits no overall compatibility percentage or verdict', () => {
     expect(report).not.toHaveProperty('percent');

@@ -89,6 +89,18 @@ function separation(a: number, b: number): number {
 const VALENCE_SIGN = { supportive: 1, adverse: -1, neutral: 0 };
 const NODES = ['Rahu', 'Ketu'];
 const BENEFICS = ['Jupiter', 'Venus', 'Mercury', 'Moon'];
+const MALEFICS = ['Saturn', 'Mars', 'Rahu', 'Ketu'];
+
+/** Whether two signs sit opposite each other (the 1/7 axis). */
+function opposite(a: number, b: number): boolean {
+  return (a + 6) % 12 === b;
+}
+
+/** Orb measured against exact opposition, for degree-weighted opposition contacts. */
+function oppositionOrb(a: number | undefined, b: number | undefined): number | null {
+  if (a == null || b == null) return null;
+  return Math.abs(separation(a, b) - 180);
+}
 
 /**
  * One direction of the overlay: `mover`'s grahas read in `receiver`'s chart.
@@ -189,6 +201,24 @@ function edgesFor(
       });
     }
 
+    // ── Malefic in the receiver's 7th house ──
+    // The 7th is the receiver's marriage house, and a malefic landing in it is
+    // the classic adverse overlay contact. The dusthana check above cannot see
+    // it (7 is not a dusthana) and the benefic branch below only reports the
+    // pleasant case, so without this the engine stayed silent about the single
+    // placement traditional synastry reads first.
+    if (MALEFICS.includes(graha) && house === 7) {
+      push({
+        graha, target: '7th house', type: 'malefic in 7th house',
+        weight: 'medium-high', orb: null, strength: 1,
+        valence: 'adverse',
+        interpretation:
+          graha === 'Saturn' ? "Saturn falls in the partner's marriage house — the relationship is felt as weight and obligation before it is felt as company."
+          : graha === 'Mars' ? "Mars falls in the partner's marriage house — heat in the partnership itself, argument living where accord should."
+          : `${graha} falls in the partner's marriage house — the partnership carries a distorting, compulsive undertone.`,
+      });
+    }
+
     // ── 7th lord to 7th lord ──
     if (graha === RASHI_LORDS[((mover.ascendantRashi ?? 0) + 6) % 12] && rashi === seventhLordRashi) {
       push({
@@ -211,6 +241,51 @@ function edgesFor(
         valence: 'supportive',
         interpretation: 'Venus and Mars meet across the two charts — straightforward physical attraction.',
       });
+    }
+
+    // ── Opposition contacts ──
+    // Every graha casts its full aspect on the 7th sign from itself, so the
+    // 1/7 axis is a contact, not an absence of one. Same-sign checks above miss
+    // it entirely, and the axis carries the three classic cases: the full-Moon
+    // polarity, Venus–Mars attraction across the axis, and Saturn pressing on
+    // the partner's Moon or Venus from opposite. Orbs are measured against
+    // exact opposition, and the weights sit one class below the same-sign
+    // versions of the same pairs.
+    if (graha === 'Moon' && rRashis.Moon != null && opposite(rashi, rRashis.Moon)) {
+      const orb = oppositionOrb(lon, receiver.planetLongitudes?.Moon);
+      push({
+        graha, target: 'Moon', type: 'Moon opposite Moon',
+        weight: 'medium', orb,
+        strength: orb != null ? decay(orb, SIGMA.luminary) : 1,
+        valence: 'supportive',
+        interpretation: 'The two Moons face each other across the axis — the full-Moon polarity. Strong pull, and moods that answer each other.',
+      });
+    }
+    if ((graha === 'Venus' && rRashis.Mars != null && opposite(rashi, rRashis.Mars))
+      || (graha === 'Mars' && rRashis.Venus != null && opposite(rashi, rRashis.Venus))) {
+      const target = graha === 'Venus' ? 'Mars' : 'Venus';
+      const orb = oppositionOrb(lon, receiver.planetLongitudes?.[target]);
+      push({
+        graha, target, type: 'Venus–Mars opposition',
+        weight: 'low-medium', orb,
+        strength: orb != null ? decay(orb, SIGMA.general) : 1,
+        valence: 'supportive',
+        interpretation: 'Venus and Mars face each other across the charts — attraction with an edge of pursuit.',
+      });
+    }
+    if (graha === 'Saturn') {
+      for (const target of ['Moon', 'Venus']) {
+        const tr = rRashis[target];
+        if (tr == null || !opposite(rashi, tr)) continue;
+        const orb = oppositionOrb(lon, receiver.planetLongitudes?.[target]);
+        push({
+          graha, target, type: 'Saturn opposite Moon/Venus',
+          weight: 'medium', orb,
+          strength: orb != null ? decay(orb, SIGMA.general) : 1,
+          valence: 'adverse',
+          interpretation: `Saturn stands opposite the partner's ${target} — a cooling pressure felt from across the relationship rather than inside it.`,
+        });
+      }
     }
 
     // ── Luminary to luminary ──
@@ -284,6 +359,15 @@ export function computeSynastry(a: MatchInput, b: MatchInput): SynastryResult {
   ].join(' ');
 
   return { aToB, bToA, defining, asymmetric, summary };
+}
+
+/**
+ * Rank value of a contact — weight class × orb strength. The engine sorts by
+ * this internally; it is exported so the visual layer ranks and sizes contacts
+ * by the same measure instead of re-deriving one.
+ */
+export function contactRank(c: SynastryContact): number {
+  return WEIGHT_VALUE[c.weight] * c.strength;
 }
 
 /** "1°31'" — orbs are conventionally read in degrees and minutes. */

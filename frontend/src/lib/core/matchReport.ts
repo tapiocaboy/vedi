@@ -19,13 +19,15 @@ import {
 } from './matching';
 import { assessMarriagePromise, type MarriagePromise } from './matchPromise';
 import { computeSynastry, type SynastryResult } from './matchSynastry';
+import { computePoruthams, type PoruthamResult } from './matchPorutham';
 
 export type ConflictCode =
   | 'layer1_strong_layer4_adverse'
   | 'layer1_weak_layer3_strong_both'
   | 'synastry_asymmetric'
   | 'dosha_mutual_cancel'
-  | 'layer1_strong_layer3_weak';
+  | 'layer1_strong_layer3_weak'
+  | 'rajju_vs_guna';
 
 export interface Conflict {
   code: ConflictCode;
@@ -35,6 +37,13 @@ export interface Conflict {
 
 export interface LayeredMatchReport {
   layer1Temperament: GunaMilanDetail;
+  /**
+   * The four Southern-tradition star checks Ashtakoot cannot see (Rajju, Vedha,
+   * Mahendra, Stree-Deergha). Same layer as temperament — all read the Moon's
+   * nakshatra — but kept separate because a failed Rajju is a headline result
+   * in that tradition, not a deduction from a total.
+   */
+  poruthams: PoruthamResult;
   layer2Doshas: {
     a: ChartDoshas;
     b: ChartDoshas;
@@ -89,6 +98,7 @@ export function buildLayeredReport(
   const boy = roles.aIsFemale ? b : a;
   const girl = roles.aIsFemale ? a : b;
   const layer1Temperament = computeGunaMilan(boy, girl);
+  const poruthams = computePoruthams(girl.moonNakshatra, boy.moonNakshatra);
 
   // Layer 2 is per chart, without reference to the other party.
   const doshaA = analyseChartDoshas(a);
@@ -154,6 +164,16 @@ export function buildLayeredReport(
     });
   }
 
+  if (poruthams.rajjuFailed && l1Strong) {
+    conflicts.push({
+      code: 'rajju_vs_guna',
+      explanation:
+        `The koota total is strong (${layer1Temperament.total}/36) but both Moons sit on the same rajju rope. ` +
+        'A Southern-tradition matcher would flag this pairing on the Rajju check alone, whatever the point total says — ' +
+        'the two systems genuinely disagree here, and both readings are given.',
+    });
+  }
+
   if (l1Strong && (promiseIsWeak(layer3Promise.a) || promiseIsWeak(layer3Promise.b))) {
     const which = promiseIsWeak(layer3Promise.a) && promiseIsWeak(layer3Promise.b) ? 'both charts'
       : promiseIsWeak(layer3Promise.a) ? 'the first chart' : 'the second chart';
@@ -186,6 +206,7 @@ export function buildLayeredReport(
 
   return {
     layer1Temperament,
+    poruthams,
     layer2Doshas: { a: doshaA, b: doshaB, mutualKuja, netA, netB },
     layer3Promise,
     layer4Synastry,

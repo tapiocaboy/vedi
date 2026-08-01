@@ -11,6 +11,9 @@ import type {
   BirthData, MatchSummary, KootaScore, DoshaResult, DoshaSeverity, Conflict,
   MarriagePromise, SynastryContact,
 } from '../../services/api';
+import type { PoruthamCheck } from '../../lib/core/matchPorutham';
+import { MatchVerdict } from './MatchVerdict';
+import { SynastryWeb } from './SynastryWeb';
 import type {
   MatchDimension, DimensionBand, DimensionKey, Friction,
 } from '../../lib/core/matchInsights';
@@ -349,14 +352,67 @@ const FrictionCard: React.FC<{ f: Friction }> = ({ f }) => {
   );
 };
 
+/**
+ * The four Southern-tradition star checks. Rajju leads and is marked critical —
+ * for the readership this app serves, it is the check a family matcher reads
+ * before any point total.
+ */
+const PoruthamCard: React.FC<{ checks: PoruthamCheck[] }> = ({ checks }) => {
+  const { t } = useLang();
+  return (
+    <div className="glass-card rounded-2xl p-6 space-y-2.5">
+      <div>
+        <h4 className="text-sm font-semibold text-white">{t('match.poruthamTitle')}</h4>
+        <p className="text-[11px] text-white/40">{t('match.poruthamSubtitle')}</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        {checks.map((c, i) => {
+          const color = c.passed ? (c.partial ? '#fbbf24' : '#34d399') : '#fb7185';
+          const Icon = c.passed ? (c.partial ? AlertTriangle : Check) : X;
+          return (
+            <motion.div
+              key={c.key}
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="rounded-xl border p-3"
+              style={{ borderColor: `${color}40`, background: `${color}0a` }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Icon className="w-3.5 h-3.5 shrink-0" style={{ color }} />
+                <span className="text-xs font-semibold text-white">
+                  {t(`match.porutham.${c.key}` as 'match.porutham.rajju')}
+                </span>
+                {c.importance === 'critical' && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wide font-bold"
+                    style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.45)' }}>
+                    {t('match.poruthamCritical')}
+                  </span>
+                )}
+                <span className="ml-auto text-[10px] uppercase tracking-wider font-semibold" style={{ color }}>
+                  {c.passed ? (c.partial ? t('match.poruthamPartial') : t('match.poruthamPass')) : t('match.poruthamFail')}
+                </span>
+              </div>
+              <p className="text-[11px] text-white/65 leading-relaxed">{c.reason}</p>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ summary, onReset }) => {
   const { t } = useLang();
   const [showClassical, setShowClassical] = useState(false);
+  const [showSynDetail, setShowSynDetail] = useState(false);
   const r = summary.report;
   const ins = summary.insights;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+      {/* The plain-words opening: dial, headline and the four layer checks. */}
+      <MatchVerdict summary={summary} />
+
       <LayerPanel summary={summary} />
 
       {/* An honest paragraph on what the number does and does not mean —
@@ -371,6 +427,18 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
       </div>
 
       <ConflictStrip conflicts={r.conflicts} />
+
+      {/* Which planets get along — the overlay drawn as a picture. */}
+      <div className="glass-card rounded-2xl p-6">
+        <div className="mb-3">
+          <h4 className="text-sm font-semibold text-white">{t('match.webTitle')}</h4>
+          <p className="text-[11px] text-white/40">{t('match.webSubtitle')}</p>
+        </div>
+        <SynastryWeb synastry={r.layer4Synastry} />
+      </div>
+
+      {/* The Sri Lankan / Southern star checks Ashtakoot cannot see. */}
+      <PoruthamCard checks={r.poruthams.checks} />
 
       {/* The five dimensions — the Layer 1 reading, regrouped. */}
       <div className="glass-card rounded-2xl p-6 space-y-3">
@@ -430,17 +498,29 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
         </div>
       )}
 
-      {/* Layer 4 — the overlay, kept directional. */}
-      <div className="glass-card rounded-2xl p-6 space-y-3">
-        <div>
-          <h4 className="text-sm font-semibold text-white">{t('match.synastryTitle')}</h4>
-          <p className="text-[11px] text-white/40">{t('match.synastrySubtitle')}</p>
-        </div>
-        <p className="text-[11.5px] text-white/70 leading-relaxed">{r.layer4Synastry.summary}</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          <SynastryList title={t('match.aToB')} contacts={r.layer4Synastry.aToB.contacts} net={r.layer4Synastry.aToB.netValence} />
-          <SynastryList title={t('match.bToA')} contacts={r.layer4Synastry.bToA.contacts} net={r.layer4Synastry.bToA.netValence} />
-        </div>
+      {/* Layer 4 — the directional detail behind the web, folded away because
+          the picture above already tells the story; this is the arithmetic. */}
+      <div className="glass-card rounded-2xl p-4">
+        <button
+          onClick={() => setShowSynDetail(v => !v)}
+          aria-expanded={showSynDetail}
+          data-open={showSynDetail}
+          className="tap-row tap-blink w-full flex items-center justify-between text-left rounded-lg py-2 pl-5 pr-2"
+        >
+          <span className="text-xs font-semibold text-white/70">
+            {showSynDetail ? t('match.hideSynDetail') : t('match.showSynDetail')}
+          </span>
+          <TapBadge open={showSynDetail} direction="down" />
+        </button>
+        {showSynDetail && (
+          <div className="space-y-3 mt-3">
+            <p className="text-[11.5px] text-white/70 leading-relaxed">{r.layer4Synastry.summary}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <SynastryList title={t('match.aToB')} contacts={r.layer4Synastry.aToB.contacts} net={r.layer4Synastry.aToB.netValence} />
+              <SynastryList title={t('match.bToA')} contacts={r.layer4Synastry.bToA.contacts} net={r.layer4Synastry.bToA.netValence} />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="glass-card rounded-2xl p-6 space-y-3">
