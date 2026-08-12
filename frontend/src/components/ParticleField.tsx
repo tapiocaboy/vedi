@@ -14,8 +14,11 @@ interface Particle {
   wobbleAmp: number;
 }
 
-const COUNT = 120;
+const COUNT = 55;
 const LINK_DIST = 150;
+const MAX_DPR = 1.5;
+const FRAME_INTERVAL = 1000 / 30; // cap at 30fps regardless of display refresh rate
+const SPRITE_SIZE = 96; // pre-rendered bloom sprite, reused every frame
 
 const COLORS_DARK = [
   [255, 46, 81],    // pink
@@ -72,6 +75,27 @@ function seed(w: number, h: number): Particle[] {
   return out;
 }
 
+// Pre-rasterize each color's radial bloom once so the hot loop can drawImage()
+// a cached sprite instead of allocating + filling a new gradient per particle
+// per frame (the single biggest CPU/GPU cost in this component).
+function buildSprites(colors: number[][]): HTMLCanvasElement[] {
+  const center = SPRITE_SIZE / 2;
+  return colors.map(([r, g, b]) => {
+    const c = document.createElement('canvas');
+    c.width = SPRITE_SIZE;
+    c.height = SPRITE_SIZE;
+    const cx = c.getContext('2d')!;
+    const grad = cx.createRadialGradient(center, center, 0, center, center, center);
+    grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    cx.fillStyle = grad;
+    cx.beginPath();
+    cx.arc(center, center, center, 0, Math.PI * 2);
+    cx.fill();
+    return c;
+  });
+}
+
 export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const pts = useRef<Particle[]>([]);
@@ -82,11 +106,20 @@ export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
   useEffect(() => {
     const cvs = ref.current;
     if (!cvs) return;
+
+    // Respect the OS-level motion preference outright: don't just hide the
+    // canvas visually (CSS already does that below 640px / reduced-motion),
+    // skip running the animation loop at all so it costs zero CPU.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
     const ctx = cvs.getContext('2d', { alpha: true });
     if (!ctx) return;
 
+    const spritesDark = buildSprites(COLORS_DARK);
+    const spritesLight = buildSprites(COLORS_LIGHT);
+
     const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       cvs.width = window.innerWidth * dpr;
       cvs.height = window.innerHeight * dpr;
       cvs.style.width = `${window.innerWidth}px`;
@@ -99,9 +132,16 @@ export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
     resize();
     window.addEventListener('resize', resize);
 
-    const draw = () => {
+    let lastFrame = 0;
+
+    const draw = (now: number) => {
+      raf.current = requestAnimationFrame(draw);
+      if (now - lastFrame < FRAME_INTERVAL) return;
+      lastFrame = now;
+
       const light = lightRef.current;
       const pal = light ? COLORS_LIGHT : COLORS_DARK;
+      const sprites = light ? spritesLight : spritesDark;
       const w = window.innerWidth;
       const h = window.innerHeight;
       ctx.clearRect(0, 0, w, h);
@@ -156,14 +196,11 @@ export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
         const m = light ? 0.55 : 1;
         const rad = pt.r + glow * 1.2;
 
-        // Outer bloom
-        const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rad * 5);
-        grad.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${a * m * 0.25})`);
-        grad.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, rad * 5, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
+        // Outer bloom — cached sprite, just blitted (no gradient allocation)
+        const bloomR = rad * 5;
+        ctx.globalAlpha = a * m * 0.25;
+        ctx.drawImage(sprites[pt.colorIdx], pt.x - bloomR, pt.y - bloomR, bloomR * 2, bloomR * 2);
+        ctx.globalAlpha = 1;
 
         // Core dot
         ctx.beginPath();
@@ -185,14 +222,26 @@ export const ParticleField: React.FC<{ isLight: boolean }> = ({ isLight }) => {
           ctx.stroke();
         }
       }
-
-      raf.current = requestAnimationFrame(draw);
     };
 
     raf.current = requestAnimationFrame(draw);
+
+    // Stop burning CPU/GPU entirely while the tab isn't visible — rAF is
+    // throttled in background tabs by most browsers but not reliably to zero.
+    const handleVisibility = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(raf.current);
+      } else {
+        lastFrame = 0;
+        raf.current = requestAnimationFrame(draw);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       cancelAnimationFrame(raf.current);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
