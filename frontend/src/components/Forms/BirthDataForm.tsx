@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2 } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
@@ -11,6 +11,8 @@ import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidat
 interface Props {
   onSubmit: (data: BirthData) => void;
   isLoading?: boolean;
+  /** Forces the astrology system and hides the picker — used by the Match tab's partner form, which must stay on the same system as the primary chart. */
+  lockSystem?: 'VEDIC' | 'WESTERN';
 }
 
 // All UTC offsets and common timezones
@@ -128,12 +130,12 @@ const BROWSER_TZ = (() => {
 })();
 const BROWSER_TZ_IN_LIST = TIMEZONES.some(tz => tz.value === BROWSER_TZ) ? BROWSER_TZ : null;
 
-function loadSaved(): { latitude: string; longitude: string; timezone: string; ayanamsa: string } {
+function loadSaved(): { latitude: string; longitude: string; timezone: string; ayanamsa: string; system: string } {
   try {
     const raw = localStorage.getItem(LOCATION_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { system: 'VEDIC', ...JSON.parse(raw) };
   } catch {}
-  return { latitude: '', longitude: '', timezone: BROWSER_TZ_IN_LIST ?? 'UTC', ayanamsa: 'LAHIRI' };
+  return { latitude: '', longitude: '', timezone: BROWSER_TZ_IN_LIST ?? 'UTC', ayanamsa: 'LAHIRI', system: 'VEDIC' };
 }
 
 /** "6.91° N" style coordinate readout. */
@@ -143,7 +145,7 @@ function fmtCoord(value: string, pos: string, neg: string): string | null {
   return `${Math.abs(n).toFixed(2)}° ${n >= 0 ? pos : neg}`;
 }
 
-export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) => {
+export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lockSystem }) => {
   const { t } = useLang();
   const saved = useRef(loadSaved());
 
@@ -154,8 +156,14 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
     longitude: saved.current.longitude,
     timezone:  saved.current.timezone  || 'Etc/GMT+4',
     ayanamsa:  (saved.current.ayanamsa || 'LAHIRI') as 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN',
+    system: (lockSystem ?? (saved.current.system === 'WESTERN' ? 'WESTERN' : 'VEDIC')) as 'VEDIC' | 'WESTERN',
   });
 
+  // A locked system (the Match tab's partner form) always tracks the parent
+  // chart's system, even if the parent re-renders with a different one.
+  useEffect(() => {
+    if (lockSystem) setFormData(prev => (prev.system === lockSystem ? prev : { ...prev, system: lockSystem }));
+  }, [lockSystem]);
 
   // Persist location fields whenever they change
   useEffect(() => {
@@ -165,9 +173,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         longitude: formData.longitude,
         timezone:  formData.timezone,
         ayanamsa:  formData.ayanamsa,
+        system:    formData.system,
       }));
     } catch {}
-  }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa]);
+  }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa, formData.system]);
 
   /**
    * Input faults that produce a plausible-looking but wrong chart — a western
@@ -199,6 +208,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
       longitude: parseFloat(formData.longitude),
       timezone:  formData.timezone,
       ayanamsa:  formData.ayanamsa,
+      system:    formData.system,
     };
     onSubmit(birthData);
   };
@@ -266,6 +276,35 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Astrology system — Vedic (sidereal, unchanged) or Western (tropical) */}
+      {!lockSystem && (
+        <div>
+          <label className={labelClasses}>
+            <Globe2 className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            {t('form.system')}
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['VEDIC', 'WESTERN'] as const).map(sys => (
+              <button
+                key={sys}
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, system: sys }))}
+                aria-pressed={formData.system === sys}
+                className={`px-3.5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                  formData.system === sys ? 'text-white on-accent border-transparent' : 'preset-btn'
+                }`}
+                style={formData.system === sys ? { backgroundColor: 'var(--c-accent)' } : undefined}
+              >
+                {sys === 'VEDIC' ? t('form.systemVedic') : t('form.systemWestern')}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-[11px] form-label">
+            {formData.system === 'VEDIC' ? t('form.systemVedicHint') : t('form.systemWesternHint')}
+          </p>
+        </div>
+      )}
+
       {/* Date & Time */}
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -399,23 +438,25 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false }) 
         </select>
       </div>
 
-      {/* Ayanamsa */}
-      <div>
-        <label className={labelClasses}>
-          <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
-          {t('form.ayanamsa')}
-        </label>
-        <select
-          name="ayanamsa"
-          value={formData.ayanamsa}
-          onChange={handleChange}
-          className={inputClasses}
-        >
-          {AYANAMSAS.map(ay => (
-            <option key={ay.value} value={ay.value}>{t(ay.labelKey)}</option>
-          ))}
-        </select>
-      </div>
+      {/* Ayanamsa — meaningless for a tropical (Western) chart, so Vedic-only */}
+      {formData.system === 'VEDIC' && (
+        <div>
+          <label className={labelClasses}>
+            <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            {t('form.ayanamsa')}
+          </label>
+          <select
+            name="ayanamsa"
+            value={formData.ayanamsa}
+            onChange={handleChange}
+            className={inputClasses}
+          >
+            {AYANAMSAS.map(ay => (
+              <option key={ay.value} value={ay.value}>{t(ay.labelKey)}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Input faults that would silently produce the wrong chart */}
       {validation.length > 0 && (

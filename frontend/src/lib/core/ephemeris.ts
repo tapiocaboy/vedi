@@ -9,25 +9,10 @@
  * Swiss Ephemeris is dual-licensed (GPL or commercial). See node_modules/swisseph-wasm/LICENSE.
  */
 
-import SwissEphBase from 'swisseph-wasm';
+import { getSwe, preloadEphemeris, mod360, jdFromLocal, type SwissEph } from './swissEph';
 
-// Swiss Ephemeris WASM + ephemeris data file + Emscripten loader. The
-// swissephAssets() plugin in vite.config.ts serves these from /wasm/ in dev
-// and emits them under dist/wasm/ in build. We avoid `swisseph-wasm/wasm/*`
-// imports because the package's exports field blocks deep imports.
-const WASM_BASE = '/wasm/';
-const wasmUrl = `${WASM_BASE}swisseph.wasm`;
-const dataUrl = `${WASM_BASE}swisseph.data`;
-const loaderUrl = `${WASM_BASE}swisseph.js`;
-
-// The bundled .d.ts is incomplete (missing `houses_ex` and `get_ayanamsa_ut`,
-// and `houses` is mistyped). Augment the type with what we actually call.
-type SwissEph = SwissEphBase & {
-  SweModule: unknown;
-  set_ephe_path(path: string): void;
-  houses_ex(jd: number, iflag: number, lat: number, lon: number, hsys: string): { cusps: Float64Array; ascmc: Float64Array };
-  get_ayanamsa_ut(jd: number): number;
-};
+// Re-exported for existing callers (main.tsx preloads at startup).
+export { preloadEphemeris };
 
 export type AyanamsaSystem = 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN';
 
@@ -43,41 +28,6 @@ export interface PlanetPosition {
   isRetrograde: boolean;
 }
 
-// ─── WASM singleton (lazy-init, cached promise) ──────────────────────────────
-let _sweInstancePromise: Promise<SwissEph> | null = null;
-
-function getSwe(): Promise<SwissEph> {
-  if (!_sweInstancePromise) {
-    _sweInstancePromise = (async () => {
-      // Dynamically import the Emscripten loader from /wasm/ so we can pass our
-      // own locateFile (the bundled wrapper's path resolution doesn't survive
-      // Vite's pre-bundling).
-      const mod = await import(/* @vite-ignore */ loaderUrl);
-      const factory = (mod as { default: (cfg: unknown) => Promise<{ HEAP32?: Int32Array; HEAPF64: Float64Array }> }).default;
-      const SweModule = await factory({
-        locateFile: (p: string) => {
-          if (p.endsWith('.wasm')) return wasmUrl;
-          if (p.endsWith('.data')) return dataUrl;
-          return p;
-        },
-      });
-      if (!SweModule.HEAP32) {
-        SweModule.HEAP32 = new Int32Array(SweModule.HEAPF64.buffer);
-      }
-      const swe = new SwissEphBase() as SwissEph;
-      swe.SweModule = SweModule;
-      swe.set_ephe_path('sweph');
-      return swe;
-    })();
-  }
-  return _sweInstancePromise;
-}
-
-/** Preload Swiss Ephemeris WASM. Call at app startup to avoid latency on first calc. */
-export function preloadEphemeris(): Promise<void> {
-  return getSwe().then(() => undefined);
-}
-
 // SE_SIDM_* values from Swiss Ephemeris. LAHIRI here is the true Chitrapaksha
 // definition (Spica anchored), not a linear extrapolation.
 const SID_MODES: Record<AyanamsaSystem, number> = {
@@ -87,10 +37,6 @@ const SID_MODES: Record<AyanamsaSystem, number> = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function mod360(x: number): number {
-  return ((x % 360) + 360) % 360;
-}
-
 const NAKSHATRA_SPAN = 360 / 27;
 const PADA_SPAN = NAKSHATRA_SPAN / 4;
 
@@ -110,54 +56,6 @@ function buildPosition(
   const slon = mod360(lon);
   const { rashi, rashiDegree, nakshatra, nakshatraPada } = decompose(slon);
   return { longitude: slon, latitude: lat, distance: dist, speed, rashi, rashiDegree, nakshatra, nakshatraPada, isRetrograde };
-}
-
-/** Convert local datetime string to UTC Date using Intl.DateTimeFormat. */
-function localToUTC(localDateStr: string, timezone: string): Date {
-  const [datePart, timePart = '00:00:00'] = localDateStr.split('T');
-  const [year, month, day] = datePart.split('-').map(Number);
-  const parts = timePart.replace('Z', '').split(':');
-  const hour = parseInt(parts[0] || '0');
-  const minute = parseInt(parts[1] || '0');
-  const second = parseInt(parts[2] || '0');
-
-  // POSIX-style Etc/GMT±X (sign is inverted: Etc/GMT+5 means UTC−5)
-  const etcMatch = timezone.match(/^Etc\/GMT([+-])(\d+)$/);
-  if (etcMatch) {
-    const sign = etcMatch[1] === '+' ? -1 : 1;
-    const offsetMin = sign * parseInt(etcMatch[2]) * 60;
-    return new Date(Date.UTC(year, month - 1, day, hour, minute, second) - offsetMin * 60000);
-  }
-  if (timezone === 'UTC') {
-    return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-  }
-
-  // Named IANA timezones: iterative convergence via Intl
-  let approx = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-  const getLocal = (d: Date) => {
-    const f = new Intl.DateTimeFormat('en-GB', {
-      timeZone: timezone,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-    });
-    const p = Object.fromEntries(f.formatToParts(d).map(x => [x.type, x.value]));
-    return new Date(Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second));
-  };
-
-  for (let i = 0; i < 3; i++) {
-    const localUtc = getLocal(approx);
-    const target = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-    const diff = target.getTime() - localUtc.getTime();
-    approx = new Date(approx.getTime() + diff);
-    if (Math.abs(diff) < 1000) break;
-  }
-  return approx;
-}
-
-function jdFromLocal(swe: SwissEph, localDateStr: string, timezone: string): number {
-  const utc = localToUTC(localDateStr, timezone);
-  const hour = utc.getUTCHours() + utc.getUTCMinutes() / 60 + utc.getUTCSeconds() / 3600;
-  return swe.julday(utc.getUTCFullYear(), utc.getUTCMonth() + 1, utc.getUTCDate(), hour);
 }
 
 // ─── Main entry point ────────────────────────────────────────────────────────

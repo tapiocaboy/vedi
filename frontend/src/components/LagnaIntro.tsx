@@ -9,9 +9,17 @@
  *
  * Motion is a spring-damper plus a decaying vortex term rather than a straight
  * tween, and each particle is stroked from its previous position to its current
- * one. That is what produces the look: a still particle is a gold speck, a fast
- * one is a long curved dash, and the whole cloud reads as flowing rather than
- * sliding. Everything is gold on black.
+ * one. That is what produces the look: a still particle is a speck, a fast one
+ * is a long curved dash, and the whole cloud reads as flowing rather than
+ * sliding. The assemble/hold/dissolve physics is shared by every theme; only
+ * the *skin* changes per `theme` — palette, backdrop, label colour, and for
+ * two of them the render primitive itself:
+ *   - default (dark/light):  gold streaks, unchanged from the original.
+ *   - chalk (mono theme):    chalk-yellow strokes with a hand-trembled jitter.
+ *   - terminal (terminal):   phosphor-green monospace characters — digital
+ *                             rain assembling into the glyph, not dots.
+ *   - aqua (azure theme):    blue droplets with a specular highlight, plus a
+ *                             couple of expanding ripples once the figure lands.
  *
  * The figures are sampled, not drawn: the emoji is rendered once to an
  * offscreen canvas and every opaque pixel becomes a particle target, which is
@@ -21,7 +29,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useLang } from '../i18n/LanguageContext';
 import { labelRashi, labelRashiWestern } from '../i18n/astroLabels';
 import { RASHIS, RASHI_ENGLISH } from '../lib/core/rashi';
@@ -82,12 +90,45 @@ const DETAIL_SHARE  = 0.31;
 const ALPHA_MIN = 110;
 const LUM_STEP  = 46;
 
-/** Gold, three tiers: core, deep amber, pale highlight. */
-const GOLD: [number, number, number][] = [
-  [255, 203, 58],
-  [246, 166, 35],
-  [255, 236, 178],
-];
+type Variant = 'default' | 'chalk' | 'terminal' | 'aqua';
+
+/** Which reveal skin each theme id gets. Anything unrecognised is 'default'. */
+function variantFor(theme: string | undefined): Variant {
+  if (theme === 'mono') return 'chalk';
+  if (theme === 'terminal') return 'terminal';
+  if (theme === 'azure') return 'aqua';
+  return 'default';
+}
+
+/** Three tiers per variant: core, deep, pale highlight — same shape as the original GOLD table. */
+const PALETTE: Record<Variant, [number, number, number][]> = {
+  default:  [[255, 203, 58], [246, 166, 35], [255, 236, 178]], // gold
+  chalk:    [[240, 220, 148], [217, 192, 121], [250, 249, 242]], // chalk yellow, matches the chalkboard theme's accent
+  terminal: [[51, 255, 102], [34, 204, 77], [207, 255, 223]], // phosphor green, matches the terminal theme's accent
+  aqua:     [[37, 99, 235], [29, 78, 216], [147, 197, 253]], // azure blue, matches the azure theme's accent
+};
+
+const BACKDROP: Record<Variant, string> = {
+  default:  'radial-gradient(ellipse at center, #0a0803 0%, #000000 68%)',
+  chalk:    'radial-gradient(ellipse at center, #232320 0%, #141413 70%)',
+  terminal: 'radial-gradient(ellipse at center, #04140a 0%, #000000 70%)',
+  aqua:     'radial-gradient(ellipse at center, #0a2a5c 0%, #020817 72%)',
+};
+
+const LABEL_COLOR: Record<Variant, { tag: string; title: string; sub: string }> = {
+  default:  { tag: 'rgba(255,203,58,0.8)',  title: '#ffecb2', sub: 'rgba(246,166,35,0.55)' },
+  chalk:    { tag: 'rgba(240,220,148,0.85)', title: '#faf9f2', sub: 'rgba(217,192,121,0.6)' },
+  terminal: { tag: 'rgba(51,255,102,0.85)',  title: '#cfffdf', sub: 'rgba(51,255,102,0.55)' },
+  aqua:     { tag: 'rgba(96,165,250,0.9)',   title: '#dbeafe', sub: 'rgba(147,197,253,0.65)' },
+};
+
+/** ASCII-only so canvas monospace metrics stay predictable across platforms. */
+const RAIN_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*<>/\\+=-_'.split('');
+const randomRainChar = () => RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)];
+
+/** Ripple ring timing for the aqua variant's "splash" once the figure lands. */
+const RIPPLE_LIFE = 750;
+const RIPPLE_DELAYS = [0, 160, 340];
 
 interface Particle {
   /** Figure target, in canvas px. */
@@ -107,6 +148,8 @@ interface Particle {
   tint: number;
   /** A tenth of the cloud runs brighter and longer — the "lead" dashes. */
   lead: boolean;
+  /** Terminal variant only — the glyph this particle draws instead of a dot. */
+  char?: string;
 }
 
 type Pt = { x: number; y: number };
@@ -224,9 +267,11 @@ interface Props {
   /** Ascendant sign to reveal, or null when idle. */
   rashiIndex: number | null;
   onDone: () => void;
+  /** Active app theme id — picks the reveal's palette/backdrop/render style. */
+  theme?: string;
 }
 
-export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
+export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
   const { lang, t } = useLang();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Kept in a ref so the animation loop never restarts when the parent re-renders.
@@ -234,6 +279,8 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
   doneRef.current = onDone;
 
   const active = rashiIndex !== null;
+  const variant = variantFor(theme);
+  const palette = PALETTE[variant];
 
   useEffect(() => {
     if (rashiIndex === null) return;
@@ -253,6 +300,14 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
     const count = Math.min(budget, figure.length);
 
     const particles: Particle[] = [];
+    // Terminal font per tier — set once, then cached across the run rather
+    // than re-parsed every fillText call (tiers stay contiguous in the array,
+    // so this changes at most twice per frame).
+    const termFonts = ['13px', '11px', '9px'].map(
+      size => `${size} "JetBrains Mono", ui-monospace, monospace`,
+    );
+    // Aqua "splash" rings, triggered once the figure finishes assembling.
+    const ripples = variant === 'aqua' ? RIPPLE_DELAYS.map(delay => ({ start: -1, delay })) : [];
 
     const layout = () => {
       w = canvas.clientWidth;
@@ -299,6 +354,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
               : 0.7 + Math.random() * 0.55,
           tint: tier === 0 ? (i % 4 === 0 ? 2 : 0) : tier === 1 ? 0 : 1,
           lead: tier === 0 && i % 8 === 0,
+          char: variant === 'terminal' ? randomRainChar() : undefined,
         });
       }
     };
@@ -313,6 +369,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
     let finished = false;
     const t0 = performance.now();
     let last = t0;
+    let fontTier = -1;
 
     const frame = (now: number) => {
       const elapsed = now - t0;
@@ -324,6 +381,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
       ctx.clearRect(0, 0, w, h);
       ctx.globalCompositeOperation = 'lighter';
       ctx.lineCap = 'round';
+      if (variant === 'terminal') { ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; }
 
       const pAssemble = clamp01(elapsed / ASSEMBLE);
       const pDissolve = clamp01((elapsed - ASSEMBLE - HOLD) / DISSOLVE);
@@ -394,10 +452,29 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
         // tying the two together dimmed the figure precisely when it settled
         // into shape, which is the one moment it has to read clearly.
         const speed = Math.hypot(p.x - p.px, p.y - p.py);
-        const [r, g, b] = GOLD[p.tint];
+        const [r, g, b] = palette[p.tint];
         const base = p.lead ? 0.95 : 0.74;
         const a = Math.min(1, base + speed * 0.05) * selfAlpha;
         if (a <= 0.01) continue;
+
+        if (variant === 'terminal' && p.char) {
+          // Digital rain: a glyph, not a dot — a faint flicker keeps the
+          // characters cycling like a real terminal feed. No ctx.shadow* here:
+          // canvas shadow blur is a full convolution pass per call, and at
+          // thousands of particles a frame it stretched a 4s reveal past 10s.
+          // The plain fillText below is exactly as cheap as the dot/arc path
+          // the other variants use.
+          if (Math.random() < 0.02) p.char = randomRainChar();
+          if (p.tint !== fontTier) { ctx.font = termFonts[p.tint]; fontTier = p.tint; }
+          ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+          ctx.fillText(p.char, p.x, p.y);
+          continue;
+        }
+
+        // Chalk trembles very slightly as it's drawn — a hand is not a plotter.
+        const jx = variant === 'chalk' ? Math.sin(p.flowPhase + elapsed * 0.006) * 0.5 : 0;
+        const jy = variant === 'chalk' ? Math.cos(p.flowPhase * 1.3 + elapsed * 0.005) * 0.5 : 0;
+        const dx0 = p.x + jx, dy0 = p.y + jy;
 
         if (speed > 0.6) {
           // Stretch the streak back along the travel direction; lead particles
@@ -408,21 +485,50 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
           ctx.strokeStyle = `rgba(${r},${g},${b},${a})`;
           ctx.lineWidth = p.size * (p.lead ? 1.5 : 1.1);
           ctx.beginPath();
-          ctx.moveTo(p.x - (p.x - p.px) * tail, p.y - (p.y - p.py) * tail);
-          ctx.lineTo(p.x, p.y);
+          ctx.moveTo(dx0 - (p.x - p.px) * tail, dy0 - (p.y - p.py) * tail);
+          ctx.lineTo(dx0, dy0);
           ctx.stroke();
         } else {
           ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * 1.15, 0, Math.PI * 2);
+          ctx.arc(dx0, dy0, p.size * 1.15, 0, Math.PI * 2);
           ctx.fill();
+
+          // Aqua droplets get a small pale specular highlight when at rest —
+          // outline/detail tiers only, so the flat fill doesn't double the cost.
+          if (variant === 'aqua' && p.tint !== 1) {
+            const [hr, hg, hb] = palette[2];
+            ctx.fillStyle = `rgba(${hr},${hg},${hb},${a * 0.6})`;
+            ctx.beginPath();
+            ctx.arc(dx0 - p.size * 0.4, dy0 - p.size * 0.4, p.size * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+          }
         }
         // Soft halo under every particle. On 'lighter' compositing the overlaps
         // are what give the settled figure its glow rather than a dot screen.
         ctx.fillStyle = `rgba(${r},${g},${b},${a * (p.lead ? 0.16 : 0.10)})`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (p.lead ? 3.4 : 2.6), 0, Math.PI * 2);
+        ctx.arc(dx0, dy0, p.size * (p.lead ? 3.4 : 2.6), 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Aqua: a couple of expanding, fading rings once the figure lands —
+      // the "splash" the droplets made on arrival.
+      if (variant === 'aqua') {
+        const maxR = scale * 0.6;
+        for (const ripple of ripples) {
+          if (ripple.start < 0 && elapsed >= ASSEMBLE + ripple.delay) ripple.start = elapsed;
+          if (ripple.start < 0) continue;
+          const age = elapsed - ripple.start;
+          if (age >= RIPPLE_LIFE) continue;
+          const p = easeOutCubic(clamp01(age / RIPPLE_LIFE));
+          const [r, g, b] = palette[2];
+          ctx.strokeStyle = `rgba(${r},${g},${b},${0.32 * (1 - p)})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(cxp, cyp, 10 + p * maxR, 0, Math.PI * 2);
+          ctx.stroke();
+        }
       }
 
       if (elapsed >= TOTAL) {
@@ -441,12 +547,18 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
     };
-  }, [rashiIndex]);
+  }, [rashiIndex, variant]);
 
   const sanskrit = rashiIndex !== null ? labelRashi(rashiIndex, lang, RASHIS[rashiIndex]) : '';
   const western  = rashiIndex !== null ? labelRashiWestern(rashiIndex, lang, RASHI_ENGLISH[rashiIndex]) : '';
+  const labelColor = LABEL_COLOR[variant];
 
   return (
+    // The theme this reveal is playing under may itself run with reduced
+    // motion (chalkboard sets it app-wide) — this moment should always fade
+    // smoothly regardless; only the OS-level preference (checked before this
+    // component is ever mounted) should suppress it.
+    <MotionConfig reducedMotion="never">
     <AnimatePresence>
       {active && (
         <motion.div
@@ -464,7 +576,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
               of waiting behind a black screen. */}
           <motion.div
             className="absolute inset-0"
-            style={{ background: 'radial-gradient(ellipse at center, #0a0803 0%, #000000 68%)' }}
+            style={{ background: BACKDROP[variant] }}
             initial={{ opacity: 1 }}
             animate={{ opacity: [1, 1, 0] }}
             transition={{
@@ -483,15 +595,15 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone }) => {
             animate={{ opacity: [0, 1, 1, 0], y: 0 }}
             transition={{ duration: TOTAL / 1000, times: [0, 0.3, 0.72, 0.95] }}
           >
-            <p className="text-[11px] font-mono uppercase tracking-[0.4em] mb-2"
-              style={{ color: 'rgba(255,203,58,0.8)' }}>
+            <p className="text-[11px] font-mono uppercase tracking-[0.4em] mb-2" style={{ color: labelColor.tag }}>
               {t('chart.lagna')}
             </p>
-            <p className="text-3xl font-display font-bold" style={{ color: '#ffecb2' }}>{sanskrit}</p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(246,166,35,0.55)' }}>{western}</p>
+            <p className="text-3xl font-display font-bold" style={{ color: labelColor.title }}>{sanskrit}</p>
+            <p className="text-sm mt-1" style={{ color: labelColor.sub }}>{western}</p>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+    </MotionConfig>
   );
 };

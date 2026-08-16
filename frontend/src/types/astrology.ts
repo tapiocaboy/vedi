@@ -2,12 +2,24 @@
  * TypeScript types for Vedic Astrology data structures
  */
 
+/**
+ * `system` picks the astrology used for this chart. Optional (not required)
+ * so every existing call site — saved localStorage prefs, tests, fixtures —
+ * that predates this field keeps working; `resolveSystem()` below is the one
+ * place that applies the 'VEDIC' default.
+ */
 export interface BirthData {
   date: string;  // ISO format
   latitude: number;
   longitude: number;
   timezone: string;
   ayanamsa: 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN';
+  system?: 'VEDIC' | 'WESTERN';
+}
+
+/** `birthData.system` with the default applied — call this, not the raw field. */
+export function resolveSystem(bd: Pick<BirthData, 'system'>): 'VEDIC' | 'WESTERN' {
+  return bd.system === 'WESTERN' ? 'WESTERN' : 'VEDIC';
 }
 
 export interface NakshatraInfo {

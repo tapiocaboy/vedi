@@ -30,6 +30,11 @@ import {
   type AntardashaDepthReport,
   type WeightedPratyantardasha,
 } from '../lib/services/dashaDepthService';
+import { westernChartService } from '../lib/services/westernChartService';
+import { runWesternMatching, type WesternMatchSummary } from '../lib/services/westernMatchingService';
+import { buildWesternNatalReport, type WesternNatalReport } from '../lib/core/western/natal';
+import { getWesternTransits, type WesternTransitSnapshot } from '../lib/core/western/transits';
+import type { WesternChart } from '../types/westernAstrology';
 
 export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, DoshaReport };
 export type { AntardashaDepthReport, WeightedPratyantardasha };
@@ -50,6 +55,10 @@ export type { SynastryResult, SynastryContact, DirectedEdges } from '../lib/core
 export type { SookshmaPeriodList };
 
 export type { YogaResult };
+
+export type { WesternChart, WesternMatchSummary, WesternNatalReport, WesternTransitSnapshot };
+export type { WesternPlanetPosition, WesternHouseCusp, AspectHit, AspectType, WesternPattern, WesternPatternType, DignityLevel, Angularity } from '../types/westernAstrology';
+export type { WesternSynastryResult, WesternSynastryContact, DirectedEdges as WesternDirectedEdges } from '../lib/core/western/synastry';
 
 // ─── Prediction types ────────────────────────────────────────────────────────
 
@@ -247,6 +256,32 @@ export async function getPanchanga(birthData: BirthData, asOf?: Date): Promise<P
 
 export async function getTimelineWithPredictions(birthData: BirthData, yearsAhead = 80, lang?: Lang): Promise<unknown[]> {
   return libGetTimeline(birthData, yearsAhead, lang ?? getStoredLang());
+}
+
+// ─── Western ─────────────────────────────────────────────────────────────────
+
+/** Full tropical chart: planets, Placidus houses, aspect grid, and aspect patterns. */
+export async function generateWesternChart(birthData: BirthData): Promise<WesternChart> {
+  return westernChartService.calculateFullChart(birthData);
+}
+
+/** Sun/Moon/Rising + the ten planets + the twelve houses, click-to-expand — the Western Natal Chart modal. */
+export async function getWesternNatalReport(birthData: BirthData, lang?: Lang): Promise<WesternNatalReport> {
+  const chart = await westernChartService.calculateFullChart(birthData);
+  return buildWesternNatalReport(chart, lang ?? getStoredLang());
+}
+
+/** Current transiting planets, their natal-house placement, and their aspects to the natal chart — the Western "Now" tab. */
+export async function getWesternTransitsSnapshot(birthData: BirthData, asOf?: Date): Promise<WesternTransitSnapshot> {
+  const chart = await westernChartService.calculateFullChart(birthData);
+  return getWesternTransits(chart, asOf);
+}
+
+/** Two-chart synastry: directional interaspects + house overlays. No Ashtakoot/Porutham equivalent exists for Western technique. */
+export async function getWesternMatchReport(
+  person: BirthData, partner: BirthData, lang?: Lang,
+): Promise<WesternMatchSummary> {
+  return runWesternMatching(person, partner, lang ?? getStoredLang());
 }
 
 export async function getRemedies(birthData: BirthData, lang?: Lang): Promise<{

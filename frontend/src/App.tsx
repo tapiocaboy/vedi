@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Presentation, Droplet, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Moon, Sun, Presentation, Droplet, Terminal as TerminalIcon, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -35,9 +35,20 @@ import { Logo, BrandTitle } from './components/Logo';
 import { ParticleField } from './components/ParticleField';
 import { LagnaIntro } from './components/LagnaIntro';
 import { useGenerateChart, useDashaTimeline, useHealthCheck } from './hooks/useChart';
+import { useGenerateWesternChart } from './hooks/useWesternChart';
+import { WesternChartWheel } from './components/Western/WesternChartWheel';
+import { WesternPlanetTable } from './components/Western/WesternPlanetTable';
+import { WesternAspectGrid } from './components/Western/WesternAspectGrid';
+import { WesternNatalModal } from './components/Western/WesternNatalModal';
+import { WesternTransitsTab } from './components/Western/WesternTransitsTab';
+import { WesternPatternsTab } from './components/Western/WesternPatternsTab';
+import { WesternMatchTab } from './components/Western/WesternMatchTab';
+import { buildWesternNatalReport } from './lib/core/western/natal';
+import { downloadWesternChartMarkdown } from './lib/core/western/exportWesternChart';
 import { LanguageProvider, useLang } from './i18n/LanguageContext';
 import type { Lang } from './i18n/translations';
 import type { BirthData, Chart } from './types/astrology';
+import type { WesternChart } from './types/westernAstrology';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -45,21 +56,24 @@ const queryClient = new QueryClient({
 
 type ChartStyle = 'south' | 'north';
 type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
-type Theme = 'dark' | 'light' | 'mono' | 'azure';
+type Theme = 'dark' | 'light' | 'mono' | 'azure' | 'terminal';
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
   const [chartStyle, setChartStyle] = useState<ChartStyle>('south');
   const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
   const [chartData, setChartData]   = useState<Chart | null>(null);
+  const [westernChartData, setWesternChartData] = useState<WesternChart | null>(null);
+  const isWestern = birthData?.system === 'WESTERN';
   const [theme, setTheme]           = useState<Theme>(() => {
     const saved = localStorage.getItem('trytellme_theme') ?? localStorage.getItem('predictor_theme');
-    return saved === 'mono' ? 'mono' : saved === 'azure' ? 'azure' : saved === 'light' ? 'light' : 'dark';
+    return saved === 'mono' ? 'mono' : saved === 'azure' ? 'azure' : saved === 'terminal' ? 'terminal' : saved === 'light' ? 'light' : 'dark';
   });
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-  // "mono" is the chalkboard theme — it rides on the DARK layout (a blackboard
-  // is a dark surface), so it counts as not-light here and in useTheme().
-  const isLight = theme !== 'dark' && theme !== 'mono';
+  // "mono" (chalkboard) and "terminal" both ride on the DARK layout (a
+  // blackboard and a CRT are both dark surfaces), so they count as not-light
+  // here and in useTheme().
+  const isLight = theme !== 'dark' && theme !== 'mono' && theme !== 'terminal';
   // Hide all chat affordances when the NVIDIA key is missing/empty.
   const chatConfigured = isChatConfigured();
   // Legal gate — shown on every site load / refresh / first visit
@@ -81,7 +95,8 @@ function AppContent() {
   const [lagnaIntroRashi, setLagnaIntroRashi] = useState<number | null>(null);
 
   const generateChart = useGenerateChart();
-  const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(birthData, 80);
+  const generateWesternChart = useGenerateWesternChart();
+  const { data: dashaTimeline, isLoading: isDashaLoading } = useDashaTimeline(isWestern ? null : birthData, 80);
   const { isError: isHealthError } = useHealthCheck();
   const { lang, setLang, t } = useLang();
 
@@ -91,35 +106,48 @@ function AppContent() {
   // the surface as a school blackboard with chalk-coloured ink.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('theme-dark', theme === 'dark' || theme === 'mono');
+    root.classList.toggle('theme-dark', theme === 'dark' || theme === 'mono' || theme === 'terminal');
     // "azure" rides on top of the light layout.
     root.classList.toggle('theme-light', theme === 'light' || theme === 'azure');
     root.classList.toggle('theme-mono', theme === 'mono');
     root.classList.toggle('theme-azure', theme === 'azure');
+    root.classList.toggle('theme-terminal', theme === 'terminal');
     localStorage.setItem('trytellme_theme', theme);
   }, [theme]);
 
   const themeOptions: { id: Theme; label: string; icon: React.ElementType }[] = [
-    { id: 'dark',  label: t('theme.dark'),  icon: Moon },
-    { id: 'light', label: t('theme.light'), icon: Sun },
-    { id: 'azure', label: t('theme.azure'), icon: Droplet },
-    { id: 'mono',  label: t('theme.mono'),  icon: Presentation },
+    { id: 'terminal', label: t('theme.terminal'), icon: TerminalIcon },
+    { id: 'dark',     label: t('theme.dark'),     icon: Moon },
+    { id: 'light',    label: t('theme.light'),    icon: Sun },
+    { id: 'azure',    label: t('theme.azure'),    icon: Droplet },
+    { id: 'mono',     label: t('theme.mono'),     icon: Presentation },
   ];
   const activeTheme = themeOptions.find(o => o.id === theme) ?? themeOptions[0];
 
   const runGenerate = async (data: BirthData) => {
     setBirthData(data);
     try {
+      if (data.system === 'WESTERN') {
+        const result = await generateWesternChart.mutateAsync(data);
+        setWesternChartData(result);
+        setChartData(null);
+        setActiveTab('chart');
+        // Every theme gets its own reveal style (see LagnaIntro), chalkboard
+        // included, so this now only checks the OS-level accessibility
+        // preference, not the theme.
+        const wantsMotion = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (wantsMotion) setLagnaIntroRashi(result.ascendant.signIndex);
+        return;
+      }
       const result = await generateChart.mutateAsync(data);
       setChartData(result);
+      setWesternChartData(null);
       setActiveTab('chart');
       // Reveal the lagna as particles before the chart is seen. The chart
       // mounts underneath straight away; the overlay simply covers it until the
-      // figure has dispersed. Skipped for the motionless chalkboard theme and
-      // for anyone who asked for reduced motion.
-      const wantsMotion =
-        theme !== 'mono' &&
-        !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      // figure has dispersed. Every theme gets its own reveal style (see
+      // LagnaIntro), so this only checks for reduced-motion, not the theme.
+      const wantsMotion = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (wantsMotion) setLagnaIntroRashi(result.ascendant.rashiIndex);
     } catch (err) {
       console.error('Failed to generate chart:', err);
@@ -215,7 +243,7 @@ function AppContent() {
       <DisclaimerModal visible={disclaimerVisible} onAccept={handleDisclaimerAccept} />
 
       {/* Lagna particle reveal — plays over the freshly mounted chart */}
-      <LagnaIntro rashiIndex={lagnaIntroRashi} onDone={() => setLagnaIntroRashi(null)} />
+      <LagnaIntro rashiIndex={lagnaIntroRashi} onDone={() => setLagnaIntroRashi(null)} theme={theme} />
 
       {/* Experimental notice — shown when opening Match tab */}
       <ExperimentalMatchModal
@@ -231,11 +259,19 @@ function AppContent() {
       />
 
       {/* Natal chart — full birth-chart reading, line by line */}
-      <NatalChartModal
-        visible={natalChartVisible}
-        onClose={() => setNatalChartVisible(false)}
-        birthData={birthData}
-      />
+      {isWestern ? (
+        <WesternNatalModal
+          visible={natalChartVisible}
+          onClose={() => setNatalChartVisible(false)}
+          birthData={birthData}
+        />
+      ) : (
+        <NatalChartModal
+          visible={natalChartVisible}
+          onClose={() => setNatalChartVisible(false)}
+          birthData={birthData}
+        />
+      )}
 
       {/* AI chat — ask questions about the horoscope (NVIDIA Nemotron) */}
       <HoroscopeChat
@@ -272,11 +308,11 @@ function AppContent() {
         onDecline={() => handleCookieConsent(false)}
       />
 
-      {/* High-tech particle network — dark & light themes only (mono is static) */}
-      {theme !== 'mono' && <ParticleField isLight={isLight} />}
+      {/* High-tech particle network — dark & light themes only (mono/terminal are static) */}
+      {theme !== 'mono' && theme !== 'terminal' && <ParticleField isLight={isLight} />}
 
-      {/* Ambient color orbs — hidden in the mono enterprise theme */}
-      {theme !== 'mono' && (
+      {/* Ambient color orbs — hidden in the mono enterprise theme and the terminal theme */}
+      {theme !== 'mono' && theme !== 'terminal' && (
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 ambient-orbs" aria-hidden>
         <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[180px]"
           style={{ background: isLight
@@ -339,9 +375,15 @@ function AppContent() {
             </button>
 
             {/* Export — download the full chart as Markdown (needs a chart) */}
-            {chartData && (
+            {(chartData || westernChartData) && (
               <button
-                onClick={() => downloadChartMarkdown(chartData)}
+                onClick={() => {
+                  if (westernChartData) {
+                    downloadWesternChartMarkdown(westernChartData, buildWesternNatalReport(westernChartData, lang), lang);
+                  } else if (chartData) {
+                    downloadChartMarkdown(chartData);
+                  }
+                }}
                 title={t('header.exportTitle')}
                 className="btn-cta btn-cta-blink flex items-center gap-1.5 text-xs px-3 h-9 rounded-xl font-bold transition-all duration-200"
               >
@@ -350,20 +392,22 @@ function AppContent() {
               </button>
             )}
 
-            {/* Monthly transits — replaces the old version badge */}
-            <button
-              onClick={() => setMonthlyTransitsVisible(true)}
-              title={t('monthly.title')}
-              className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
-                isLight
-                  ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                  : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
-              <CalendarRange className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">{t('header.monthlyTransits')}</span>
-            </button>
+            {/* Monthly transits — Vedic-only (dasha/gochara sign-change timing); no Western equivalent in this pass */}
+            {!isWestern && (
+              <button
+                onClick={() => setMonthlyTransitsVisible(true)}
+                title={t('monthly.title')}
+                className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
+                  isLight
+                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
+                <CalendarRange className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden xs:inline">{t('header.monthlyTransits')}</span>
+              </button>
+            )}
 
             {/* Language switch: English / Sinhala */}
             <div className={`flex items-center rounded-xl p-0.5 border ${
@@ -478,8 +522,8 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card rounded-2xl p-4 sm:p-6 relative overflow-hidden"
             >
-              {/* Animated background — vivid color wash + fast particles (skipped in mono) */}
-              {theme !== 'mono' && (
+              {/* Animated background — vivid color wash + fast particles (skipped in mono/terminal) */}
+              {theme !== 'mono' && theme !== 'terminal' && (
               <div className="absolute inset-0 pointer-events-none z-0 form-bg-particles">
                 {/* Fast shifting multi-color gradient */}
                 <motion.div
@@ -564,16 +608,16 @@ function AppContent() {
                   </button>
                 </div>
 
-                <BirthDataForm onSubmit={handleSubmit} isLoading={generateChart.isPending} />
+                <BirthDataForm onSubmit={handleSubmit} isLoading={generateChart.isPending || generateWesternChart.isPending} />
 
-                {generateChart.isError && (
+                {(generateChart.isError || generateWesternChart.isError) && (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="mt-4 p-3 bg-red-500/8 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-start gap-2"
                   >
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    {generateChart.error?.message || t('form.error')}
+                    {generateChart.error?.message || generateWesternChart.error?.message || t('form.error')}
                   </motion.div>
                 )}
               </div>
@@ -769,6 +813,78 @@ function AppContent() {
                   {activeTab === 'insights' && birthData && (
                     <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <DeepInsights birthData={birthData} />
+                    </motion.div>
+                  )}
+                </motion.div>
+              ) : westernChartData ? (
+                <motion.div
+                  key="western-results"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-4"
+                >
+                  {/* Tab bar — Western mode has no dasha/varga/dosha/graph/insights equivalent */}
+                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border overflow-x-auto tab-bar-mobile ${
+                    isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
+                  }`}>
+                    <TabBtn id="chart" label={t('tab.chart')}    icon={LayoutGrid} />
+                    <TabBtn id="now"   label={t('tab.now')}      icon={Compass}    />
+                    <TabBtn id="match" label={t('tab.match')}    icon={Heart}      />
+                    <TabBtn id="yogas" label={t('tab.patterns')} icon={Stars}      />
+                  </div>
+
+                  {/* ── Chart ─────────────────────────────────────── */}
+                  {activeTab === 'chart' && (
+                    <motion.div key="western-chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
+                        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                          <Sun className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
+                          {t('western.chart.wheelTitle')}
+                        </h3>
+                        <WesternChartWheel chart={westernChartData} />
+                      </div>
+
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
+                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                          <Sun className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
+                          {t('chart.planetaryPositions')}
+                        </h3>
+                        <WesternPlanetTable
+                          planets={westernChartData.planets}
+                          ascendant={westernChartData.ascendant}
+                          midheaven={westernChartData.midheaven}
+                        />
+                      </div>
+
+                      <div className="glass-card rounded-2xl p-3 sm:p-6">
+                        <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                          <Stars className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
+                          {t('western.chart.aspectGridTitle')}
+                        </h3>
+                        <WesternAspectGrid aspects={westernChartData.aspects} />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ── Now (transits to natal) ───────────────────── */}
+                  {activeTab === 'now' && birthData && (
+                    <motion.div key="western-now" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <WesternTransitsTab birthData={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Match (Synastry) ──────────────────────────── */}
+                  {activeTab === 'match' && birthData && (
+                    <motion.div key="western-match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <WesternMatchTab person={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Patterns (aspect patterns) ────────────────── */}
+                  {activeTab === 'yogas' && (
+                    <motion.div key="western-yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <WesternPatternsTab chart={westernChartData} />
                     </motion.div>
                   )}
                 </motion.div>
