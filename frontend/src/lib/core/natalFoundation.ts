@@ -27,7 +27,7 @@ import { assessPlanetStrength, type PlanetStrength, type StrengthInput } from '.
 import { RASHI_LORDS, getDignity, getGandanta, type DignityLevel } from './planetaryAnalysis';
 import { getNakshatra } from './nakshatra';
 import { areaYogas } from './areaYogas';
-import { type Lang, pick, planetName, houseLabel, houseLabelLocative, joinAnd, nakshatraPadaLabel } from './i18n';
+import { type Lang, en2si, pick, planetName, houseLabel, houseLabelLocative, joinAnd, nakshatraPadaLabel } from './i18n';
 import { HOUSE_TEXT } from './text/predictionVocab';
 
 import {
@@ -220,7 +220,7 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
   if (UPACHAYA.has(house) && occupants.length >= STELLIUM_MIN) {
     out.push({
       points: STELLIUM_BONUS * (occupants.length - STELLIUM_MIN + 1),
-      note: F_STELLIUM[lang](String(occupants.length), hLabel, hTheme),
+      note: F_STELLIUM[en2si(lang)](String(occupants.length), hLabel, hTheme),
     });
   }
 
@@ -236,10 +236,10 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
       // slowly rather than damage. Elsewhere they press on the house.
       if (UPACHAYA.has(house)) {
         points += 0.3;
-        note = F_OCCUPANT_UPACHAYA[lang](planetName(planet, lang), hLabel, hTheme);
+        note = F_OCCUPANT_UPACHAYA[en2si(lang)](planetName(planet, lang), hLabel, hTheme);
       } else {
         points -= 0.35;
-        note = F_OCCUPANT_MALEFIC[lang](planetName(planet, lang), hLabel, hTheme);
+        note = F_OCCUPANT_MALEFIC[en2si(lang)](planetName(planet, lang), hLabel, hTheme);
       }
     } else if (!DUSTHANA.has(house)) {
       points += 0.25;
@@ -255,9 +255,9 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
     // A decisively weak or strong occupant overrides the generic note — it is
     // the more specific, and therefore more useful, thing to say.
     if (dignity === 'debilitated') {
-      note = F_OCCUPANT_WEAK[lang](planetName(planet, lang), hLabel, hTheme);
+      note = F_OCCUPANT_WEAK[en2si(lang)](planetName(planet, lang), hLabel, hTheme);
     } else if (dignity === 'exalted' || dignity === 'own-sign') {
-      note = F_OCCUPANT_STRONG[lang](planetName(planet, lang), hLabel, hTheme);
+      note = F_OCCUPANT_STRONG[en2si(lang)](planetName(planet, lang), hLabel, hTheme);
     }
 
     out.push({ points, note });
@@ -292,15 +292,15 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
     if (lordWeak && deployed) {
       // Both true: the placement is right and the planet is not. Naming only
       // the weakness pins it on the placement, which is the wrong diagnosis.
-      note = F_LORD_WEAK_DIGNITY[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
+      note = F_LORD_WEAK_DIGNITY[en2si(lang)](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     } else if (lordWeak) {
-      note = F_LORD_WEAK[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
+      note = F_LORD_WEAK[en2si(lang)](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     } else if (lordInDusthana) {
-      note = F_LORD_DUSTHANA[lang](planetName(lord, lang), houseLabel(house, lang));
+      note = F_LORD_DUSTHANA[en2si(lang)](planetName(lord, lang), houseLabel(house, lang));
     } else if (deployed) {
-      note = F_LORD_WELL_DEPLOYED[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
+      note = F_LORD_WELL_DEPLOYED[en2si(lang)](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     } else if (s.total >= 1) {
-      note = F_LORD_STRONG[lang](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
+      note = F_LORD_STRONG[en2si(lang)](planetName(lord, lang), houseLabel(house, lang), houseLabelLocative(lordHouse, lang));
     }
     out.push({ points, note });
 
@@ -308,7 +308,7 @@ function assessBhava(house: number, area: LifeArea, ctx: Ctx, isPrimaryHouse: bo
     // and that distinction is the whole difference between "weak area" and
     // "area that produces but leaks".
     if (s.isCombust) {
-      out.push({ points: -0.2, note: F_COMBUST_BY_AREA[area][lang](planetName(lord, lang)) });
+      out.push({ points: -0.2, note: F_COMBUST_BY_AREA[area][en2si(lang)](planetName(lord, lang)) });
     }
   }
 
@@ -339,17 +339,17 @@ function assessDivisional(area: LifeArea, ctx: Ctx): { factor: Factor; contradic
   const points = RULER_DIGNITY_WEIGHT[dignity] * DIVISIONAL_DIGNITY_WEIGHT;
   const areaName = pick(AREA_NAME[area], lang);
   const lordName = planetName(lord, lang);
-  const dignityWord = F_DIGNITY_INLINE[dignity][lang];
+  const dignityWord = F_DIGNITY_INLINE[dignity][en2si(lang)];
 
   if (dignity === 'debilitated' || dignity === 'enemy-sign') {
     return {
-      factor: { points, note: F_DIVISIONAL_WEAK[lang](lordName, spec.varga, dignityWord, areaName) },
+      factor: { points, note: F_DIVISIONAL_WEAK[en2si(lang)](lordName, spec.varga, dignityWord, areaName) },
       contradicts: true,
     };
   }
   if (dignity === 'exalted' || dignity === 'own-sign') {
     return {
-      factor: { points, note: F_DIVISIONAL_STRONG[lang](lordName, spec.varga, dignityWord, areaName) },
+      factor: { points, note: F_DIVISIONAL_STRONG[en2si(lang)](lordName, spec.varga, dignityWord, areaName) },
       contradicts: false,
     };
   }
@@ -367,11 +367,11 @@ function assessKaraka(karaka: string, area: LifeArea, ctx: Ctx): Factor {
   const ownBhava = KARAKA_OWN_BHAVA[karaka];
   if (ownBhava != null && s.natalHouse === ownBhava) {
     points -= 0.5;
-    note = F_KARAKA_IN_OWN_BHAVA[lang](planetName(karaka, lang), houseLabel(ownBhava, lang));
+    note = F_KARAKA_IN_OWN_BHAVA[en2si(lang)](planetName(karaka, lang), houseLabel(ownBhava, lang));
   } else if (s.total >= 1) {
-    note = F_KARAKA_STRONG[lang](planetName(karaka, lang), pick(AREA_NAME[area], lang));
+    note = F_KARAKA_STRONG[en2si(lang)](planetName(karaka, lang), pick(AREA_NAME[area], lang));
   } else if (s.total <= -0.5) {
-    note = F_KARAKA_WEAK[lang](planetName(karaka, lang), pick(AREA_NAME[area], lang));
+    note = F_KARAKA_WEAK[en2si(lang)](planetName(karaka, lang), pick(AREA_NAME[area], lang));
   }
 
   return { points, note };
@@ -401,7 +401,7 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
   const dignity = getDignity('Moon', moonRashi);
   if (dignity === 'exalted' || dignity === 'own-sign') {
     score += 0.75;
-    notes.push(F_MOON_STRONG[lang]());
+    notes.push(F_MOON_STRONG[en2si(lang)]());
   } else if (dignity === 'debilitated') {
     score -= 1.0;
   } else if (dignity === 'enemy-sign') {
@@ -414,24 +414,24 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
       // The Sun conjunct the Moon is amavasya (weak paksha bala), covered below.
       if (p === 'Sun') continue;
       score -= 0.5;
-      notes.push(F_MOON_MALEFIC_CONJ[lang](planetName(p, lang)));
+      notes.push(F_MOON_MALEFIC_CONJ[en2si(lang)](planetName(p, lang)));
     }
   }
 
   // Malefic aspect onto the Moon.
   if (rashis.Saturn != null && rashis.Saturn !== moonRashi && aspectsRashi('Saturn', rashis.Saturn, moonRashi)) {
     score -= 0.6;
-    notes.push(F_MOON_SATURN_ASPECT[lang]());
+    notes.push(F_MOON_SATURN_ASPECT[en2si(lang)]());
   }
   if (rashis.Mars != null && rashis.Mars !== moonRashi && aspectsRashi('Mars', rashis.Mars, moonRashi)) {
     score -= 0.4;
-    notes.push(F_MOON_MARS_ASPECT[lang]());
+    notes.push(F_MOON_MARS_ASPECT[en2si(lang)]());
   }
   for (const node of ['Rahu', 'Ketu']) {
     const r = rashis[node];
     if (r != null && r !== moonRashi && aspectsRashi(node, r, moonRashi)) {
       score -= 0.4;
-      notes.push(F_MOON_NODE[lang](planetName(node, lang)));
+      notes.push(F_MOON_NODE[en2si(lang)](planetName(node, lang)));
       break;
     }
   }
@@ -445,7 +445,7 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
     score += 0.5;
   } else {
     score -= 0.5;
-    notes.push(F_MOON_UNSUPPORTED[lang]());
+    notes.push(F_MOON_UNSUPPORTED[en2si(lang)]());
   }
 
   // Paksha bala — a waning Moon is classically weak. Elongation from the Sun
@@ -455,7 +455,7 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
     const elongation = ((lons.Moon - lons.Sun) % 360 + 360) % 360;
     if (elongation > 180) {
       score -= 0.4;
-      notes.push(F_MOON_WANING[lang]());
+      notes.push(F_MOON_WANING[en2si(lang)]());
     }
   }
 
@@ -471,7 +471,7 @@ export function assessMoonCondition(input: StrengthInput, lang: Lang = 'en'): Mo
       const moonHouse = input.ascendantRashi != null
         ? houseOfRashi(moonRashi, input.ascendantRashi)
         : null;
-      notes.unshift(F_MOON_GANDANTA[lang](
+      notes.unshift(F_MOON_GANDANTA[en2si(lang)](
         nakshatraPadaLabel(nak.name, nak.pada, lang),
         moonHouse != null ? houseLabelLocative(moonHouse, lang) : houseLabelLocative(4, lang),
       ));
@@ -564,7 +564,7 @@ export function assessNatalFoundation(input: StrengthInput, lang: Lang = 'en'): 
       factors.push({
         points: areaYoga.points,
         weight: 1,
-        note: frame[lang](lead.name, joinAnd(lead.planets.map(p => planetName(titleCase(p), lang)), lang)),
+        note: frame[en2si(lang)](lead.name, joinAnd(lead.planets.map(p => planetName(titleCase(p), lang)), lang)),
       });
     }
 

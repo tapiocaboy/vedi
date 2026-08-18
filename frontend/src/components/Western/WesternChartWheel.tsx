@@ -21,10 +21,11 @@ import {
 import { westernPlanetName, westernPlanetGlyph, westernPlanetColor } from '../../lib/core/western/text/planetText';
 import { SIGN_ESSENCE } from '../../lib/core/western/text/signText';
 import { buildWesternNatalReport, type WesternNatalLine } from '../../lib/core/western/natal';
-import { pick } from '../../lib/core/i18n';
+import { pick, type Lang } from '../../lib/core/i18n';
 import { WesternDetailPanel, type DetailContent } from './WesternDetailPanel';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 
 const SIZE = 420;
 const CX = SIZE / 2, CY = SIZE / 2;
@@ -82,7 +83,7 @@ function lineToContent(line: WesternNatalLine): DetailContent {
   return { icon, title: line.title, subtitle: line.subtitle, badges: line.badges, summary: line.summary, sections: line.sections };
 }
 
-function rulerNote(sign: number, lang: 'en' | 'si'): string {
+function rulerNote(sign: number, lang: Lang): string {
   const modern = MODERN_RULER[sign];
   const trad = TRADITIONAL_RULER[sign];
   const modernLabel = westernPlanetName(modern, lang);
@@ -91,7 +92,7 @@ function rulerNote(sign: number, lang: 'en' | 'si'): string {
   return lang === 'si' ? `${modernLabel} (සම්ප්‍රදායිකව ${tradLabel})` : `${modernLabel} (traditionally ${tradLabel})`;
 }
 
-function signContent(index: number, lang: 'en' | 'si'): DetailContent {
+function signContent(index: number, lang: Lang): DetailContent {
   const el = signElement(index);
   const mod = westernModalityLabel(signModality(index));
   return {
@@ -125,12 +126,12 @@ export const WesternChartWheel: React.FC<Props> = ({ chart, minAspectStrength = 
     return m;
   }, [placedPlanets, ascLon]);
 
-  const natal = useMemo(() => buildWesternNatalReport(chart, lang), [chart, lang]);
+  const natal = useMemo(() => buildWesternNatalReport(chart, coreLang(lang)), [chart, lang]);
   const lineById = useMemo(() => new Map(natal.lines.map(l => [l.id, l])), [natal]);
 
   const content = useMemo<DetailContent | null>(() => {
     if (!selection) return null;
-    if (selection.kind === 'sign') return signContent(selection.index, lang);
+    if (selection.kind === 'sign') return signContent(selection.index, coreLang(lang));
     const line = lineById.get(selection.id);
     return line ? lineToContent(line) : null;
   }, [selection, lineById, lang]);
@@ -248,7 +249,7 @@ export const WesternChartWheel: React.FC<Props> = ({ chart, minAspectStrength = 
               <text x={x} y={y + 0.5} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={700} fill={color}>
                 {westernPlanetGlyph(planet.planet)}
               </text>
-              <title>{`${westernPlanetName(planet.planet, lang)} — ${SIGNS[planet.signIndex]} ${planet.degreeInSign.toFixed(1)}°, house ${planet.house}${planet.isRetrograde ? ' ℞' : ''}`}</title>
+              <title>{`${westernPlanetName(planet.planet, coreLang(lang))} — ${SIGNS[planet.signIndex]} ${planet.degreeInSign.toFixed(1)}°, house ${planet.house}${planet.isRetrograde ? ' ℞' : ''}`}</title>
             </g>
           );
         })}

@@ -3,7 +3,8 @@
  * interpretive transit predictions (transitAnalysis.ts).
  */
 
-import { type Lang, planetName, joinAnd } from '../i18n';
+import { type Lang, type TableLang, planetName, joinAnd } from '../i18n';
+
 
 // ─── Snapshot notes (transits.ts) ──────────────────────────────────────────
 
@@ -87,7 +88,7 @@ function titleCaseKey(k: string): string {
 
 // ─── Tara Bala (transitAnalysis.computeTaraBala) ───────────────────────────
 
-export const TARA_DESC: Record<number, { name: string; desc: Record<Lang, string> }> = {
+export const TARA_DESC: Record<number, { name: string; desc: Record<TableLang, string> }> = {
   1: { name: 'Janma', desc: { en: 'the birth-star day — body and mind are sensitive; routine over risk.', si: 'ජන්ම නක්ෂත්‍ර දිනය — සිරුර හා මනස සංවේදීයි; අවදානමට වඩා දිනචරියාව.' } },
   2: { name: 'Sampat', desc: { en: 'a wealth star — favourable for gains, purchases and beginnings.', si: 'ධන නක්ෂත්‍රයකි — ලාභ, මිලදී ගැනීම් හා ආරම්භවලට හිතකරයි.' } },
   3: { name: 'Vipat', desc: { en: 'a danger star — avoid risks, journeys and confrontation.', si: 'අනතුරු නක්ෂත්‍රයකි — අවදානම්, ගමන් හා ගැටුම් වළක්වන්න.' } },
@@ -101,7 +102,7 @@ export const TARA_DESC: Record<number, { name: string; desc: Record<Lang, string
 
 // ─── Retrograde review text (transitAnalysis RETRO_TEXT) ───────────────────
 
-export const RETRO_TEXT: Record<string, Record<Lang, string>> = {
+export const RETRO_TEXT: Record<string, Record<TableLang, string>> = {
   MERCURY: { en: 'review communication, contracts, travel and devices — double-check details before committing.', si: 'සන්නිවේදනය, ගිවිසුම්, ගමන් හා උපකරණ නැවත පරීක්ෂා කරන්න — කැප වීමට පෙර විස්තර දෙවරක් පරීක්ෂා කරන්න.' },
   VENUS: { en: 'revisit relationships, finances and values; reconnect and refine rather than starting anew.', si: 'සම්බන්ධතා, මූල්‍ය හා සාරධර්ම නැවත සලකා බලන්න; අලුතින් ආරම්භ කරනවාට වඩා නැවත සම්බන්ධ වී පිරිපහදු කරන්න.' },
   MARS: { en: 'channel energy with care; avoid impulsive conflict and rushed decisions.', si: 'ශක්තිය ප්‍රවේශමෙන් යොදවන්න; හදිසි ගැටුම් හා ඉක්මන් තීරණ වළක්වන්න.' },

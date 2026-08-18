@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2, ChevronDown } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
@@ -238,6 +238,9 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
     }));
   };
 
+  // Quick Locations is folded by default to keep the form compact
+  const [quickLocationsOpen, setQuickLocationsOpen] = useState(false);
+
   // ── Geolocation: one-tap fill of coordinates + timezone ──────────────────────
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -338,37 +341,49 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
         </div>
       </div>
 
-      {/* Quick Location Presets */}
+      {/* Quick Location Presets — folded by default */}
       <div>
-        <label className={labelClasses}>
+        <button
+          type="button"
+          onClick={() => setQuickLocationsOpen(prev => !prev)}
+          aria-expanded={quickLocationsOpen}
+          className={`${labelClasses} flex items-center gap-1.5 w-full text-left cursor-pointer hover:text-[var(--c-accent)] transition-colors`}
+        >
+          <ChevronDown
+            className={`w-4 h-4 text-[var(--c-accent)] transition-transform ${quickLocationsOpen ? '' : '-rotate-90'}`}
+          />
           {t('form.quickLocations')}
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={useMyLocation}
-            disabled={locating}
-            className="preset-btn flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
-            style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
-          >
-            {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
-            {locating ? t('form.locating') : t('form.useMyLocation')}
-          </button>
-          {presetLocations.map(preset => (
-            <button
-              key={preset.name}
-              type="button"
-              onClick={() => setPresetLocation(preset)}
-              className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
-            >
-              {preset.name}
-            </button>
-          ))}
-        </div>
-        {geoError && (
-          <p className="mt-2 text-xs text-rose-400 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 shrink-0" /> {geoError}
-          </p>
+        </button>
+        {quickLocationsOpen && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={useMyLocation}
+                disabled={locating}
+                className="preset-btn flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
+                style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
+              >
+                {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+                {locating ? t('form.locating') : t('form.useMyLocation')}
+              </button>
+              {presetLocations.map(preset => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => setPresetLocation(preset)}
+                  className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+            {geoError && (
+              <p className="mt-2 text-xs text-rose-400 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 shrink-0" /> {geoError}
+              </p>
+            )}
+          </>
         )}
       </div>
 

@@ -1,6 +1,7 @@
 /** Bilingual prose for the classical antardasha judgement (antardashaJudgement.ts). */
 
-import { type Lang, planetName, rashiName, houseLabel } from '../i18n';
+import { type Lang, type TableLang, planetName, rashiName, houseLabel } from '../i18n';
+
 
 export const DISPOSITION_NOTE: Record<number, (ad: string, md: string, lang: Lang) => string> = {
   1: (ad, md, lang) => lang === 'si' ? `${ad} ${md} හා එකම රාශියේ` : `${ad} sits in the same sign as ${md}`,
@@ -17,7 +18,7 @@ export const DISPOSITION_NOTE: Record<number, (ad: string, md: string, lang: Lan
   12: (ad, md, lang) => lang === 'si' ? `${ad} ${md} ගෙන් 12 වන` : `${ad} stands in the 12th from ${md}`,
 };
 
-export const DISPOSITION_MEANING: Record<number, Record<Lang, string>> = {
+export const DISPOSITION_MEANING: Record<number, Record<TableLang, string>> = {
   1: { en: "the two lords merge — the sub-period concentrates the mahadasha's own theme rather than varying it", si: 'අධිපතීන් දෙදෙනා එක් වේ — අන්තර් දශාව මහා දශාවේ තේමාව වෙනස් කරනවාට වඩා එය තීව්‍ර කරයි' },
   2: { en: 'a supportive placement for resources, family and accumulated wealth', si: 'සම්පත්, පවුල හා රැස් කළ ධනයට සහායක පිහිටීමකි' },
   3: { en: 'results come through initiative and effort rather than by grace', si: 'ප්‍රතිඵල ලැබෙන්නේ ආශිර්වාදයෙන් නොව මුල පිරීම හා උත්සාහයෙනි' },

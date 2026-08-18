@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Presentation, Droplet, Terminal as TerminalIcon, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Moon, Sun, Presentation, Droplet, Terminal as TerminalIcon, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen, Languages } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -46,9 +46,22 @@ import { WesternMatchTab } from './components/Western/WesternMatchTab';
 import { buildWesternNatalReport } from './lib/core/western/natal';
 import { downloadWesternChartMarkdown } from './lib/core/western/exportWesternChart';
 import { LanguageProvider, useLang } from './i18n/LanguageContext';
-import type { Lang } from './i18n/translations';
+import { coreLang, type Lang, type TranslationKey } from './i18n/translations';
 import type { BirthData, Chart } from './types/astrology';
 import type { WesternChart } from './types/westernAstrology';
+
+/** Header language dropdown entries — short trigger label + native menu name. */
+const LANG_OPTIONS: { code: Lang; short: string; native: string; titleKey: TranslationKey }[] = [
+  { code: 'en', short: 'EN',  native: 'English', titleKey: 'lang.englishTitle' },
+  { code: 'si', short: 'සිං', native: 'සිංහල',   titleKey: 'lang.sinhalaTitle' },
+  { code: 'ta', short: 'த',   native: 'தமிழ்',    titleKey: 'lang.tamilTitle' },
+  { code: 'zh', short: '中',  native: '中文',     titleKey: 'lang.chineseTitle' },
+  { code: 'hi', short: 'हिं',  native: 'हिन्दी',    titleKey: 'lang.hindiTitle' },
+  { code: 'ja', short: '日',  native: '日本語',   titleKey: 'lang.japaneseTitle' },
+  { code: 'ko', short: '한',  native: '한국어',   titleKey: 'lang.koreanTitle' },
+  { code: 'ar', short: 'ع',   native: 'العربية',  titleKey: 'lang.arabicTitle' },
+  { code: 'ml', short: 'മ',   native: 'മലയാളം',  titleKey: 'lang.malayalamTitle' },
+];
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -70,6 +83,7 @@ function AppContent() {
     return saved === 'mono' ? 'mono' : saved === 'azure' ? 'azure' : saved === 'terminal' ? 'terminal' : saved === 'light' ? 'light' : 'dark';
   });
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   // "mono" (chalkboard) and "terminal" both ride on the DARK layout (a
   // blackboard and a CRT are both dark surfaces), so they count as not-light
   // here and in useTheme().
@@ -379,7 +393,7 @@ function AppContent() {
               <button
                 onClick={() => {
                   if (westernChartData) {
-                    downloadWesternChartMarkdown(westernChartData, buildWesternNatalReport(westernChartData, lang), lang);
+                    downloadWesternChartMarkdown(westernChartData, buildWesternNatalReport(westernChartData, coreLang(lang)), coreLang(lang));
                   } else if (chartData) {
                     downloadChartMarkdown(chartData);
                   }
@@ -409,34 +423,64 @@ function AppContent() {
               </button>
             )}
 
-            {/* Language switch: English / Sinhala */}
-            <div className={`flex items-center rounded-xl p-0.5 border ${
-              isLight ? 'bg-gray-100 border-gray-200' : 'bg-white/5 border-white/8'
-            }`}>
-              {([['en', 'EN'], ['si', 'සිං']] as [Lang, string][]).map(([code, label]) => (
-                <button
-                  key={code}
-                  onClick={() => setLang(code)}
-                  title={code === 'en' ? t('lang.englishTitle') : t('lang.sinhalaTitle')}
-                  className={`relative px-2 sm:px-2.5 h-7 sm:h-8 rounded-[10px] text-[11px] sm:text-xs font-bold transition-colors duration-200 ${
-                    lang === code
-                      ? 'text-white on-accent'
-                      : isLight
-                        ? 'text-gray-500 hover:text-gray-800'
-                        : 'text-white/40 hover:text-white/70'
-                  }`}
-                >
-                  {lang === code && (
-                    <motion.span
-                      layoutId="lang-pill"
-                      className="absolute inset-0 rounded-[10px] shadow-sm"
-                      style={{ backgroundColor: ACCENT }}
-                      transition={{ type: 'spring', stiffness: 480, damping: 38 }}
-                    />
-                  )}
-                  <span className="relative z-10">{label}</span>
-                </button>
-              ))}
+            {/* Language dropdown: English / Sinhala / Tamil / Chinese / Hindi / Japanese / Korean / Arabic / Malayalam */}
+            <div className="relative">
+              <button
+                onClick={() => setLangMenuOpen(o => !o)}
+                title={t(LANG_OPTIONS.find(o => o.code === lang)!.titleKey)}
+                aria-haspopup="menu"
+                aria-expanded={langMenuOpen}
+                className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1 text-[11px] sm:text-xs font-bold transition-all duration-200 ${
+                  isLight
+                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
+                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Languages className="w-4 h-4 shrink-0" />
+                <span>{LANG_OPTIONS.find(o => o.code === lang)!.short}</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${langMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+              {langMenuOpen && (
+                <>
+                  {/* click-away catcher */}
+                  <div className="fixed inset-0 z-40" onClick={() => setLangMenuOpen(false)} aria-hidden />
+                  <motion.div
+                    role="menu"
+                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                    transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+                    className={`absolute right-0 mt-2 w-44 z-50 origin-top-right rounded-xl border p-1 shadow-xl backdrop-blur-md ${
+                      isLight
+                        ? 'bg-white border-gray-200'
+                        : 'bg-[#0e111e]/95 border-white/10'
+                    }`}
+                  >
+                    {LANG_OPTIONS.map(({ code, native }) => {
+                      const selected = code === lang;
+                      return (
+                        <button
+                          key={code}
+                          role="menuitemradio"
+                          aria-checked={selected}
+                          onClick={() => { setLang(code); setLangMenuOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-semibold transition-colors duration-150 ${
+                            selected
+                              ? isLight ? 'bg-gray-100 text-gray-900' : 'bg-white/10 text-white'
+                              : isLight ? 'text-gray-600 hover:bg-gray-50' : 'text-white/60 hover:bg-white/5'
+                          }`}
+                        >
+                          <span className="flex-1 text-left">{native}</span>
+                          {selected && <Check className="w-3.5 h-3.5 shrink-0" style={{ color: 'var(--c-accent)' }} />}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+                </>
+              )}
+              </AnimatePresence>
             </div>
 
             {/* Theme picker — Dark / Light / Black & White */}

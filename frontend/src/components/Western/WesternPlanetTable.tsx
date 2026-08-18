@@ -5,6 +5,7 @@ import { DIGNITY_TEXT } from '../../lib/core/western/text/dignityText';
 import { formatSignDegree, degreeInSign } from '../../lib/core/western/signs';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { pick } from '../../lib/core/i18n';
 
 const ACCENT = 'var(--c-accent)';
@@ -59,7 +60,7 @@ export const WesternPlanetTable: React.FC<Props> = ({ planets, ascendant, midhea
                   <span className="text-lg sm:text-xl font-bold" style={{ color: westernPlanetColor(p.planet, isLight), textShadow: `0 0 8px ${westernPlanetColor(p.planet, isLight)}55` }}>
                     {westernPlanetGlyph(p.planet)}
                   </span>
-                  <span className="text-xs sm:text-[15px] font-bold" style={{ color: cellTxt }}>{westernPlanetName(p.planet, lang)}</span>
+                  <span className="text-xs sm:text-[15px] font-bold" style={{ color: cellTxt }}>{westernPlanetName(p.planet, coreLang(lang))}</span>
                 </div>
               </td>
               <td className="px-2 sm:px-4 py-2 sm:py-3 font-semibold" style={{ color: cellTxt }}>{p.sign}</td>
@@ -75,7 +76,7 @@ export const WesternPlanetTable: React.FC<Props> = ({ planets, ascendant, midhea
               <td className="px-2 sm:px-4 py-2 sm:py-3">
                 {p.planet !== 'ASCENDANT' && p.planet !== 'MIDHEAVEN' ? (
                   <span className="text-[10px] sm:text-xs font-semibold whitespace-nowrap" style={{ color: DIGNITY_COLOR[p.dignity] }}>
-                    {pick(DIGNITY_TEXT[p.dignity].label, lang)}
+                    {pick(DIGNITY_TEXT[p.dignity].label, coreLang(lang))}
                   </span>
                 ) : <span className="text-xs" style={{ color: mutedTxt }}>—</span>}
               </td>

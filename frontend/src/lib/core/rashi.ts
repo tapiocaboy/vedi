@@ -19,6 +19,55 @@ export const RASHI_SI = [
   'ධනු', 'මකර', 'කුම්භ', 'මීන',
 ] as const;
 
+/** Tamil (Sanskrit-derived) rashi names, index-aligned with RASHIS. */
+export const RASHIS_TA = [
+  'மேஷம்', 'ரிஷபம்', 'மிதுனம்', 'கடகம்',
+  'சிம்மம்', 'கன்னி', 'துலாம்', 'விருச்சிகம்',
+  'தனுசு', 'மகரம்', 'கும்பம்', 'மீனம்',
+] as const;
+
+/** Chinese zodiac-sign names, the standard terms used regardless of sidereal/tropical framing. */
+export const RASHIS_ZH = [
+  '白羊座', '金牛座', '双子座', '巨蟹座',
+  '狮子座', '处女座', '天秤座', '天蝎座',
+  '射手座', '摩羯座', '水瓶座', '双鱼座',
+] as const;
+
+/** Hindi (Sanskrit-derived) rashi names, index-aligned with RASHIS. */
+export const RASHIS_HI = [
+  'मेष', 'वृषभ', 'मिथुन', 'कर्क',
+  'सिंह', 'कन्या', 'तुला', 'वृश्चिक',
+  'धनु', 'मकर', 'कुंभ', 'मीन',
+] as const;
+
+/** Japanese zodiac-sign names — no native Vedic tradition, so the standard Western-derived terms. */
+export const RASHIS_JA = [
+  '牡羊座', '牡牛座', '双子座', '蟹座',
+  '獅子座', '乙女座', '天秤座', '蠍座',
+  '射手座', '山羊座', '水瓶座', '魚座',
+] as const;
+
+/** Korean zodiac-sign names — no native Vedic tradition, so the standard Western-derived terms. */
+export const RASHIS_KO = [
+  '양자리', '황소자리', '쌍둥이자리', '게자리',
+  '사자자리', '처녀자리', '천칭자리', '전갈자리',
+  '사수자리', '염소자리', '물병자리', '물고기자리',
+] as const;
+
+/** Arabic zodiac-sign names. */
+export const RASHIS_AR = [
+  'الحمل', 'الثور', 'الجوزاء', 'السرطان',
+  'الأسد', 'العذراء', 'الميزان', 'العقرب',
+  'القوس', 'الجدي', 'الدلو', 'الحوت',
+] as const;
+
+/** Malayalam rashi names — the same Sanskrit-derived terms Kerala's own calendar months use. */
+export const RASHIS_ML = [
+  'മേടം', 'ഇടവം', 'മിഥുനം', 'കർക്കടകം',
+  'ചിങ്ങം', 'കന്നി', 'തുലാം', 'വൃശ്ചികം',
+  'ധനു', 'മകരം', 'കുംഭം', 'മീനം',
+] as const;
+
 export const RASHI_LORDS: Record<string, string> = {
   Mesha:'Mars', Vrishabha:'Venus', Mithuna:'Mercury', Kataka:'Moon',
   Simha:'Sun', Kanya:'Mercury', Tula:'Venus', Vrischika:'Mars',

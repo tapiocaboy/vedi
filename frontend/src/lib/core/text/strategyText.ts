@@ -1,6 +1,7 @@
 /** Bilingual prose for the antardasha period-strategy playbook (periodStrategy.ts). */
 
-import { type Lang, planetName, houseLabel, joinAnd } from '../i18n';
+import { type Lang, type TableLang, planetName, houseLabel, joinAnd } from '../i18n';
+
 import { HOUSE_DISPLAY } from './planetaryText';
 
 /** "9th house of fortune and 11th house of gains" — localised. */
@@ -12,7 +13,7 @@ export function housePhrase(houses: number[], lang: Lang): string {
   return joinAnd(parts, lang);
 }
 
-export const DIGNITY_PHRASE: Record<string, Record<Lang, string>> = {
+export const DIGNITY_PHRASE: Record<string, Record<TableLang, string>> = {
   exalted: { en: 'exalted', si: 'උච්ච' },
   'own-sign': { en: 'in its own sign', si: 'ස්වකීය රාශියේ' },
   'friend-sign': { en: "in a friend's sign", si: 'මිත්‍ර රාශියක' },
@@ -86,7 +87,7 @@ export const STRATEGY = {
     Ketu: { en: 'research, investigation, and specialisation to the point where you are the person who knows', si: 'ඔබ දන්නා තැනැත්තා වන තෙක් පර්යේෂණ, විමර්ශන හා විශේෂීකරණය' },
     Mercury: { en: 'writing, systems, documentation, and anything that turns know-how into a transferable asset', si: 'ලේඛන, පද්ධති, ප්‍රලේඛන හා දැනුම මාරු කළ හැකි වත්කමක් බවට හරවන ඕනෑම දෙයක්' },
     Jupiter: { en: 'teaching, advisory depth, and formalising what you know into something others can be charged for', si: 'ඉගැන්වීම, උපදේශන ගැඹුර හා ඔබ දන්නා දේ අන් අයගෙන් ගාස්තු අය කළ හැකි දෙයක් බවට විධිමත් කිරීම' },
-  } as Record<string, Record<Lang, string>>,
+  } as Record<string, Record<TableLang, string>>,
 
   buildReason: (lord: string, focus: string | null, lang: Lang) => {
     const specialist = lord === 'Ketu'

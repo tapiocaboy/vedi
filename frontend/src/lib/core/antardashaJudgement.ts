@@ -24,7 +24,7 @@ import { bindusToLabel, bindusToScoreModifier, PLANETS as AV_PLANETS, type Plane
 import { pairRatingMod, PLANETARY_RELATIONSHIPS } from './predictions';
 import type { PlanetStrength } from './dashaStrength';
 import type { ChartContext } from './predictions';
-import { type Lang, planetName, rashiName, houseLabel } from './i18n';
+import { type Lang, en2si, planetName, rashiName, houseLabel } from './i18n';
 import { DISPOSITION_NOTE, DISPOSITION_MEANING, JUDGE } from './text/judgementText';
 import { binduLabel } from './text/predictionFrames';
 
@@ -110,7 +110,7 @@ export function judgeAntardasha(input: JudgementInput): AntardashaJudgement {
       detail: JUDGE.dispositionDetail(
         adName, rashiName(adRashi, lang), mdName, rashiName(mdRashi, lang),
         houseFromLord, houseLabel(houseFromLord, lang),
-        DISPOSITION_MEANING[houseFromLord][lang], shashtashtaka, lang,
+        DISPOSITION_MEANING[houseFromLord][en2si(lang)], shashtashtaka, lang,
       ),
       points,
     });
@@ -124,7 +124,7 @@ export function judgeAntardasha(input: JudgementInput): AntardashaJudgement {
       score += points;
       factors.push({
         kind: 'relationship',
-        label: relationship === 'friend' ? JUDGE.friendlyLabel[lang] : JUDGE.inimicalLabel[lang],
+        label: relationship === 'friend' ? JUDGE.friendlyLabel[en2si(lang)] : JUDGE.inimicalLabel[en2si(lang)],
         detail: relationship === 'friend'
           ? JUDGE.friendlyDetail(adName, mdName, lang)
           : JUDGE.inimicalDetail(adName, mdName, lang),

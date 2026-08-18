@@ -7,6 +7,7 @@ import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
 import { TransitChart } from './TransitChart';
 import { UpcomingTransitsCard } from '../Transits/UpcomingTransitsCard';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelArea, labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
@@ -369,7 +370,7 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
 
   const { data, isLoading, error } = useQuery({
     queryKey,
-    queryFn: () => getCurrentPeriodSnapshot(birthData, currentLocation ?? undefined, undefined, lang),
+    queryFn: () => getCurrentPeriodSnapshot(birthData, currentLocation ?? undefined, undefined, coreLang(lang)),
     staleTime: 5 * 60_000, // 5 min — transits don't move fast
   });
 

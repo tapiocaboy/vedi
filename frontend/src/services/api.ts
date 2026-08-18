@@ -245,8 +245,8 @@ export async function getVargas(birthData: BirthData): Promise<VargaReport> {
 }
 
 /** Dosha checker: Mangal, Kaal Sarpa, Pitra + the full Sade Sati timeline. */
-export async function getDoshas(birthData: BirthData): Promise<DoshaReport> {
-  return getDoshaReport(birthData);
+export async function getDoshas(birthData: BirthData, lang?: Lang): Promise<DoshaReport> {
+  return getDoshaReport(birthData, lang ?? getStoredLang());
 }
 
 /** Today's Panchanga + Muhurta timings for the birth location. */

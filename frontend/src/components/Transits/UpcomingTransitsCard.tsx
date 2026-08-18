@@ -15,6 +15,7 @@ import type { AyanamsaSystem } from '../../lib/core/transits';
 import { PLANET_SYMBOLS, planetDisplayColor } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet } from '../../i18n/astroLabels';
 import { TapBadge, tapVars } from '../shared/tapTarget';
 
@@ -32,7 +33,7 @@ export const UpcomingTransitsCard: React.FC<Props> = ({ ayanamsa, natalMoonRashi
 
   const { data, isLoading } = useQuery({
     queryKey: ['upcoming-transits', ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays, lang],
-    queryFn: () => getUpcomingTransits(ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays, undefined, lang),
+    queryFn: () => getUpcomingTransits(ayanamsa, natalMoonRashi, natalLagnaRashi, horizonDays, undefined, coreLang(lang)),
     staleTime: 60 * 60_000, // ingress dates are stable for an hour easily
   });
 

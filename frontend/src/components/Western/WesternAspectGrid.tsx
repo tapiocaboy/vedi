@@ -5,6 +5,7 @@ import { composeAspectSentence } from '../../lib/core/western/text/aspectText';
 import { westernPlanetName } from '../../lib/core/western/text/planetText';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 
 const ASPECT_GLYPH: Record<AspectHit['type'], string> = {
   conjunction: '☌', sextile: '⚹', square: '□', trine: '△', opposition: '☍', quincunx: '⚻',
@@ -39,14 +40,14 @@ export const WesternAspectGrid: React.FC<Props> = ({ aspects, minStrength = 0.25
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold" style={{ color: ASPECT_COLOR[a.type] }}>{ASPECT_GLYPH[a.type]}</span>
             <span className="text-[11.5px] font-semibold" style={{ color: isLight ? '#0f172a' : 'rgba(255,255,255,0.85)' }}>
-              {westernPlanetName(a.bodyA, lang)} — {westernPlanetName(a.bodyB, lang)}
+                {westernPlanetName(a.bodyA, coreLang(lang))} — {westernPlanetName(a.bodyB, coreLang(lang))}
             </span>
             <span className="text-[10px] font-mono ml-auto" style={{ color: mutedTxt }}>
               {formatOrb(a.orb)} {a.applying ? '↗' : '↘'}
             </span>
           </div>
           <p className="text-[11px] mt-1 leading-relaxed" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)' }}>
-            {composeAspectSentence(a.bodyA, a.bodyB, a.type, lang)}
+              {composeAspectSentence(a.bodyA, a.bodyB, a.type, coreLang(lang))}
           </p>
         </motion.div>
       ))}

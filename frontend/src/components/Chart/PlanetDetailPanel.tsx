@@ -6,6 +6,7 @@ import { analyzePlanet, type DignityLevel } from '../../lib/core/planetaryAnalys
 import { useTheme } from '../../hooks/useTheme';
 import { ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelRashi, labelDignity, labelArea, labelOrdinalHouse } from '../../i18n/astroLabels';
 
 const ACCENT = 'var(--c-accent)';
@@ -56,7 +57,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
     : undefined;
 
   const analysis = planet && planet.planet !== 'ASCENDANT'
-    ? analyzePlanet(planet.planet, planet.rashiIndex, ascendantRashiIndex, planet.isRetrograde, planet.rashiDegree, chartContext, lang)
+    ? analyzePlanet(planet.planet, planet.rashiIndex, ascendantRashiIndex, planet.isRetrograde, planet.rashiDegree, chartContext, coreLang(lang))
     : null;
 
   const displayName = planet?.planet ?? '';

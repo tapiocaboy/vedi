@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { translations, interpolate, type Lang, type TranslationKey } from './translations';
 
 const LANG_KEY = 'trytellme_lang';
+const STORED_LANGS: Lang[] = ['si', 'ta', 'zh', 'hi', 'ja', 'ko', 'ar', 'ml'];
 
 interface LanguageContextValue {
   lang: Lang;
@@ -18,7 +19,7 @@ const LanguageContext = createContext<LanguageContextValue>({
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [lang, setLangState] = useState<Lang>(() => {
     const saved = localStorage.getItem(LANG_KEY);
-    return saved === 'si' ? 'si' : 'en';
+    return saved && (STORED_LANGS as string[]).includes(saved) ? (saved as Lang) : 'en';
   });
 
   const setLang = useCallback((next: Lang) => {

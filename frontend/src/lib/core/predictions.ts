@@ -4,7 +4,7 @@ import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Pla
 import { assessPlanetStrength, type PlanetStrength } from './dashaStrength';
 import { assessNatalFoundation, type NatalFoundation, type LifeArea } from './natalFoundation';
 import {
-  type Lang, LEVEL, pick, pickList, planetName, houseLabel, houseLabelLocative, joinAnd, joinComma,
+  type Lang, en2si, LEVEL, pick, pickList, planetName, houseLabel, houseLabelLocative, joinAnd, joinComma,
 } from './i18n';
 import {
   F_FOUNDATION_PREFIX, F_FOUNDATION_TENSION, F_SEPARATIVE_TONE, F_POTENTIAL_ONLY, LEVEL_NAME, AREA_NAME,
@@ -341,7 +341,7 @@ export class DashaPredictionEngine {
     if (!house) return null;
     const lang = this._lang;
     const quality = HOUSE_QUALITY[house];
-    return F_HOUSE_ANNOTATION[lang](
+    return F_HOUSE_ANNOTATION[en2si(lang)](
       planetName(planet, lang),
       houseLabelLocative(house, lang),
       pick(HOUSE_TEXT[house].theme, lang),
@@ -356,8 +356,8 @@ export class DashaPredictionEngine {
     if (!s || s.lordedHouses.length === 0) return null;
     const lang = this._lang;
     const parts = s.lordedHouses.map(h =>
-      F_LORDED_HOUSE[lang](houseLabel(h, lang), pick(HOUSE_TEXT[h].theme, lang)));
-    return F_LORDSHIP_ANNOTATION[lang](
+      F_LORDED_HOUSE[en2si(lang)](houseLabel(h, lang), pick(HOUSE_TEXT[h].theme, lang)));
+    return F_LORDSHIP_ANNOTATION[en2si(lang)](
       planetName(planet, lang),
       joinAnd(parts, lang),
       s.lordedHouses.length > 1,
@@ -463,17 +463,17 @@ export class DashaPredictionEngine {
       const pName = planetName(lord, lang);
 
       if (ctx.moonNakshatraLord && lord === ctx.moonNakshatraLord) {
-        out.push(F_RESONANCE_NAKSHATRA_LORD[lang](pName, ctx.moonNakshatraName ?? '', levelName));
+        out.push(F_RESONANCE_NAKSHATRA_LORD[en2si(lang)](pName, ctx.moonNakshatraName ?? '', levelName));
         bump(lord);
       }
       if (ctx.planetHouses?.[lord] === 1) {
-        out.push(F_RESONANCE_IN_LAGNA[lang](pName, levelName));
+        out.push(F_RESONANCE_IN_LAGNA[en2si(lang)](pName, levelName));
         bump(lord);
       }
     }
 
     for (const [planet, count] of stacked) {
-      if (count >= 2) out.push(F_RESONANCE_STACKED[lang](planetName(planet, lang), count));
+      if (count >= 2) out.push(F_RESONANCE_STACKED[en2si(lang)](planetName(planet, lang), count));
     }
     return out;
   }
@@ -507,14 +507,14 @@ export class DashaPredictionEngine {
    */
   private _specDetails(lines: string[], score: number): string[] {
     if (score >= STRONG_SCORE || !lines.length) return lines;
-    return [F_POTENTIAL_ONLY[this._lang](), ...lines.slice(0, 2)];
+    return [F_POTENTIAL_ONLY[en2si(this._lang)](), ...lines.slice(0, 2)];
   }
 
   /** Foundation notes for an area, prefixed so they read as chart, not weather. */
   private _foundationNotes(area: string, limit = 2): string[] {
     const foundation = this._foundationFor(area);
     if (!foundation) return [];
-    return foundation.notes.slice(0, limit).map(n => F_FOUNDATION_PREFIX[this._lang](n));
+    return foundation.notes.slice(0, limit).map(n => F_FOUNDATION_PREFIX[en2si(this._lang)](n));
   }
 
   /** The delay-tone sentence for the highest separative lord in the chain. */
@@ -522,8 +522,8 @@ export class DashaPredictionEngine {
     for (let i = 1; i < this._chain.length; i++) {
       if (SEPARATIVE.has(this._chain[i])) {
         const level = LEVEL_KEYS[i] as 'antardasha' | 'pratyantardasha' | 'sookshma';
-        return F_SEPARATIVE_TONE[this._lang](
-          planetName(this._chain[i], this._lang), LEVEL_NAME[level][this._lang]);
+        return F_SEPARATIVE_TONE[en2si(this._lang)](
+          planetName(this._chain[i], this._lang), LEVEL_NAME[level][en2si(this._lang)]);
       }
     }
     return null;
@@ -568,8 +568,8 @@ export class DashaPredictionEngine {
     // The mind's natal condition leads: it is the most decisive and the most
     // often-missed factor in how a period actually feels.
     details.push(...this._foundationNotes('health', 3));
-    if (bodyParts.length) details.push(F_BODY_AREAS[lang](joinComma(bodyParts)));
-    if (diseases.length) details.push(F_HEALTH_CONCERNS[lang](joinComma(diseases.slice(0, 3))));
+    if (bodyParts.length) details.push(F_BODY_AREAS[en2si(lang)](joinComma(bodyParts)));
+    if (diseases.length) details.push(F_HEALTH_CONCERNS[en2si(lang)](joinComma(diseases.slice(0, 3))));
     details.push(...this._specDetails(pickList(spec.details, lang), score));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
@@ -581,17 +581,17 @@ export class DashaPredictionEngine {
       const adBodyParts = this._terms(antardasha, 'bodyParts');
       const pairEff = getPairEffect(mahadasha, antardasha);
       if (pairEff) {
-        details.push(F_SUB_PERIOD[lang](adName, pick(pairEff.health, lang)));
+        details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.health, lang)));
       } else {
         if (rel === 'friend') {
-          details.push(F_AD_HEALTH_FRIEND[lang](adName));
+          details.push(F_AD_HEALTH_FRIEND[en2si(lang)](adName));
           score = Math.min(10, score + 0.5);
         } else if (rel === 'enemy') {
-          details.push(F_AD_HEALTH_ENEMY[lang](adName, joinComma(adBodyParts.slice(0, 2))));
-          if (adDiseases.length) details.push(F_AD_HEALTH_COMBINED[lang](joinComma(adDiseases.slice(0, 2))));
+          details.push(F_AD_HEALTH_ENEMY[en2si(lang)](adName, joinComma(adBodyParts.slice(0, 2))));
+          if (adDiseases.length) details.push(F_AD_HEALTH_COMBINED[en2si(lang)](joinComma(adDiseases.slice(0, 2))));
           score = Math.max(1, score - 0.5);
         } else {
-          details.push(F_AD_HEALTH_NEUTRAL[lang](adName, joinComma(adBodyParts.slice(0, 2))));
+          details.push(F_AD_HEALTH_NEUTRAL[en2si(lang)](adName, joinComma(adBodyParts.slice(0, 2))));
         }
       }
     }
@@ -601,18 +601,18 @@ export class DashaPredictionEngine {
     if (pratyantardasha) {
       const pdRel = this.getRelationship(antardasha ?? mahadasha, pratyantardasha);
       const pdName = planetName(pratyantardasha, lang);
-      if (pdRel === 'enemy') details.push(F_PD_HEALTH_ENEMY[lang](pdName));
-      else if (pdRel === 'friend') details.push(F_PD_HEALTH_FRIEND[lang](pdName));
+      if (pdRel === 'enemy') details.push(F_PD_HEALTH_ENEMY[en2si(lang)](pdName));
+      else if (pdRel === 'friend') details.push(F_PD_HEALTH_FRIEND[en2si(lang)](pdName));
     }
 
     const trend = this._trendFromScore(score);
     const intensity = this._intensityLabel(rel, 'health', score);
     const md = planetName(mahadasha, lang);
     const summary = score >= 7
-      ? F_HEALTH_SUMMARY.good[lang](md)
+      ? F_HEALTH_SUMMARY.good[en2si(lang)](md)
       : score >= 5
-        ? F_HEALTH_SUMMARY.balanced[lang](md)
-        : F_HEALTH_SUMMARY.priority[lang](md);
+        ? F_HEALTH_SUMMARY.balanced[en2si(lang)](md)
+        : F_HEALTH_SUMMARY.priority[en2si(lang)](md);
 
     return { area:'health', trend, intensity, summary, details, remedies, keywords:[...bodyParts, ...diseases.slice(0,2)] };
   }
@@ -635,8 +635,8 @@ export class DashaPredictionEngine {
         details.unshift(pick(pairEff.wealth, lang));
         score = clampScore(score + pairEff.ratingMod * 0.5);
       } else {
-        if (rel === 'friend') { details.push(F_AD_WEALTH_FRIEND[lang](adName)); score = Math.min(10, score + 0.5); }
-        else if (rel === 'enemy') { details.push(F_AD_WEALTH_ENEMY[lang](adName)); score = Math.max(1, score - 0.5); }
+        if (rel === 'friend') { details.push(F_AD_WEALTH_FRIEND[en2si(lang)](adName)); score = Math.min(10, score + 0.5); }
+        else if (rel === 'enemy') { details.push(F_AD_WEALTH_ENEMY[en2si(lang)](adName)); score = Math.max(1, score - 0.5); }
       }
     }
     // The pratyantar lord's own wealth score already enters through _chainScore.
@@ -646,10 +646,10 @@ export class DashaPredictionEngine {
     const intensity = this._intensityLabel(rel, 'wealth', score);
     const md = planetName(mahadasha, lang);
     const summary = score >= 7
-      ? F_WEALTH_SUMMARY.strong[lang](md)
+      ? F_WEALTH_SUMMARY.strong[en2si(lang)](md)
       : score >= 5
-        ? F_WEALTH_SUMMARY.moderate[lang](md)
-        : F_WEALTH_SUMMARY.careful[lang](md);
+        ? F_WEALTH_SUMMARY.moderate[en2si(lang)](md)
+        : F_WEALTH_SUMMARY.careful[en2si(lang)](md);
 
     return { area:'wealth', trend, intensity, summary, details, remedies, keywords:['money','income','savings','investments','wealth'] };
   }
@@ -662,7 +662,7 @@ export class DashaPredictionEngine {
     const professions = this._terms(mahadasha, 'professions');
     const spec = CAREER_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     const details: string[] = this._foundationNotes('career');
-    if (professions.length) details.push(F_CAREER_AREAS[lang](joinComma(professions.slice(0, 4))));
+    if (professions.length) details.push(F_CAREER_AREAS[en2si(lang)](joinComma(professions.slice(0, 4))));
     details.push(...this._specDetails(pickList(spec.details, lang), score));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
@@ -672,29 +672,29 @@ export class DashaPredictionEngine {
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
       if (pairEff) {
-        details.push(F_SUB_PERIOD[lang](adName, pick(pairEff.career, lang)));
+        details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.career, lang)));
         score = clampScore(score + pairEff.ratingMod * 0.5);
       } else {
-        if (rel === 'friend') { details.push(F_AD_CAREER_FRIEND[lang](adName)); score = Math.min(10, score + 0.5); }
-        else if (rel === 'enemy') { details.push(F_AD_CAREER_ENEMY[lang](adName)); score = Math.max(1, score - 0.5); }
+        if (rel === 'friend') { details.push(F_AD_CAREER_FRIEND[en2si(lang)](adName)); score = Math.min(10, score + 0.5); }
+        else if (rel === 'enemy') { details.push(F_AD_CAREER_ENEMY[en2si(lang)](adName)); score = Math.max(1, score - 0.5); }
       }
     }
 
     if (pratyantardasha) {
       const pdRel = this.getRelationship(antardasha ?? mahadasha, pratyantardasha);
       const pdName = planetName(pratyantardasha, lang);
-      if (pdRel === 'enemy') details.push(F_PD_CAREER_ENEMY[lang](pdName));
-      else if (pdRel === 'friend') details.push(F_PD_CAREER_FRIEND[lang](pdName));
+      if (pdRel === 'enemy') details.push(F_PD_CAREER_ENEMY[en2si(lang)](pdName));
+      else if (pdRel === 'friend') details.push(F_PD_CAREER_FRIEND[en2si(lang)](pdName));
     }
 
     const trend = this._trendFromScore(score);
     const intensity = this._intensityLabel(rel, 'career', score);
     const md = planetName(mahadasha, lang);
     const summary = score >= 7
-      ? F_CAREER_SUMMARY.strong[lang](md)
+      ? F_CAREER_SUMMARY.strong[en2si(lang)](md)
       : score >= 5
-        ? F_CAREER_SUMMARY.steady[lang](md)
-        : F_CAREER_SUMMARY.patient[lang](md);
+        ? F_CAREER_SUMMARY.steady[en2si(lang)](md)
+        : F_CAREER_SUMMARY.patient[en2si(lang)](md);
 
     return { area:'career', trend, intensity, summary, details, remedies, keywords:['job','profession','promotion','business',...professions.slice(0,2)] };
   }
@@ -707,7 +707,7 @@ export class DashaPredictionEngine {
     const relationships = this._terms(mahadasha, 'relationships');
     const spec = REL_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     const details: string[] = this._foundationNotes('relationship');
-    if (relationships.length) details.push(F_KEY_RELATIONSHIPS[lang](joinComma(relationships)));
+    if (relationships.length) details.push(F_KEY_RELATIONSHIPS[en2si(lang)](joinComma(relationships)));
     details.push(...this._specDetails(pickList(spec.details, lang), score));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
@@ -717,29 +717,29 @@ export class DashaPredictionEngine {
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
       if (pairEff) {
-        details.push(F_SUB_PERIOD[lang](adName, pick(pairEff.relationships, lang)));
+        details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.relationships, lang)));
         score = clampScore(score + pairEff.ratingMod * 0.4);
       } else {
-        if (rel === 'friend') { details.push(F_AD_REL_FRIEND[lang](adName)); score = Math.min(10, score + 0.5); }
-        else if (rel === 'enemy') { details.push(F_AD_REL_ENEMY[lang](adName)); score = Math.max(1, score - 0.5); }
+        if (rel === 'friend') { details.push(F_AD_REL_FRIEND[en2si(lang)](adName)); score = Math.min(10, score + 0.5); }
+        else if (rel === 'enemy') { details.push(F_AD_REL_ENEMY[en2si(lang)](adName)); score = Math.max(1, score - 0.5); }
       }
     }
 
     if (pratyantardasha) {
       const pdRel = this.getRelationship(antardasha ?? mahadasha, pratyantardasha);
       const pdName = planetName(pratyantardasha, lang);
-      if (pdRel === 'enemy') details.push(F_PD_REL_ENEMY[lang](pdName));
-      else if (pdRel === 'friend') details.push(F_PD_REL_FRIEND[lang](pdName));
+      if (pdRel === 'enemy') details.push(F_PD_REL_ENEMY[en2si(lang)](pdName));
+      else if (pdRel === 'friend') details.push(F_PD_REL_FRIEND[en2si(lang)](pdName));
     }
 
     const trend = this._trendFromScore(score);
     const intensity = this._intensityLabel(rel, 'relationship', score);
     const md = planetName(mahadasha, lang);
     const summary = score >= 7
-      ? F_REL_SUMMARY.harmony[lang](md)
+      ? F_REL_SUMMARY.harmony[en2si(lang)](md)
       : score >= 5
-        ? F_REL_SUMMARY.stable[lang](md)
-        : F_REL_SUMMARY.challenging[lang](md);
+        ? F_REL_SUMMARY.stable[en2si(lang)](md)
+        : F_REL_SUMMARY.challenging[en2si(lang)](md);
 
     return { area:'relationships', trend, intensity, summary, details, remedies, keywords:['marriage','spouse','love','family',...relationships.slice(0,2)] };
   }
@@ -770,8 +770,8 @@ export class DashaPredictionEngine {
         score = clampScore(score + pairEff.ratingMod * 0.5);
         if (pairEff.bonus) spec.details.unshift(`${BONUS_MARK}${pick(pairEff.bonus, lang)}`);
       } else {
-        if (rel === 'friend') { spec.details.push(F_AD_GENERAL_FRIEND[lang](adName)); score = Math.min(10, score + 0.5); }
-        else if (rel === 'enemy') { spec.details.push(F_AD_GENERAL_ENEMY[lang](adName)); }
+        if (rel === 'friend') { spec.details.push(F_AD_GENERAL_FRIEND[en2si(lang)](adName)); score = Math.min(10, score + 0.5); }
+        else if (rel === 'enemy') { spec.details.push(F_AD_GENERAL_ENEMY[en2si(lang)](adName)); }
       }
     }
 
@@ -782,15 +782,15 @@ export class DashaPredictionEngine {
     // mahadasha running a hard phase was previously still summarised as
     // "genuinely positive life experiences", contradicting its own trend.
     const summary = score >= 6.5
-      ? F_GENERAL_SUMMARY.benefic[lang](md)
+      ? F_GENERAL_SUMMARY.benefic[en2si(lang)](md)
       : score <= 4.5
-        ? F_GENERAL_SUMMARY.malefic[lang](md)
-        : F_GENERAL_SUMMARY.neutral[lang](md);
+        ? F_GENERAL_SUMMARY.malefic[en2si(lang)](md)
+        : F_GENERAL_SUMMARY.neutral[en2si(lang)](md);
     void nature;
 
     if (pratyantardasha) {
       const pdRel = this.getRelationship(antardasha ?? mahadasha, pratyantardasha);
-      if (pdRel === 'friend') spec.details.push(F_SD_GENERAL_FRIEND[lang](planetName(pratyantardasha, lang)));
+      if (pdRel === 'friend') spec.details.push(F_SD_GENERAL_FRIEND[en2si(lang)](planetName(pratyantardasha, lang)));
     }
 
     return { area:'general', trend, intensity, summary, details:spec.details, remedies:spec.remedies, keywords:keywords.slice(0,5) };
@@ -852,26 +852,26 @@ export class DashaPredictionEngine {
     let overallTheme = pairEff
       ? pick(pairEff.theme, lang)
       : nature === 'benefic'
-        ? F_THEME_BASE.benefic[lang](mdName)
+        ? F_THEME_BASE.benefic[en2si(lang)](mdName)
         : nature === 'malefic'
-          ? F_THEME_BASE.malefic[lang](mdName)
-          : F_THEME_BASE.neutral[lang](mdName);
+          ? F_THEME_BASE.malefic[en2si(lang)](mdName)
+          : F_THEME_BASE.neutral[en2si(lang)](mdName);
 
     if (!pairEff && antardasha) {
       const rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
-      if (rel === 'friend') overallTheme += F_THEME_AD.friend[lang](adName);
-      else if (rel === 'enemy') overallTheme += F_THEME_AD.enemy[lang](adName);
-      else overallTheme += F_THEME_AD.neutral[lang](adName);
+      if (rel === 'friend') overallTheme += F_THEME_AD.friend[en2si(lang)](adName);
+      else if (rel === 'enemy') overallTheme += F_THEME_AD.enemy[en2si(lang)](adName);
+      else overallTheme += F_THEME_AD.neutral[en2si(lang)](adName);
     }
 
-    if (pratyantardasha) overallTheme += F_THEME_PD[lang](planetName(pratyantardasha, lang));
-    if (sookshmaDasha) overallTheme += F_THEME_SD[lang](planetName(sookshmaDasha, lang));
+    if (pratyantardasha) overallTheme += F_THEME_PD[en2si(lang)](planetName(pratyantardasha, lang));
+    if (sookshmaDasha) overallTheme += F_THEME_SD[en2si(lang)](planetName(sookshmaDasha, lang));
 
     // Surface the dasha lord's Ashtakavarga strength when available.
     const lordBindus = this._bindusForLord(mahadasha);
     if (lordBindus != null) {
-      overallTheme += F_THEME_BINDUS[lang](mdName, lordBindus, binduLabel(bindusToLabel(lordBindus), lang));
+      overallTheme += F_THEME_BINDUS[en2si(lang)](mdName, lordBindus, binduLabel(bindusToLabel(lordBindus), lang));
     }
 
     // Surface the dasha lord's natal house — the most important chart-specific
@@ -882,7 +882,7 @@ export class DashaPredictionEngine {
       // If the antardasha lord is also placed, add its house too.
       if (antardasha) {
         const adNote = this._houseAnnotation(antardasha);
-        if (adNote) general.details.splice(1, 0, F_SUB_PERIOD_PREFIX[lang](adNote));
+        if (adNote) general.details.splice(1, 0, F_SUB_PERIOD_PREFIX[en2si(lang)](adNote));
       }
     }
 
@@ -896,19 +896,19 @@ export class DashaPredictionEngine {
 
       // Headline the most decisive natal condition in the theme.
       if (mdStrength.dignity === 'exalted') {
-        overallTheme += F_THEME_EXALTED[lang](mdName);
+        overallTheme += F_THEME_EXALTED[en2si(lang)](mdName);
       } else if (mdStrength.dignity === 'debilitated' && mdStrength.neechaBhanga) {
-        overallTheme += F_THEME_NEECHA_BHANGA[lang](mdName);
+        overallTheme += F_THEME_NEECHA_BHANGA[en2si(lang)](mdName);
       } else if (mdStrength.dignity === 'debilitated') {
-        overallTheme += F_THEME_DEBILITATED[lang](mdName);
+        overallTheme += F_THEME_DEBILITATED[en2si(lang)](mdName);
       } else if (mdStrength.functionalNature === 'yogakaraka') {
-        overallTheme += F_THEME_YOGAKARAKA[lang](mdName);
+        overallTheme += F_THEME_YOGAKARAKA[en2si(lang)](mdName);
       }
     }
     if (antardasha) {
       const adStrength = this._strengthFor(antardasha);
       if (adStrength && adStrength.notes.length) {
-        general.details.push(F_SUB_PERIOD_LORD[lang](adStrength.notes[0]));
+        general.details.push(F_SUB_PERIOD_LORD[en2si(lang)](adStrength.notes[0]));
       }
     }
 
@@ -920,7 +920,7 @@ export class DashaPredictionEngine {
 
     // Flag a split transit picture so the single rating is not read as the whole
     // story — the detail is in importantTransits.
-    if (this._ctx?.transitDiverges) general.details.push(F_TRANSIT_DIVERGES[lang]());
+    if (this._ctx?.transitDiverges) general.details.push(F_TRANSIT_DIVERGES[en2si(lang)]());
 
     // Structured strength summaries for UI display.
     const lordStrengths: LordStrengthSummary[] = [];
@@ -960,7 +960,7 @@ export class DashaPredictionEngine {
     if (mdStrength && mdStrength.total >= 1) {
       const contested = natalFoundation.filter(f => f.weak).map(f => pick(AREA_NAME[f.area], lang));
       if (contested.length) {
-        general.details.push(F_FOUNDATION_TENSION[lang](joinAnd(contested, lang), mdName));
+        general.details.push(F_FOUNDATION_TENSION[en2si(lang)](joinAnd(contested, lang), mdName));
       }
     }
 

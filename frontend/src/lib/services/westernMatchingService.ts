@@ -10,7 +10,9 @@ import { buildWesternChart } from '../core/western/chart';
 import { runWesternSynastry, type WesternSynastryResult } from '../core/western/synastry';
 import type { BirthData } from '../../types/astrology';
 import type { WesternChart } from '../../types/westernAstrology';
-import type { Lang } from '../core/i18n';
+import type { Lang, TableLang } from '../core/i18n';
+import { en2si } from '../core/i18n';
+
 
 export interface WesternMatchSummary {
   personChart: WesternChart;
@@ -18,7 +20,7 @@ export interface WesternMatchSummary {
   synastry: WesternSynastryResult;
 }
 
-const LABELS: Record<Lang, { you: string; them: string }> = {
+const LABELS: Record<TableLang, { you: string; them: string }> = {
   en: { you: 'Your', them: 'their' },
   si: { you: 'ඔබේ', them: 'ඔවුන්ගේ' },
 };
@@ -32,7 +34,7 @@ export async function runWesternMatching(
   ]);
   const personChart = buildWesternChart(person, personRaw);
   const partnerChart = buildWesternChart(partner, partnerRaw);
-  const { you, them } = LABELS[lang] ?? LABELS.en;
+  const { you, them } = LABELS[en2si(lang)];
   const synastry = runWesternSynastry(personChart, partnerChart, you, them, lang);
   return { personChart, partnerChart, synastry };
 }

@@ -9,6 +9,7 @@ import { analyzeHousePairs } from '../../lib/core/conjunctions';
 import { useTheme } from '../../hooks/useTheme';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import {
   labelPlanet, labelRashi, labelRashiWestern, labelDignity, labelOrdinalHouse,
   labelHouseCovers, labelPlanetTheme,
@@ -70,14 +71,14 @@ export const HouseDetailPanel: React.FC<Props> = ({
   planets.forEach(p => { allPlanetRashiMap[p.planet] = p.rashiIndex; });
 
   const analysis = houseNumber
-    ? analyzeHouse(houseNumber, ascendantRashiIndex, planets, allPlanetRashiMap, lang)
+    ? analyzeHouse(houseNumber, ascendantRashiIndex, planets, allPlanetRashiMap, coreLang(lang))
     : null;
 
   const pairResult = useMemo(
     () => houseNumber
       ? analyzeHousePairs({
           houseNumber, ascendantRashiIndex, planets,
-          currentDasha, mahadashaTimeline, birthDate, lang,
+          currentDasha, mahadashaTimeline, birthDate, lang: coreLang(lang),
         })
       : null,
     [houseNumber, ascendantRashiIndex, planets, currentDasha, mahadashaTimeline, birthDate, lang],

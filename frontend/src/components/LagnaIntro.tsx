@@ -14,12 +14,19 @@
  * sliding. The assemble/hold/dissolve physics is shared by every theme; only
  * the *skin* changes per `theme` — palette, backdrop, label colour, and for
  * two of them the render primitive itself:
- *   - default (dark/light):  gold streaks, unchanged from the original.
+ *   - default (dark theme):  gold streaks, unchanged from the original.
  *   - chalk (mono theme):    chalk-yellow strokes with a hand-trembled jitter.
  *   - terminal (terminal):   phosphor-green monospace characters — digital
  *                             rain assembling into the glyph, not dots.
  *   - aqua (azure theme):    blue droplets with a specular highlight, plus a
  *                             couple of expanding ripples once the figure lands.
+ *   - petals (light theme):  rose-pink petals that tumble as they fly, in the
+ *                             app's own accent colour. The backdrop here is
+ *                             pale rather than dark, so this variant also
+ *                             swaps the 'lighter' glow blending (which needs
+ *                             a dark backdrop to read as glow) for ordinary
+ *                             alpha compositing — overlapping petals layer
+ *                             instead of blowing out to white.
  *
  * The figures are sampled, not drawn: the emoji is rendered once to an
  * offscreen canvas and every opaque pixel becomes a particle target, which is
@@ -72,6 +79,15 @@ const MAX_PARTICLES = 3000;
 /** Phone budget — half the points over roughly half the figure diameter. */
 const MOBILE_PARTICLES = 1500;
 /**
+ * Petals is a different look on purpose: individually-readable rose petals
+ * sketching the figure rather than a fine dust of specks — but enough of
+ * them, small enough, that the silhouette itself still reads clearly at a
+ * glance. Fewer than the other variants' budget, each one drawn bigger — see
+ * the 'petals' branch in the draw loop below.
+ */
+const PETAL_PARTICLES = 1100;
+const PETAL_PARTICLES_MOBILE = 550;
+/**
  * Offscreen sampling resolution and grid step. 420/2 gives roughly four times
  * the candidate points of the original 260/3, so thinning has real detail to
  * choose from instead of inventing it.
@@ -90,13 +106,14 @@ const DETAIL_SHARE  = 0.31;
 const ALPHA_MIN = 110;
 const LUM_STEP  = 46;
 
-type Variant = 'default' | 'chalk' | 'terminal' | 'aqua';
+type Variant = 'default' | 'chalk' | 'terminal' | 'aqua' | 'petals';
 
 /** Which reveal skin each theme id gets. Anything unrecognised is 'default'. */
 function variantFor(theme: string | undefined): Variant {
   if (theme === 'mono') return 'chalk';
   if (theme === 'terminal') return 'terminal';
   if (theme === 'azure') return 'aqua';
+  if (theme === 'light') return 'petals';
   return 'default';
 }
 
@@ -106,6 +123,7 @@ const PALETTE: Record<Variant, [number, number, number][]> = {
   chalk:    [[240, 220, 148], [217, 192, 121], [250, 249, 242]], // chalk yellow, matches the chalkboard theme's accent
   terminal: [[51, 255, 102], [34, 204, 77], [207, 255, 223]], // phosphor green, matches the terminal theme's accent
   aqua:     [[37, 99, 235], [29, 78, 216], [147, 197, 253]], // azure blue, matches the azure theme's accent
+  petals:   [[255, 46, 81], [219, 39, 119], [255, 214, 224]], // rose — the light theme's own accent (#FF2E51), a deeper magenta, and a pale blush
 };
 
 const BACKDROP: Record<Variant, string> = {
@@ -113,6 +131,7 @@ const BACKDROP: Record<Variant, string> = {
   chalk:    'radial-gradient(ellipse at center, #232320 0%, #141413 70%)',
   terminal: 'radial-gradient(ellipse at center, #04140a 0%, #000000 70%)',
   aqua:     'radial-gradient(ellipse at center, #0a2a5c 0%, #020817 72%)',
+  petals:   'radial-gradient(ellipse at center, #fff7f8 0%, #ffe3ea 55%, #ffcdda 100%)',
 };
 
 const LABEL_COLOR: Record<Variant, { tag: string; title: string; sub: string }> = {
@@ -120,6 +139,7 @@ const LABEL_COLOR: Record<Variant, { tag: string; title: string; sub: string }> 
   chalk:    { tag: 'rgba(240,220,148,0.85)', title: '#faf9f2', sub: 'rgba(217,192,121,0.6)' },
   terminal: { tag: 'rgba(51,255,102,0.85)',  title: '#cfffdf', sub: 'rgba(51,255,102,0.55)' },
   aqua:     { tag: 'rgba(96,165,250,0.9)',   title: '#dbeafe', sub: 'rgba(147,197,253,0.65)' },
+  petals:   { tag: 'rgba(190,24,93,0.8)',    title: '#9d174d', sub: 'rgba(157,23,77,0.6)' },
 };
 
 /** ASCII-only so canvas monospace metrics stay predictable across platforms. */
@@ -295,7 +315,10 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
 
     // Phones do this on a smaller canvas and a tighter power budget, and the
     // figure is physically smaller there, so it needs fewer points to read.
-    const budget = window.innerWidth < 640 ? MOBILE_PARTICLES : MAX_PARTICLES;
+    const mobile = window.innerWidth < 640;
+    const budget = variant === 'petals'
+      ? (mobile ? PETAL_PARTICLES_MOBILE : PETAL_PARTICLES)
+      : (mobile ? MOBILE_PARTICLES : MAX_PARTICLES);
     const { pts: figure, outlineCount, detailCount } = figurePoints(rashiIndex, budget);
     const count = Math.min(budget, figure.length);
 
@@ -308,6 +331,18 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
     );
     // Aqua "splash" rings, triggered once the figure finishes assembling.
     const ripples = variant === 'aqua' ? RIPPLE_DELAYS.map(delay => ({ start: -1, delay })) : [];
+
+    // A real rose petal: a shallow notch at the top where it met the bud,
+    // shoulders that bow outward, tapering to a rounded point — not a plain
+    // symmetric oval. Traced in local space (already translated/rotated to
+    // the particle) so it's one path definition reused for every petal.
+    const petalPath = (len: number, wid: number) => {
+      ctx.moveTo(0, -len * 0.82);
+      ctx.bezierCurveTo(wid * 0.15, -len, wid, -len * 0.6, wid, -len * 0.16);
+      ctx.bezierCurveTo(wid * 1.05, len * 0.28, wid * 0.55, len * 0.86, 0, len);
+      ctx.bezierCurveTo(-wid * 0.55, len * 0.86, -wid * 1.05, len * 0.28, -wid, -len * 0.16);
+      ctx.bezierCurveTo(-wid, -len * 0.6, -wid * 0.15, -len, 0, -len * 0.82);
+    };
 
     const layout = () => {
       w = canvas.clientWidth;
@@ -379,7 +414,11 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
       last = now;
 
       ctx.clearRect(0, 0, w, h);
-      ctx.globalCompositeOperation = 'lighter';
+      // 'lighter' additive blending is what makes overlapping particles read
+      // as glow — but that only works over a dark backdrop. Petals sit on a
+      // pale one, so it stays plain alpha compositing: petals layer over each
+      // other like real ones instead of blowing out toward white.
+      ctx.globalCompositeOperation = variant === 'petals' ? 'source-over' : 'lighter';
       ctx.lineCap = 'round';
       if (variant === 'terminal') { ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; }
 
@@ -468,6 +507,50 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
           if (p.tint !== fontTier) { ctx.font = termFonts[p.tint]; fontTier = p.tint; }
           ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
           ctx.fillText(p.char, p.x, p.y);
+          continue;
+        }
+
+        if (variant === 'petals') {
+          // A petal, not a dot or a streak: a slow continuous tumble (not
+          // tied to velocity, which flickers near-zero when the figure is
+          // holding still) plus a little wobble, so the cloud reads as
+          // petals turning in the air rather than sparks flying. Large and
+          // few rather than fine dust — this variant runs on PETAL_PARTICLES,
+          // a fraction of the other variants' budget, specifically so each
+          // one is big enough to read as an actual petal.
+          const flutter = p.flowPhase + elapsed * 0.0011;
+          const rot = flutter * 1.1 + Math.sin(flutter * 1.6) * 0.35;
+          const len = p.size * (p.lead ? 6.5 : 5);
+          const wid = len * 0.58;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(rot);
+
+          ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+          ctx.beginPath();
+          petalPath(len, wid);
+          ctx.fill();
+
+          // A soft rose-edge outline — real petals have a visible, slightly
+          // deeper-toned rim, not a hard vector edge.
+          const [dr, dg, db] = palette[1];
+          ctx.lineWidth = 0.9;
+          ctx.strokeStyle = `rgba(${dr},${dg},${db},${a * 0.35})`;
+          ctx.stroke();
+
+          // A smaller, paler petal nested toward the tip stands in for the
+          // gradient a real petal shows toward its curled outer edge —
+          // cheaper than an actual canvas gradient, and reads the same at
+          // this size.
+          const [hr, hg, hb] = palette[2];
+          ctx.translate(0, len * 0.2);
+          ctx.scale(0.55, 0.6);
+          ctx.fillStyle = `rgba(${hr},${hg},${hb},${a * 0.55})`;
+          ctx.beginPath();
+          petalPath(len, wid);
+          ctx.fill();
+
+          ctx.restore();
           continue;
         }
 

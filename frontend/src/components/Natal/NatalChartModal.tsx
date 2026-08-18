@@ -6,6 +6,7 @@ import { buildNatalReport, type NatalLine, type NatalSection, type Tone } from '
 import { PLANET_SYMBOLS } from '../../types/astrology';
 import type { BirthData } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { TapBadge, tapVars } from '../shared/tapTarget';
 
 interface Props {
@@ -121,7 +122,7 @@ const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['natal-report', birthData, lang],
-    queryFn: () => buildNatalReport(birthData, lang),
+    queryFn: () => buildNatalReport(birthData, coreLang(lang)),
     staleTime: Infinity, // a natal chart never changes
   });
 

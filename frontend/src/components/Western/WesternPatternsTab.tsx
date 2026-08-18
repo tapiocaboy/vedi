@@ -6,6 +6,7 @@ import { westernPlanetName } from '../../lib/core/western/text/planetText';
 import { pick } from '../../lib/core/i18n';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 
 interface Props { chart: WesternChart }
 
@@ -13,7 +14,7 @@ const PatternCard: React.FC<{ p: WesternPattern; index: number }> = ({ p, index 
   const isLight = useTheme();
   const { lang } = useLang();
   const text = PATTERN_TEXT[p.type];
-  const bodies = p.bodies.map(b => westernPlanetName(b, lang)).join(' · ');
+  const bodies = p.bodies.map(b => westernPlanetName(b, coreLang(lang))).join(' · ');
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
@@ -24,11 +25,11 @@ const PatternCard: React.FC<{ p: WesternPattern; index: number }> = ({ p, index 
       }}
     >
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <h4 className="text-sm font-semibold" style={{ color: 'var(--c-accent)' }}>{pick(text.name, lang)}</h4>
-        {p.apex && <span className="text-[10px] uppercase tracking-wider font-semibold text-white/40">apex: {westernPlanetName(p.apex, lang)}</span>}
+          <h4 className="text-sm font-semibold" style={{ color: 'var(--c-accent)' }}>{pick(text.name, coreLang(lang))}</h4>
+          {p.apex && <span className="text-[10px] uppercase tracking-wider font-semibold text-white/40">apex: {westernPlanetName(p.apex, coreLang(lang))}</span>}
       </div>
       <p className="text-[11px] font-mono mb-2" style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.4)' }}>{bodies}</p>
-      <p className="text-[12px] leading-relaxed" style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.72)' }}>{pick(text.description, lang)}</p>
+        <p className="text-[12px] leading-relaxed" style={{ color: isLight ? '#334155' : 'rgba(255,255,255,0.72)' }}>{pick(text.description, coreLang(lang))}</p>
     </motion.div>
   );
 };

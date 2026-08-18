@@ -8,6 +8,7 @@ import { westernPlanetName, westernPlanetGlyph, westernPlanetColor } from '../..
 import { formatOrb } from '../../lib/core/western/aspects';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 
 interface Props { birthData: BirthData }
 
@@ -85,12 +86,12 @@ export const WesternTransitsTab: React.FC<Props> = ({ birthData }) => {
               >
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11.5px] font-semibold" style={{ color: isLight ? '#0f172a' : 'rgba(255,255,255,0.85)' }}>
-                    {westernPlanetName(h.bodyA, lang)} → {westernPlanetName(h.bodyB, lang)}
+                    {westernPlanetName(h.bodyA, coreLang(lang))} → {westernPlanetName(h.bodyB, coreLang(lang))}
                   </span>
                   <span className="text-[10px] font-mono ml-auto" style={{ color: mutedTxt }}>{formatOrb(h.orb)}</span>
                 </div>
                 <p className="text-[11px] mt-1 leading-relaxed" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)' }}>
-                  {composeTransitAspectSentence(h, lang)}
+                  {composeTransitAspectSentence(h, coreLang(lang))}
                 </p>
               </motion.div>
             ))}
@@ -103,7 +104,7 @@ export const WesternTransitsTab: React.FC<Props> = ({ birthData }) => {
         <div className="space-y-1.5">
           {data.transiting.map(tp => (
             <p key={tp.planet} className="text-[11.5px] leading-relaxed" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.6)' }}>
-              {composeTransitHouseSentence(tp.planet, tp.natalHouse, lang)}
+                {composeTransitHouseSentence(tp.planet, tp.natalHouse, coreLang(lang))}
             </p>
           ))}
         </div>

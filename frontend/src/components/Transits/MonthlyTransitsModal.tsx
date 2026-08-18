@@ -5,6 +5,7 @@ import { CalendarRange, X, Loader2, ArrowRight, RotateCcw, Sparkles, AlertTriang
 import { getMonthlyTransits, type MonthlyTransitEvent } from '../../lib/core/monthlyTransits';
 import type { Chart } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
@@ -90,7 +91,7 @@ const Body: React.FC<{ chart: Chart }> = ({ chart }) => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['monthly-transits', ayanamsa, moonRashi, lagnaRashi, monthKey, lang],
-    queryFn: () => getMonthlyTransits(ayanamsa, moonRashi, lagnaRashi, target, lang),
+    queryFn: () => getMonthlyTransits(ayanamsa, moonRashi, lagnaRashi, target, coreLang(lang)),
     staleTime: 60 * 60_000, // an hour — ingress dates don't change
   });
 

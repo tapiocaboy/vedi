@@ -21,6 +21,7 @@ import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { PanchangaTab } from '../Panchanga/PanchangaTab';
 import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import {
   labelArea, labelTrend, labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse, labelRashi,
 } from '../../i18n/astroLabels';
@@ -392,7 +393,7 @@ const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLo
   const { lang, t } = useLang();
   const predictions = useMemo(() => {
     const signs = computeSignAnalysis(gochara);
-    return buildTransitPredictions(gochara, signs, dashaLords, lang);
+    return buildTransitPredictions(gochara, signs, dashaLords, coreLang(lang));
   }, [gochara, dashaLords, lang]);
 
   return (
@@ -704,12 +705,12 @@ export const DeepInsights: React.FC<Props> = ({ birthData }) => {
 
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['currentPrediction', birthData, dateKey, lang],
-    queryFn: () => getCurrentPrediction(birthData, effectiveDate, lang),
+    queryFn: () => getCurrentPrediction(birthData, effectiveDate, coreLang(lang)),
     enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
   });
   const { data: gochara } = useQuery({
     queryKey: ['gochara', birthData, dateKey, lang],
-    queryFn: () => getGochara(birthData, effectiveDate, lang),
+    queryFn: () => getGochara(birthData, effectiveDate, coreLang(lang)),
     enabled: !!birthData.date, staleTime: 5 * 60 * 1000,
   });
 

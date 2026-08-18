@@ -1,8 +1,9 @@
 /** Bilingual prose for the monthly / upcoming Gochara views (monthlyTransits.ts). */
 
-import { type Lang, planetName, rashiName } from '../i18n';
+import { type Lang, type TableLang, en2si, planetName, rashiName } from '../i18n';
 
-export const PLANET_SIGNIFIES: Record<string, Record<Lang, string>> = {
+
+export const PLANET_SIGNIFIES: Record<string, Record<TableLang, string>> = {
   SUN: { en: 'authority, vitality, recognition and the father', si: 'බලය, ජීවශක්තිය, පිළිගැනීම හා පියා' },
   MERCURY: { en: 'communication, commerce, learning and quick thinking', si: 'සන්නිවේදනය, වෙළඳාම, ඉගෙනීම හා ඉක්මන් සිතීම' },
   VENUS: { en: 'love, comfort, money, art and relationships', si: 'ආදරය, පහසුව, මුදල්, කලා හා සම්බන්ධතා' },
@@ -14,10 +15,10 @@ export const PLANET_SIGNIFIES: Record<string, Record<Lang, string>> = {
 };
 
 export interface HouseThemeText {
-  label: Record<Lang, string>;
-  favorable: Record<Lang, string>;
-  challenging: Record<Lang, string>;
-  areas: [Record<Lang, string>, Record<Lang, string>];
+  label: Record<TableLang, string>;
+  favorable: Record<TableLang, string>;
+  challenging: Record<TableLang, string>;
+  areas: [Record<TableLang, string>, Record<TableLang, string>];
 }
 
 export const HOUSE_THEME: Record<number, HouseThemeText> = {
@@ -35,7 +36,7 @@ export const HOUSE_THEME: Record<number, HouseThemeText> = {
   12: { label: { en: 'expenses, foreign lands & release', si: 'වියදම්, විදේශ රටවල් හා අත්හැරීම' }, favorable: { en: 'spiritual growth, rest and well-spent foreign or charitable expense', si: 'අධ්‍යාත්මික වර්ධනය, විවේකය හා නිසි ලෙස වැය කළ විදේශ හෝ පුණ්‍ය වියදම්' }, challenging: { en: 'rising expenses, isolation, disturbed sleep and losses', si: 'ඉහළ යන වියදම්, හුදෙකලාව, කැළඹුණු නින්ද හා පාඩු' }, areas: [{ en: 'Expenses & loss', si: 'වියදම් හා පාඩු' }, { en: 'Spirituality & rest', si: 'අධ්‍යාත්මිකත්වය හා විවේකය' }] },
 };
 
-const T = (b: Record<Lang, string>, lang: Lang) => b[lang];
+const T = (b: Record<TableLang, string>, lang: Lang) => b[en2si(lang)];
 
 export function planetLabelM(planetKey: string, lang: Lang): string {
   return planetName(planetKey.charAt(0).toUpperCase() + planetKey.slice(1).toLowerCase(), lang);
@@ -97,12 +98,13 @@ export function capitalize(s: string, lang: Lang): string {
 }
 
 export { T as pickM };
-export function signifies(planetKey: string, lang: Lang): string { return PLANET_SIGNIFIES[planetKey]?.[lang] ?? ''; }
+export function signifies(planetKey: string, lang: Lang): string { return PLANET_SIGNIFIES[planetKey]?.[en2si(lang)] ?? ''; }
 export function houseTheme(house: number, lang: Lang) {
   const h = HOUSE_THEME[house];
+  const l = en2si(lang);
   return {
-    label: h.label[lang], favorable: h.favorable[lang], challenging: h.challenging[lang],
-    areas: [h.areas[0][lang], h.areas[1][lang]] as [string, string],
+    label: h.label[l], favorable: h.favorable[l], challenging: h.challenging[l],
+    areas: [h.areas[0][l], h.areas[1][l]] as [string, string],
   };
 }
 export function monthLabelFor(start: Date, lang: Lang): string {

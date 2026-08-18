@@ -20,6 +20,7 @@ import { TransitPredictionCards } from '../shared/TransitPredictionCards';
 import { RASHIS, RASHI_ENGLISH, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelRashi, labelRashiWestern, labelDignity } from '../../i18n/astroLabels';
 import { TapHint, tapVars } from '../shared/tapTarget';
 
@@ -50,7 +51,7 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
   const [showAll, setShowAll] = useState(false);
 
   const signs = useMemo(() => computeSignAnalysis(gochara), [gochara]);
-  const predictions = useMemo(() => buildTransitPredictions(gochara, signs, dasha, lang), [gochara, signs, dasha, lang]);
+  const predictions = useMemo(() => buildTransitPredictions(gochara, signs, dasha, coreLang(lang)), [gochara, signs, dasha, lang]);
   const mp = gochara.moonPhase;
 
   const byRashi: Record<number, PlanetTransit[]> = {};

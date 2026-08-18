@@ -8,6 +8,7 @@
  */
 
 import type { Bi, BiList, Lang } from '../i18n';
+import { en2si } from '../i18n';
 
 // ─── House display (name / theme / rules) ──────────────────────────────────
 
@@ -75,7 +76,7 @@ export function ordHouse(n: number, lang: Lang): string {
 export const DIG_BALA_FRAMES = {
   na: { en: 'Directional strength (Dig Bala) is not assigned to shadow planets.', si: 'ඡායා ග්‍රහයන්ට දිශා ශක්තිය (දිග් බල) පවරා නැත.' } as Bi,
   levelWord: (level: 'strong' | 'moderate' | 'weak', lang: Lang) =>
-    ({ strong: { en: 'strong', si: 'ප්‍රබල' }, moderate: { en: 'moderate', si: 'මධ්‍යස්ථ' }, weak: { en: 'weak', si: 'දුර්වල' } }[level][lang]),
+    ({ strong: { en: 'strong', si: 'ප්‍රබල' }, moderate: { en: 'moderate', si: 'මධ්‍යස්ථ' }, weak: { en: 'weak', si: 'දුර්වල' } }[level][en2si(lang)]),
   desc: (strongHouse: number, house: number, level: 'strong' | 'moderate' | 'weak', lang: Lang): string => {
     const lvl = DIG_BALA_FRAMES.levelWord(level, lang);
     const outcome = level === 'strong'
@@ -136,7 +137,7 @@ export const GANDANTA_FRAMES = {
       deep: { en: 'deep', si: 'ගැඹුරු' },
       moderate: { en: 'moderate', si: 'මධ්‍යස්ථ' },
       mild: { en: 'shallow', si: 'නොගැඹුරු' },
-    }[s][lang]),
+    }[s][en2si(lang)]),
   desc: (args: {
     fromJunction: string;
     severity: 'deep' | 'moderate' | 'mild';

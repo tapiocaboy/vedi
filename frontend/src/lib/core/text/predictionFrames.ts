@@ -7,11 +7,13 @@
  * the grammar lives with the language instead of at the call site.
  */
 
-import type { Lang } from '../i18n';
+import type { Lang, TableLang } from '../i18n';
+import { en2si } from '../i18n';
 
-type Frame0 = Record<Lang, () => string>;
-type Frame1 = Record<Lang, (a: string) => string>;
-type Frame2 = Record<Lang, (a: string, b: string) => string>;
+
+type Frame0 = Record<TableLang, () => string>;
+type Frame1 = Record<TableLang, (a: string) => string>;
+type Frame2 = Record<TableLang, (a: string, b: string) => string>;
 
 // ─── Enumerated-term detail lines ──────────────────────────────────────────
 
@@ -259,7 +261,7 @@ export const F_THEME_SD: Frame1 = {
   si: sd => ` (${sd} සූක්ෂ්ම දශාව)`,
 };
 
-export const F_THEME_BINDUS: Record<Lang, (md: string, bindus: number, label: string) => string> = {
+export const F_THEME_BINDUS: Record<TableLang, (md: string, bindus: number, label: string) => string> = {
   en: (md, bindus, label) => `. ${md}'s Ashtakavarga in its own rashi: ${bindus}/8 (${label})`,
   si: (md, bindus, label) => `. ${md}ගේ අෂ්ටකවර්ග බින්දු එහිම රාශියේ: ${bindus}/8 (${label})`,
 };
@@ -287,7 +289,7 @@ export const F_THEME_YOGAKARAKA: Frame1 = {
 // ─── Chart-specific annotations ────────────────────────────────────────────
 
 export const F_HOUSE_ANNOTATION: Record<
-  Lang,
+  TableLang,
   (planet: string, house: string, theme: string, quality: string, emphasis: string) => string
 > = {
   en: (planet, house, theme, quality, emphasis) =>
@@ -296,7 +298,7 @@ export const F_HOUSE_ANNOTATION: Record<
     `${planet} ඔබේ ජන්ම කේන්දරයේ ${house} (${theme}) සිටී. ${quality} මෙම දශාවේ අවධානය: ${emphasis}.`,
 };
 
-export const F_LORDSHIP_ANNOTATION: Record<Lang, (planet: string, houses: string, multiple: boolean) => string> = {
+export const F_LORDSHIP_ANNOTATION: Record<TableLang, (planet: string, houses: string, multiple: boolean) => string> = {
   en: (planet, houses, multiple) =>
     `${planet} rules your ${houses} — this period directly activates ${multiple ? 'those life areas' : 'that life area'}.`,
   si: (planet, houses, multiple) =>
@@ -329,7 +331,7 @@ export const F_SUB_PERIOD_LORD: Frame1 = {
 // scores each factor separately never notices the pile-up.
 
 /** The lord of the natal Moon's nakshatra is running a level of the chain. */
-export const F_RESONANCE_NAKSHATRA_LORD: Record<Lang, (planet: string, nakshatra: string, level: string) => string> = {
+export const F_RESONANCE_NAKSHATRA_LORD: Record<TableLang, (planet: string, nakshatra: string, level: string) => string> = {
   en: (planet, nakshatra, level) =>
     `${planet} is the lord of your birth nakshatra (${nakshatra}) and also holds the ${level} — the whole Vimshottari cycle is keyed to this planet, so its periods land with more force on you than the same period does on other charts.`,
   si: (planet, nakshatra, level) =>
@@ -337,7 +339,7 @@ export const F_RESONANCE_NAKSHATRA_LORD: Record<Lang, (planet: string, nakshatra
 };
 
 /** The dasha lord occupies the lagna — it acts on the self directly. */
-export const F_RESONANCE_IN_LAGNA: Record<Lang, (planet: string, level: string) => string> = {
+export const F_RESONANCE_IN_LAGNA: Record<TableLang, (planet: string, level: string) => string> = {
   en: (planet, level) =>
     `${planet} sits in your Ascendant and holds the ${level} — this period acts on the sense of self directly rather than through one area of life.`,
   si: (planet, level) =>
@@ -345,7 +347,7 @@ export const F_RESONANCE_IN_LAGNA: Record<Lang, (planet: string, level: string) 
 };
 
 /** Two or more resonances stacking on the same planet. */
-export const F_RESONANCE_STACKED: Record<Lang, (planet: string, count: number) => string> = {
+export const F_RESONANCE_STACKED: Record<TableLang, (planet: string, count: number) => string> = {
   en: (planet, count) =>
     `${count} separate structural ties to ${planet} are active at once. Treat this as a ${planet} chapter in the strong sense — withdrawal, reorientation and loss of interest in what previously mattered are the expected texture, not a sign something has gone wrong.`,
   si: (planet, count) =>
@@ -353,14 +355,14 @@ export const F_RESONANCE_STACKED: Record<Lang, (planet: string, count: number) =
 };
 
 /** Outward and inward transit signals disagree during this period. */
-export const F_TRANSIT_DIVERGES: Record<Lang, () => string> = {
+export const F_TRANSIT_DIVERGES: Record<TableLang, () => string> = {
   en: () => `The transits are pulling in two directions this period — see the transit notes: what is on offer and how it feels are not the same reading right now.`,
   si: () => `මෙම කාලයේ ගෝචර දෙපැත්තට ඇද ගනී — ගෝචර සටහන් බලන්න: ලැබෙන දේ හා එය දැනෙන ආකාරය දැන් එකම කියවීමක් නොවේ.`,
 };
 
 // ─── Discrete labels ───────────────────────────────────────────────────────
 
-export const INTENSITY_LABEL: Record<string, Record<Lang, string>> = {
+export const INTENSITY_LABEL: Record<string, Record<TableLang, string>> = {
   'very strong':      { en: 'very strong',      si: 'ඉතා ප්‍රබලයි' },
   strong:             { en: 'strong',           si: 'ප්‍රබලයි' },
   moderate:           { en: 'moderate',         si: 'මධ්‍යස්ථයි' },
@@ -369,7 +371,7 @@ export const INTENSITY_LABEL: Record<string, Record<Lang, string>> = {
 };
 
 /** Ashtakavarga bindu strength labels (from `bindusToLabel`). */
-export const BINDU_LABEL: Record<string, Record<Lang, string>> = {
+export const BINDU_LABEL: Record<string, Record<TableLang, string>> = {
   weak:            { en: 'weak',            si: 'දුර්වලයි' },
   'below average': { en: 'below average',   si: 'සාමාන්‍යයට වඩා අඩුයි' },
   average:         { en: 'average',         si: 'සාමාන්‍යයි' },
@@ -378,11 +380,11 @@ export const BINDU_LABEL: Record<string, Record<Lang, string>> = {
 };
 
 export function intensityLabel(key: string, lang: Lang): string {
-  return INTENSITY_LABEL[key]?.[lang] ?? key;
+  return INTENSITY_LABEL[key]?.[en2si(lang)] ?? key;
 }
 
 export function binduLabel(key: string, lang: Lang): string {
-  return BINDU_LABEL[key]?.[lang] ?? key;
+  return BINDU_LABEL[key]?.[en2si(lang)] ?? key;
 }
 
 /** Bonus lines are prefixed with a marker in both languages. */

@@ -44,7 +44,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
   const { lang, t } = useLang();
 
   const analysis = rashiIndex !== null
-    ? analyzeVargaHouse(variant, rashiIndex, vargaAscendant, planets)
+    ? analyzeVargaHouse(variant, rashiIndex, vargaAscendant, planets, lang)
     : null;
 
   const isD9 = variant === 'D9';

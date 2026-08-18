@@ -6,6 +6,7 @@ import { getDoshas } from '../../services/api';
 import type { BirthData, DoshaCheck, SadeSatiPeriod } from '../../services/api';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
+import type { TranslationKey } from '../../i18n/translations';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -13,23 +14,33 @@ function fmtMonthYear(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 }
 
-const SEVERITY_STYLE: Record<string, { chip: string; label: string }> = {
-  none:     { chip: 'text-emerald-300 bg-emerald-500/12 border-emerald-400/30', label: 'Clear' },
-  mild:     { chip: 'text-amber-300 bg-amber-500/12 border-amber-400/30',       label: 'Mild' },
-  moderate: { chip: 'text-rose-200 bg-rose-500/12 border-rose-400/30',          label: 'Moderate' },
-  strong:   { chip: 'text-rose-300 bg-rose-500/15 border-rose-400/40',          label: 'Strong' },
+const SEVERITY_CHIP: Record<string, string> = {
+  none:     'text-emerald-300 bg-emerald-500/12 border-emerald-400/30',
+  mild:     'text-amber-300 bg-amber-500/12 border-amber-400/30',
+  moderate: 'text-rose-200 bg-rose-500/12 border-rose-400/30',
+  strong:   'text-rose-300 bg-rose-500/15 border-rose-400/40',
+};
+const SEVERITY_KEY: Record<string, TranslationKey> = {
+  none: 'dosha.severity.clear', mild: 'dosha.severity.mild', moderate: 'dosha.severity.moderate', strong: 'dosha.severity.strong',
 };
 
-const STATUS_STYLE: Record<SadeSatiPeriod['status'], { chip: string; label: string }> = {
-  past:     { chip: 'text-white/45 bg-white/5 border-white/12',                 label: 'Past' },
-  current:  { chip: 'text-amber-200 bg-amber-500/15 border-amber-400/40',       label: 'Active now' },
-  upcoming: { chip: 'text-violet-200 bg-violet-500/12 border-violet-400/30',    label: 'Upcoming' },
+const STATUS_CHIP: Record<SadeSatiPeriod['status'], string> = {
+  past:     'text-white/45 bg-white/5 border-white/12',
+  current:  'text-amber-200 bg-amber-500/15 border-amber-400/40',
+  upcoming: 'text-violet-200 bg-violet-500/12 border-violet-400/30',
+};
+const STATUS_KEY: Record<SadeSatiPeriod['status'], TranslationKey> = {
+  past: 'dosha.status.past', current: 'dosha.status.current', upcoming: 'dosha.status.upcoming',
 };
 
-const PHASE_LABEL: Record<string, string> = { rising: '1 · Rising (12th)', peak: '2 · Peak (Moon)', setting: '3 · Setting (2nd)' };
+const PHASE_KEY: Record<string, TranslationKey> = { rising: 'dosha.phase.rising', peak: 'dosha.phase.peak', setting: 'dosha.phase.setting' };
+const PHASE_ORDER: Record<string, string> = { rising: '1', peak: '2', setting: '3' };
+const PHASE_HOUSE: Record<string, string> = { rising: '(12th)', peak: '(Moon)', setting: '(2nd)' };
 
 function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
-  const sev = SEVERITY_STYLE[d.severity] ?? SEVERITY_STYLE.none;
+  const { t } = useLang();
+  const chip = SEVERITY_CHIP[d.severity] ?? SEVERITY_CHIP.none;
+  const sevLabel = t(SEVERITY_KEY[d.severity] ?? SEVERITY_KEY.none);
   const Icon = d.present ? ShieldAlert : ShieldCheck;
   const iconColor = d.present ? '#fb7185' : '#34d399';
   return (
@@ -42,8 +53,8 @@ function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <h3 className={`text-sm font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>{d.name}</h3>
-            <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold shrink-0 ${sev.chip}`}>
-              {d.present ? sev.label : 'Clear'}
+            <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold shrink-0 ${chip}`}>
+              {d.present ? sevLabel : t('dosha.severity.clear')}
             </span>
           </div>
           <p className={`text-xs leading-relaxed mt-1 ${isLight ? 'text-slate-600' : 'text-white/65'}`}>{d.summary}</p>
@@ -53,7 +64,7 @@ function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
       {d.factors.length > 0 && (
         <div className="mt-3 pl-12">
           <div className="text-[10px] uppercase tracking-wider text-rose-300/70 mb-1.5 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" /> Why it’s flagged
+            <AlertTriangle className="w-3 h-3" /> {t('dosha.whyFlagged')}
           </div>
           <ul className="space-y-1">
             {d.factors.map((f, i) => (
@@ -68,7 +79,7 @@ function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
       {d.cancellations.length > 0 && (
         <div className="mt-3 pl-12">
           <div className="text-[10px] uppercase tracking-wider text-emerald-300/70 mb-1.5 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Cancellation (bhanga)
+            <CheckCircle2 className="w-3 h-3" /> {t('dosha.cancellationBhanga')}
           </div>
           <ul className="space-y-1">
             {d.cancellations.map((c, i) => (
@@ -94,10 +105,10 @@ function DoshaCard({ d, isLight }: { d: DoshaCheck; isLight: boolean }) {
 
 export const DoshaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const isLight = useTheme();
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['doshas', birthData],
-    queryFn: () => getDoshas(birthData),
+    queryKey: ['doshas', birthData, lang],
+    queryFn: () => getDoshas(birthData, lang),
     staleTime: Infinity,
   });
 
@@ -156,7 +167,8 @@ export const DoshaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
 
         <div className="space-y-2.5 mt-4">
           {ss.periods.map((p, i) => {
-            const st = STATUS_STYLE[p.status];
+            const stChip = STATUS_CHIP[p.status];
+            const stLabel = t(STATUS_KEY[p.status]);
             return (
               <motion.div
                 key={i}
@@ -171,14 +183,14 @@ export const DoshaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
                   <div className={`text-xs font-bold ${isLight ? 'text-gray-800' : 'text-white'}`}>
                     {fmtMonthYear(p.start)} – {fmtMonthYear(p.end)}
                   </div>
-                  <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${st.chip}`}>{st.label}</span>
+                  <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${stChip}`}>{stLabel}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                   {p.phases.map((ph, j) => (
                     <div key={j} className="rounded-lg px-2.5 py-1.5"
                       style={{ background: isLight ? '#f1f5f9' : 'rgba(255,255,255,0.04)', border: isLight ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.06)' }}>
                       <div className="flex items-center gap-1 text-[10px] font-bold" style={{ color: 'var(--c-accent-2)' }}>
-                        <CircleDot className="w-2.5 h-2.5" /> {PHASE_LABEL[ph.phase]}
+                        <CircleDot className="w-2.5 h-2.5" /> {PHASE_ORDER[ph.phase]} · {t(PHASE_KEY[ph.phase])} {PHASE_HOUSE[ph.phase]}
                       </div>
                       <div className={`text-[11px] font-semibold mt-0.5 ${isLight ? 'text-slate-700' : 'text-white/75'}`}>{ph.signName}</div>
                       <div className={`text-[10px] font-mono ${isLight ? 'text-slate-400' : 'text-white/35'}`}>

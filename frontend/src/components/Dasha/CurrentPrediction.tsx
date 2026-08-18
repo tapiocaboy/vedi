@@ -9,6 +9,7 @@ import { getCurrentPrediction, type BirthData } from '../../services/api';
 import DashaPrediction from './DashaPrediction';
 import { Loader2, Calendar, Moon, Star } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
@@ -19,7 +20,7 @@ export const CurrentPrediction: React.FC<Props> = ({ birthData }) => {
   const { lang, t } = useLang();
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['currentPrediction', birthData, lang],
-    queryFn: () => getCurrentPrediction(birthData, undefined, lang),
+    queryFn: () => getCurrentPrediction(birthData, undefined, coreLang(lang)),
     enabled: !!birthData.date,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

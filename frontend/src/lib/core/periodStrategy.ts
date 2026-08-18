@@ -15,7 +15,7 @@
 import { SEPARATIVE, type PeriodTone, type WeightBand } from './dashaWeight';
 import type { PlanetStrength } from './dashaStrength';
 import type { AntardashaJudgement } from './antardashaJudgement';
-import { type Lang, planetName, houseLabel, joinAnd } from './i18n';
+import { type Lang, en2si, planetName, houseLabel, joinAnd } from './i18n';
 import { SIG_TEXT } from './text/predictionVocab';
 import { housePhrase, DIGNITY_PHRASE, STRATEGY } from './text/strategyText';
 
@@ -133,7 +133,7 @@ function stanceProse(
 
   if (stance === 'consolidate') {
     return {
-      headline: STRATEGY.consolidateHeadline[lang],
+      headline: STRATEGY.consolidateHeadline[en2si(lang)],
       body: STRATEGY.consolidateBody(mdN, adN, j.score, STRATEGY.separativeNote(separatives, lang), disp, lang),
     };
   }
@@ -141,13 +141,13 @@ function stanceProse(
   if (stance === 'accumulate') {
     const houseNote = gainHouses.length ? STRATEGY.accumulateHouseNote(adN, housePhrase(gainHouses, lang), lang) : '';
     return {
-      headline: STRATEGY.accumulateHeadline[lang],
+      headline: STRATEGY.accumulateHeadline[en2si(lang)],
       body: STRATEGY.accumulateBody(mdN, adN, j.score, houseNote, disp, lang),
     };
   }
 
   return {
-    headline: STRATEGY.mixedHeadline[lang],
+    headline: STRATEGY.mixedHeadline[en2si(lang)],
     body: STRATEGY.mixedBody(mdN, adN, j.score, disp, lang),
   };
 }
@@ -158,10 +158,10 @@ function actionReason(w: WeightedWindow, s: PlanetStrength | null, lang: Lang): 
   const lord = planetName(w.lord, lang);
   const bits: string[] = [];
   if (s?.dignity && DIGNITY_PHRASE[s.dignity]) {
-    bits.push(STRATEGY.actionBitDignity(lord, DIGNITY_PHRASE[s.dignity][lang], lang));
+    bits.push(STRATEGY.actionBitDignity(lord, DIGNITY_PHRASE[s.dignity][en2si(lang)], lang));
   }
   if (s?.functionalNature === 'yogakaraka') {
-    bits.push(STRATEGY.actionBitYogakaraka[lang]);
+    bits.push(STRATEGY.actionBitYogakaraka[en2si(lang)]);
   }
   // Only the houses that actually argue for acting — a dusthana lordship is
   // not a reason to commit, so it stays out of the case for the window.
@@ -183,7 +183,7 @@ function defensiveReason(w: WeightedWindow, lang: Lang): string {
 
 function buildReason(w: WeightedWindow, lang: Lang): string {
   const focus = STRATEGY.deepWorkFocus[w.lord];
-  return STRATEGY.buildReason(planetName(w.lord, lang), focus ? focus[lang] : null, lang);
+  return STRATEGY.buildReason(planetName(w.lord, lang), focus ? focus[en2si(lang)] : null, lang);
 }
 
 function toWindow(w: WeightedWindow, reason: string): StrategyWindow {
@@ -213,10 +213,10 @@ function deriveProtect(md: string, ad: string, stance: Stance, lang: Lang): stri
     }
   }
   if (SEPARATIVE.has(md) || SEPARATIVE.has(ad)) {
-    out.push(STRATEGY.protectSeverance[lang]);
+    out.push(STRATEGY.protectSeverance[en2si(lang)]);
   }
   if (stance !== 'accumulate') {
-    out.push(STRATEGY.protectReserves[lang]);
+    out.push(STRATEGY.protectReserves[en2si(lang)]);
   }
   return out;
 }
@@ -241,7 +241,7 @@ function deriveHarvest(input: StrategyInput, stance: Stance, lang: Lang): Period
     lord: next.lord,
     start: ISO(next.start),
     end: ISO(next.end),
-    note: stance === 'consolidate' ? `${note}${STRATEGY.harvestPositionSuffix[lang]}` : note,
+    note: stance === 'consolidate' ? `${note}${STRATEGY.harvestPositionSuffix[en2si(lang)]}` : note,
   };
 }
 
@@ -293,10 +293,10 @@ export function buildPeriodStrategy(input: StrategyInput): PeriodStrategy {
   let oneLine: string;
   if (stance === 'consolidate' && nextHarvest) {
     const gh = input.strengthOf(nextHarvest.lord)?.lordedHouses.filter(h => GAIN_HOUSES.includes(h)) ?? [];
-    const phrase = gh.length ? joinAnd(gh.map(h => houseLabel(h, lang)), lang) : STRATEGY.oneLineNextFallback[lang];
+    const phrase = gh.length ? joinAnd(gh.map(h => houseLabel(h, lang)), lang) : STRATEGY.oneLineNextFallback[en2si(lang)];
     oneLine = STRATEGY.oneLineConsolidate(mdN, adN, planetName(nextHarvest.lord, lang), phrase, lang);
   } else if (stance === 'accumulate') {
-    const windowPhrase = firstAction ? STRATEGY.oneLineActionWindow(planetName(firstAction.lord, lang), lang) : STRATEGY.oneLineSupportedWindows[lang];
+    const windowPhrase = firstAction ? STRATEGY.oneLineActionWindow(planetName(firstAction.lord, lang), lang) : STRATEGY.oneLineSupportedWindows[en2si(lang)];
     oneLine = STRATEGY.oneLineAccumulate(mdN, adN, windowPhrase, lang);
   } else {
     oneLine = STRATEGY.oneLineMixed(mdN, adN, lang);

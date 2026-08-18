@@ -19,6 +19,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Maximize2, X, Share2, AlertTriangle, Sparkles, CheckCircle2, Ban, Info, MousePointerClick } from 'lucide-react';
@@ -27,7 +28,7 @@ import type { BirthData, DashaPredictionData, LordStrengthData } from '../../ser
 import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
-import type { Lang } from '../../i18n/translations';
+import { coreLang, type Lang } from '../../i18n/translations';
 import {
   labelPlanet, labelArea, labelDignity, labelTrend,
   labelPlanetTheme, labelHouseTheme, labelHouseCovers, labelDashaScope,
@@ -1084,7 +1085,7 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
 
   const { data: prediction, isLoading, error } = useQuery({
     queryKey: ['currentPrediction', birthData, lang],
-    queryFn: () => getCurrentPrediction(birthData, undefined, lang),
+    queryFn: () => getCurrentPrediction(birthData, undefined, coreLang(lang)),
     enabled: !!birthData.date,
     staleTime: 5 * 60 * 1000,
   });
@@ -1128,7 +1129,18 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
 
       <GraphView graph={graph} prediction={prediction} isLight={isLight} />
 
-      <AnimatePresence>
+      {/* The card above is a `.glass-card`, and its backdrop-filter makes that
+          card the containing block for any `position: fixed` descendant — the
+          expanded view was clipping to the card and painting under the sticky
+          app header instead of the viewport. Portalling to <body> is what
+          makes "fixed" mean the viewport here (same fix as HouseDetailPanel,
+          WesternDetailPanel, SynastryWeb's expand). The portal call itself
+          must wrap AnimatePresence, not sit inside it as a conditional child —
+          AnimatePresence clones its children to track exit animations, and it
+          can't clone a ReactPortal node, so the content silently never mounts
+          if `expanded && createPortal(...)` is placed inside it. */}
+      {createPortal(
+        <AnimatePresence>
         {expanded && (
           <motion.div className="fixed inset-0 z-[60] flex items-start justify-center p-2 sm:p-3"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1155,9 +1167,15 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
                   <h3 className={`text-sm font-semibold ${isLight ? 'text-gray-800' : 'text-white'}`}>{t('graph.title')}</h3>
                   <p className={`text-[11px] truncate ${isLight ? 'text-slate-500' : 'text-white/45'}`}>{t('graph.subtitle')}</p>
                 </div>
+                {/* A background chip + border + full-opacity icon, not just faint
+                    text colour — a `text-white/50` glyph on nothing reads fine on
+                    the default navy card but all but disappears against a stark
+                    black-on-black/green surface (chalkboard, terminal). */}
                 <button onClick={() => setExpanded(false)} aria-label={t('graph.close')}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
-                    isLight ? 'text-slate-500 hover:text-slate-900 hover:bg-black/5' : 'text-white/50 hover:text-white hover:bg-white/8'
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 border ${
+                    isLight
+                      ? 'text-slate-700 bg-black/5 border-black/10 hover:text-slate-900 hover:bg-black/10'
+                      : 'text-white bg-white/10 border-white/15 hover:bg-white/20'
                   }`}>
                   <X className="w-4 h-4" />
                 </button>
@@ -1168,7 +1186,9 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

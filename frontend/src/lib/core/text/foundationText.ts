@@ -7,12 +7,13 @@
  * templates, so Sinhala can reorder the parts.
  */
 
-import type { Lang } from '../i18n';
+import type { TableLang } from '../i18n';
+
 import type { LifeArea } from '../natalFoundation';
 
-type F1 = Record<Lang, (a: string) => string>;
-type F2 = Record<Lang, (a: string, b: string) => string>;
-type F3 = Record<Lang, (a: string, b: string, c: string) => string>;
+type F1 = Record<TableLang, (a: string) => string>;
+type F2 = Record<TableLang, (a: string, b: string) => string>;
+type F3 = Record<TableLang, (a: string, b: string, c: string) => string>;
 
 // ─── Bhava occupants ───────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ export const F_COMBUST_BY_AREA: Record<LifeArea, F1> = {
  * Dignity in a sentence, not as a label. The display labels are title-cased for
  * chips and badges and read wrongly mid-clause ("is Enemy Sign in the D10").
  */
-export const F_DIGNITY_INLINE: Record<string, Record<Lang, string>> = {
+export const F_DIGNITY_INLINE: Record<string, Record<TableLang, string>> = {
   'exalted':      { en: 'exalted',              si: 'උච්ච වී' },
   'own-sign':     { en: 'in its own sign',      si: 'ස්වකීය රාශියේ' },
   'friend-sign':  { en: 'in a friendly sign',   si: 'මිත්‍ර රාශියක' },
@@ -155,14 +156,14 @@ export const F_DIGNITY_INLINE: Record<string, Record<Lang, string>> = {
  * A debilitated navamsa 7th lord is the classical reason a marriage that the
  * rashi chart promises does not hold, and it is invisible to a D1-only reading.
  */
-export const F_DIVISIONAL_WEAK: Record<Lang, (lord: string, varga: string, dignity: string, area: string) => string> = {
+export const F_DIVISIONAL_WEAK: Record<TableLang, (lord: string, varga: string, dignity: string, area: string) => string> = {
   en: (lord, varga, dignity, area) =>
     `${lord}, the lord of this area, is ${dignity} in the ${varga} — the divisional chart classical practice defers to for ${area}. This outranks its rashi-chart dignity: the promise is made in the main chart and not confirmed underneath it, which is the signature of a matter that begins well and does not hold its shape.`,
   si: (lord, varga, dignity, area) =>
     `මෙම ක්ෂේත්‍රයේ අධිපති ${lord}, ${area} සඳහා සම්භාව්‍ය ලෙස තීරණාත්මක වන ${varga} වර්ගයේ ${dignity} වී ඇත. මෙය රාශි කේන්දරයේ දිග්නත්වය අභිබවා යයි: පොරොන්දුව ප්‍රධාන කේන්දරයේ දෙනු ලැබුවත් යටින් තහවුරු නොවේ — හොඳින් ආරම්භ වී එහි හැඩය රැක නොගන්නා කරුණක ලකුණයි.`,
 };
 
-export const F_DIVISIONAL_STRONG: Record<Lang, (lord: string, varga: string, dignity: string, area: string) => string> = {
+export const F_DIVISIONAL_STRONG: Record<TableLang, (lord: string, varga: string, dignity: string, area: string) => string> = {
   en: (lord, varga, dignity, area) =>
     `${lord}, the lord of this area, is ${dignity} in the ${varga} — the chart that confirms ${area}. The rashi promise is backed up underneath, which is what makes it durable rather than merely present.`,
   si: (lord, varga, dignity, area) =>
@@ -216,12 +217,12 @@ export const F_MOON_MALEFIC_CONJ: F1 = {
   si: p => `ඔබේ චන්ද්‍රයා ${p} සමඟ එකම රාශියක සිටී — හැඟීම් හා නොසන්සුන්කම එකට බැඳී ඇති අතර, කලකිරීම තමාටම දොස් පැවරීමක් බවට හැරේ.`,
 };
 
-export const F_MOON_SATURN_ASPECT: Record<Lang, () => string> = {
+export const F_MOON_SATURN_ASPECT: Record<TableLang, () => string> = {
   en: () => `Saturn aspects your Moon — a cold, heavy, isolating weight on the inner world; you can feel unnurtured even when nothing is objectively wrong.`,
   si: () => `ශනි ඔබේ චන්ද්‍රයා දෙස බලයි — අභ්‍යන්තර ලෝකයට සීතල, බර, හුදෙකලා බවක් ගෙන දෙයි; බාහිරව කිසිවක් වැරදී නැති විටෙක පවා රැකවරණයක් නැති බවක් දැනිය හැක.`,
 };
 
-export const F_MOON_MARS_ASPECT: Record<Lang, () => string> = {
+export const F_MOON_MARS_ASPECT: Record<TableLang, () => string> = {
   en: () => `Mars aspects your Moon — restlessness and irritability rise quickly, and the mind struggles to settle.`,
   si: () => `කුජ ඔබේ චන්ද්‍රයා දෙස බලයි — නොසන්සුන්කම හා කෝපය ඉක්මනින් ඉහළ යන අතර සිත සන්සුන් වීමට අපහසුය.`,
 };
@@ -231,17 +232,17 @@ export const F_MOON_NODE: F1 = {
   si: p => `${p} ඔබේ චන්ද්‍ර අක්ෂයේ සිටී — සිත මිදුණු බවට, නැවත නැවත එකම සිතුවිල්ලට හා යථාර්ථය ඉක්මවා යන කනස්සල්ලට නැඹුරු වේ.`,
 };
 
-export const F_MOON_UNSUPPORTED: Record<Lang, () => string> = {
+export const F_MOON_UNSUPPORTED: Record<TableLang, () => string> = {
   en: () => `No benefic supports your Moon by conjunction or aspect — the mind carries its weather alone and benefits greatly from deliberate outside support.`,
   si: () => `කිසිදු ශුභ ග්‍රහයෙකු එක්වීමෙන් හෝ දෘෂ්ටියෙන් ඔබේ චන්ද්‍රයාට සහාය නොදෙයි — සිත තම බර තනිවම දරන අතර, හිතාමතා ලබාගන්නා බාහිර සහායෙන් විශාල ප්‍රයෝජනයක් ලැබේ.`,
 };
 
-export const F_MOON_WANING: Record<Lang, () => string> = {
+export const F_MOON_WANING: Record<TableLang, () => string> = {
   en: () => `Your Moon is waning (weak paksha bala) — emotional reserves refill slowly, so rest and routine matter more for you than for most.`,
   si: () => `ඔබේ චන්ද්‍රයා ක්ෂීණ වෙමින් පවතී (පක්ෂ බලය අඩුය) — චිත්ත ශක්තිය නැවත පිරෙන්නේ සෙමිනි, එබැවින් විවේකය හා නිත්‍ය චර්යාව ඔබට වඩාත් වැදගත් වේ.`,
 };
 
-export const F_MOON_STRONG: Record<Lang, () => string> = {
+export const F_MOON_STRONG: Record<TableLang, () => string> = {
   en: () => `Your Moon is well placed — the emotional core is fundamentally sound even when it is strained, and it recovers.`,
   si: () => `ඔබේ චන්ද්‍රයා හොඳින් පිහිටා ඇත — පීඩනයට ලක් වුවද චිත්ත මූලය මූලික වශයෙන් ශක්තිමත් වන අතර එය යළි යථා තත්ත්වයට පත් වේ.`,
 };
@@ -260,7 +261,7 @@ export const F_FOUNDATION_PREFIX: F1 = {
  * lord is capable of; without this line it reads as a promise of what is
  * currently happening.
  */
-export const F_POTENTIAL_ONLY: Record<Lang, () => string> = {
+export const F_POTENTIAL_ONLY: Record<TableLang, () => string> = {
   en: () => `What follows is what this period is capable of, not what it is currently delivering — on your chart this area is running below that ceiling.`,
   si: () => `පහත සඳහන් වන්නේ මෙම දශාවට කළ හැකි දෙයයි, දැනට සිදු වන දෙය නොවේ — ඔබේ කේන්දරයට අනුව මෙම ක්ෂේත්‍රය එම මට්ටමට වඩා පහළින් ක්‍රියාත්මක වේ.`,
 };
@@ -288,7 +289,7 @@ export const F_SEPARATIVE_TONE: F2 = {
 };
 
 /** Level names for the separative-tone frame. */
-export const LEVEL_NAME: Record<'antardasha' | 'pratyantardasha' | 'sookshma', Record<Lang, string>> = {
+export const LEVEL_NAME: Record<'antardasha' | 'pratyantardasha' | 'sookshma', Record<TableLang, string>> = {
   antardasha:      { en: 'sub-period',           si: 'අන්තර් දශාව' },
   pratyantardasha: { en: 'sub-sub-period',       si: 'ප්‍රත්‍යන්තර් දශාව' },
   sookshma:        { en: 'current micro-period', si: 'වත්මන් සූක්ෂ්ම දශාව' },
@@ -296,7 +297,7 @@ export const LEVEL_NAME: Record<'antardasha' | 'pratyantardasha' | 'sookshma', R
 
 // ─── Area names, for karaka sentences ──────────────────────────────────────
 
-export const AREA_NAME: Record<string, Record<Lang, string>> = {
+export const AREA_NAME: Record<string, Record<TableLang, string>> = {
   career:       { en: 'career',        si: 'වෘත්තිය' },
   wealth:       { en: 'wealth',        si: 'ධනය' },
   relationship: { en: 'partnership',   si: 'සම්බන්ධතා' },

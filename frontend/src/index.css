@@ -1401,8 +1401,15 @@ X   board fall into shadow the way a real one does under classroom lights. */
   --bg-page:          #000000;
   --bg-page-grid:     rgba(51,255,102,0.04);
 
-  --bg-card:          rgba(51,255,102,0.035);
-  --bg-card-hover:    rgba(51,255,102,0.06);
+  /* Opaque, not a light lift like chalkboard's: `.glass-card` doubles as the
+     surface for every fixed-position modal/overlay in the app (Natal Chart,
+     Knowledge Graph's expand, the disclaimer…), which sit over a blurred
+     backdrop rather than the plain page. A few-percent tint there let the
+     backdrop and whatever was behind it show straight through — on the
+     Knowledge Graph's expand, that made the close button unreadable against
+     the page bleeding through underneath it. */
+  --bg-card:          rgba(2,12,6,0.94);
+  --bg-card-hover:    rgba(4,18,9,0.96);
   --bg-inset:         rgba(51,255,102,0.045);
   --bg-inset-hover:   rgba(51,255,102,0.07);
 

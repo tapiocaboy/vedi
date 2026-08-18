@@ -10,6 +10,8 @@ import type { WesternSynastryContact } from '../../lib/core/western/synastry';
 import { formatOrb } from '../../lib/core/western/aspects';
 import { westernPlanetName } from '../../lib/core/western/text/planetText';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
+import type { Lang } from '../../lib/core/i18n';
 
 interface Props { person: BirthData }
 
@@ -24,7 +26,7 @@ function ordinal(n: number): string {
   if (v >= 11 && v <= 13) return 'th';
   return ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
 }
-function houseLabel(house: number | undefined, lang: 'en' | 'si'): string {
+function houseLabel(house: number | undefined, lang: Lang): string {
   if (!house) return '';
   return lang === 'si' ? `${house} වන භාවය` : `house ${house}${ordinal(house)}`;
 }
@@ -32,7 +34,7 @@ function houseLabel(house: number | undefined, lang: 'en' | 'si'): string {
 const ContactRow: React.FC<{ c: WesternSynastryContact; index: number }> = ({ c, index }) => {
   const { lang } = useLang();
   const style = VALENCE_STYLE[c.valence];
-  const target = c.kind === 'aspect' ? westernPlanetName(c.target, lang) : houseLabel(c.house, lang);
+  const target = c.kind === 'aspect' ? westernPlanetName(c.target, coreLang(lang)) : houseLabel(c.house, coreLang(lang));
   return (
     <motion.div
       initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.02 }}
@@ -40,7 +42,7 @@ const ContactRow: React.FC<{ c: WesternSynastryContact; index: number }> = ({ c,
     >
       <div className="flex items-center gap-2 flex-wrap">
         <span className={`text-[11.5px] font-semibold ${style.text}`}>
-          {westernPlanetName(c.body, lang)} {c.kind === 'aspect' ? '↔' : '→'} {target}
+          {westernPlanetName(c.body, coreLang(lang))} {c.kind === 'aspect' ? '↔' : '→'} {target}
         </span>
         {c.orb != null && <span className="text-[10px] font-mono text-white/30 ml-auto">{formatOrb(c.orb)}</span>}
       </div>
@@ -129,7 +131,7 @@ export const WesternMatchTab: React.FC<Props> = ({ person }) => {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['western-match', person, partner, lang],
-    queryFn: () => getWesternMatchReport(person, partner!, lang),
+    queryFn: () => getWesternMatchReport(person, partner!, coreLang(lang)),
     enabled: !!partner,
     staleTime: Infinity,
   });

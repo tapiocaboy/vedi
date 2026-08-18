@@ -39,7 +39,7 @@ export const ExtraVargaDetailPanel: React.FC<Props> = ({ selection, vargaAscenda
   const { lang, t } = useLang();
 
   const a = selection
-    ? analyzeExtraVargaHouse(selection.code, selection.name, selection.significance, selection.rashi, vargaAscendant, planets)
+    ? analyzeExtraVargaHouse(selection.code, selection.name, selection.significance, selection.rashi, vargaAscendant, planets, lang)
     : null;
 
   const dignityColor = isLight ? DIGNITY_COLOR_LIGHT : DIGNITY_COLOR_DARK;

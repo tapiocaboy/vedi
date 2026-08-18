@@ -4,6 +4,7 @@ import { Star, Sparkles } from 'lucide-react';
 import type { NakshatraInfo as NakshatraInfoType } from '../../types/astrology';
 import { getNakshatraItems, type NakshatraItem } from '../../lib/core/nakshatraInsights';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet } from '../../i18n/astroLabels';
 import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
 
@@ -62,7 +63,7 @@ const ItemRow: React.FC<{ item: NakshatraItem; open: boolean; onToggle: () => vo
 export const NakshatraInfo: React.FC<Props> = ({ nakshatra, title }) => {
   const { lang, t } = useLang();
   const [openKey, setOpenKey] = useState<string | null>('overview');
-  const items = getNakshatraItems(nakshatra, lang);
+  const items = getNakshatraItems(nakshatra, coreLang(lang));
 
   return (
     <motion.div

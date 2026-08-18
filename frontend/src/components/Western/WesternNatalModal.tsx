@@ -14,6 +14,7 @@ import { westernChartService } from '../../lib/services/westernChartService';
 import { westernPlanetGlyph } from '../../lib/core/western/text/planetText';
 import type { BirthData } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { TapBadge, tapVars } from '../shared/tapTarget';
 
 interface Props {
@@ -116,7 +117,7 @@ const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
     queryKey: ['western-natal-report', birthData, lang],
     queryFn: async () => {
       const chart = await westernChartService.calculateFullChart(birthData);
-      return buildWesternNatalReport(chart, lang);
+      return buildWesternNatalReport(chart, coreLang(lang));
     },
     staleTime: Infinity,
   });

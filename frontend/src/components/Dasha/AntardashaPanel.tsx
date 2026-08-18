@@ -37,6 +37,7 @@ import { DASHA_COLORS, planetDisplayColor } from '../../types/astrology';
 import { TapBadge, tapVars } from '../shared/tapTarget';
 import { formatDate, formatDays } from '../../utils/dateUtils';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelArea, labelTrend } from '../../i18n/astroLabels';
 import { useTheme } from '../../hooks/useTheme';
 import { PredictionBody } from './PredictionBody';
@@ -265,7 +266,7 @@ export const AntardashaPanel: React.FC<Props> = ({
 
   const { data: report, isLoading } = useQuery<AntardashaDepthReport | null>({
     queryKey: ['antardashaDepth', antardashaStart, birthData, lang],
-    queryFn: () => getAntardashaDepth(birthData, antardashaStart, undefined, lang),
+    queryFn: () => getAntardashaDepth(birthData, antardashaStart, undefined, coreLang(lang)),
     staleTime: 10 * 60 * 1000,
   });
 

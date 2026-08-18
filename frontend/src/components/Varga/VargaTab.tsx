@@ -9,10 +9,11 @@ import { RASHIS } from '../../lib/core/rashi';
 import { tapVars } from '../shared/tapTarget';
 import { RASHI_LORDS } from '../../lib/core/planetaryAnalysis';
 import { EXTRA_VARGAS, type VargaCode } from '../../lib/core/vargas';
-import { VARGA_PLAIN, VARGA_KARAKAS, vargaVerdict, type VargaStanding } from '../../lib/core/vargaMeanings';
+import { plainMeaningFor, VARGA_KARAKAS, vargaVerdict, type VargaStanding } from '../../lib/core/vargaMeanings';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
-import { labelDignity, labelPlanet } from '../../i18n/astroLabels';
+import { labelDignity, labelPlanet, labelPlanetShort } from '../../i18n/astroLabels';
+import { planetDisplayColor } from '../../types/astrology';
 import { VargaHouseDetailPanel } from './VargaHouseDetailPanel';
 import { ExtraVargaDetailPanel, type ExtraVargaSelection } from './ExtraVargaDetailPanel';
 import type { VargaVariant } from '../../lib/core/vargaAnalysis';
@@ -68,6 +69,7 @@ function VargaGrid({
   onCellClick: (rashi: number) => void;
   ascMarker: string;
 }) {
+  const { lang } = useLang();
   return (
     <div className="rounded-xl p-3 sm:p-4" style={{
       background: isLight ? '#ffffff' : 'rgba(0,0,0,0.35)',
@@ -122,20 +124,36 @@ function VargaGrid({
                 {/* Persistent affordance: every box opens a reading */}
                 <MousePointerClick className="w-2.5 h-2.5 shrink-0" style={{ color: ACCENT }} />
               </span>
-              <div className="flex flex-wrap gap-x-1 items-start content-start flex-1 mt-0.5">
-                {occupants.map(p => (
-                  <span
-                    key={p.planet}
-                    className="text-[11px] sm:text-sm font-bold leading-tight"
-                    style={{
-                      color: isLight ? '#1e293b' : '#fff',
-                      textShadow: isLight ? 'none' : '0 0 6px rgba(255,255,255,0.35)',
-                    }}
-                    title={p.planet}
-                  >
-                    {GLYPH[p.planet]}
-                  </span>
-                ))}
+              <div className="flex flex-wrap gap-x-1 gap-y-0.5 items-start content-start flex-1 mt-1">
+                {occupants.map(p => {
+                  const color = planetDisplayColor(p.planet.toUpperCase(), isLight);
+                  return (
+                    <span
+                      key={p.planet}
+                      className="inline-flex items-baseline gap-0.5 leading-none"
+                      title={p.planet}
+                    >
+                      <span
+                        className="text-[20px] sm:text-[24px] font-extrabold"
+                        style={{
+                          color,
+                          textShadow: isLight ? 'none' : `0 0 8px ${color}88`,
+                        }}
+                      >
+                        {GLYPH[p.planet]}
+                      </span>
+                      <span
+                        className="text-[12px] sm:text-[13px] font-bold"
+                        style={{ color: isLight ? '#334155' : '#fff' }}
+                      >
+                        {labelPlanetShort(p.planet, lang)}
+                      </span>
+                      {p.isRetrograde && (
+                        <span className="text-[11px] font-extrabold" style={{ color: '#e11d48' }}>℞</span>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
             </motion.button>
           );
@@ -172,7 +190,7 @@ function VargaVerdictCard({
   isLight: boolean;
 }) {
   const { lang, t } = useLang();
-  const plain = VARGA_PLAIN[code];
+  const plain = plainMeaningFor(code, lang);
   const verdict = vargaVerdict(
     code,
     planets.map(p => ({
@@ -181,6 +199,7 @@ function VargaVerdictCard({
       house: ((p.divisions[code].rashi - ascendant + 12) % 12) + 1,
     })),
     RASHI_LORDS[ascendant],
+    lang,
   );
   const style = STANDING_STYLE[verdict.standing];
   const Icon = style.icon;
@@ -217,7 +236,7 @@ function VargaVerdictCard({
               {(VARGA_KARAKAS[code] ?? []).map((k, i, arr) => (
                 <React.Fragment key={k.planet}>
                   <strong className={isLight ? 'text-slate-700' : 'text-white/70'}>{labelPlanet(k.planet, lang)}</strong>
-                  {` (${k.role})`}{i < arr.length - 1 ? ', ' : ''}
+                  {` (${k.role[lang] ?? k.role.en})`}{i < arr.length - 1 ? ', ' : ''}
                 </React.Fragment>
               ))}
             </p>
@@ -417,12 +436,12 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
             <div className="flex flex-wrap gap-1.5 mb-4">
               {EXTRA_VARGAS.map(v => {
                 const active = v.code === moreVarga;
-                const plainName = VARGA_PLAIN[v.code]?.plainName ?? v.significance;
+                const plainName = plainMeaningFor(v.code, lang)?.plainName ?? v.significance;
                 return (
                   <button
                     key={v.code}
                     onClick={() => setMoreVarga(v.code)}
-                    title={VARGA_PLAIN[v.code]?.question ?? `${v.name} — ${v.significance}`}
+                    title={plainMeaningFor(v.code, lang)?.question ?? `${v.name} — ${v.significance}`}
                     className={`px-2.5 py-2 rounded-lg text-[11px] font-bold transition-colors border ${
                       active
                         ? 'text-white on-accent'
@@ -442,7 +461,7 @@ export const VargaTab: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 items-start">
               <VargaGrid
-                title={`${def.code} · ${VARGA_PLAIN[def.code]?.plainName ?? def.name}`}
+                title={`${def.code} · ${plainMeaningFor(def.code, lang)?.plainName ?? def.name}`}
                 subtitle={`${t('varga.lagna')}: ${RASHIS[asc]} — ${def.significance}`}
                 hint={t('varga.tapAnyBox')}
                 ascRashi={asc}

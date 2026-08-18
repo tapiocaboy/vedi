@@ -5,6 +5,7 @@ import { PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { formatDegree } from '../../utils/dateUtils';
 import { PlanetDetailPanel } from './PlanetDetailPanel';
 import { useLang } from '../../i18n/LanguageContext';
+import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelRashi, labelDignity } from '../../i18n/astroLabels';
 import { analyzePlanet, getGandanta, type DignityLevel } from '../../lib/core/planetaryAnalysis';
 import { useTheme } from '../../hooks/useTheme';
@@ -56,12 +57,12 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
 
   const conditionFor = (p: PlanetPosition): PlanetCondition | null => {
     if (p.planet === 'ASCENDANT') {
-      const gan = getGandanta(p.rashiIndex, p.rashiDegree, p.nakshatra, lang);
+      const gan = getGandanta(p.rashiIndex, p.rashiDegree, p.nakshatra, coreLang(lang));
       return gan ? { dignity: null, badges: [gandantaBadge(gan, t)] } : null;
     }
     const a = analyzePlanet(
       p.planet, p.rashiIndex, ascendantRashiIndex, p.isRetrograde, p.rashiDegree,
-      { longitude: p.longitude, sunLongitude, signByPlanet, nakshatraName: p.nakshatra }, lang,
+      { longitude: p.longitude, sunLongitude, signByPlanet, nakshatraName: p.nakshatra }, coreLang(lang),
     );
     const badges: Badge[] = [];
     if (a.combustion?.isCombust) {

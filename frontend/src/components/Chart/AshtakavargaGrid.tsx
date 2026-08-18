@@ -31,6 +31,15 @@ const BINDU_LABEL_KEY: Record<ReturnType<typeof bindusToLabel>, TranslationKey> 
   'strong': 'ashtakavarga.scale.strong',
 };
 
+// Localized quality word for a sarva total (0–56).
+const SARVA_LABEL_KEY: Record<ReturnType<typeof sarvaToLabel>, TranslationKey> = {
+  'very weak': 'ashtakavarga.scale.veryWeak',
+  'weak': 'ashtakavarga.scale.weak',
+  'average': 'ashtakavarga.scale.average',
+  'strong': 'ashtakavarga.scale.strong',
+  'very strong': 'ashtakavarga.scale.veryStrong',
+};
+
 // Dark-mode cell classes (existing)
 function bhinnaCellClassDark(b: number): string {
   if (b <= 2) return 'bg-rose-500/20 text-rose-200 border-rose-400/35';
@@ -232,7 +241,7 @@ export const AshtakavargaGrid: React.FC<Props> = ({ birthData }) => {
           {data.sarva.map((s, idx) => (
             <div
               key={idx}
-              title={`${signName(idx)}: ${s}/56 — ${sarvaToLabel(s)}`}
+              title={`${signName(idx)}: ${s}/56 — ${t(SARVA_LABEL_KEY[sarvaToLabel(s)])}`}
               className={`rounded border text-[11px] font-mono py-1.5 text-center ${sarvaCell(s)}`}
             >
               {s}

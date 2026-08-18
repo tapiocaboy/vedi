@@ -10,6 +10,7 @@ import {
   type DoshaCheck, type DoshaPositions, type SadeSatiPeriod,
 } from '../core/doshas';
 import { RASHIS } from '../core/rashi';
+import type { Lang } from '../core/i18n';
 import type { BirthData } from '../../types/astrology';
 
 export interface DoshaReport {
@@ -26,7 +27,7 @@ const PLANET_KEYS = ['SUN', 'MOON', 'MARS', 'MERCURY', 'JUPITER', 'VENUS', 'SATU
 const SADE_SATI_YEARS = 96;
 const SAMPLE_STEP_DAYS = 15;
 
-export async function getDoshaReport(bd: BirthData): Promise<DoshaReport> {
+export async function getDoshaReport(bd: BirthData, lang: Lang = 'en'): Promise<DoshaReport> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
 
   const planets: DoshaPositions['planets'] = {};
@@ -36,7 +37,7 @@ export async function getDoshaReport(bd: BirthData): Promise<DoshaReport> {
   }
   const pos: DoshaPositions = { lagnaRashi: positions.ASCENDANT.rashi, planets };
 
-  const doshas = [checkMangalDosha(pos), checkKaalSarpaDosha(pos), checkPitraDosha(pos)];
+  const doshas = [checkMangalDosha(pos, lang), checkKaalSarpaDosha(pos, lang), checkPitraDosha(pos, lang)];
 
   // ── Sade Sati: sample Saturn from birth across a lifetime ──────────────
   const [datePart] = bd.date.split('T');
