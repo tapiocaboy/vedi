@@ -37,7 +37,8 @@ export interface StrengthInput {
   moonRashi?: number;
   /**
    * Divisional sign per planet, keyed by varga code then planet — e.g.
-   * `{ D9: { Mercury: 11 } }`.
+   * `{ D9: { Mercury: 11 } }`. A `Lagna` key, when present, carries that
+   * varga's own ascendant.
    *
    * Each life area has a varga that classically outranks the rashi chart for it,
    * and without these the foundation layer can only read D1. That is how a chart

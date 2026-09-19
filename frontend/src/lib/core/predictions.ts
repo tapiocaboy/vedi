@@ -4,6 +4,9 @@ import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Pla
 import { assessPlanetStrength, type PlanetStrength } from './dashaStrength';
 import { assessNatalFoundation, type NatalFoundation, type LifeArea } from './natalFoundation';
 import {
+  assessCareerActivation, assessWealthActivation, careerSignature, wealthSignature, type Activation,
+} from './careerWealth';
+import {
   type Lang, en2si, LEVEL, pick, pickList, planetName, houseLabel, houseLabelLocative, joinAnd, joinComma,
 } from './i18n';
 import {
@@ -305,6 +308,12 @@ export class DashaPredictionEngine {
   /** The running dasha chain for this call: [maha, antar?, pratyantar?, sookshma?]. */
   private _chain: string[] = [];
   private _foundation: NatalFoundation | null = null;
+  /**
+   * The classical career / wealth timing layer for this chain: does a running
+   * lord occupy or aspect the 10th, the 2nd, the 11th; is a yoga it forms
+   * fructifying; how does it stand in the dasamsa. Computed once per call.
+   */
+  private _activation: { career: Activation | null; wealth: Activation | null } = { career: null, wealth: null };
 
   getPlanetData(planet: string) { return PLANET_SIGNIFICATIONS[planet] ?? {}; }
 
@@ -496,7 +505,25 @@ export class DashaPredictionEngine {
     const chainDeviation = (this._chainScore(area) - NEUTRAL_SCORE) * 0.6;
     const foundation = this._foundationFor(area);
     const foundationMod = foundation ? foundation.score * 0.7 : 0;
-    return clampScore(NEUTRAL_SCORE + chainDeviation + foundationMod + this._separativeMod());
+    return clampScore(NEUTRAL_SCORE + chainDeviation + foundationMod + this._separativeMod() + this._activationMod(area));
+  }
+
+  /**
+   * Career and wealth carry an extra term: whether the running lords actually
+   * *touch* the houses of the matter. A Jupiter period scores well for wealth
+   * on generic grounds; a Jupiter period with Jupiter sitting in the 11th and
+   * forming a dhana yoga is a different thing, and this is where the
+   * difference enters.
+   */
+  private _activationMod(area: string): number {
+    if (area === 'career') return this._activation.career?.points ?? 0;
+    if (area === 'wealth') return this._activation.wealth?.points ?? 0;
+    return 0;
+  }
+
+  /** The activation reasons for an area, capped so they do not crowd out the rest. */
+  private _activationNotes(area: 'career' | 'wealth', limit = 3): string[] {
+    return (this._activation[area]?.notes ?? []).slice(0, limit);
   }
 
   /**
@@ -623,7 +650,16 @@ export class DashaPredictionEngine {
     const lang = this._lang;
     let score = this._areaScore('wealth');
     const spec = WEALTH_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
-    const details = [...this._foundationNotes('wealth'), ...this._specDetails(pickList(spec.details, lang), score)];
+    // Order: what this chart's wealth houses say (standing), why this period
+    // touches them (timing), the foundation's strains and supports, and only
+    // then the dasha lord's generic copy.
+    const signature = this._ctx ? wealthSignature(this._ctx, lang) : null;
+    const details = [
+      ...(signature?.notes ?? []),
+      ...this._activationNotes('wealth'),
+      ...this._foundationNotes('wealth'),
+      ...this._specDetails(pickList(spec.details, lang), score),
+    ];
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
 
@@ -661,7 +697,15 @@ export class DashaPredictionEngine {
     let score = this._areaScore('career');
     const professions = this._terms(mahadasha, 'professions');
     const spec = CAREER_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
-    const details: string[] = this._foundationNotes('career');
+    // The chart's own vocation leads. The dasha lord's profession list used to
+    // open this block, which told everyone in a Jupiter period "teaching, law,
+    // banking" regardless of what their own 10th house said.
+    const signature = this._ctx ? careerSignature(this._ctx, lang) : null;
+    const details: string[] = [
+      ...(signature?.notes ?? []),
+      ...this._activationNotes('career'),
+      ...this._foundationNotes('career'),
+    ];
     if (professions.length) details.push(F_CAREER_AREAS[en2si(lang)](joinComma(professions.slice(0, 4))));
     details.push(...this._specDetails(pickList(spec.details, lang), score));
     const remedies = pickList(spec.remedies, lang);
@@ -696,7 +740,9 @@ export class DashaPredictionEngine {
         ? F_CAREER_SUMMARY.steady[en2si(lang)](md)
         : F_CAREER_SUMMARY.patient[en2si(lang)](md);
 
-    return { area:'career', trend, intensity, summary, details, remedies, keywords:['job','profession','promotion','business',...professions.slice(0,2)] };
+    // Keywords name the chart's own fields first, the period lord's second.
+    const keywords = [...new Set(['job','profession','promotion','business', ...(signature?.fields.slice(0, 3) ?? []), ...professions.slice(0,2)])];
+    return { area:'career', trend, intensity, summary, details, remedies, keywords };
   }
 
   // ─── Relationships ────────────────────────────────────────────────────────
@@ -815,6 +861,9 @@ export class DashaPredictionEngine {
     this._strengthCache.clear();
     this._chain = [mahadasha, antardasha, pratyantardasha, sookshmaDasha].filter(Boolean) as string[];
     this._foundation = chartCtx ? assessNatalFoundation(chartCtx, lang) : null;
+    this._activation = chartCtx
+      ? { career: assessCareerActivation(this._chain, chartCtx, lang), wealth: assessWealthActivation(this._chain, chartCtx, lang) }
+      : { career: null, wealth: null };
     try {
     const pd = this.getPlanetData(mahadasha);
     const mdName = planetName(mahadasha, lang);
@@ -985,6 +1034,7 @@ export class DashaPredictionEngine {
       this._lang = 'en';
       this._chain = [];
       this._foundation = null;
+      this._activation = { career: null, wealth: null };
       this._strengthCache.clear();
     }
   }

@@ -23,14 +23,21 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Maximize2, X, Share2, AlertTriangle, Sparkles, CheckCircle2, Ban, Info, MousePointerClick } from 'lucide-react';
-import { getCurrentPrediction } from '../../services/api';
+import { getCurrentPrediction, getAshtakavarga } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
+import type { Chart, PlanetPosition } from '../../types/astrology';
+import type { AshtakavargaResult } from '../../lib/core/ashtakavarga';
+import { NAKSHATRAS } from '../../lib/core/nakshatra';
+import {
+  judgeLordPair, houseOfRashi, houseClass, aspectedHouses, type LordPairJudgement,
+} from '../../lib/core/dashaLordRelation';
 import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
 import { useTheme } from '../../hooks/useTheme';
+import { useChart } from '../../hooks/useChart';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang, type Lang } from '../../i18n/translations';
 import {
-  labelPlanet, labelArea, labelDignity, labelTrend,
+  labelPlanet, labelArea, labelDignity, labelTrend, labelRashi, labelOrdinalHouse,
   labelPlanetTheme, labelHouseTheme, labelHouseCovers, labelDashaScope,
 } from '../../i18n/astroLabels';
 
@@ -90,8 +97,14 @@ interface GNode {
   id: string; type: NodeType; glyph: string; label: string; tooltip: string;
   x: number; y: number; r: number; color: string;
   critical: boolean; important: boolean; demanding?: boolean; detail: NodeDetail;
+  /** Small satellite disc on the node's rim — the centre wears the rating here. */
+  badge?: { text: string; color: string };
 }
-interface GEdge { from: string; to: string; critical: boolean; dashed?: boolean; }
+interface GEdge {
+  from: string; to: string; critical: boolean; dashed?: boolean;
+  /** Fixed stroke instead of the source→target gradient (the MD–AD bond). */
+  color?: string;
+}
 interface Summary {
   main?: { label: string; meaning: string; strengthLabel: string; critical: boolean; color: string };
   sub?: { label: string; meaning: string };
@@ -99,10 +112,18 @@ interface Summary {
   theme: string;
   goingWell: string[];
   needsCare: string[];
+  /** Classical judgement of the Mahadasha–Antardasha pair. */
+  bond?: { verdict: string; color: string; lines: string[] };
 }
+
+const BOND_HEX: Record<LordPairJudgement['verdict'], string> = {
+  good: '#34d399', mixed: '#f59e0b', bad: '#f43f5e',
+};
+
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 interface Graph { nodes: GNode[]; edges: GEdge[]; criticals: GNode[]; summary: Summary; }
 
-const W = 700, H = 520, CX = 350, CY = 255, R1 = 150, R2 = 86;
+const W = 700, H = 560, CX = 350, CY = 280, R1 = 150, R2 = 86;
 
 /**
  * The centre "now" node. On light surfaces it stays on the brand accent; on
@@ -137,36 +158,89 @@ function classifyPlanet(lord: string, ls?: LordStrengthData) {
   return { critical, important: capable && !demanding, demanding: demanding && capable };
 }
 
-function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr, isLight: boolean): Graph {
+function buildGraph(
+  prediction: DashaPredictionData, chart: Chart | undefined, av: AshtakavargaResult | undefined,
+  lang: Lang, t: Tr, isLight: boolean,
+): Graph {
   const nodes: GNode[] = [];
   const edges: GEdge[] = [];
   const lords = prediction.lordStrengths ?? [];
   const cp = prediction.currentPeriods;
   const outlook = outlookInfo(prediction.overallRating, t);
 
-  // ── Centre: now ──────────────────────────────────────────────────────────
+  // Natal placements, when the chart is available. Everything below degrades
+  // to the prediction's own data when it is not.
+  const asc = chart?.ascendant.rashiIndex;
+  const natal = (lord: string): PlanetPosition | undefined =>
+    chart?.planets.find(p => p.planet.toUpperCase() === lord.toUpperCase());
+
+  // ── Centre: the running Mahadasha ─────────────────────────────────────────
+  // The centre names the period the way a Jyotishi would — by its Mahadasha
+  // lord — and wears the outlook rating as a badge. Its detail carries the
+  // first thing read for any sub-period: how the Antardasha lord stands to the
+  // Mahadasha lord by natural friendship and by mutual placement.
+  const md = cp?.mahadasha.lord;
+  const ad = cp?.antardasha?.lord;
+  const mdName = md ? labelPlanet(md, lang) : '';
+  const adName = ad ? labelPlanet(ad, lang) : '';
+
+  let bond: LordPairJudgement | null = null;
+  if (md && ad) {
+    const a = natal(md); const b = natal(ad);
+    if (a && b) bond = judgeLordPair(md, ad, a.rashiIndex, b.rashiIndex);
+  }
+  const bondLines: string[] = bond
+    ? [t(`graph.maitri.${bond.maitri}`, { a: mdName, b: adName }), t(`graph.mutual.${bond.placement}`)]
+    : [];
+  const bondVerdict = bond ? t(`graph.bond.${bond.verdict}`) : '';
+
+  const centreLines: string[] = [];
+  if (md && ad) {
+    const untilAd = cp?.antardasha?.end ? fmtUntil(cp.antardasha.end, lang, t) : '';
+    centreLines.push([t('graph.periodName', { md: mdName, ad: adName }), untilAd].filter(Boolean).join(' · '));
+  }
+  centreLines.push(...bondLines);
+  if (prediction.overallTheme) centreLines.push(prediction.overallTheme);
+
   const periodTake = prediction.overallRating >= 6 ? t('graph.take.periodGood')
     : prediction.overallRating >= 4 ? t('graph.take.periodMixed') : t('graph.take.periodHard');
   nodes.push({
-    id: 'period', type: 'period', glyph: String(prediction.overallRating),
-    label: t('graph.period'), tooltip: `${t('graph.outlookLabel')}: ${outlook.word}`,
+    id: 'period', type: 'period',
+    glyph: md ? (PLANET_GLYPH[md] ?? '●') : String(prediction.overallRating),
+    label: md ? t('graph.mahadashaOf', { planet: mdName }) : t('graph.period'),
+    tooltip: `${t('graph.outlookLabel')}: ${outlook.word}`,
     x: CX, y: CY, r: 38, color: isLight ? PERIOD_LIGHT : PERIOD_DARK,
     critical: false, important: false,
+    badge: { text: String(prediction.overallRating), color: outlook.color },
     detail: {
       meaning: `${outlook.word} · ${prediction.overallRating}/10`,
       strength: { pct: prediction.overallRating * 10, label: outlook.word, color: outlook.color, raw: `${prediction.overallRating}/10` },
-      lines: prediction.overallTheme ? [prediction.overallTheme] : [],
-      chips: [], takeaway: periodTake,
+      lines: centreLines,
+      chips: bondVerdict ? [bondVerdict] : [],
+      takeaway: periodTake,
     },
   });
 
   // ── Guiding planets (left arc) ─────────────────────────────────────────────
-  const chain: { lord: string; role: 'mahadasha' | 'antardasha'; level: string; end?: string }[] = [];
+  const levels: { lord: string; role: 'mahadasha' | 'antardasha'; level: string; end?: string }[] = [];
   if (cp) {
-    chain.push({ lord: cp.mahadasha.lord, role: 'mahadasha', level: 'Mahadasha', end: cp.mahadasha.end });
-    if (cp.antardasha)      chain.push({ lord: cp.antardasha.lord,      role: 'antardasha', level: 'Antardasha',      end: cp.antardasha.end });
-    if (cp.pratyantardasha) chain.push({ lord: cp.pratyantardasha.lord, role: 'antardasha', level: 'Pratyantardasha', end: cp.pratyantardasha.end });
-    if (cp.sookshmaDasha)   chain.push({ lord: cp.sookshmaDasha.lord,   role: 'antardasha', level: 'Sookshma Dasha',  end: cp.sookshmaDasha.end });
+    levels.push({ lord: cp.mahadasha.lord, role: 'mahadasha', level: 'Mahadasha', end: cp.mahadasha.end });
+    if (cp.antardasha)      levels.push({ lord: cp.antardasha.lord,      role: 'antardasha', level: 'Antardasha',      end: cp.antardasha.end });
+    if (cp.pratyantardasha) levels.push({ lord: cp.pratyantardasha.lord, role: 'antardasha', level: 'Pratyantardasha', end: cp.pratyantardasha.end });
+    if (cp.sookshmaDasha)   levels.push({ lord: cp.sookshmaDasha.lord,   role: 'antardasha', level: 'Sookshma Dasha',  end: cp.sookshmaDasha.end });
+  }
+
+  // One node per planet, however many levels it holds. Every sub-level of
+  // Vimshottari restarts the cycle from its parent's lord, so the same planet
+  // recurring deeper in the chain (Saturn → Mercury → Saturn → Mercury) is
+  // routine — but drawing it as a second planet with a second copy of its
+  // houses made the map look duplicated. The planet keeps the role of the
+  // highest level it holds, and its detail lists every level.
+  const chain: { lord: string; role: 'mahadasha' | 'antardasha'; levels: { level: string; end?: string }[] }[] = [];
+  for (const d of levels) {
+    const existing = chain.find(c => c.lord === d.lord);
+    if (existing) existing.levels.push({ level: d.level, end: d.end });
+    else chain.push({ lord: d.lord, role: d.role, levels: [{ level: d.level, end: d.end }] });
   }
   const n = chain.length;
   const planetIds: string[] = [];
@@ -181,17 +255,45 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr, isLight:
 
     const meaning = labelPlanetTheme(d.lord, lang);
     const lines: string[] = [];
-    const scope = labelDashaScope(d.level, lang);
-    lines.push([scope, d.end ? fmtUntil(d.end, lang, t) : ''].filter(Boolean).join(' · '));
+    for (const lv of d.levels) {
+      const scope = labelDashaScope(lv.level, lang);
+      lines.push([scope, lv.end ? fmtUntil(lv.end, lang, t) : ''].filter(Boolean).join(' · '));
+    }
     const chips: string[] = [];
     let strength;
     if (ls) {
       strength = strengthInfo(ls.strengthScore, t);
       if (ls.dignity) chips.push(labelDignity(ls.dignity, lang));
-      if (ls.lordedHouses.length)
-        lines.push(t('graph.influences', { areas: ls.lordedHouses.map(h => labelHouseTheme(h, lang)).join(', ') }));
-      if (ls.natalHouse != null)
-        lines.push(t('graph.sitsIn', { area: labelHouseTheme(ls.natalHouse, lang) }));
+    }
+
+    // Natal placement read from the chart: sign and degree, house and its
+    // bhava class, nakshatra and its lord, and the houses it aspects. These
+    // are the facts a reading of the lord starts from.
+    const np = natal(d.lord);
+    const house = np && asc != null ? houseOfRashi(np.rashiIndex, asc) : ls?.natalHouse ?? null;
+    const aspected = np && asc != null ? aspectedHouses(d.lord, np.rashiIndex, asc) : [];
+    if (np && house != null) {
+      lines.push(t('graph.placement', {
+        rashi: labelRashi(np.rashiIndex, lang, np.rashi),
+        deg: String(Math.floor(np.rashiDegree)),
+        house: labelOrdinalHouse(house, lang),
+        theme: labelHouseTheme(house, lang),
+      }));
+      const nak = NAKSHATRAS[np.nakshatraIndex];
+      if (nak) lines.push(t('graph.nakshatraLine', { nakshatra: np.nakshatra, lord: labelPlanet(nak[1], lang) }));
+      const cls = houseClass(house);
+      if (cls !== 'other') chips.push(t(`graph.houseClass.${cls}`));
+    } else if (house != null) {
+      lines.push(t('graph.sitsIn', { area: labelHouseTheme(house, lang) }));
+    }
+    if (ls?.lordedHouses.length)
+      lines.push(t('graph.influences', { areas: ls.lordedHouses.map(h => labelHouseTheme(h, lang)).join(', ') }));
+    if (aspected.length)
+      lines.push(t('graph.aspectsHouses', { areas: aspected.map(h => labelHouseTheme(h, lang)).join(', ') }));
+
+    const bindus = av?.selfStrength[titleCase(d.lord) as keyof typeof av.selfStrength];
+    if (bindus != null) chips.push(t('graph.bindus', { n: bindus }));
+    if (ls) {
       if (ls.isCombust)    chips.push(t('insights.combust'));
       if (ls.isRetrograde) chips.push(t('planet.retrograde'));
       if (ls.neechaBhanga) chips.push(t('insights.neechaBhanga'));
@@ -211,51 +313,63 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr, isLight:
     });
     edges.push({ from: 'period', to: id, critical });
 
-    // Life themes (houses) this planet activates
-    if (ls) {
-      const houseMap = new Map<number, { rules: boolean; placed: boolean }>();
-      ls.lordedHouses.forEach(h => houseMap.set(h, { rules: true, placed: houseMap.get(h)?.placed ?? false }));
-      if (ls.natalHouse != null)
-        houseMap.set(ls.natalHouse, { rules: houseMap.get(ls.natalHouse)?.rules ?? false, placed: true });
-      // Only two fit around a planet, so choose which two rather than taking
-      // whichever happened to be inserted first: where the planet actually sits
-      // matters most, and a sensitive (dusthana) theme must never be the one
-      // silently dropped.
-      const houses = [...houseMap.entries()]
-        .sort(([ha, ra], [hb, rb]) => {
-          const rank = (h: number, rel: { placed: boolean }) =>
-            (rel.placed ? 0 : 2) + (DUSTHANA.has(h) ? 0 : 1);
-          return rank(ha, ra) - rank(hb, rb);
-        })
-        .slice(0, 2);
-      const hN = houses.length;
-      houses.forEach(([h, rel], k) => {
-        const hDeg = deg + (hN === 1 ? 0 : 30 * (k - (hN - 1) / 2));
-        const hp = polar(x, y, R2, hDeg);
-        const dusthana = DUSTHANA.has(h);
-        const relation = rel.rules ? t('graph.relRules') : t('graph.relPlaced');
-        const hid = `house-${i}-${h}`;
-        nodes.push({
-          id: hid, type: 'house', glyph: String(h),
-          label: labelHouseTheme(h, lang),
-          tooltip: `${labelHouseTheme(h, lang)} — ${labelHouseCovers(h, lang)}`,
-          x: hp.x, y: hp.y, r: 18, color: dusthana ? '#fb7185' : '#64748b',
-          critical: dusthana, important: false,
-          detail: {
-            meaning: labelHouseCovers(h, lang),
-            lines: [t('graph.activatedBy', { planet: labelPlanet(d.lord, lang), relation })],
-            chips: dusthana ? [t('graph.sensitiveArea')] : [],
-            takeaway: dusthana ? t('graph.take.houseSensitive') : t('graph.take.houseFocus'),
-          },
-        });
-        edges.push({ from: id, to: hid, critical: dusthana || critical });
+    // Life themes (houses) this planet activates: where it sits, what it rules,
+    // and what it aspects by graha drishti.
+    type Rel = { rules: boolean; placed: boolean; aspects: boolean };
+    const houseMap = new Map<number, Rel>();
+    const rel = (h: number): Rel => houseMap.get(h) ?? { rules: false, placed: false, aspects: false };
+    (ls?.lordedHouses ?? []).forEach(h => houseMap.set(h, { ...rel(h), rules: true }));
+    if (house != null) houseMap.set(house, { ...rel(house), placed: true });
+    aspected.forEach(h => houseMap.set(h, { ...rel(h), aspects: true }));
+
+    // Only a few fit around a planet, so choose which rather than taking
+    // whichever happened to be inserted first: where the planet actually sits
+    // matters most, then what it rules, then what it merely aspects — and a
+    // sensitive (dusthana) theme must never be the one silently dropped.
+    const maxHouses = n <= 2 ? 3 : 2;
+    const houses = [...houseMap.entries()]
+      .sort(([ha, ra], [hb, rb]) => {
+        const rank = (h: number, r: Rel) =>
+          (r.placed ? 0 : r.rules ? 2 : 4) + (DUSTHANA.has(h) ? 0 : 1);
+        return rank(ha, ra) - rank(hb, rb);
+      })
+      .slice(0, maxHouses);
+    const hN = houses.length;
+    // Three satellites need a wider fan than two, or their labels touch.
+    const fan = hN >= 3 ? 36 : 30;
+    houses.forEach(([h, r], k) => {
+      const hDeg = deg + (hN === 1 ? 0 : fan * (k - (hN - 1) / 2));
+      const hp = polar(x, y, R2, hDeg);
+      const dusthana = DUSTHANA.has(h);
+      const relation = r.placed ? t('graph.relPlaced') : r.rules ? t('graph.relRules') : t('graph.relAspects');
+      const aspectOnly = !r.placed && !r.rules;
+      const hid = `house-${i}-${h}`;
+      nodes.push({
+        id: hid, type: 'house', glyph: String(h),
+        label: labelHouseTheme(h, lang),
+        tooltip: `${labelHouseTheme(h, lang)} — ${labelHouseCovers(h, lang)}`,
+        x: hp.x, y: hp.y, r: 18, color: dusthana ? '#fb7185' : '#64748b',
+        critical: dusthana, important: false,
+        detail: {
+          meaning: labelHouseCovers(h, lang),
+          lines: [t('graph.activatedBy', { planet: labelPlanet(d.lord, lang), relation })],
+          chips: dusthana ? [t('graph.sensitiveArea')] : [],
+          takeaway: dusthana ? t('graph.take.houseSensitive') : t('graph.take.houseFocus'),
+        },
       });
-    }
+      edges.push({ from: id, to: hid, critical: dusthana || critical, dashed: aspectOnly });
+    });
   });
 
-  // Dasha hierarchy chain (subtle dashed links)
-  for (let i = 0; i < planetIds.length - 1; i++)
-    edges.push({ from: planetIds[i], to: planetIds[i + 1], critical: false, dashed: true });
+  // Dasha hierarchy chain. The first link is the Mahadasha–Antardasha bond and
+  // takes the colour of its classical verdict; deeper links stay subtle.
+  for (let i = 0; i < planetIds.length - 1; i++) {
+    const isBond = i === 0 && bond != null && chain[0].lord === md && chain[1].lord === ad;
+    edges.push({
+      from: planetIds[i], to: planetIds[i + 1], critical: false, dashed: true,
+      color: isBond && bond ? BOND_HEX[bond.verdict] : undefined,
+    });
+  }
 
   // ── Life areas (right arc) ─────────────────────────────────────────────────
   const areas = (['career', 'wealth', 'relationships', 'health'] as const)
@@ -307,6 +421,7 @@ function buildGraph(prediction: DashaPredictionData, lang: Lang, t: Tr, isLight:
     theme: prediction.overallTheme,
     goingWell: areas.filter(a => a.data.trend === 'positive').map(a => labelArea(a.key, lang)),
     needsCare: areas.filter(a => a.data.trend === 'negative').map(a => labelArea(a.key, lang)),
+    bond: bond ? { verdict: bondVerdict, color: BOND_HEX[bond.verdict], lines: bondLines } : undefined,
   };
 
   return { nodes, edges, criticals: nodes.filter(node => node.critical), summary };
@@ -489,7 +604,7 @@ const GraphCanvas: React.FC<{
       {graph.edges.map((e, i) => {
         const a = byId[e.from]; const b = byId[e.to];
         if (!a || !b) return null;
-        const stroke = e.critical ? 'rgba(244,63,94,0.85)' : `url(#kg-e${i})`;
+        const stroke = e.critical ? 'rgba(244,63,94,0.85)' : e.color ?? `url(#kg-e${i})`;
         const lit = !focus || focus === e.from || focus === e.to;
         return (
           <g key={i} opacity={lit ? 1 : 0.28} style={{ transition: 'opacity 0.2s ease' }}>
@@ -651,11 +766,25 @@ const GraphCanvas: React.FC<{
               </motion.g>
 
               <text textAnchor="middle" dominantBaseline="central"
-                fontSize={isCore ? 22 : node.type === 'house' ? 14 : node.type === 'area' ? 22 : 19}
+                fontSize={isCore ? 26 : node.type === 'house' ? 14 : node.type === 'area' ? 22 : 19}
                 fontWeight={700} fill={node.type === 'house' ? '#fff' : 'rgba(0,0,0,0.80)'}
                 style={{ pointerEvents: 'none' }}>
                 {node.glyph}
               </text>
+
+              {/* Rim badge — the outlook rating sits on the centre's shoulder,
+                  opposite the "+" cue, so the Mahadasha glyph owns the face. */}
+              {node.badge && (
+                <g transform={`translate(${(node.r + 2) * 0.707},${-(node.r + 2) * 0.707})`}
+                  style={{ pointerEvents: 'none' }}>
+                  <circle r={12} fill={node.badge.color}
+                    stroke={isLight ? '#fff' : '#0b0e18'} strokeWidth={2} />
+                  <text textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800}
+                    fill="rgba(0,0,0,0.82)">
+                    {node.badge.text}
+                  </text>
+                </g>
+              )}
 
               {/* "+" badge — the unambiguous "there is more behind this" cue,
                   language-free, and only while the node is live. */}
@@ -735,6 +864,22 @@ const SummaryBanner: React.FC<{ summary: Summary; isLight: boolean }> = ({ summa
           </div>
         )}
       </div>
+
+      {summary.bond && (
+        <div className="mt-3 rounded-xl border px-3 py-2.5"
+          style={{ borderColor: `${summary.bond.color}40`, background: `${summary.bond.color}0d` }}>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[10px] uppercase tracking-wider ${sub}`}>{t('graph.bondTitle')}</span>
+            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{ color: summary.bond.color, background: `${summary.bond.color}1f` }}>
+              {summary.bond.verdict}
+            </span>
+          </div>
+          {summary.bond.lines.map((l, i) => (
+            <p key={i} className={`text-xs leading-relaxed ${body}`}>{l}</p>
+          ))}
+        </div>
+      )}
 
       {summary.theme && <p className={`text-xs mt-3 leading-relaxed ${body}`}>{summary.theme}</p>}
 
@@ -1089,13 +1234,24 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
     enabled: !!birthData.date,
     staleTime: 5 * 60 * 1000,
   });
+  // The natal chart (already cached from generation) and the Ashtakavarga
+  // supply the placements the graph reads: sign, house, nakshatra, aspects,
+  // bindus, and the Mahadasha–Antardasha bond. Both are optional — the graph
+  // still builds from the prediction alone if either fails.
+  const { data: chart, isLoading: chartLoading } = useChart(birthData.date ? birthData : null);
+  const { data: av } = useQuery({
+    queryKey: ['ashtakavarga', birthData],
+    queryFn: () => getAshtakavarga(birthData),
+    enabled: !!birthData.date,
+    staleTime: 60 * 60 * 1000,
+  });
 
   const graph = useMemo(
-    () => (prediction ? buildGraph(prediction, lang, t, isLight) : null),
-    [prediction, lang, t, isLight],
+    () => (prediction ? buildGraph(prediction, chart, av, lang, t, isLight) : null),
+    [prediction, chart, av, lang, t, isLight],
   );
 
-  if (isLoading) {
+  if (isLoading || chartLoading) {
     return (
       <div className="glass-card rounded-2xl p-10 text-center">
         <Loader2 className="w-6 h-6 mx-auto animate-spin mb-3" style={{ color: ACCENT }} />

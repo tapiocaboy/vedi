@@ -92,6 +92,9 @@ export function buildChartContext(positions: Record<string, PlanetPosition>): Ch
   for (const code of ['D2', 'D9', 'D10', 'D30'] as const) {
     divisionalRashis[code] = Object.fromEntries(
       vargas.planets.map(p => [p.planet, p.divisions[code].rashi]));
+    // The varga's own ascendant, so the career layer can read the dasamsa's
+    // 10th house rather than only each planet's dasamsa dignity.
+    divisionalRashis[code].Lagna = vargas.ascendants[code];
   }
 
   return {
