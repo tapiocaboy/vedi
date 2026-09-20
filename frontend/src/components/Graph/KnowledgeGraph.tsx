@@ -3,13 +3,18 @@
  * the current period, written for a general audience (no astrology background
  * needed).
  *
- *   • The centre is "now" with an overall outlook score.
+ *   • The centre is the running Mahadasha with the overall outlook as a badge.
  *   • Guiding planets (the active dasha lords) sit on the left, each described
  *     in everyday terms ("Saturn — discipline & life lessons").
  *   • The life themes (houses) each planet affects orbit it, labelled by what
  *     they actually cover ("Career", "Home", "Money").
  *   • Life areas (career, wealth, relationships, health) sit on the right,
- *     colour-coded by how they're trending.
+ *     colour-coded by how they're trending, wearing the birth chart's footing
+ *     for that area as a badge, and wired to whichever running lord feeds them.
+ *   • An outer ring carries the rest of what a Jyotishi reads for a period:
+ *     the classical yogas the running lords form (top), the gochara of the
+ *     slow movers against the natal Moon (bottom), and the remedies for the
+ *     Mahadasha lord (right).
  *
  * Anything that needs attention is highlighted. A plain-English summary, a
  * tap-for-details panel, and "good to do / avoid" tips make it understandable
@@ -23,10 +28,12 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Maximize2, X, Share2, AlertTriangle, Sparkles, CheckCircle2, Ban, Info, MousePointerClick } from 'lucide-react';
-import { getCurrentPrediction, getAshtakavarga } from '../../services/api';
+import { getCurrentPrediction, getAshtakavarga, getYogas, getGochara } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData } from '../../services/api';
 import type { Chart, PlanetPosition } from '../../types/astrology';
 import type { AshtakavargaResult } from '../../lib/core/ashtakavarga';
+import type { YogaResult } from '../../lib/core/yogas';
+import type { GocharaSnapshot } from '../../lib/core/transits';
 import { NAKSHATRAS } from '../../lib/core/nakshatra';
 import {
   judgeLordPair, houseOfRashi, houseClass, aspectedHouses, type LordPairJudgement,
@@ -39,6 +46,7 @@ import { coreLang, type Lang } from '../../i18n/translations';
 import {
   labelPlanet, labelArea, labelDignity, labelTrend, labelRashi, labelOrdinalHouse,
   labelPlanetTheme, labelHouseTheme, labelHouseCovers, labelDashaScope,
+  labelYogaCategory, labelYogaStrength,
 } from '../../i18n/astroLabels';
 
 const ACCENT = 'var(--c-accent)';
@@ -52,6 +60,32 @@ const TREND_ARROW: Record<string, string> = {
 };
 const DUSTHANA = new Set([6, 8, 12]);
 type Tr = (k: any, v?: any) => string;
+
+/** Yoga families, coloured and glyphed so the top ring reads at a glance. */
+const YOGA_HEX: Record<string, string> = {
+  rajayoga: '#fbbf24', mahapurusha: '#a78bfa', dhana: '#34d399',
+  daridra: '#f43f5e', spiritual: '#60a5fa', special: '#e879f9',
+};
+const YOGA_GLYPH: Record<string, string> = {
+  rajayoga: '♛', mahapurusha: '✦', dhana: '◈', daridra: '◇', spiritual: '☸', special: '✧',
+};
+/** Slow movers whose gochara is read against the natal Moon for a period. */
+const GOCHARA_BODIES = ['SATURN', 'JUPITER', 'RAHU', 'KETU'] as const;
+const REMEDY_GLYPH = { gemstone: '◆', mantra: 'ॐ', deity: '✺' } as const;
+
+/**
+ * Which houses feed each life area — the bhavas a Jyotishi checks when asked
+ * about that area. A running lord that sits in, rules, or aspects one of them
+ * is wired to the area on the canvas.
+ */
+const AREA_HOUSES: Record<string, number[]> = {
+  career: [10, 6], wealth: [2, 11], relationships: [7, 5], health: [1, 6, 8],
+};
+const FOUNDATION_KEY: Record<string, string> = {
+  career: 'career', wealth: 'wealth', relationships: 'relationship', health: 'health',
+};
+
+const ellipsis = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
 
 // ── Plain-language helpers ──────────────────────────────────────────────────────
 
@@ -83,7 +117,7 @@ function fmtUntil(iso: string, lang: Lang, t: Tr): string {
 
 // ── Graph model ─────────────────────────────────────────────────────────────────
 
-type NodeType = 'period' | 'planet' | 'house' | 'area';
+type NodeType = 'period' | 'planet' | 'house' | 'area' | 'yoga' | 'transit' | 'remedy';
 
 interface NodeDetail {
   meaning?: string;
@@ -97,13 +131,20 @@ interface GNode {
   id: string; type: NodeType; glyph: string; label: string; tooltip: string;
   x: number; y: number; r: number; color: string;
   critical: boolean; important: boolean; demanding?: boolean; detail: NodeDetail;
-  /** Small satellite disc on the node's rim — the centre wears the rating here. */
+  /** Small satellite disc on the node's rim — the centre wears the rating,
+      the life areas wear their birth-chart footing. */
   badge?: { text: string; color: string };
+  /** Label drawn above the node instead of below (the top ring). */
+  labelAbove?: boolean;
 }
 interface GEdge {
   from: string; to: string; critical: boolean; dashed?: boolean;
   /** Fixed stroke instead of the source→target gradient (the MD–AD bond). */
   color?: string;
+  /** Static link — no flow or packet. The outer-ring relations are facts about
+      the chart rather than influence travelling, and every animated edge costs
+      frames; the live ones are kept for the dasha chain itself. */
+  quiet?: boolean;
 }
 interface Summary {
   main?: { label: string; meaning: string; strengthLabel: string; critical: boolean; color: string };
@@ -123,7 +164,9 @@ const BOND_HEX: Record<LordPairJudgement['verdict'], string> = {
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 interface Graph { nodes: GNode[]; edges: GEdge[]; criticals: GNode[]; summary: Summary; }
 
-const W = 700, H = 560, CX = 350, CY = 280, R1 = 150, R2 = 86;
+// R1: dasha lords and life areas. R2: house satellites around each lord.
+// R3: the outer knowledge ring — yogas, gochara, remedies.
+const W = 840, H = 690, CX = 420, CY = 345, R1 = 148, R2 = 80, R3 = 296;
 
 /**
  * The centre "now" node. On light surfaces it stays on the brand accent; on
@@ -160,6 +203,7 @@ function classifyPlanet(lord: string, ls?: LordStrengthData) {
 
 function buildGraph(
   prediction: DashaPredictionData, chart: Chart | undefined, av: AshtakavargaResult | undefined,
+  yogas: YogaResult[] | undefined, gochara: GocharaSnapshot | undefined,
   lang: Lang, t: Tr, isLight: boolean,
 ): Graph {
   const nodes: GNode[] = [];
@@ -244,9 +288,15 @@ function buildGraph(
   }
   const n = chain.length;
   const planetIds: string[] = [];
+  type Rel = { rules: boolean; placed: boolean; aspects: boolean };
+  /** Every house each lord touches, kept so the life areas can be wired to
+      the lords that actually feed them. */
+  const lordHouses: { id: string; lord: string; map: Map<number, Rel> }[] = [];
 
   chain.forEach((d, i) => {
-    const deg = n === 1 ? 180 : 106 + ((250 - 106) * i) / (n - 1);
+    // 128°–232°: kept clear of the outer ring's top and bottom arcs so a lord's
+    // house fan never lands on a yoga or a transit node.
+    const deg = n === 1 ? 180 : 128 + ((232 - 128) * i) / (n - 1);
     const { x, y } = polar(CX, CY, R1, deg);
     const ls = lords.find(l => l.planet === d.lord && l.role === d.role) ?? lords.find(l => l.planet === d.lord);
     const { critical, important, demanding } = classifyPlanet(d.lord, ls);
@@ -315,12 +365,12 @@ function buildGraph(
 
     // Life themes (houses) this planet activates: where it sits, what it rules,
     // and what it aspects by graha drishti.
-    type Rel = { rules: boolean; placed: boolean; aspects: boolean };
     const houseMap = new Map<number, Rel>();
     const rel = (h: number): Rel => houseMap.get(h) ?? { rules: false, placed: false, aspects: false };
     (ls?.lordedHouses ?? []).forEach(h => houseMap.set(h, { ...rel(h), rules: true }));
     if (house != null) houseMap.set(house, { ...rel(house), placed: true });
     aspected.forEach(h => houseMap.set(h, { ...rel(h), aspects: true }));
+    lordHouses.push({ id, lord: d.lord, map: houseMap });
 
     // Only a few fit around a planet, so choose which rather than taking
     // whichever happened to be inserted first: where the planet actually sits
@@ -336,7 +386,7 @@ function buildGraph(
       .slice(0, maxHouses);
     const hN = houses.length;
     // Three satellites need a wider fan than two, or their labels touch.
-    const fan = hN >= 3 ? 36 : 30;
+    const fan = hN >= 3 ? 40 : 30;
     houses.forEach(([h, r], k) => {
       const hDeg = deg + (hN === 1 ? 0 : fan * (k - (hN - 1) / 2));
       const hp = polar(x, y, R2, hDeg);
@@ -376,6 +426,7 @@ function buildGraph(
     .map(key => ({ key, data: prediction.predictions[key] }))
     .filter(a => a.data);
   const m = areas.length;
+  const foundation = prediction.natalFoundation ?? [];
   areas.forEach((a, i) => {
     const deg = m === 1 ? 0 : -64 + (128 * i) / (m - 1);
     const { x, y } = polar(CX, CY, R1, deg);
@@ -385,22 +436,179 @@ function buildGraph(
     const take = trend === 'positive' ? t('graph.take.areaGood')
       : trend === 'negative' ? t('graph.take.areaBad')
       : trend === 'mixed' ? t('graph.take.areaMixed') : '';
+
+    // The birth chart's standing promise for this area rides on the node as a
+    // badge (−3…+3), so a good period on a weak footing — or the reverse — is
+    // visible without opening anything.
+    const f = foundation.find(row => row.area === FOUNDATION_KEY[a.key]);
+    const footing = f
+      ? f.weak ? { color: '#f43f5e', label: t('graph.foundation.weak') }
+        : f.strong ? { color: '#34d399', label: t('graph.foundation.strong') }
+        : { color: '#ffcb3a', label: t('graph.foundation.mixed') }
+      : undefined;
+    const lines = [a.data.summary];
+    if (f && footing) lines.push(t('graph.footing', { label: footing.label }), ...(f.notes.slice(0, 1)));
+
+    // Wire each running lord that sits in, rules, or aspects one of this
+    // area's houses — the causal path from the dasha to the outcome.
+    const chips: string[] = [];
+    for (const lh of lordHouses) {
+      const hit = AREA_HOUSES[a.key]
+        .map(h => ({ h, r: lh.map.get(h) }))
+        .filter((e): e is { h: number; r: Rel } => !!e.r)
+        .sort((p, q) => (p.r.placed ? 0 : p.r.rules ? 1 : 2) - (q.r.placed ? 0 : q.r.rules ? 1 : 2))[0];
+      if (!hit) continue;
+      const key = hit.r.placed ? 'graph.drivesPlaced' : hit.r.rules ? 'graph.drivesRules' : 'graph.drivesAspects';
+      // Name the bhava, not just its theme: the 6th feeds career as the house
+      // of service, and "Health" alone would read as the wrong area.
+      lines.push(t(key, {
+        planet: labelPlanet(lh.lord, lang),
+        house: `${labelOrdinalHouse(hit.h, lang)} (${labelHouseTheme(hit.h, lang)})`,
+      }));
+      chips.push(labelPlanet(lh.lord, lang));
+      edges.push({ from: lh.id, to: id, critical: false, dashed: !hit.r.placed && !hit.r.rules, quiet: true });
+    }
+    lines.push(...(a.data.details?.slice(0, 1) ?? []));
+
     nodes.push({
       id, type: 'area', glyph: TREND_ARROW[trend] ?? '→',
       label: labelArea(a.key, lang),
       tooltip: `${labelArea(a.key, lang)} — ${trendLabel}`,
       x, y, r: 27, color: TREND_HEX[trend] ?? TREND_HEX.neutral,
       critical: trend === 'negative', important: trend === 'positive',
+      badge: f && footing ? { text: `${f.score < 0 ? '−' : '+'}${Math.abs(f.score).toFixed(1)}`, color: footing.color } : undefined,
       detail: {
         trend: { label: trendLabel, color: TREND_HEX[trend] ?? TREND_HEX.neutral },
-        lines: [a.data.summary, ...(a.data.details?.slice(0, 1) ?? [])].filter(Boolean),
-        // Remedy chip hidden for now, kept for when remedies come back
-        // chips: a.data.remedies?.slice(0, 1) ?? [],
-        chips: [],
+        lines: lines.filter(Boolean),
+        chips,
         takeaway: take,
       },
     });
     edges.push({ from: 'period', to: id, critical: trend === 'negative' });
+  });
+
+  // ── Outer ring, top: classical yogas the running lords form ────────────────
+  // A yoga pays out in the periods of the planets that form it, so the ones
+  // involving a running lord come first and are wired to that lord; the rest
+  // hang off the centre as standing promises of the chart.
+  const chainLords = new Set(chain.map(c => c.lord.toUpperCase()));
+  const lordNode = (p: string) => lordHouses.find(lh => lh.lord.toUpperCase() === p.toUpperCase())?.id;
+  const rankedYogas = (yogas ?? [])
+    .filter(y => y.isPresent)
+    .map(y => ({ y, active: y.planetsInvolved.filter(p => chainLords.has(p.toUpperCase())) }))
+    .sort((p, q) => (q.active.length > 0 ? 1 : 0) - (p.active.length > 0 ? 1 : 0) || q.y.strengthScore - p.y.strengthScore)
+    .slice(0, 3);
+  const yN = rankedYogas.length;
+  rankedYogas.forEach(({ y, active }, i) => {
+    const deg = yN === 1 ? 270 : 236 + ((304 - 236) * i) / (yN - 1);
+    const { x, y: py } = polar(CX, CY, R3, deg);
+    const id = `yoga-${i}`;
+    const color = YOGA_HEX[y.category] ?? YOGA_HEX.special;
+    const cat = labelYogaCategory(y.category, lang);
+    const bad = y.category === 'daridra';
+    const isActive = active.length > 0;
+    const lines = [
+      cat.description,
+      t('graph.yogaFormedBy', {
+        planets: y.planetsInvolved.map(p => labelPlanet(p, lang)).join(', '),
+        houses: y.housesInvolved.join(', '),
+      }),
+      isActive ? t('graph.yogaActive', { planet: labelPlanet(active[0], lang) }) : t('graph.yogaDormant'),
+      y.effects,
+    ].filter(Boolean);
+    nodes.push({
+      id, type: 'yoga', glyph: YOGA_GLYPH[y.category] ?? '✧',
+      label: ellipsis(y.name, 24), tooltip: `${y.name} — ${cat.label}`,
+      x, y: py, r: 22, color, labelAbove: true,
+      critical: bad && isActive, important: !bad && isActive && y.strengthScore >= 6,
+      detail: {
+        meaning: `${cat.label} · ${labelYogaStrength(y.strength, lang)}`,
+        strength: { pct: y.strengthScore * 10, label: labelYogaStrength(y.strength, lang), color, raw: `${y.strengthScore}/10` },
+        lines, chips: [cat.label, ...(isActive ? active.map(p => labelPlanet(p, lang)) : [])],
+        takeaway: bad ? t('graph.take.yogaBad') : t('graph.take.yogaGood'),
+      },
+    });
+    const targets = active.map(lordNode).filter((v): v is string => !!v);
+    if (targets.length) targets.forEach(to => edges.push({ from: id, to, critical: bad, color }));
+    else edges.push({ from: id, to: 'period', critical: false, dashed: true, quiet: true, color });
+  });
+
+  // ── Outer ring, bottom: gochara of the slow movers against the natal Moon ──
+  // Saturn, Jupiter and the nodes hold a sign for a year or more, so their
+  // transit colours the whole sub-period. Each is judged from the Moon by the
+  // classical table; the running lord's own transit is wired to its natal node
+  // because a dasha lord's gochara is the one felt most.
+  const transits = GOCHARA_BODIES
+    .map(p => gochara?.transits.find(tr => tr.planet.toUpperCase() === p))
+    .filter((tr): tr is NonNullable<typeof tr> => !!tr);
+  const tN = transits.length;
+  transits.forEach((tr, i) => {
+    const deg = tN === 1 ? 90 : 58 + ((122 - 58) * i) / (tN - 1);
+    const { x, y } = polar(CX, CY, R3, deg);
+    const id = `transit-${i}`;
+    const lord = titleCase(tr.planet);
+    const own = lordNode(tr.planet);
+    const isSaturn = tr.planet.toUpperCase() === 'SATURN';
+    const sade = isSaturn && gochara?.sadeSati.active ? gochara.sadeSati : undefined;
+    const color = tr.valence > 0 ? '#34d399' : tr.valence < 0 ? '#f43f5e' : '#94a3b8';
+    const critical = tr.valence < 0 && (!!own || !!sade || tr.houseFromMoon === 8);
+    const lines = [
+      t('graph.transitLine', {
+        rashi: labelRashi(tr.rashi, lang, tr.rashiName),
+        fromMoon: labelOrdinalHouse(tr.houseFromMoon, lang),
+        fromLagna: labelOrdinalHouse(tr.houseFromLagna, lang),
+      }),
+      tr.note ?? '',
+      sade?.description ?? '',
+      own ? t('graph.transitOwnLord') : '',
+      tr.planet.toUpperCase() === 'JUPITER' && gochara?.jupiterBlessing.auspicious ? gochara.jupiterBlessing.reason : '',
+    ].filter(Boolean);
+    const chips = [
+      tr.valence > 0 ? t('graph.transitFavourable') : tr.valence < 0 ? t('graph.transitAdverse') : '',
+      sade && sade.phase !== 'none' ? t(`graph.sadeSati.${sade.phase}`) : '',
+      tr.dignity ? labelDignity(tr.dignity, lang) : '',
+      tr.isRetrograde ? t('planet.retrograde') : '',
+      tr.vedha ? t('graph.vedha', { planet: labelPlanet(tr.vedha.byPlanet, lang) }) : '',
+    ].filter(Boolean);
+    nodes.push({
+      id, type: 'transit', glyph: PLANET_GLYPH[lord] ?? '●',
+      label: t('graph.transitLabel', { planet: labelPlanet(lord, lang) }),
+      tooltip: `${t('graph.transitLabel', { planet: labelPlanet(lord, lang) })} — ${labelRashi(tr.rashi, lang, tr.rashiName)}`,
+      x, y, r: 22, color,
+      critical, important: tr.valence > 0 && !!own,
+      detail: {
+        meaning: labelPlanetTheme(lord, lang),
+        lines, chips,
+        takeaway: tr.valence > 0 ? t('graph.take.transitGood') : tr.valence < 0 ? t('graph.take.transitBad') : t('graph.take.transitNeutral'),
+      },
+    });
+    if (own) edges.push({ from: id, to: own, critical, color });
+    else edges.push({ from: id, to: 'period', critical: false, dashed: true, quiet: true, color });
+  });
+
+  // ── Outer ring, right: remedies for the Mahadasha lord ─────────────────────
+  const remedies = (['gemstone', 'mantra', 'deity'] as const)
+    .map(k => ({ k, value: prediction.remedies?.[k] }))
+    .filter((r): r is { k: typeof r.k; value: string } => !!r.value);
+  const rN = remedies.length;
+  const remedyColor = md ? LORD_HEX[md] ?? '#c4b5fd' : '#c4b5fd';
+  remedies.forEach((r, i) => {
+    const deg = rN === 1 ? 0 : -28 + (56 * i) / (rN - 1);
+    const { x, y } = polar(CX, CY, R3, deg);
+    const id = `remedy-${r.k}`;
+    nodes.push({
+      id, type: 'remedy', glyph: REMEDY_GLYPH[r.k],
+      label: ellipsis(r.value, 20), tooltip: `${t(`graph.remedy.${r.k}`)} — ${r.value}`,
+      x, y, r: 19, color: remedyColor,
+      critical: false, important: false,
+      detail: {
+        meaning: t(`graph.remedy.${r.k}`),
+        lines: [r.value, md ? t('graph.remedyFor', { planet: mdName }) : ''].filter(Boolean),
+        chips: md ? [mdName] : [],
+        takeaway: t('graph.take.remedy'),
+      },
+    });
+    edges.push({ from: id, to: 'period', critical: false, dashed: true, quiet: true });
   });
 
   // ── Plain summary ───────────────────────────────────────────────────────────
@@ -583,6 +791,8 @@ const GraphCanvas: React.FC<{
       <circle cx={CX} cy={CY} r={R1} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
       <circle cx={CX} cy={CY} r={R2} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
       <circle cx={CX} cy={CY} r={R1 + 34} fill="none" stroke={orbitLine} strokeWidth="0.75" />
+      {/* The outer knowledge ring — yogas above, gochara below, remedies right */}
+      <circle cx={CX} cy={CY} r={R3} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 9" />
 
       <motion.g
         style={SPIN_IN_PLACE}
@@ -606,6 +816,19 @@ const GraphCanvas: React.FC<{
         if (!a || !b) return null;
         const stroke = e.critical ? 'rgba(244,63,94,0.85)' : e.color ?? `url(#kg-e${i})`;
         const lit = !focus || focus === e.from || focus === e.to;
+        if (e.quiet) {
+          // A relation, not a flow: one still hairline, brighter when either
+          // end is focused so the wiring shows when it is being asked about.
+          return (
+            <g key={i} opacity={lit ? 1 : 0.22} style={{ transition: 'opacity 0.2s ease' }}>
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                stroke={stroke} strokeWidth={focus && lit ? 1.6 : 1}
+                strokeDasharray={e.dashed ? '2 6' : undefined} strokeLinecap="round"
+                opacity={focus && lit ? (isLight ? 0.75 : 0.9) : (isLight ? 0.35 : 0.42)}
+                style={{ transition: 'opacity 0.2s ease, stroke-width 0.2s ease' }} />
+            </g>
+          );
+        }
         return (
           <g key={i} opacity={lit ? 1 : 0.28} style={{ transition: 'opacity 0.2s ease' }}>
             {/* The rail a packet rides. Also the motion path for the packet. */}
@@ -766,7 +989,8 @@ const GraphCanvas: React.FC<{
               </motion.g>
 
               <text textAnchor="middle" dominantBaseline="central"
-                fontSize={isCore ? 26 : node.type === 'house' ? 14 : node.type === 'area' ? 22 : 19}
+                fontSize={isCore ? 26 : node.type === 'house' ? 14 : node.type === 'area' ? 22
+                  : node.type === 'yoga' ? 17 : node.type === 'transit' ? 16 : node.type === 'remedy' ? 15 : 19}
                 fontWeight={700} fill={node.type === 'house' ? '#fff' : 'rgba(0,0,0,0.80)'}
                 style={{ pointerEvents: 'none' }}>
                 {node.glyph}
@@ -779,7 +1003,8 @@ const GraphCanvas: React.FC<{
                   style={{ pointerEvents: 'none' }}>
                   <circle r={12} fill={node.badge.color}
                     stroke={isLight ? '#fff' : '#0b0e18'} strokeWidth={2} />
-                  <text textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800}
+                  <text textAnchor="middle" dominantBaseline="central"
+                    fontSize={node.badge.text.length > 2 ? 8.5 : 12} fontWeight={800}
                     fill="rgba(0,0,0,0.82)">
                     {node.badge.text}
                   </text>
@@ -799,8 +1024,9 @@ const GraphCanvas: React.FC<{
             </motion.g>
 
             {/* Labels are knocked out of the background so they stay readable
-                where they cross an edge or a halo. */}
-            <text y={node.r + 17} textAnchor="middle" fontSize={11.5}
+                where they cross an edge or a halo. The top ring labels above
+                so they face the canvas edge, not the lords' house fans. */}
+            <text y={node.labelAbove ? -(node.r + 9) : node.r + 17} textAnchor="middle" fontSize={11.5}
               fontWeight={live ? 700 : 600}
               fill={live ? 'var(--c-accent)' : labelFill}
               className="si-svg-label"
@@ -917,6 +1143,9 @@ const Legend: React.FC<{ isLight: boolean }> = ({ isLight }) => {
     { c: '#34d399', k: 'graph.important' as const },
     { c: '#64748b', k: 'graph.legendTheme' as const },
     { c: 'var(--c-accent)', k: 'graph.legendPeriod' as const },
+    { c: '#fbbf24', k: 'graph.legendYoga' as const },
+    { c: '#60a5fa', k: 'graph.legendTransit' as const },
+    { c: '#c4b5fd', k: 'graph.legendRemedy' as const },
   ];
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
@@ -1245,10 +1474,24 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
     enabled: !!birthData.date,
     staleTime: 60 * 60 * 1000,
   });
+  // The outer ring: yogas (natal, cached with the chart) and today's gochara.
+  // Both optional as well — the ring is simply empty without them.
+  const { data: yogas } = useQuery({
+    queryKey: ['yogas', birthData],
+    queryFn: () => getYogas(birthData),
+    enabled: !!birthData.date,
+    staleTime: 60 * 60 * 1000,
+  });
+  const { data: gochara } = useQuery({
+    queryKey: ['gochara', birthData, new Date().toISOString().slice(0, 10), lang],
+    queryFn: () => getGochara(birthData, undefined, coreLang(lang)),
+    enabled: !!birthData.date,
+    staleTime: 60 * 60 * 1000,
+  });
 
   const graph = useMemo(
-    () => (prediction ? buildGraph(prediction, chart, av, lang, t, isLight) : null),
-    [prediction, chart, av, lang, t, isLight],
+    () => (prediction ? buildGraph(prediction, chart, av, yogas, gochara, lang, t, isLight) : null),
+    [prediction, chart, av, yogas, gochara, lang, t, isLight],
   );
 
   if (isLoading || chartLoading) {
