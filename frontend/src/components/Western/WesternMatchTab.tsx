@@ -151,7 +151,7 @@ export const WesternMatchTab: React.FC<Props> = ({ person }) => {
           </div>
           <p className="text-[11px] text-white/50 leading-relaxed mb-4">{t('western.match.explanation')}</p>
         </div>
-        <div className="glass-card rounded-2xl p-6">
+        <div className="glass-card rounded-2xl p-3 sm:p-4">
           <BirthDataForm onSubmit={setPartner} lockSystem="WESTERN" />
         </div>
       </motion.div>

@@ -164,6 +164,17 @@ const BOND_HEX: Record<LordPairJudgement['verdict'], string> = {
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 interface Graph { nodes: GNode[]; edges: GEdge[]; criticals: GNode[]; summary: Summary; }
 
+type ExtraLayer = 'yoga' | 'transit' | 'remedy';
+const CORE_TYPES: NodeType[] = ['period', 'planet', 'house', 'area'];
+
+function filterGraph(graph: Graph, extras: ReadonlySet<ExtraLayer>): Graph {
+  const allowed = new Set<NodeType>([...CORE_TYPES, ...extras]);
+  const nodes = graph.nodes.filter(n => allowed.has(n.type));
+  const ids = new Set(nodes.map(n => n.id));
+  const edges = graph.edges.filter(e => ids.has(e.from) && ids.has(e.to));
+  return { nodes, edges, criticals: nodes.filter(n => n.critical), summary: graph.summary };
+}
+
 // R1: dasha lords and life areas. R2: house satellites around each lord.
 // R3: the outer knowledge ring — yogas, gochara, remedies.
 const W = 840, H = 690, CX = 420, CY = 345, R1 = 148, R2 = 80, R3 = 296;
@@ -719,13 +730,13 @@ const GraphCanvas: React.FC<{
   const edgeBase  = isLight ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.10)';
   const labelFill = isLight ? '#334155' : 'rgba(255,255,255,0.80)';
   const labelHalo = isLight ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.62)';
-  const gridLine  = isLight ? 'rgba(15,23,42,0.055)' : 'rgba(var(--c-accent-rgb),0.10)';
   const orbitLine = isLight ? 'rgba(15,23,42,0.10)'  : 'rgba(var(--c-accent-rgb),0.16)';
   const hudLine   = isLight ? 'rgba(15,23,42,0.20)'  : 'rgba(var(--c-accent-rgb),0.35)';
   const glowAmt   = isLight ? 0.22 : 0.55;
+  const hasOuter = graph.nodes.some(n => n.type === 'yoga' || n.type === 'transit' || n.type === 'remedy');
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto select-none" role="img"
+    <svg viewBox={hasOuter ? `0 0 ${W} ${H}` : '70 90 700 500'} className="w-full h-auto select-none" role="img"
       style={maxHeight ? { maxHeight, height: '100%', width: 'auto', maxWidth: '100%' } : undefined}
       preserveAspectRatio="xMidYMid meet"
       onClick={() => onSelect(null)}>
@@ -747,20 +758,6 @@ const GraphCanvas: React.FC<{
           <stop offset="0%"   stopColor="#000000" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0" />
         </radialGradient>
-        {/* Dot-matrix over hairlines — reads as a sensor field rather than
-            graph paper. */}
-        <pattern id="kg-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-          <path d="M28 0H0v28" fill="none" stroke={gridLine} strokeWidth="0.5" />
-          <circle cx="0" cy="0" r="0.9" fill={gridLine} />
-          <circle cx="28" cy="28" r="0.9" fill={gridLine} />
-        </pattern>
-        {/* Sweep band — a soft bar of light that crosses the field on a cycle */}
-        <linearGradient id="kg-sweep" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="var(--c-accent)" stopOpacity="0" />
-          <stop offset="45%"  stopColor="var(--c-accent)" stopOpacity={isLight ? 0.05 : 0.10} />
-          <stop offset="55%"  stopColor="var(--c-accent)" stopOpacity={isLight ? 0.05 : 0.10} />
-          <stop offset="100%" stopColor="var(--c-accent)" stopOpacity="0" />
-        </linearGradient>
         {/* One gradient per edge: it fades from the source node's colour into
             the target's, so a link reads as influence travelling along it. */}
         {graph.edges.map((e, i) => {
@@ -776,39 +773,13 @@ const GraphCanvas: React.FC<{
         })}
       </defs>
 
-      {/* ── Backdrop: grid, orbit rings, and a slowly turning outer dial ── */}
-      <rect width={W} height={H} fill="url(#kg-grid)" />
-
-      {/* Sweep — the field being read, left to right, on a long cycle */}
-      {!still && (
-        <motion.rect
-          y={0} width={190} height={H} fill="url(#kg-sweep)"
-          initial={{ x: -190 }}
-          animate={{ x: W }}
-          transition={{ duration: 5.5, repeat: Infinity, repeatDelay: 3.5, ease: 'linear' }}
-        />
+      {/* One quiet orbit. The extra rings, sweep, and spinning dial used to
+          fight the nodes for attention — the map should read as a period, not
+          as an instrument panel. */}
+      <circle cx={CX} cy={CY} r={R1} fill="none" stroke={orbitLine} strokeWidth="1" />
+      {graph.nodes.some(n => n.type === 'yoga' || n.type === 'transit' || n.type === 'remedy') && (
+        <circle cx={CX} cy={CY} r={R3} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="2 8" opacity={0.55} />
       )}
-      <circle cx={CX} cy={CY} r={R1} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
-      <circle cx={CX} cy={CY} r={R2} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 7" />
-      <circle cx={CX} cy={CY} r={R1 + 34} fill="none" stroke={orbitLine} strokeWidth="0.75" />
-      {/* The outer knowledge ring — yogas above, gochara below, remedies right */}
-      <circle cx={CX} cy={CY} r={R3} fill="none" stroke={orbitLine} strokeWidth="1" strokeDasharray="1 9" />
-
-      <motion.g
-        style={SPIN_IN_PLACE}
-        animate={still ? undefined : { rotate: 360 }}
-        transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
-      >
-        <circle cx={CX} cy={CY} r={R1 + 34} fill="none" stroke={hudLine} strokeWidth="3"
-          strokeDasharray={dialDashes(R1 + 34, 48)} strokeLinecap="round" opacity={0.5} />
-      </motion.g>
-
-      {/* HUD corner brackets */}
-      {([[14, 14, 1, 1], [W - 14, 14, -1, 1], [W - 14, H - 14, -1, -1], [14, H - 14, 1, -1]] as const)
-        .map(([x, y, sx, sy], i) => (
-          <path key={i} d={`M${x} ${y + sy * 22} L${x} ${y} L${x + sx * 22} ${y}`}
-            fill="none" stroke={hudLine} strokeWidth="1.25" strokeLinecap="round" opacity={0.7} />
-        ))}
 
       {/* ── Edges ── */}
       {graph.edges.map((e, i) => {
@@ -1046,85 +1017,52 @@ const GraphCanvas: React.FC<{
   );
 };
 
-// ── Plain-language summary banner ───────────────────────────────────────────────
-
-const SummaryBanner: React.FC<{ summary: Summary; isLight: boolean }> = ({ summary, isLight }) => {
+/** Compact period strip for the side rail — the long banner used to repeat
+ *  everything the map already shows. */
+const NowCard: React.FC<{ summary: Summary; isLight: boolean }> = ({ summary, isLight }) => {
   const { t } = useLang();
   const head = isLight ? 'text-gray-800' : 'text-white';
-  const sub = isLight ? 'text-slate-500' : 'text-white/45';
-  const body = isLight ? 'text-slate-600' : 'text-white/65';
-
+  const muted = isLight ? 'text-slate-500' : 'text-white/45';
   return (
-    <div className="rounded-2xl border p-4"
-      style={{ borderColor: 'rgba(var(--c-accent-rgb),0.20)', background: 'rgba(var(--c-accent-rgb),0.05)' }}>
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
-        <span className={`text-xs font-bold uppercase tracking-wider ${head}`}>{t('graph.summaryTitle')}</span>
-        <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
+    <div className="rounded-xl border p-3.5"
+      style={{ borderColor: 'rgba(var(--c-accent-rgb),0.18)', background: 'rgba(var(--c-accent-rgb),0.05)' }}>
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className={`text-[11px] font-bold uppercase tracking-wider ${head}`}>{t('graph.summaryTitle')}</span>
+        <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full"
           style={{ color: summary.outlook.color, background: `${summary.outlook.color}1f` }}>
           {summary.outlook.word} · {summary.outlook.rating}/10
         </span>
       </div>
-
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
         {summary.main && (
           <div>
-            <div className={`text-[10px] uppercase tracking-wider mb-0.5 ${sub}`}>{t('graph.mainLabel')}</div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.main.color }} />
-              <span className={`text-sm font-bold ${head}`}>{summary.main.label}</span>
-              {summary.main.strengthLabel && (
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${summary.main.critical ? 'bg-rose-500/15 text-rose-400' : 'bg-emerald-500/12 text-emerald-400'}`}>
-                  {summary.main.strengthLabel}
-                </span>
-              )}
+            <div className={`text-[10px] uppercase tracking-wider ${muted}`}>{t('graph.mainLabel')}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: summary.main.color }} />
+              <span className={`text-sm font-semibold ${head}`}>{summary.main.label}</span>
             </div>
-            <div className={`text-xs ${body}`}>{summary.main.meaning}</div>
           </div>
         )}
         {summary.sub && (
           <div>
-            <div className={`text-[10px] uppercase tracking-wider mb-0.5 ${sub}`}>{t('graph.subLabel')}</div>
-            <div className={`text-sm font-bold ${head}`}>{summary.sub.label}</div>
-            <div className={`text-xs ${body}`}>{summary.sub.meaning}</div>
+            <div className={`text-[10px] uppercase tracking-wider ${muted}`}>{t('graph.subLabel')}</div>
+            <span className={`text-sm font-semibold ${head}`}>{summary.sub.label}</span>
           </div>
         )}
       </div>
-
-      {summary.bond && (
-        <div className="mt-3 rounded-xl border px-3 py-2.5"
-          style={{ borderColor: `${summary.bond.color}40`, background: `${summary.bond.color}0d` }}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] uppercase tracking-wider ${sub}`}>{t('graph.bondTitle')}</span>
-            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-              style={{ color: summary.bond.color, background: `${summary.bond.color}1f` }}>
-              {summary.bond.verdict}
-            </span>
-          </div>
-          {summary.bond.lines.map((l, i) => (
-            <p key={i} className={`text-xs leading-relaxed ${body}`}>{l}</p>
-          ))}
-        </div>
-      )}
-
-      {summary.theme && <p className={`text-xs mt-3 leading-relaxed ${body}`}>{summary.theme}</p>}
-
       {(summary.goingWell.length > 0 || summary.needsCare.length > 0) && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t"
-          style={{ borderColor: isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.07)' }}>
+        <div className="mt-2.5 space-y-1">
           {summary.goingWell.length > 0 && (
-            <span className="flex items-center gap-1.5 text-xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className={sub}>{t('graph.goingWell')}:</span>
+            <p className="flex items-center gap-1.5 text-xs">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
               <span className="font-semibold text-emerald-400">{summary.goingWell.join(', ')}</span>
-            </span>
+            </p>
           )}
           {summary.needsCare.length > 0 && (
-            <span className="flex items-center gap-1.5 text-xs">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
-              <span className={sub}>{t('graph.needsCare')}:</span>
+            <p className="flex items-center gap-1.5 text-xs">
+              <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0" />
               <span className="font-semibold text-rose-400">{summary.needsCare.join(', ')}</span>
-            </span>
+            </p>
           )}
         </div>
       )}
@@ -1134,24 +1072,22 @@ const SummaryBanner: React.FC<{ summary: Summary; isLight: boolean }> = ({ summa
 
 // ── Legend ──────────────────────────────────────────────────────────────────
 
-const Legend: React.FC<{ isLight: boolean }> = ({ isLight }) => {
+const Legend: React.FC<{ isLight: boolean; extras: ReadonlySet<ExtraLayer> }> = ({ isLight, extras }) => {
   const { t } = useLang();
   const txt = isLight ? 'text-slate-500' : 'text-white/45';
-  const items = [
-    { c: '#f43f5e', k: 'graph.critical' as const },
-    { c: '#f59e0b', k: 'graph.demanding' as const },
-    { c: '#34d399', k: 'graph.important' as const },
-    { c: '#64748b', k: 'graph.legendTheme' as const },
-    { c: 'var(--c-accent)', k: 'graph.legendPeriod' as const },
-    { c: '#fbbf24', k: 'graph.legendYoga' as const },
-    { c: '#60a5fa', k: 'graph.legendTransit' as const },
-    { c: '#c4b5fd', k: 'graph.legendRemedy' as const },
+  const items: { c: string; k: 'graph.critical' | 'graph.important' | 'graph.legendTheme' | 'graph.legendYoga' | 'graph.legendTransit' | 'graph.legendRemedy' }[] = [
+    { c: '#f43f5e', k: 'graph.critical' },
+    { c: '#34d399', k: 'graph.important' },
+    { c: '#64748b', k: 'graph.legendTheme' },
   ];
+  if (extras.has('yoga')) items.push({ c: '#fbbf24', k: 'graph.legendYoga' });
+  if (extras.has('transit')) items.push({ c: '#60a5fa', k: 'graph.legendTransit' });
+  if (extras.has('remedy')) items.push({ c: '#c4b5fd', k: 'graph.legendRemedy' });
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {items.map(it => (
-        <span key={it.k} className={`flex items-center gap-1.5 text-[11px] font-medium ${txt}`}>
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: it.c }} />
+        <span key={it.k} className={`flex items-center gap-1.5 text-[10.5px] font-medium ${txt}`}>
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: it.c }} />
           {t(it.k)}
         </span>
       ))}
@@ -1270,91 +1206,36 @@ const DetailPanel: React.FC<{ graph: Graph; selected: string | null; isLight: bo
   );
 };
 
-// ── Natal foundation ────────────────────────────────────────────────────────────
-
-/**
- * The chart's standing footing per life area. Without this the graph shows a
- * supportive dasha chain next to a middling outlook and gives no account of the
- * gap — which is precisely the part a reader needs in order to trust the number.
- */
-const FoundationCard: React.FC<{ prediction: DashaPredictionData; isLight: boolean }> = ({ prediction, isLight }) => {
-  const { lang, t } = useLang();
-  const rows = prediction.natalFoundation ?? [];
-  if (!rows.length) return null;
-
-  const head = isLight ? 'text-gray-800' : 'text-white';
-  const sub = isLight ? 'text-slate-500' : 'text-white/45';
-  const body = isLight ? 'text-slate-600' : 'text-white/60';
-
-  const info = (f: (typeof rows)[number]) =>
-    f.weak ? { color: '#f43f5e', label: t('graph.foundation.weak') }
-    : f.strong ? { color: '#34d399', label: t('graph.foundation.strong') }
-    : { color: '#ffcb3a', label: t('graph.foundation.mixed') };
-
-  return (
-    <div className="rounded-2xl border p-4"
-      style={{ borderColor: 'rgba(var(--c-accent-rgb),0.20)', background: 'rgba(var(--c-accent-rgb),0.04)' }}>
-      <div className="flex items-center gap-2 mb-1">
-        <Info className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
-        <span className={`text-xs font-bold uppercase tracking-wider ${head}`}>{t('graph.foundationTitle')}</span>
-      </div>
-      <p className={`text-[11px] leading-relaxed mb-3 ${sub}`}>{t('graph.foundationHint')}</p>
-
-      <div className="space-y-2.5">
-        {rows.map(f => {
-          const { color, label } = info(f);
-          // −3…+3 mapped onto the bar's width.
-          const pct = ((f.score + 3) / 6) * 100;
-          return (
-            <div key={f.area}>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className={`text-xs font-semibold ${head}`}>
-                  {labelArea(f.area === 'relationship' ? 'relationships' : f.area, lang)}
-                </span>
-                <span className="text-[10px] font-semibold" style={{ color }}>{label}</span>
-              </div>
-              <div className={`h-1.5 rounded-full overflow-hidden ${isLight ? 'bg-slate-200' : 'bg-white/10'}`}>
-                <div className="h-full rounded-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, backgroundColor: color }} />
-              </div>
-              {f.notes[0] && <p className={`text-[11px] leading-relaxed mt-1 ${body}`}>{f.notes[0]}</p>}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-// ── Good-to-do / avoid tips ─────────────────────────────────────────────────────
-
 const ActivitiesCard: React.FC<{ prediction: DashaPredictionData; isLight: boolean }> = ({ prediction, isLight }) => {
   const { t } = useLang();
   const good = prediction.favorableActivities?.slice(0, 3) ?? [];
   const bad = prediction.unfavorableActivities?.slice(0, 3) ?? [];
   if (!good.length && !bad.length) return null;
-  const head = isLight ? 'text-gray-700' : 'text-white/80';
+  const head = isLight ? 'text-gray-700' : 'text-white/75';
+  const goodTxt = isLight ? 'text-emerald-700' : 'text-emerald-300/85';
+  const badTxt = isLight ? 'text-rose-700' : 'text-rose-300/80';
 
   return (
-    <div className="grid sm:grid-cols-2 gap-3">
+    <div className="space-y-2">
       {good.length > 0 && (
-        <div className="rounded-xl border p-3" style={{ borderColor: 'rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.05)' }}>
-          <div className="flex items-center gap-1.5 mb-2">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span className={`text-[11px] font-bold uppercase tracking-wider ${head}`}>{t('graph.goodToDo')}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${head}`}>{t('graph.goodToDo')}</span>
           </div>
-          <ul className="space-y-1">
-            {good.map((a, i) => <li key={i} className="flex items-start gap-1.5 text-xs text-emerald-300/80"><span className="mt-0.5 shrink-0">✓</span>{a}</li>)}
+          <ul className="space-y-0.5">
+            {good.map((a, i) => <li key={i} className={`text-xs leading-relaxed ${goodTxt}`}>{a}</li>)}
           </ul>
         </div>
       )}
       {bad.length > 0 && (
-        <div className="rounded-xl border p-3" style={{ borderColor: 'rgba(244,63,94,0.22)', background: 'rgba(244,63,94,0.05)' }}>
-          <div className="flex items-center gap-1.5 mb-2">
+        <div>
+          <div className="flex items-center gap-1.5 mb-1">
             <Ban className="w-3.5 h-3.5 text-rose-400" />
-            <span className={`text-[11px] font-bold uppercase tracking-wider ${head}`}>{t('graph.avoid')}</span>
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${head}`}>{t('graph.avoid')}</span>
           </div>
-          <ul className="space-y-1">
-            {bad.map((a, i) => <li key={i} className="flex items-start gap-1.5 text-xs text-rose-300/75"><span className="mt-0.5 shrink-0">✗</span>{a}</li>)}
+          <ul className="space-y-0.5">
+            {bad.map((a, i) => <li key={i} className={`text-xs leading-relaxed ${badTxt}`}>{a}</li>)}
           </ul>
         </div>
       )}
@@ -1374,81 +1255,135 @@ const ActivitiesCard: React.FC<{ prediction: DashaPredictionData; isLight: boole
  * Selection is local, so the expanded stage starts fresh and closing it does
  * not disturb what was open underneath.
  */
-const GraphStage: React.FC<{ graph: Graph; isLight: boolean; big?: boolean }> =
-({ graph, isLight, big = false }) => {
+const LayerBar: React.FC<{
+  source: Graph; extras: ReadonlySet<ExtraLayer>;
+  onToggle: (layer: ExtraLayer) => void; isLight: boolean;
+}> = ({ source, extras, onToggle, isLight }) => {
+  const { t } = useLang();
+  const layers = (
+    [
+      { id: 'yoga' as const, label: t('graph.layerYogas') },
+      { id: 'transit' as const, label: t('graph.layerTransits') },
+      { id: 'remedy' as const, label: t('graph.layerRemedies') },
+    ] satisfies { id: ExtraLayer; label: string }[]
+  ).filter(l => source.nodes.some(n => n.type === l.id));
+  if (!layers.length) return null;
+  return (
+    <div className="tab-bar inline-flex flex-wrap gap-1 p-1 rounded-xl">
+      <span className="px-2.5 h-7 rounded-lg text-[11px] font-semibold flex items-center text-[var(--c-accent)] bg-[rgba(var(--c-accent-rgb),0.14)]">
+        {t('graph.layerNow')}
+      </span>
+      {layers.map(l => {
+        const on = extras.has(l.id);
+        return (
+          <button key={l.id} type="button" onClick={() => onToggle(l.id)}
+            className={`px-2.5 h-7 rounded-lg text-[11px] font-semibold transition-colors ${
+              on
+                ? 'text-[var(--c-accent)] bg-[rgba(var(--c-accent-rgb),0.14)]'
+                : isLight ? 'text-slate-500 hover:text-slate-800' : 'text-white/45 hover:text-white'
+            }`}>
+            {on ? l.label : `+ ${l.label}`}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const GraphStage: React.FC<{
+  graph: Graph; isLight: boolean; big?: boolean; prediction?: DashaPredictionData;
+}> = ({ graph, isLight, big = false, prediction }) => {
   const { t } = useLang();
   const [selected, setSelected] = useState<string | null>(null);
-  return (
-    <div className={big ? 'flex flex-col h-full min-h-0 gap-3' : 'space-y-4'}>
-      {/* The canvas sits in a lit well rather than a flat box — a faint accent
-          bloom from the centre, an accent hairline, and an inner edge.
-          `relative` anchors the interactive-hint chip to its corner. */}
-      <div className={`relative rounded-2xl p-2 sm:p-3 overflow-hidden ${big ? 'flex-1 min-h-0 flex items-center justify-center' : ''}`}
-        style={{
-          background: isLight
-            ? 'radial-gradient(ellipse 80% 70% at 50% 45%, rgba(var(--c-accent-rgb),0.05) 0%, rgba(15,23,42,0.02) 70%)'
-            : 'radial-gradient(ellipse 80% 70% at 50% 45%, rgba(var(--c-accent-rgb),0.09) 0%, rgba(0,0,0,0.32) 70%)',
-          border: isLight
-            ? '1px solid rgba(var(--c-accent-rgb),0.14)'
-            : '1px solid rgba(var(--c-accent-rgb),0.18)',
-          boxShadow: isLight
-            ? 'inset 0 1px 0 rgba(255,255,255,0.6)'
-            : 'inset 0 0 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)',
-        }}>
-        {/* The nodes are the primary interaction and the hint for it used to sit
-            far below in the criticals card, where it was easy to miss. Put it on
-            the canvas, and retire it once the user has actually opened a node. */}
-        <AnimatePresence>
-          {!selected && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full pointer-events-none"
-              style={{
-                background: isLight ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.45)',
-                border: '1px solid rgba(var(--c-accent-rgb),0.35)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              <MousePointerClick className="w-3 h-3 shrink-0" style={{ color: 'var(--c-accent)' }} />
-              <span className={`text-[10.5px] font-semibold ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
-                {t('graph.tapHint')}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+  const [extras, setExtras] = useState<Set<ExtraLayer>>(() => new Set());
+  const view = useMemo(() => filterGraph(graph, extras), [graph, extras]);
 
-        {/* graph-scroll: below 700px the canvas keeps a legible minimum width
-            and pans sideways rather than shrinking its labels to ~5px. */}
-        <div className={`graph-scroll w-full ${big ? 'h-full flex items-center justify-center' : ''}`}>
-          <GraphCanvas graph={graph} isLight={isLight} selected={selected} onSelect={setSelected}
-            maxHeight={big ? '100%' : undefined} />
+  useEffect(() => {
+    if (selected && !view.nodes.some(n => n.id === selected)) setSelected(null);
+  }, [view, selected]);
+
+  const toggle = (layer: ExtraLayer) => {
+    setExtras(prev => {
+      const next = new Set(prev);
+      if (next.has(layer)) next.delete(layer); else next.add(layer);
+      return next;
+    });
+  };
+
+  const canvas = (
+    <div className={`relative rounded-2xl p-2 sm:p-3 overflow-hidden ${big ? 'flex-1 min-h-0 flex items-center justify-center' : ''}`}
+      style={{
+        background: isLight
+          ? 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(var(--c-accent-rgb),0.04) 0%, transparent 70%)'
+          : 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(var(--c-accent-rgb),0.07) 0%, rgba(0,0,0,0.22) 75%)',
+        border: isLight
+          ? '1px solid rgba(15,23,42,0.08)'
+          : '1px solid rgba(255,255,255,0.07)',
+      }}>
+      <AnimatePresence>
+        {!selected && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2.5 py-1 rounded-full pointer-events-none"
+            style={{
+              background: isLight ? 'rgba(255,255,255,0.88)' : 'rgba(0,0,0,0.45)',
+              border: isLight ? '1px solid rgba(15,23,42,0.08)' : '1px solid rgba(255,255,255,0.10)',
+            }}
+          >
+            <MousePointerClick className="w-3 h-3 shrink-0" style={{ color: 'var(--c-accent)' }} />
+            <span className={`text-[10.5px] font-semibold ${isLight ? 'text-slate-600' : 'text-white/75'}`}>
+              {t('graph.tapHint')}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className={`graph-scroll w-full ${big ? 'h-full flex items-center justify-center' : ''}`}>
+        <GraphCanvas graph={view} isLight={isLight} selected={selected} onSelect={setSelected}
+          maxHeight={big ? '100%' : undefined} />
+      </div>
+    </div>
+  );
+
+  const rail = (
+    <div className={`space-y-3 ${big ? 'shrink-0 overflow-y-auto max-h-[38vh] sm:max-h-[30vh] pr-1' : ''}`}>
+      <NowCard summary={graph.summary} isLight={isLight} />
+      <DetailPanel graph={view} selected={selected} isLight={isLight} />
+      {prediction && <ActivitiesCard prediction={prediction} isLight={isLight} />}
+    </div>
+  );
+
+  if (big) {
+    return (
+      <div className="flex flex-col h-full min-h-0 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <LayerBar source={graph} extras={extras} onToggle={toggle} isLight={isLight} />
+          <Legend isLight={isLight} extras={extras} />
         </div>
+        {canvas}
+        {rail}
       </div>
+    );
+  }
 
-      <div className={big ? 'shrink-0 overflow-y-auto max-h-[38vh] sm:max-h-[30vh] space-y-3 pr-1' : 'space-y-4'}>
-        <Legend isLight={isLight} />
-        <DetailPanel graph={graph} selected={selected} isLight={isLight} />
-      </div>
-    </div>
-  );
-};
-
-// ── Shared inner view ─────────────────────────────────────────────────────────
-
-const GraphView: React.FC<{ graph: Graph; prediction: DashaPredictionData; isLight: boolean }> = ({ graph, prediction, isLight }) => {
-  const { t } = useLang();
   return (
-    <div className="space-y-4">
-      <SummaryBanner summary={graph.summary} isLight={isLight} />
-      <p className={`text-xs leading-relaxed ${isLight ? 'text-slate-500' : 'text-white/40'}`}>{t('graph.howToRead')}</p>
-      <GraphStage graph={graph} isLight={isLight} />
-      <FoundationCard prediction={prediction} isLight={isLight} />
-      <ActivitiesCard prediction={prediction} isLight={isLight} />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <LayerBar source={graph} extras={extras} onToggle={toggle} isLight={isLight} />
+        <Legend isLight={isLight} extras={extras} />
+      </div>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] gap-4 items-start">
+        {canvas}
+        <aside className="mt-3 lg:mt-0">{rail}</aside>
+      </div>
     </div>
   );
 };
+
+const GraphView: React.FC<{ graph: Graph; prediction: DashaPredictionData; isLight: boolean }> = ({ graph, prediction, isLight }) => (
+  <GraphStage graph={graph} prediction={prediction} isLight={isLight} />
+);
 
 // ── Tab entry ─────────────────────────────────────────────────────────────────
 
@@ -1518,9 +1453,7 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
           <p className={`text-xs ${isLight ? 'text-slate-500' : 'text-white/30'}`}>{t('graph.subtitle')}</p>
         </div>
         <button onClick={() => setExpanded(true)} title={t('graph.expand')}
-          className={`flex items-center gap-1.5 text-xs px-2.5 h-8 rounded-xl font-semibold transition-colors shrink-0 ${
-            isLight ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200' : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-          }`}>
+          className="chrome-btn flex items-center gap-1.5 text-xs px-2.5 h-8 rounded-xl font-semibold shrink-0">
           <Maximize2 className="w-3.5 h-3.5" />
           <span className="hidden xs:inline">{t('graph.expand')}</span>
         </button>
@@ -1580,7 +1513,7 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
                 </button>
               </div>
               <div className="flex-1 min-h-0 p-3 sm:p-4">
-                <GraphStage graph={graph} isLight={isLight} big />
+                <GraphStage graph={graph} prediction={prediction} isLight={isLight} big />
               </div>
             </motion.div>
           </motion.div>

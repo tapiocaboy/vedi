@@ -72,6 +72,16 @@ type ChartStyle = 'south' | 'north';
 type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'transits' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
 type Theme = 'dark' | 'light' | 'mono' | 'azure' | 'terminal';
 
+function birthChip(data: BirthData): string {
+  const [ymd, time = ''] = data.date.split('T');
+  const hhmm = time.slice(0, 5);
+  return hhmm ? `${ymd} · ${hhmm}` : ymd;
+}
+
+function isPhoneLayout(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
+}
+
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
   const [chartStyle, setChartStyle] = useState<ChartStyle>('south');
@@ -99,6 +109,11 @@ function AppContent() {
   const [natalChartVisible, setNatalChartVisible] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+
+  // Phones put the form above the chart, so tuck it away once a reading exists.
+  useEffect(() => {
+    if ((chartData || westernChartData) && isPhoneLayout()) setSidebarHidden(true);
+  }, [chartData, westernChartData]);
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [privacyTrigger, setPrivacyTrigger] = useState<'load' | 'generate'>('load');
   // Cookie consent (Google Analytics) — asked once per device, persisted.
@@ -152,6 +167,7 @@ function AppContent() {
         // preference, not the theme.
         const wantsMotion = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         if (wantsMotion) setLagnaIntroRashi(result.ascendant.signIndex);
+        if (isPhoneLayout()) setSidebarHidden(true);
         return;
       }
       const result = await generateChart.mutateAsync(data);
@@ -164,6 +180,7 @@ function AppContent() {
       // LagnaIntro), so this only checks for reduced-motion, not the theme.
       const wantsMotion = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
       if (wantsMotion) setLagnaIntroRashi(result.ascendant.rashiIndex);
+      if (isPhoneLayout()) setSidebarHidden(true);
     } catch (err) {
       console.error('Failed to generate chart:', err);
     }
@@ -502,15 +519,15 @@ function AppContent() {
       </header>
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
-      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className={`grid grid-cols-1 gap-4 sm:gap-6 ${sidebarHidden ? '' : 'lg:grid-cols-3'}`}>
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-6">
+        <div className={`grid grid-cols-1 gap-3 sm:gap-5 ${sidebarHidden ? '' : 'lg:grid-cols-[minmax(16.5rem,19.5rem)_minmax(0,1fr)]'}`}>
 
           {/* Left — Birth form (slides away to widen the predictions area) */}
           <AnimatePresence initial={false}>
           {!sidebarHidden && (
           <motion.div
             key="sidebar"
-            className="lg:col-span-1"
+            className="min-w-0"
             initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -24 }}
@@ -519,23 +536,23 @@ function AppContent() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass-card rounded-2xl p-4 sm:p-6 relative overflow-hidden"
+              className="glass-card rounded-2xl p-3 sm:p-4 relative overflow-hidden"
             >
               {theme !== 'mono' && theme !== 'terminal' && (
                 <div className="form-wash" aria-hidden />
               )}
 
               <div className="relative z-10">
-                <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-gray-150' : 'border-white/5'}`}
+                <div className={`flex items-center gap-2 mb-3 pb-2.5 border-b ${isLight ? 'border-gray-150' : 'border-white/5'}`}
                   style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : undefined }}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}
                   >
-                    <Moon className="w-4 h-4" style={{ color: ACCENT }} />
+                    <Moon className="w-3.5 h-3.5" style={{ color: ACCENT }} />
                   </div>
-                  <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
+                  <h2 className={`text-[13px] font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
                     {t('form.birthDetails')}
                   </h2>
                   <button
@@ -568,14 +585,22 @@ function AppContent() {
           </AnimatePresence>
 
           {/* Right — Results */}
-          <div className={sidebarHidden ? '' : 'lg:col-span-2'}>
+          <div className="min-w-0">
             {sidebarHidden && (
               <button
                 type="button"
                 onClick={() => setSidebarHidden(false)}
-                className="chrome-btn mb-4 inline-flex items-center gap-1.5 text-xs font-semibold px-3 h-9 rounded-xl"
+                className="chrome-btn mb-3 w-full lg:w-auto inline-flex items-center gap-2 text-xs font-semibold px-3 min-h-11 lg:min-h-9 lg:h-9 rounded-xl"
               >
-                <PanelLeftOpen className="w-4 h-4" /> {t('form.showPanel')}
+                <PanelLeftOpen className="w-4 h-4 shrink-0" />
+                <span className="truncate text-left">
+                  {birthData ? birthChip(birthData) : t('form.showPanel')}
+                </span>
+                {birthData && (
+                  <span className={`ml-auto lg:ml-1 font-bold ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                    {t('form.showPanel')}
+                  </span>
+                )}
               </button>
             )}
             <AnimatePresence mode="wait">

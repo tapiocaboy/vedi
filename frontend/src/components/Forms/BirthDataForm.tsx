@@ -274,16 +274,16 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
   // Colour/size/background + native date-time legibility live in `.form-field`
   // (see index.css) so the date/time pickers render correctly on mobile and in
   // both themes; Tailwind here only handles layout + focus ring.
-  const inputClasses = "form-field w-full px-4 py-3.5 rounded-xl font-semibold outline-none";
-  const labelClasses = "form-label block text-xs font-semibold mb-2 uppercase tracking-wider";
+  const inputClasses = "form-field w-full min-w-0 px-3 py-2.5 rounded-lg font-semibold outline-none";
+  const labelClasses = "form-label block text-[10px] font-semibold mb-1.5 uppercase tracking-wider";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-3">
       {/* Astrology system — Vedic (sidereal, unchanged) or Western (tropical) */}
       {!lockSystem && (
         <div>
           <label className={labelClasses}>
-            <Globe2 className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            <Globe2 className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.system')}
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -293,7 +293,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, system: sys }))}
                 aria-pressed={formData.system === sys}
-                className={`px-3.5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                className={`px-3 py-2 rounded-lg text-[13px] font-bold border transition-all ${
                   formData.system === sys ? 'text-white on-accent border-transparent' : 'preset-btn'
                 }`}
                 style={formData.system === sys ? { backgroundColor: 'var(--c-accent)' } : undefined}
@@ -302,17 +302,17 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
               </button>
             ))}
           </div>
-          <p className="mt-1.5 text-[11px] form-label">
+          <p className="mt-1 hidden sm:block text-[10px] leading-snug form-label">
             {formData.system === 'VEDIC' ? t('form.systemVedicHint') : t('form.systemWesternHint')}
           </p>
         </div>
       )}
 
       {/* Date & Time */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
           <label className={labelClasses}>
-            <Calendar className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            <Calendar className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.birthDate')}
           </label>
           <input
@@ -327,7 +327,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
         </div>
         <div>
           <label className={labelClasses}>
-            <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            <Clock className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.birthTime')}
           </label>
           <input
@@ -361,7 +361,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
                 type="button"
                 onClick={useMyLocation}
                 disabled={locating}
-                className="preset-btn flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
+                className="preset-btn flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
                 style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
               >
                 {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
@@ -372,7 +372,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
                   key={preset.name}
                   type="button"
                   onClick={() => setPresetLocation(preset)}
-                  className="preset-btn px-3.5 py-2 text-sm font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
+                  className="preset-btn px-2.5 py-1.5 text-xs font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
                 >
                   {preset.name}
                 </button>
@@ -388,10 +388,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
       </div>
 
       {/* Coordinates */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            <MapPin className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.latitude')}
           </label>
           <input
@@ -409,7 +409,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
         </div>
         <div>
           <label className={labelClasses}>
-            <MapPin className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
+            <MapPin className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.longitude')}
           </label>
           <input
@@ -429,49 +429,49 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
 
       {/* Coordinate confirmation — reassures the user their point is set */}
       {latReadout && lngReadout && (
-        <p className="-mt-2 flex items-center gap-1.5 text-xs form-label">
-          <MapPin className="w-3.5 h-3.5 text-[var(--c-accent)] shrink-0" />
+        <p className="-mt-1 flex items-center gap-1.5 text-[11px] form-label">
+          <MapPin className="w-3 h-3 text-[var(--c-accent)] shrink-0" />
           <span className="font-bold">{latReadout}, {lngReadout}</span>
         </p>
       )}
 
-      {/* Timezone */}
-      <div>
-        <label className={labelClasses}>
-          <Clock className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
-          {t('form.timezone')}
-        </label>
-        <select
-          name="timezone"
-          value={formData.timezone}
-          onChange={handleChange}
-          className={inputClasses}
-        >
-          {TIMEZONES.map(tz => (
-            <option key={tz.value} value={tz.value}>{tz.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Ayanamsa — meaningless for a tropical (Western) chart, so Vedic-only */}
-      {formData.system === 'VEDIC' && (
-        <div>
+      {/* Timezone + ayanamsa share a row on Vedic so the panel stays short */}
+      <div className={`grid gap-2 ${formData.system === 'VEDIC' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+        <div className="min-w-0">
           <label className={labelClasses}>
-            <Settings className="inline w-4.5 h-4.5 mr-1.5 text-[var(--c-accent)]" />
-            {t('form.ayanamsa')}
+            <Clock className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
+            {t('form.timezone')}
           </label>
           <select
-            name="ayanamsa"
-            value={formData.ayanamsa}
+            name="timezone"
+            value={formData.timezone}
             onChange={handleChange}
             className={inputClasses}
           >
-            {AYANAMSAS.map(ay => (
-              <option key={ay.value} value={ay.value}>{t(ay.labelKey)}</option>
+            {TIMEZONES.map(tz => (
+              <option key={tz.value} value={tz.value}>{tz.label}</option>
             ))}
           </select>
         </div>
-      )}
+        {formData.system === 'VEDIC' && (
+          <div className="min-w-0">
+            <label className={labelClasses}>
+              <Settings className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
+              {t('form.ayanamsa')}
+            </label>
+            <select
+              name="ayanamsa"
+              value={formData.ayanamsa}
+              onChange={handleChange}
+              className={inputClasses}
+            >
+              {AYANAMSAS.map(ay => (
+                <option key={ay.value} value={ay.value}>{t(ay.labelKey)}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* Input faults that would silently produce the wrong chart */}
       {validation.length > 0 && (
@@ -480,7 +480,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
             <div
               key={i}
               role={issue.severity === 'error' ? 'alert' : 'status'}
-              className={`rounded-xl p-3 flex items-start gap-2 text-[11.5px] leading-relaxed border ${
+              className={`rounded-lg p-2.5 flex items-start gap-2 text-[11px] leading-relaxed border ${
                 issue.severity === 'error'
                   ? 'bg-red-500/8 border-red-500/25 text-red-300'
                   : 'bg-amber-500/8 border-amber-500/25 text-amber-200'
@@ -497,7 +497,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
       <button
         type="submit"
         disabled={isLoading || blocked}
-        className="btn-primary on-accent w-full py-3.5 px-6 text-white text-base font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn-primary on-accent w-full py-2.5 px-4 text-white text-sm font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-11"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
@@ -513,9 +513,9 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
       </button>
 
       {/* Always-visible privacy assurance — not just the transient banner */}
-      <div className="flex items-start justify-center gap-1.5 px-2">
-        <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 privacy-icon" />
-        <p className="text-[11px] leading-relaxed text-center privacy-inline">
+      <div className="flex items-start justify-center gap-1.5 px-1">
+        <ShieldCheck className="w-3 h-3 shrink-0 mt-0.5 privacy-icon" />
+        <p className="text-[10px] leading-snug text-center privacy-inline">
           <strong className="font-semibold">{t('privacy.title')}</strong> — {t('privacy.bodyGenerate')}
         </p>
       </div>

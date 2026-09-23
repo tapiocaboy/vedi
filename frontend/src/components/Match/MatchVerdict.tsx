@@ -84,6 +84,7 @@ const ScoreDial: React.FC<{ total: number; pass: boolean }> = ({ total, pass }) 
 
 export const MatchVerdict: React.FC<{ summary: MatchSummary }> = ({ summary }) => {
   const { t } = useLang();
+  const isLight = useTheme();
   const r = summary.report;
 
   // ── The four layer summaries, each in three states ──
@@ -128,7 +129,7 @@ export const MatchVerdict: React.FC<{ summary: MatchSummary }> = ({ summary }) =
         <div className="flex-1 min-w-0 w-full">
           <motion.p
             initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className="text-[13px] text-white/85 leading-relaxed font-medium mb-3"
+            className={`text-[13px] leading-relaxed font-medium mb-3 ${isLight ? 'text-slate-800' : 'text-white/85'}`}
           >
             {headline}
           </motion.p>
@@ -148,10 +149,10 @@ export const MatchVerdict: React.FC<{ summary: MatchSummary }> = ({ summary }) =
                 >
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <c.icon className="w-3 h-3 shrink-0" style={{ color }} />
-                    <span className="text-[10.5px] font-bold text-white/85 truncate">{c.label}</span>
+                    <span className={`text-[10.5px] font-bold truncate ${isLight ? 'text-slate-800' : 'text-white/85'}`}>{c.label}</span>
                     <StateIcon className="w-3 h-3 ml-auto shrink-0" style={{ color }} />
                   </div>
-                  <div className="text-[10px] leading-snug text-white/50">{c.note}</div>
+                  <div className={`text-[10px] leading-snug ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{c.note}</div>
                 </motion.div>
               );
             })}
