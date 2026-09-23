@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import type { CurrentDasha as CurrentDashaType } from '../../types/astrology';
-import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
+import { DashaBarRow } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
@@ -36,11 +36,11 @@ export const CurrentDasha: React.FC<Props> = ({ currentDasha }) => {
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
           style={{
-            background: `${BAR_PALETTE.plum}cc`,
-            border: `1px solid ${BAR_PALETTE.pink}30`,
+            background: 'rgba(var(--c-accent-rgb),0.08)',
+            border: '1px solid rgba(var(--c-accent-rgb),0.18)',
           }}
         >
-          <Clock className="w-3.5 h-3.5" style={{ color: BAR_PALETTE.gold }} />
+          <Clock className="w-3.5 h-3.5" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-white">{t('dasha.activeTitle')}</h3>

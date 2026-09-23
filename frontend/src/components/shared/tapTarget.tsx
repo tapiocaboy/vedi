@@ -4,8 +4,8 @@
  * Every panel in the app has content that expands — a planet row, a yoga card,
  * a dasha period, a transit. Rendered as plain content they are invisible as
  * controls, and readers miss most of the app. The `.tap-row` / `.tap-card`
- * styles in index.css carry the visual side (a lit rail or edge, a permanent
- * pulse); this module carries the parts that have to come from a component:
+ * styles in index.css carry the visual side (a slim rail or tinted edge that
+ * sharpens on hover); this module carries the parts that have to come from a component:
  * the colour, and the chevron badge that sits at the end of the row.
  *
  * A target with a meaning of its own — a verdict, a planet, a severity — passes
@@ -48,10 +48,10 @@ export const TapBadge: React.FC<{
     <motion.span
       animate={direction === 'down' ? { rotate: open ? 180 : 0 } : { x: open ? 3 : 0 }}
       transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${blink && !open ? 'tap-badge-blink' : ''} ${className}`}
+      className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${blink && !open ? 'tap-badge-blink' : ''} ${className}`}
       style={{
         background: open ? 'var(--tap-clr)' : 'var(--tap-tint-strong)',
-        border: '1px solid var(--tap-clr)',
+        border: `1px solid ${open ? 'var(--tap-clr)' : 'var(--tap-rest)'}`,
       }}
     >
       <Icon className="w-4 h-4" style={{ color: open ? '#ffffff' : 'var(--tap-clr)' }} />

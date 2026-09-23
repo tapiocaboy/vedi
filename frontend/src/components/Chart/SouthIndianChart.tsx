@@ -31,17 +31,6 @@ const RASHI_GRID_POSITIONS: Record<number, [number, number]> = {
 // instead of the platform's multicolour emoji glyph.
 const RASHI_GLYPHS = ['♈\uFE0E', '♉\uFE0E', '♊\uFE0E', '♋\uFE0E', '♌\uFE0E', '♍\uFE0E', '♎\uFE0E', '♏\uFE0E', '♐\uFE0E', '♑\uFE0E', '♒\uFE0E', '♓\uFE0E'] as const;
 
-function getCellType(row: number, col: number): 'center' | 'edge' {
-  return (row === 1 || row === 2) && (col === 1 || col === 2) ? 'center' : 'edge';
-}
-
-function getRashiForPosition(row: number, col: number): number | null {
-  for (const [rashi, [r, c]] of Object.entries(RASHI_GRID_POSITIONS)) {
-    if (r === row && c === col) return parseInt(rashi);
-  }
-  return null;
-}
-
 export const SouthIndianChart: React.FC<Props> = ({
   planets, ascendantRashi, currentDasha = null, mahadashaTimeline = null, birthDate = null,
 }) => {
@@ -59,48 +48,59 @@ export const SouthIndianChart: React.FC<Props> = ({
     ((rashiIndex - ascendantRashi + 12) % 12) + 1;
 
   // Theme-aware tokens
-  const centerBg    = isLight ? '#f1f5f9' : 'rgba(10,5,20,0.92)';
-  const lagnaBg     = isLight
-    ? 'linear-gradient(135deg, rgba(255,175,97,0.22), rgba(255,175,97,0.10))'
-    : 'linear-gradient(135deg, rgba(255,175,97,0.20), rgba(255,175,97,0.06))';
-  const cellBgBase  = isLight ? '#ffffff' : 'rgba(255,255,255,0.015)';
-  const cellBgSel   = isLight ? 'rgba(255,175,97,0.12)' : 'rgba(255,175,97,0.09)';
-  const borderBase  = isLight ? 'rgba(203,213,225,1)'    : 'rgba(255,175,97,0.20)';
-  const borderAsc   = isLight ? 'rgba(255,150,50,0.85)'  : 'rgba(255,175,97,0.75)';
-  const borderSel   = isLight ? 'rgba(255,150,50,0.6)'   : 'rgba(255,175,97,0.5)';
-  const houseNumClr = isLight ? '#475569'                : 'rgba(255,255,255,0.60)';
+  // Dark surfaces mix from the theme's own page colour so Terminal, Chalkboard
+  // and the default dark each get cells in their own tone.
+  const lagnaBg     = isLight ? '#fff6ec' : 'color-mix(in srgb, var(--bg-page), rgb(255,175,97) 7%)';
+  const cellBgBase  = isLight ? '#ffffff' : 'color-mix(in srgb, var(--bg-page), #ffffff 3%)';
+  const cellBgSel   = isLight ? '#fff4e8' : 'color-mix(in srgb, var(--bg-page), rgb(255,175,97) 11%)';
+  const lineClr     = isLight ? 'rgba(148,163,184,0.45)' : 'rgba(255,175,97,0.16)';
+  const ascRing     = isLight ? 'rgba(234,120,20,0.75)'  : 'rgba(255,175,97,0.70)';
+  const selRing     = isLight ? 'rgba(234,120,20,0.45)'  : 'rgba(255,175,97,0.40)';
+  const houseNumClr = isLight ? '#64748b'                : 'rgba(255,255,255,0.50)';
   const planetClr   = isLight ? '#1e293b'                : 'rgba(255,255,255,0.88)';
-  const glyphClr    = isLight ? 'rgba(234,120,20,0.28)'  : 'rgba(255,175,97,0.30)';
-  const glyphAscClr = isLight ? 'rgba(234,120,20,0.40)'  : 'rgba(255,175,97,0.45)';
-  const gridBorder  = isLight ? 'rgba(255,175,97,0.55)'  : 'rgba(255,175,97,0.40)';
+  const glyphClr    = isLight ? 'rgba(234,120,20,0.16)'  : 'rgba(255,175,97,0.14)';
+  const glyphAscClr = isLight ? 'rgba(234,120,20,0.30)'  : 'rgba(255,175,97,0.28)';
   const gridShadow  = isLight
-    ? '0 0 0 1px rgba(255,175,97,0.25), 0 8px 32px rgba(0,0,0,0.10)'
-    : '0 0 0 1px rgba(255,175,97,0.12), 0 0 40px rgba(255,175,97,0.10)';
+    ? '0 1px 2px rgba(15,23,42,0.06), 0 12px 32px -12px rgba(15,23,42,0.18)'
+    : '0 12px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,175,97,0.10)';
 
-  const renderCell = (row: number, col: number) => {
-    if (getCellType(row, col) === 'center') {
-      if (row === 1 && col === 1) {
-        return (
-          <motion.div
-            className="flex items-center justify-center h-full"
-            style={{ background: lagnaBg, borderRight: `1px solid ${borderBase}`, borderBottom: `1px solid ${borderBase}` }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-          >
-            <div className="text-center p-2">
-              <div className="text-xs font-mono uppercase tracking-wider font-extrabold" style={{ color: ACCENT }}>{t('chart.lagna')}</div>
-              <div className="text-base font-extrabold mt-0.5" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{labelRashi(ascendantRashi, lang, RASHIS[ascendantRashi])}</div>
-            </div>
-          </motion.div>
-        );
-      }
-      return <div style={{ background: centerBg, border: `1px solid ${borderBase}` }} />;
-    }
+  // The four middle squares are one space in the South Indian chart — the
+  // centre panel spans them rather than filling one and leaving three blank.
+  const renderCentre = () => {
+    const lagnaPlanets = planetsByRashi[ascendantRashi];
+    return (
+      <motion.div
+        className="flex flex-col items-center justify-center text-center p-3"
+        style={{
+          gridRow: '2 / 4', gridColumn: '2 / 4',
+          background: isLight
+            ? 'radial-gradient(circle at 50% 45%, #fff7ee 0%, #ffffff 70%)'
+            : 'radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--bg-page), rgb(255,175,97) 8%) 0%, var(--bg-page) 75%)',
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+      >
+        <div className="text-[64px] leading-none font-bold" aria-hidden
+          style={{ color: glyphAscClr }}>
+          {RASHI_GLYPHS[ascendantRashi]}
+        </div>
+        <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: ACCENT }}>
+          {t('chart.lagna')}
+        </div>
+        <div className="text-lg font-extrabold leading-tight" style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
+          {labelRashi(ascendantRashi, lang, RASHIS[ascendantRashi])}
+        </div>
+        <div className="text-[11px] font-medium" style={{ color: houseNumClr }}>
+          {labelRashiWestern(ascendantRashi, lang, RASHI_ENGLISH[ascendantRashi])}
+          {lagnaPlanets.length > 0 && ` · ${lagnaPlanets.map(p => PLANET_SYMBOLS[p.planet] ?? '').join(' ')}`}
+        </div>
+      </motion.div>
+    );
+  };
 
-    const rashiIndex = getRashiForPosition(row, col);
-    if (rashiIndex === null) return null;
-
+  const renderCell = (rashiIndex: number) => {
+    const [row, col] = RASHI_GRID_POSITIONS[rashiIndex];
     const planetsHere = planetsByRashi[rashiIndex];
     const isAscendant = rashiIndex === ascendantRashi;
     const houseNum = rashiToHouse(rashiIndex);
@@ -108,34 +108,25 @@ export const SouthIndianChart: React.FC<Props> = ({
 
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: rashiIndex * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
-        whileHover={{ scale: 1.04, zIndex: 10 }}
-        whileTap={{ scale: 0.97 }}
+        key={rashiIndex}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: rashiIndex * 0.03, duration: 0.3 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => setSelectedHouse(houseNum)}
         role="button"
         tabIndex={0}
         data-open={isSelected}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedHouse(houseNum); } }}
-        className="tap-row tap-blink h-full py-1.5 pl-2.5 pr-1.5 select-none overflow-hidden"
+        className="tap-row tap-cell tap-blink relative aspect-square py-1.5 pl-2 pr-1.5 select-none overflow-hidden"
         style={{
-          border: isAscendant
-            ? `1.5px solid ${borderAsc}`
-            : isSelected
-            ? `1.5px solid ${borderSel}`
-            : `1px solid ${borderBase}`,
-          ...tapVars(undefined, isAscendant
-            ? lagnaBg
-            : isSelected
-            ? cellBgSel
-            : cellBgBase),
+          gridRow: row + 1, gridColumn: col + 1,
+          ...tapVars(undefined, isSelected ? cellBgSel : isAscendant ? lagnaBg : cellBgBase),
           boxShadow: isAscendant
-            ? `inset 0 0 18px rgba(255,175,97,${isLight ? '0.12' : '0.10'})`
+            ? `inset 0 0 0 1.5px ${ascRing}`
             : isSelected
-            ? `inset 0 0 14px rgba(255,175,97,${isLight ? '0.10' : '0.08'})`
+            ? `inset 0 0 0 1.5px ${selRing}`
             : undefined,
-          transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease',
         }}
         title={t('chart.houseTooltip', {
           n: houseNum,
@@ -147,37 +138,29 @@ export const SouthIndianChart: React.FC<Props> = ({
         <div
           aria-hidden
           className="absolute inset-0 flex items-center justify-center pointer-events-none text-[52px] leading-none font-bold"
-          style={{
-            color: isAscendant ? glyphAscClr : glyphClr,
-            textShadow: isLight ? 'none' : '0 0 14px rgba(255,175,97,0.25)',
-          }}
+          style={{ color: isAscendant ? glyphAscClr : glyphClr }}
         >
           {RASHI_GLYPHS[rashiIndex]}
         </div>
 
         {/* House number badge top-left */}
         <div
-          className="absolute top-1 left-1 w-[18px] h-[18px] rounded-md flex items-center justify-center text-[10px] font-mono font-extrabold"
+          className="absolute top-1.5 left-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-mono font-bold"
           style={{
             color: isAscendant ? '#ffffff' : houseNumClr,
             background: isAscendant
-              ? 'rgba(255,150,50,0.9)'
-              : isLight ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.07)',
+              ? 'rgb(234,120,20)'
+              : isLight ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)',
           }}
         >
           {houseNum}
         </div>
 
-        {/* Ascendant marker */}
         {isAscendant && (
-          <motion.div
-            className="absolute top-1 right-1 text-xs font-extrabold"
-            style={{ color: ACCENT }}
-            animate={{ y: [0, -2, 0] }}
-            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            ↑
-          </motion.div>
+          <div className="absolute top-1.5 right-1.5 text-[9px] font-mono font-bold uppercase tracking-wider"
+            style={{ color: ACCENT }}>
+            Asc
+          </div>
         )}
 
         {/* Planets — colored glyph + short name + degree so each is identifiable at a glance */}
@@ -190,16 +173,15 @@ export const SouthIndianChart: React.FC<Props> = ({
                 initial={{ opacity: 0, y: 8, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.45 + rashiIndex * 0.03 + idx * 0.09, type: 'spring', stiffness: 380, damping: 22 }}
-                whileHover={{ scale: 1.12 }}
-                className="flex items-baseline gap-[3px] px-1.5 py-0.5 rounded-md leading-none border"
+                className="flex items-baseline gap-[3px] px-1.5 py-0.5 rounded-full leading-none border"
                 style={{
                   background: isLight ? '#ffffff' : 'rgba(18,15,26,0.92)',
-                  borderColor: isLight ? `${color}44` : `${color}55`,
-                  boxShadow: isLight ? `0 1px 4px ${color}22` : `0 0 8px ${color}22`,
+                  borderColor: isLight ? `${color}40` : `${color}50`,
+                  boxShadow: isLight ? '0 1px 2px rgba(15,23,42,0.06)' : undefined,
                 }}
                 title={`${labelPlanet(planet.planet, lang)}: ${planet.rashiDegree.toFixed(2)}°${planet.isRetrograde ? ' ℞' : ''}`}
               >
-                <span className="text-[15px] font-extrabold" style={{ color, textShadow: isLight ? 'none' : `0 0 8px ${color}88` }}>
+                <span className="text-[14px] font-extrabold" style={{ color }}>
                   {PLANET_SYMBOLS[planet.planet] || planet.planet.slice(0, 2)}
                 </span>
                 <span className="text-[10px] font-bold" style={{ color: planetClr }}>
@@ -215,8 +197,8 @@ export const SouthIndianChart: React.FC<Props> = ({
         </div>
 
         {/* Rashi name bottom */}
-        <div className="absolute bottom-1 left-0 right-0 text-center text-[10px] truncate px-1 font-mono font-bold"
-          style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.60)' }}>
+        <div className="absolute bottom-1.5 left-0 right-0 text-center text-[10px] truncate px-1 font-medium tracking-wide"
+          style={{ color: isLight ? '#64748b' : 'rgba(255,255,255,0.50)' }}>
           {labelRashi(rashiIndex, lang, RASHIS[rashiIndex])}
         </div>
       </motion.div>
@@ -232,25 +214,20 @@ export const SouthIndianChart: React.FC<Props> = ({
         {t('chart.clickHouseHint')}
         <TapHint label={t('common.tapToOpen')} />
       </p>
-      <div className="grid grid-cols-4 gap-0 rounded-xl overflow-hidden aspect-square"
-        style={{ border: `1px solid ${gridBorder}`, boxShadow: gridShadow }}>
-        {[0, 1, 2, 3].map(row => (
-          <React.Fragment key={row}>
-            {[0, 1, 2, 3].map(col => (
-              <div key={`${row}-${col}`} className="aspect-square">
-                {renderCell(row, col)}
-              </div>
-            ))}
-          </React.Fragment>
-        ))}
+      {/* A 1px gap over a line-coloured backing draws every grid line once,
+          at one weight — per-cell borders doubled up into 2px seams. */}
+      <div className="grid grid-cols-4 grid-rows-4 gap-px rounded-2xl overflow-hidden aspect-square p-px"
+        style={{ background: lineClr, boxShadow: gridShadow }}>
+        {Array.from({ length: 12 }, (_, i) => renderCell(i))}
+        {renderCentre()}
       </div>
 
       {/* Legend — same colors as the chart cells */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm" style={{ color: isLight ? '#1e293b' : 'rgba(255,255,255,0.85)' }}>
+      <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-xs font-medium" style={{ color: isLight ? '#475569' : 'rgba(255,255,255,0.70)' }}>
         {Object.entries(PLANET_SYMBOLS).map(([planet, symbol]) => (
-          <div key={planet} className="flex items-center gap-1.5">
-            <span className="text-base font-bold" style={{ color: planetDisplayColor(planet, isLight) }}>{symbol}</span>
-            <span className="font-bold">{labelPlanet(planet, lang)}</span>
+          <div key={planet} className="flex items-center gap-1">
+            <span className="text-sm font-bold" style={{ color: planetDisplayColor(planet, isLight) }}>{symbol}</span>
+            <span>{labelPlanet(planet, lang)}</span>
           </div>
         ))}
       </div>

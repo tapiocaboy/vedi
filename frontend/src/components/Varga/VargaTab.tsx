@@ -103,7 +103,7 @@ function VargaGrid({
               onClick={() => onCellClick(rashi)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="tap-row tap-blink aspect-square rounded-md py-1 pl-2 pr-1 flex flex-col min-w-0 text-left transition-colors"
+              className="tap-row tap-cell tap-blink aspect-square rounded-md py-1 pl-2 pr-1 flex flex-col min-w-0 text-left transition-colors"
               style={{
                 border: isAsc ? `1.5px solid ${ACCENT}` : isLight ? '1px solid #E2E8F0' : '1px solid rgba(255,255,255,0.07)',
                 ...tapVars(undefined, isAsc

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Compass, MapPin, AlertTriangle, Sparkles, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { getCurrentPeriodSnapshot, type BirthData, type CurrentLocation, type PeriodSnapshot } from '../../services/api';
-import { BAR_PALETTE, DashaBarRow } from '../shared/BarCharts';
+import { DashaBarRow } from '../shared/BarCharts';
 import { TransitChart } from './TransitChart';
 import { UpcomingTransitsCard } from '../Transits/UpcomingTransitsCard';
 import { useLang } from '../../i18n/LanguageContext';
@@ -49,11 +49,11 @@ const PeriodBanner: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center"
           style={{
-            background: `${BAR_PALETTE.plum}cc`,
-            border: `1px solid ${BAR_PALETTE.pink}30`,
+            background: 'rgba(var(--c-accent-rgb),0.08)',
+            border: '1px solid rgba(var(--c-accent-rgb),0.18)',
           }}
         >
-          <Clock className="w-4 h-4" style={{ color: BAR_PALETTE.gold }} />
+          <Clock className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-white">{t('dasha.activeTitle')}</h3>

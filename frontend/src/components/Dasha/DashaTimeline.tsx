@@ -4,15 +4,19 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye } from 'lucide-react';
 import type { DashaWithAntardashas, BirthData } from '../../types/astrology';
-import { DASHA_COLORS, planetDisplayColor } from '../../types/astrology';
+import { PLANET_SYMBOLS } from '../../types/astrology';
 import { formatDate, formatYears, formatDays } from '../../utils/dateUtils';
 import { parseISO, isWithinInterval } from 'date-fns';
 import { useLang } from '../../i18n/LanguageContext';
+import { useTheme } from '../../hooks/useTheme';
 import { labelPlanet } from '../../i18n/astroLabels';
 import { AntardashaPanel } from './AntardashaPanel';
 import { TapBadge, TapHint, tapVars } from '../shared/tapTarget';
+import { LORD_HEX } from '../shared/BarCharts';
+
+/** Same palette as the "Active Dasha Periods" bars above the timeline. */
+const lordHex = (lord: string) => LORD_HEX[lord] ?? '#94a3b8';
 
 interface Props {
   timeline: DashaWithAntardashas[];
@@ -23,6 +27,7 @@ interface Props {
 
 export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDate = new Date() }) => {
   const { lang, t } = useLang();
+  const isLight = useTheme();
   const [expandedDasha, setExpandedDasha] = useState<string | null>(null);
   const [selectedAntardasha, setSelectedAntardasha] = useState<{
     mahadasha: string;
@@ -89,19 +94,24 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
         const key = `${mahadasha.lord}-${idx}`;
         const isExpanded = expandedDasha === key;
         const isMdCurrent = isCurrent(mahadasha.start, mahadasha.end);
+        const hex = lordHex(mahadasha.lord);
+        const edge = isMdCurrent ? `${hex}99` : isLight ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.06)';
 
         return (
           <motion.div
             key={key}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.05 }}
-            className="rounded-xl overflow-hidden border border-white/6"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.03 }}
+            className="rounded-xl overflow-hidden border"
+            style={{
+              borderColor: edge,
+              boxShadow: isMdCurrent ? `0 0 0 3px ${hex}1f` : undefined,
+            }}
           >
-            {/* Mahadasha header */}
-            {/* The band paints its own colour, so it takes the rail and the
-                badge but not the tinted pulse — `.tap-blink` would animate the
-                band's own background out from under it. */}
+            {/* Mahadasha header: a neutral row that carries the lord's colour
+                as a glyph disc and a soft wash, rather than a full-saturation
+                slab per period. */}
             <div
               onClick={() => toggleExpand(mahadasha.lord, idx)}
               role="button"
@@ -109,37 +119,38 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
               aria-expanded={isExpanded}
               data-open={isExpanded}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(mahadasha.lord, idx); } }}
-              className={`
-                dasha-md-header tap-row
-                py-4 pl-5 pr-3 flex items-center justify-between
-                transition-all
-                ${DASHA_COLORS[mahadasha.lord] || 'bg-slate-600'}
-                ${isMdCurrent ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900' : ''}
-              `}
-              style={tapVars('#ffffff')}
+              className="dasha-md-header tap-row tap-blink py-3 pl-4 pr-3 flex items-center justify-between gap-3"
+              style={tapVars(hex, isLight
+                ? `color-mix(in srgb, ${hex} ${isMdCurrent ? 10 : 5}%, #ffffff)`
+                : `color-mix(in srgb, ${hex} ${isMdCurrent ? 14 : 7}%, var(--bg-page))`)}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-white font-bold text-lg">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="dasha-dot w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-lg font-bold"
+                  style={{ background: hex, color: 'rgba(0,0,0,0.75)' }}>
+                  {PLANET_SYMBOLS[mahadasha.lord.toUpperCase()] ?? mahadasha.lord.slice(0, 2)}
+                </span>
+                <span className="text-white font-bold text-base truncate">
                   {labelPlanet(mahadasha.lord, lang)}
                 </span>
                 {mahadasha.isBirthDasha && (
-                  <span className="px-2 py-0.5 bg-white/20 rounded text-xs text-white font-mono">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${isLight ? 'bg-slate-900/5 text-slate-500' : 'bg-white/8 text-white/60'}`}>
                     {t('dasha.birthBadge')}
                   </span>
                 )}
                 {isMdCurrent && (
-                  <span className="px-2 py-0.5 bg-violet-500 rounded text-xs text-white font-semibold">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: hex, color: 'rgba(0,0,0,0.78)' }}>
                     {t('dasha.currentBadge')}
                   </span>
                 )}
               </div>
-              
-              <div className="flex items-center gap-4 text-white">
-                <div className="text-right text-sm">
-                  <div className="opacity-80 font-mono text-xs">
+
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                  <div className={`font-mono text-[11px] ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
                     {formatDate(mahadasha.start)} – {formatDate(mahadasha.end)}
                   </div>
-                  <div className="font-semibold">
+                  <div className="text-sm font-semibold text-white">
                     {formatYears(mahadasha.durationYears)}
                   </div>
                 </div>
@@ -155,7 +166,7 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-[#1a0800]/60"
+                  style={{ background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.22)' }}
                 >
                   <div className="p-3 space-y-2">
                     {antardashas.map((ad, adIdx) => {
@@ -175,37 +186,34 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                             aria-expanded={birthData ? isSelected : undefined}
                             data-open={isSelected}
                             className={`
-                              py-3 pl-5 pr-3 rounded-lg flex items-center justify-between border
-                              ${isAdCurrent ? 'border-violet-400' : 'border-white/6'}
-                              ${birthData ? 'tap-row tap-blink transition-all' : 'bg-white/3'}
+                              py-2.5 pl-4 pr-3 rounded-lg flex items-center justify-between border
+                              ${birthData ? 'tap-row tap-blink' : ''}
                             `}
-                            style={birthData ? tapVars(planetDisplayColor(ad.lord.toUpperCase(), false), 'rgba(255,255,255,0.03)') : undefined}
+                            style={{
+                              borderColor: isAdCurrent ? `${lordHex(ad.lord)}99` : isLight ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.05)',
+                              ...(birthData
+                                ? tapVars(lordHex(ad.lord), isLight ? '#ffffff' : 'rgba(255,255,255,0.025)')
+                                : { background: isLight ? '#ffffff' : 'rgba(255,255,255,0.025)' }),
+                            }}
                           >
                             <div className="flex items-center gap-2">
-                              <span
-                                className={`
-                                  dasha-dot
-                                  w-3 h-3 rounded-full
-                                  ${DASHA_COLORS[ad.lord] || 'bg-slate-500'}
-                                `}
-                              />
-                              <span className="font-medium text-white">
-                                {labelPlanet(mahadasha.lord, lang)} - {labelPlanet(ad.lord, lang)}
+                              <span className="dasha-dot w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ background: lordHex(ad.lord) }} />
+                              <span className="text-sm font-medium text-white">
+                                {labelPlanet(mahadasha.lord, lang)} – {labelPlanet(ad.lord, lang)}
                               </span>
                               {isAdCurrent && (
-                                <span className="px-2 py-0.5 bg-violet-500 rounded text-xs text-white">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                  style={{ background: lordHex(ad.lord), color: 'rgba(0,0,0,0.78)' }}>
                                   {t('dasha.nowBadge')}
                                 </span>
                               )}
-                              {birthData && (
-                                <Eye className={`w-4 h-4 ${isSelected ? 'text-violet-400' : 'text-white/25'}`} />
-                              )}
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
-                              <div className="text-right text-sm text-white/50">
-                                <div className="font-mono text-xs">{formatDate(ad.start)} – {formatDate(ad.end)}</div>
-                                <div className="font-medium text-white/70">{formatDays(ad.durationDays)}</div>
+                              <div className="text-right">
+                                <div className={`font-mono text-[11px] ${isLight ? 'text-slate-500' : 'text-white/45'}`}>{formatDate(ad.start)} – {formatDate(ad.end)}</div>
+                                <div className="text-xs font-medium text-white/70">{formatDays(ad.durationDays)}</div>
                               </div>
                               {birthData && <TapBadge open={isSelected} direction="down" />}
                             </div>

@@ -66,10 +66,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const hClass = height === 'lg' ? 'h-8' : height === 'md' ? 'h-4' : 'h-2';
 
   return (
-    <div
-      className={`relative ${hClass} rounded-xl overflow-hidden ${className}`}
-      style={{ backgroundColor: BAR_PALETTE.plum }}
-    >
+    <div className={`bar-track relative ${hClass} rounded-xl overflow-hidden ${className}`}>
       {animate ? (
         <motion.div
           className="absolute inset-y-0 left-0"
@@ -147,12 +144,9 @@ export const DashaBarRow: React.FC<DashaBarRowProps> = ({
         </div>
       </div>
 
-      <div
-        className="relative h-8 rounded-xl overflow-hidden"
-        style={{ backgroundColor: BAR_PALETTE.plum }}
-      >
+      <div className="bar-track relative h-6 rounded-full overflow-hidden">
         <motion.div
-          className="absolute inset-y-0 left-0"
+          className="absolute inset-y-0 left-0 rounded-full"
           style={{ backgroundColor: color }}
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -161,25 +155,19 @@ export const DashaBarRow: React.FC<DashaBarRowProps> = ({
 
         <div className="absolute inset-y-0 left-0 flex items-center z-10 pl-3 pointer-events-none">
           <span
-            className="text-[9px] font-mono font-bold"
-            style={{ color: pct > 18 ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.38)' }}
+            className={`text-[9px] font-mono font-bold ${pct > 18 ? '' : 'bar-track-label'}`}
+            style={pct > 18 ? { color: 'rgba(0,0,0,0.5)' } : undefined}
           >
             {startYear}
           </span>
         </div>
 
         <div className="absolute inset-y-0 right-0 flex items-center z-10 pr-3 pointer-events-none">
-          <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.35)' }}>
+          <span className="bar-track-label text-[9px] font-mono">
             {endYear}
           </span>
         </div>
 
-        {pct > 2 && pct < 97 && (
-          <div
-            className="absolute inset-y-[-1px] w-[2px] rounded-sm z-20"
-            style={{ left: `calc(${pct}% - 1px)`, backgroundColor: 'white' }}
-          />
-        )}
       </div>
 
       <div className="flex justify-between px-0.5">

@@ -83,13 +83,16 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
   );
 
   // Theme tokens
-  const goodBg     = isLight ? 'rgba(16,185,129,0.14)' : 'rgba(16,185,129,0.18)';
-  const goodBorder = isLight ? 'rgba(16,185,129,0.5)'  : 'rgba(16,185,129,0.42)';
-  const badBg      = isLight ? 'rgba(244,63,94,0.12)'  : 'rgba(244,63,94,0.16)';
-  const badBorder  = isLight ? 'rgba(244,63,94,0.45)'  : 'rgba(244,63,94,0.40)';
-  const neutralBg  = isLight ? '#ffffff'               : 'rgba(255,255,255,0.02)';
+  // Solid surfaces: the grid draws its lines through a 1px gap over `lineClr`,
+  // so a translucent cell would let the line colour bleed through it.
+  const goodBg     = isLight ? '#eafaf3'               : 'color-mix(in srgb, var(--bg-page), #10b981 14%)';
+  const goodBorder = isLight ? 'rgba(16,185,129,0.45)' : 'rgba(16,185,129,0.35)';
+  const badBg      = isLight ? '#fff0f2'               : 'color-mix(in srgb, var(--bg-page), #f43f5e 13%)';
+  const badBorder  = isLight ? 'rgba(244,63,94,0.40)'  : 'rgba(244,63,94,0.32)';
+  const neutralBg  = isLight ? '#ffffff'               : 'color-mix(in srgb, var(--bg-page), #ffffff 3%)';
   const baseBorder = isLight ? 'rgba(15,23,42,0.12)'   : 'rgba(255,255,255,0.10)';
-  const centerBg   = isLight ? '#f1f5f9'               : 'rgba(10,5,20,0.9)';
+  const lineClr    = isLight ? 'rgba(148,163,184,0.45)' : 'rgba(255,255,255,0.08)';
+  const centerBg   = isLight ? '#f8fafc'               : 'var(--bg-page)';
   const houseClr   = isLight ? '#475569'               : 'rgba(255,255,255,0.5)';
   const rashiClr   = isLight ? '#475569'               : 'rgba(255,255,255,0.5)';
 
@@ -100,13 +103,8 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
     return { bg: neutralBg, border: baseBorder };
   };
 
-  const renderCell = (row: number, col: number) => {
-    const isCenter = (row === 1 || row === 2) && (col === 1 || col === 2);
-    if (isCenter) return <div className="h-full w-full" style={{ background: centerBg, border: `1px solid ${baseBorder}` }} />;
-
-    const rashi = Object.keys(RASHI_GRID).map(Number).find(r => RASHI_GRID[r][0] === row && RASHI_GRID[r][1] === col);
-    if (rashi == null) return <div className="h-full w-full" />;
-
+  const renderCell = (rashi: number) => {
+    const [row, col] = RASHI_GRID[rashi];
     const planets = byRashi[rashi];
     const natalHere = natalByRashi[rashi];
     const tone = toneFor(rashi);
@@ -124,24 +122,30 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
 
     return (
       <motion.button
+        key={rashi}
         type="button"
-        initial={{ opacity: 0, scale: 0.94 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ delay: rashi * 0.015 }}
         onClick={() => setSelected(isSel ? null : rashi)}
         onMouseEnter={() => setHovered(rashi)}
         onMouseLeave={() => setHovered(h => (h === rashi ? null : h))}
         data-open={isSel}
-        className="tap-row tap-blink h-full w-full py-1 pl-2 pr-1 text-left transition-all duration-150 select-none"
+        className="tap-row tap-cell tap-blink relative h-full w-full py-1 pl-2 pr-1 text-left select-none"
         style={{
+          gridRow: row + 1, gridColumn: col + 1,
           ...tapVars(undefined, tone.bg),
-          border: isSel
-            ? `2px solid ${ACCENT}`
+          // Aspected signs keep a dashed outline — a box-shadow cannot dash.
+          ...(isAspected && !isSel && !isLagna
+            ? { outline: '1.5px dashed rgba(var(--c-accent2-rgb),0.6)', outlineOffset: '-3px' }
+            : {}),
+          boxShadow: isSel
+            ? `inset 0 0 0 2px ${ACCENT}`
             : isLagna
-              ? `1.5px solid ${ACCENT}`
-              : isAspected
-                ? `1.5px dashed rgba(var(--c-accent2-rgb),0.6)`
-                : `1px solid ${tone.border}`,
+              ? `inset 0 0 0 1.5px ${ACCENT}`
+              : tone.border !== baseBorder
+                ? `inset 0 0 0 1px ${tone.border}`
+                : undefined,
         }}
         title={tip}
       >
@@ -221,11 +225,10 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         {/* Board + aspect overlay */}
         <div className="w-full max-w-sm mx-auto">
           <div className="relative aspect-square">
-            <div className="grid grid-cols-4 grid-rows-4 h-full w-full rounded-xl overflow-hidden"
-              style={{ border: `1px solid ${baseBorder}`, boxShadow: isLight ? '0 4px 18px rgba(0,0,0,0.06)' : '0 0 24px rgba(0,0,0,0.3)' }}>
-              {[0, 1, 2, 3].map(row => [0, 1, 2, 3].map(col => (
-                <div key={`${row}-${col}`}>{renderCell(row, col)}</div>
-              )))}
+            <div className="grid grid-cols-4 grid-rows-4 gap-px p-px h-full w-full rounded-2xl overflow-hidden"
+              style={{ background: lineClr, boxShadow: isLight ? '0 12px 32px -12px rgba(15,23,42,0.18)' : '0 12px 40px -12px rgba(0,0,0,0.7)' }}>
+              {Array.from({ length: 12 }, (_, i) => renderCell(i))}
+              <div style={{ gridRow: '2 / 4', gridColumn: '2 / 4', background: centerBg }} />
             </div>
 
             {/* Graded drishti lines — active sign (hover/click) and/or all planets */}
