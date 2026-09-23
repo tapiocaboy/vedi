@@ -218,8 +218,8 @@ function AppContent() {
         activeTab === id
           ? 'text-white on-accent'
           : isLight
-            ? 'text-gray-500 hover:text-gray-800 hover:bg-white/70'
-            : 'text-white/38 hover:text-white/65 hover:bg-white/5'
+            ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            : 'text-white/40 hover:text-white/70 hover:bg-white/5'
       }`}
     >
       {activeTab === id && (
@@ -326,30 +326,8 @@ function AppContent() {
       {/* High-tech particle network — dark & light themes only (mono/terminal are static) */}
       {theme !== 'mono' && theme !== 'terminal' && <ParticleField isLight={isLight} />}
 
-      {/* Ambient color orbs — hidden in the mono enterprise theme and the terminal theme */}
       {theme !== 'mono' && theme !== 'terminal' && (
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 ambient-orbs" aria-hidden>
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[180px]"
-          style={{ background: isLight
-            ? 'radial-gradient(circle, rgba(var(--c-accent-rgb),0.06) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(var(--c-accent-rgb),0.07) 0%, transparent 70%)'
-          }} />
-        <div className="absolute top-1/3 -right-32 w-[420px] h-[420px] rounded-full blur-[160px]"
-          style={{ background: isLight
-            ? 'radial-gradient(circle, rgba(0,160,80,0.05) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(0,255,135,0.05) 0%, transparent 70%)'
-          }} />
-        <div className="absolute bottom-0 left-1/3 w-[500px] h-[400px] rounded-full blur-[200px]"
-          style={{ background: isLight
-            ? 'radial-gradient(circle, rgba(200,170,0,0.05) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255,230,0,0.04) 0%, transparent 70%)'
-          }} />
-        <div className="absolute top-2/3 right-1/4 w-[350px] h-[350px] rounded-full blur-[150px]"
-          style={{ background: isLight
-            ? 'radial-gradient(circle, rgba(210,100,0,0.04) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(255,140,0,0.05) 0%, transparent 70%)'
-          }} />
-      </div>
+        <div className="page-wash" aria-hidden />
       )}
 
       {/* ── Header ───────────────────────────────────────────────────── */}
@@ -379,11 +357,7 @@ function AppContent() {
             <button
               onClick={() => setNatalChartVisible(true)}
               title={t('natal.title')}
-              className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
-                isLight
-                  ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                  : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-              }`}
+              className="chrome-btn flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold"
             >
               <Orbit className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden xs:inline">{t('header.natalChart')}</span>
@@ -412,13 +386,9 @@ function AppContent() {
               <button
                 onClick={() => setMonthlyTransitsVisible(true)}
                 title={t('monthly.title')}
-                className={`flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold transition-all duration-200 ${
-                  isLight
-                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-                }`}
+                className="chrome-btn flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold"
               >
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--c-accent)' }} />
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--c-accent)' }} />
                 <CalendarRange className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden xs:inline">{t('header.monthlyTransits')}</span>
               </button>
@@ -431,11 +401,7 @@ function AppContent() {
                 title={t(LANG_OPTIONS.find(o => o.code === lang)!.titleKey)}
                 aria-haspopup="menu"
                 aria-expanded={langMenuOpen}
-                className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1 text-[11px] sm:text-xs font-bold transition-all duration-200 ${
-                  isLight
-                    ? 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200'
-                    : 'bg-white/5 border border-white/8 text-white/55 hover:bg-white/10 hover:text-white'
-                }`}
+                className="chrome-btn h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1 text-[11px] sm:text-xs font-bold"
               >
                 <Languages className="w-4 h-4 shrink-0" />
                 <span>{LANG_OPTIONS.find(o => o.code === lang)!.short}</span>
@@ -453,11 +419,7 @@ function AppContent() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.96 }}
                     transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                    className={`absolute right-0 mt-2 w-44 z-50 origin-top-right rounded-xl border p-1 shadow-xl backdrop-blur-md ${
-                      isLight
-                        ? 'bg-white border-gray-200'
-                        : 'bg-[#0e111e]/95 border-white/10'
-                    }`}
+                    className="chrome-menu absolute right-0 mt-2 w-44 z-50 origin-top-right rounded-xl p-1"
                   >
                     {LANG_OPTIONS.map(({ code, native }) => {
                       const selected = code === lang;
@@ -491,11 +453,7 @@ function AppContent() {
                 title={t('header.theme')}
                 aria-haspopup="menu"
                 aria-expanded={themeMenuOpen}
-                className={`h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1 transition-all duration-200 ${
-                  isLight
-                    ? 'bg-gray-100 border border-gray-200 text-gray-500 hover:bg-gray-200'
-                    : 'bg-white/5 border border-white/8 text-white/45 hover:bg-white/10 hover:text-white'
-                }`}
+                className="chrome-btn h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl flex items-center gap-1"
               >
                 <activeTheme.icon className="w-4 h-4" />
                 <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${themeMenuOpen ? 'rotate-180' : ''}`} />
@@ -512,11 +470,7 @@ function AppContent() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.96 }}
                     transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                    className={`absolute right-0 mt-2 w-44 z-50 origin-top-right rounded-xl border p-1 shadow-xl backdrop-blur-md ${
-                      isLight
-                        ? 'bg-white border-gray-200'
-                        : 'bg-[#0e111e]/95 border-white/10'
-                    }`}
+                    className="chrome-menu absolute right-0 mt-2 w-44 z-50 origin-top-right rounded-xl p-1"
                   >
                     {themeOptions.map(({ id, label, icon: Icon }) => {
                       const selected = id === theme;
@@ -567,78 +521,20 @@ function AppContent() {
               animate={{ opacity: 1, y: 0 }}
               className="glass-card rounded-2xl p-4 sm:p-6 relative overflow-hidden"
             >
-              {/* Animated background — vivid color wash + fast particles (skipped in mono/terminal) */}
               {theme !== 'mono' && theme !== 'terminal' && (
-              <div className="absolute inset-0 pointer-events-none z-0 form-bg-particles">
-                {/* Fast shifting multi-color gradient */}
-                <motion.div
-                  className="absolute inset-0"
-                  style={{
-                    background: isLight
-                      ? 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.05), rgba(255,230,0,0.03), rgba(0,180,90,0.03), rgba(255,140,0,0.04), rgba(0,160,220,0.03))'
-                      : 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.08), rgba(255,230,0,0.04), rgba(0,255,135,0.04), rgba(255,140,0,0.05), rgba(0,220,255,0.04))',
-                    backgroundSize: '500% 500%',
-                  }}
-                  animate={{ backgroundPosition: ['0% 0%', '100% 30%', '60% 100%', '30% 60%', '0% 0%'] }}
-                  transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
-                />
-                {/* Drifting color blobs — slow and calm so the form stays readable */}
-                <motion.div
-                  className="absolute w-32 h-32 rounded-full blur-[50px]"
-                  style={{ background: isLight ? 'rgba(var(--c-accent-rgb),0.08)' : 'rgba(var(--c-accent-rgb),0.12)' }}
-                  animate={{ x: ['-20%', '120%'], y: ['10%', '70%'] }}
-                  transition={{ duration: 14, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                />
-                <motion.div
-                  className="absolute w-28 h-28 rounded-full blur-[45px]"
-                  style={{ background: isLight ? 'rgba(0,180,90,0.06)' : 'rgba(0,255,135,0.08)' }}
-                  animate={{ x: ['110%', '-10%'], y: ['60%', '20%'] }}
-                  transition={{ duration: 18, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
-                />
-                {/* Gently floating particles */}
-                {[
-                  { x: '5%',  y: '20%', s: 3,   c: '#FF2E51', dur: 8,  dx: 18,  dy: -14 },
-                  { x: '80%', y: '10%', s: 2.5, c: '#FFE600', dur: 10, dx: -15, dy: 10  },
-                  { x: '60%', y: '75%', s: 3,   c: '#00FF87', dur: 9,  dx: 14,  dy: -16 },
-                  { x: '20%', y: '85%', s: 2.5, c: '#FF8C00', dur: 11, dx: -12, dy: -14 },
-                  { x: '45%', y: '40%', s: 2,   c: '#00D2FF', dur: 12, dx: 16,  dy: 8   },
-                  { x: '90%', y: '50%', s: 2.5, c: '#FF2E51', dur: 9,  dx: -18, dy: -8  },
-                  { x: '35%', y: '90%', s: 2.5, c: '#B43CFF', dur: 10, dx: 12,  dy: -18 },
-                  { x: '70%', y: '15%', s: 3,   c: '#00FF87', dur: 11, dx: -14, dy: 16  },
-                ].map((p, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute rounded-full"
-                    style={{
-                      left: p.x, top: p.y,
-                      width: p.s, height: p.s,
-                      backgroundColor: p.c,
-                      boxShadow: `0 0 ${p.s * 4}px ${p.c}55`,
-                    }}
-                    animate={{
-                      x: [0, p.dx, -p.dx * 0.6, p.dx * 0.3, 0],
-                      y: [0, p.dy, -p.dy * 0.5, p.dy * 0.7, 0],
-                      opacity: isLight ? [0.15, 0.35, 0.2, 0.3, 0.15] : [0.35, 0.65, 0.45, 0.6, 0.35],
-                      scale: [1, 1.25, 0.95, 1.1, 1],
-                    }}
-                    transition={{ duration: p.dur, delay: i * 0.4, repeat: Infinity, ease: 'easeInOut' }}
-                  />
-                ))}
-              </div>
+                <div className="form-wash" aria-hidden />
               )}
 
               <div className="relative z-10">
                 <div className={`flex items-center gap-2.5 mb-6 pb-4 border-b ${isLight ? 'border-gray-150' : 'border-white/5'}`}
                   style={{ borderColor: isLight ? 'rgba(0,0,0,0.08)' : undefined }}
                 >
-                  <motion.div
+                  <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}
-                    animate={{ boxShadow: ['0 0 0px rgba(var(--c-accent-rgb),0)', '0 0 12px rgba(var(--c-accent-rgb),0.25)', '0 0 0px rgba(var(--c-accent-rgb),0)'] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
                     <Moon className="w-4 h-4" style={{ color: ACCENT }} />
-                  </motion.div>
+                  </div>
                   <h2 className={`text-sm font-semibold tracking-wide ${isLight ? 'text-gray-800' : 'text-white'}`}>
                     {t('form.birthDetails')}
                   </h2>
@@ -677,9 +573,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => setSidebarHidden(false)}
-                className={`mb-4 inline-flex items-center gap-1.5 text-xs font-semibold px-3 h-9 rounded-xl border transition-colors ${
-                  isLight ? 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200' : 'bg-white/5 border-white/8 text-white/60 hover:bg-white/10'
-                }`}
+                className="chrome-btn mb-4 inline-flex items-center gap-1.5 text-xs font-semibold px-3 h-9 rounded-xl"
               >
                 <PanelLeftOpen className="w-4 h-4" /> {t('form.showPanel')}
               </button>
@@ -694,9 +588,7 @@ function AppContent() {
                   className="space-y-4"
                 >
                   {/* Tab bar */}
-                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border overflow-x-auto tab-bar-mobile ${
-                    isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
-                  }`}>
+                  <div className="tab-bar tab-bar-mobile flex gap-1 rounded-xl p-1 overflow-x-auto">
                     <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
                     <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
@@ -712,7 +604,7 @@ function AppContent() {
                   {/* ── Chart ─────────────────────────────────────── */}
                   {activeTab === 'chart' && (
                     <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                      <div className="flex justify-center gap-2">
+                      <div className="tab-bar inline-flex justify-center gap-1 p-1 rounded-xl mx-auto">
                         {(['south', 'north'] as ChartStyle[]).map(style => (
                           <button
                             key={style}
@@ -721,8 +613,8 @@ function AppContent() {
                               chartStyle === style
                                 ? 'text-white on-accent'
                                 : isLight
-                                  ? 'bg-gray-100 text-gray-500 hover:text-gray-800 border border-gray-200'
-                                  : 'bg-white/4 text-white/40 hover:text-white border border-white/8'
+                                  ? 'text-slate-500 hover:text-slate-800'
+                                  : 'text-white/40 hover:text-white'
                             }`}
                           >
                             {chartStyle === style && (
@@ -878,9 +770,7 @@ function AppContent() {
                   className="space-y-4"
                 >
                   {/* Tab bar — Western mode has no dasha/varga/dosha/graph/insights equivalent */}
-                  <div className={`flex gap-1 backdrop-blur-sm rounded-xl p-1 border overflow-x-auto tab-bar-mobile ${
-                    isLight ? 'bg-gray-100/80 border-gray-200' : 'bg-white/4 border-white/6'
-                  }`}>
+                  <div className="tab-bar tab-bar-mobile flex gap-1 rounded-xl p-1 overflow-x-auto">
                     <TabBtn id="chart" label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="now"   label={t('tab.now')}      icon={Compass}    />
                     <TabBtn id="match" label={t('tab.match')}    icon={Heart}      />
@@ -942,52 +832,21 @@ function AppContent() {
                   )}
                 </motion.div>
               ) : (
-                /* Empty state — animated */
                 <motion.div
                   key="empty"
-                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
                   className="glass-card rounded-2xl p-6 sm:p-16 text-center relative overflow-hidden"
                 >
-                  {/* Animated gradient border glow */}
-                  <motion.div
-                    className="absolute inset-0 rounded-2xl pointer-events-none"
-                    style={{
-                      background: isLight
-                        ? 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.05), rgba(255,230,0,0.02), rgba(0,255,135,0.02), rgba(255,140,0,0.03))'
-                        : 'linear-gradient(135deg, rgba(var(--c-accent-rgb),0.12), rgba(255,230,0,0.06), rgba(0,255,135,0.06), rgba(255,140,0,0.08))',
-                      backgroundSize: '400% 400%',
-                    }}
-                    animate={{ backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                  />
-
+                  <div className="form-wash" aria-hidden />
                   <div className="relative z-10">
-                    <motion.h3
-                      className="text-2xl font-display font-bold text-white mb-3"
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2, duration: 0.5 }}
-                    >
+                    <h3 className="text-2xl font-display font-bold text-white mb-3">
                       {t('empty.title')}
-                    </motion.h3>
-                    <motion.p
-                      className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/50'}`}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.5 }}
-                    >
+                    </h3>
+                    <p className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
                       {t('empty.body')}
-                    </motion.p>
-
-                    {/* Animated floating icons */}
-                    <motion.div
-                      className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-6 sm:mt-8"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.6 }}
-                    >
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-6 sm:mt-8">
                       {[
                         { symbol: '☉', color: '#f59e0b', labelKey: 'planet.sun' as const },
                         { symbol: '☽', color: '#94a3b8', labelKey: 'planet.moon' as const },
@@ -995,18 +854,13 @@ function AppContent() {
                         { symbol: '♃', color: '#eab308', labelKey: 'planet.jupiter' as const },
                         { symbol: '♀', color: '#f472b6', labelKey: 'planet.venus' as const },
                         { symbol: '♄', color: '#38bdf8', labelKey: 'planet.saturn' as const },
-                      ].map((p, i) => (
-                        <motion.div
-                          key={p.labelKey}
-                          className="flex flex-col items-center gap-1"
-                          animate={{ y: [0, -6, 0] }}
-                          transition={{ duration: 2.5 + i * 0.3, delay: i * 0.15, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                          <span className="text-2xl" style={{ color: p.color, textShadow: `0 0 12px ${p.color}44` }}>{p.symbol}</span>
+                      ].map((p) => (
+                        <div key={p.labelKey} className="flex flex-col items-center gap-1">
+                          <span className="text-2xl" style={{ color: p.color }}>{p.symbol}</span>
                           <span className={`text-[9px] font-mono ${isLight ? 'text-slate-400' : 'text-white/25'}`}>{t(p.labelKey)}</span>
-                        </motion.div>
+                        </div>
                       ))}
-                    </motion.div>
+                    </div>
                   </div>
                 </motion.div>
               )}

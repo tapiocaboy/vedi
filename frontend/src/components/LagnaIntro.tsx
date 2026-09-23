@@ -28,11 +28,10 @@
  *                             alpha compositing — overlapping petals layer
  *                             instead of blowing out to white.
  *
- * The figures are sampled, not drawn: the emoji is rendered once to an
- * offscreen canvas and every opaque pixel becomes a particle target, which is
- * why the silhouettes are real animals rather than the ♋-style glyphs. If a
- * platform has no colour emoji for a sign we fall back to its monochrome
- * zodiac glyph (U+FE0E), which every system ships.
+ * The figures are sampled, not drawn: each sign's pictorial silhouette
+ * (Sagittarius is the archer-centaur, Leo a lion, Cancer a crab, …) is
+ * rendered once to an offscreen canvas and every opaque pixel becomes a
+ * particle target. Emoji and the ♋-style glyph are only fallbacks.
  */
 
 import { useEffect, useRef } from 'react';
@@ -40,6 +39,7 @@ import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { useLang } from '../i18n/LanguageContext';
 import { labelRashi, labelRashiWestern } from '../i18n/astroLabels';
 import { RASHIS, RASHI_ENGLISH } from '../lib/core/rashi';
+import { loadZodiacImages, sampleZodiacFigure, figurePointCount } from '../lib/core/zodiacFigures';
 
 /** The actual creature/figure behind each sign, index-aligned with RASHIS. */
 const FIGURE_EMOJI = [
@@ -265,10 +265,13 @@ function thin(pts: Pt[], n: number): Pt[] {
  * tier starts so it can render them at different weights.
  */
 function figurePoints(rashiIndex: number, budget: number): { pts: Pt[]; outlineCount: number; detailCount: number } {
-  const emoji = FIGURE_EMOJI[rashiIndex] ?? FIGURE_EMOJI[0];
-  const emojiFont = `${Math.round(SAMPLE_SIZE * 0.74)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","EmojiOne Color",sans-serif`;
-  let s = samplePoints(emoji, emojiFont, SAMPLE_STRIDE);
-  if (s.outline.length + s.detail.length + s.fill.length < 400) {
+  let s = sampleZodiacFigure(rashiIndex, SAMPLE_SIZE, SAMPLE_STRIDE);
+  if (figurePointCount(s) < 400) {
+    const emoji = FIGURE_EMOJI[rashiIndex] ?? FIGURE_EMOJI[0];
+    const emojiFont = `${Math.round(SAMPLE_SIZE * 0.74)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","EmojiOne Color",sans-serif`;
+    s = samplePoints(emoji, emojiFont, SAMPLE_STRIDE);
+  }
+  if (figurePointCount(s) < 400) {
     const glyph = SIGN_GLYPH[rashiIndex] ?? SIGN_GLYPH[0];
     s = samplePoints(glyph, `${Math.round(SAMPLE_SIZE * 0.82)}px serif`, SAMPLE_STRIDE);
   }
@@ -310,6 +313,12 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let cancelled = false;
+    let raf = 0;
+    let detachResize = () => {};
+
+    const begin = () => {
+    if (cancelled) return;
     let w = 0, h = 0, scale = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -399,8 +408,8 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
 
     const onResize = () => { layout(); seed(); };
     window.addEventListener('resize', onResize);
+    detachResize = () => window.removeEventListener('resize', onResize);
 
-    let raf = 0;
     let finished = false;
     const t0 = performance.now();
     let last = t0;
@@ -625,10 +634,14 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
     };
 
     raf = requestAnimationFrame(frame);
+    };
+
+    void loadZodiacImages().catch(() => undefined).then(begin);
 
     return () => {
+      cancelled = true;
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
+      detachResize();
     };
   }, [rashiIndex, variant]);
 

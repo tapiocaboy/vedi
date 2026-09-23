@@ -75,8 +75,8 @@ function dashaLabel(prediction?: DashaPredictionData | null): string | undefined
 }
 
 const tones = (isLight: boolean) => isLight
-  ? { strong: 'text-slate-800', body: 'text-slate-600', muted: 'text-slate-400', panel: '#f8fafc', line: 'rgba(15,23,42,0.08)', ink: '#0f172a', faint: 'rgba(15,23,42,0.45)', track: 'rgba(15,23,42,0.06)' }
-  : { strong: 'text-white', body: 'text-white/70', muted: 'text-white/35', panel: 'rgba(0,0,0,0.22)', line: 'rgba(255,255,255,0.07)', ink: '#fff', faint: 'rgba(255,255,255,0.45)', track: 'rgba(255,255,255,0.05)' };
+  ? { strong: 'text-slate-800', body: 'text-slate-600', muted: 'text-slate-400', panel: '#ffffff', line: 'rgba(15,23,42,0.06)', ink: '#0f172a', faint: 'rgba(15,23,42,0.42)', track: 'rgba(15,23,42,0.05)' }
+  : { strong: 'text-white', body: 'text-white/70', muted: 'text-white/38', panel: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.07)', ink: '#fff', faint: 'rgba(255,255,255,0.42)', track: 'rgba(255,255,255,0.05)' };
 
 interface Props {
   report: TransitImpactReport;
@@ -138,6 +138,7 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
           </div>
         )}
 
+        <div className="sky-well overflow-hidden px-1 sm:px-2 py-2">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full select-none" role="img" aria-label="Transit sky showing how happening planets colour life-area predictions">
           <defs>
             <radialGradient id="sky-glow" cx="50%" cy="50%" r="50%">
@@ -254,7 +255,8 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
             );
           })}
         </svg>
-        <p className={`text-[11px] leading-relaxed px-1 ${t.muted}`}>
+        </div>
+        <p className={`text-[11px] leading-relaxed px-1 mt-3 ${t.muted}`}>
           Planets sit in the house they occupy from your Moon. Beams show which predictions they are lifting or testing today.
           Tap a planet, an event chip, or a life area.
         </p>

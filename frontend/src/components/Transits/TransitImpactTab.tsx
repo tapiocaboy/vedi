@@ -62,8 +62,8 @@ const areaHex = (v: number) => (v >= 0.2 ? TONE_HEX.good : v <= -0.2 ? TONE_HEX.
 
 function useTones(isLight: boolean) {
   return isLight
-    ? { strong: 'text-slate-800', body: 'text-slate-600', muted: 'text-slate-400', panel: '#f8fafc', line: 'rgba(15,23,42,0.08)', grid: 'rgba(15,23,42,0.06)', axis: 'rgba(15,23,42,0.45)', track: 'rgba(15,23,42,0.05)' }
-    : { strong: 'text-white', body: 'text-white/70', muted: 'text-white/35', panel: 'rgba(0,0,0,0.22)', line: 'rgba(255,255,255,0.07)', grid: 'rgba(255,255,255,0.05)', axis: 'rgba(255,255,255,0.45)', track: 'rgba(255,255,255,0.04)' };
+    ? { strong: 'text-slate-800', body: 'text-slate-600', muted: 'text-slate-400', panel: '#ffffff', line: 'rgba(15,23,42,0.06)', grid: 'rgba(15,23,42,0.06)', axis: 'rgba(15,23,42,0.42)', track: 'rgba(15,23,42,0.05)' }
+    : { strong: 'text-white', body: 'text-white/70', muted: 'text-white/38', panel: 'rgba(255,255,255,0.04)', line: 'rgba(255,255,255,0.07)', grid: 'rgba(255,255,255,0.05)', axis: 'rgba(255,255,255,0.42)', track: 'rgba(255,255,255,0.04)' };
 }
 
 // ─── Section header ─────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
 import { labelPlanet, labelPlanetShort, labelRashi, labelRashiWestern } from '../../i18n/astroLabels';
 import { TapHint, tapVars } from '../shared/tapTarget';
+import { ZodiacSymbol } from '../shared/ZodiacSymbol';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -25,11 +26,6 @@ const RASHI_GRID_POSITIONS: Record<number, [number, number]> = {
   6: [3, 2], 7: [3, 1], 8: [3, 0],
   9: [2, 0], 10: [1, 0], 11: [0, 0],
 };
-
-// Western zodiac glyph per rashi — used as a watermark in each box.
-// U+FE0E forces text (monochrome) presentation so the CSS colour applies
-// instead of the platform's multicolour emoji glyph.
-const RASHI_GLYPHS = ['♈\uFE0E', '♉\uFE0E', '♊\uFE0E', '♋\uFE0E', '♌\uFE0E', '♍\uFE0E', '♎\uFE0E', '♏\uFE0E', '♐\uFE0E', '♑\uFE0E', '♒\uFE0E', '♓\uFE0E'] as const;
 
 export const SouthIndianChart: React.FC<Props> = ({
   planets, ascendantRashi, currentDasha = null, mahadashaTimeline = null, birthDate = null,
@@ -81,10 +77,12 @@ export const SouthIndianChart: React.FC<Props> = ({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
       >
-        <div className="text-[64px] leading-none font-bold" aria-hidden
-          style={{ color: glyphAscClr }}>
-          {RASHI_GLYPHS[ascendantRashi]}
-        </div>
+        <ZodiacSymbol
+          index={ascendantRashi}
+          color={isLight ? 'rgba(234,120,20,0.85)' : 'rgba(255,220,160,0.92)'}
+          className="w-[4.5rem] h-[4.5rem] sm:w-24 sm:h-24"
+          title={labelRashiWestern(ascendantRashi, lang, RASHI_ENGLISH[ascendantRashi])}
+        />
         <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: ACCENT }}>
           {t('chart.lagna')}
         </div>
@@ -135,13 +133,11 @@ export const SouthIndianChart: React.FC<Props> = ({
         })}
       >
         {/* Zodiac glyph watermark — instant sign recognition */}
-        <div
-          aria-hidden
-          className="absolute inset-0 flex items-center justify-center pointer-events-none text-[52px] leading-none font-bold"
-          style={{ color: isAscendant ? glyphAscClr : glyphClr }}
-        >
-          {RASHI_GLYPHS[rashiIndex]}
-        </div>
+        <ZodiacSymbol
+          index={rashiIndex}
+          color={isAscendant ? glyphAscClr : glyphClr}
+          className="absolute inset-[18%] pointer-events-none"
+        />
 
         {/* House number badge top-left */}
         <div
