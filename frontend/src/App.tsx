@@ -19,6 +19,7 @@ import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
 import { VargaTab } from './components/Varga/VargaTab';
 import { KnowledgeGraph } from './components/Graph/KnowledgeGraph';
+import TransitImpactTab from './components/Transits/TransitImpactTab';
 import { DoshaTab } from './components/Dosha/DoshaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
@@ -68,7 +69,7 @@ const queryClient = new QueryClient({
 });
 
 type ChartStyle = 'south' | 'north';
-type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
+type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'transits' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
 type Theme = 'dark' | 'light' | 'mono' | 'azure' | 'terminal';
 
 function AppContent() {
@@ -699,6 +700,7 @@ function AppContent() {
                     <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
                     <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
+                    <TabBtn id="transits" label="Transits"          icon={Orbit}      />
                     <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
@@ -802,6 +804,13 @@ function AppContent() {
                   {activeTab === 'now' && birthData && (
                     <motion.div key="now" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <CurrentPeriodTab birthData={birthData} />
+                    </motion.div>
+                  )}
+
+                  {/* ── Transits (major sign changes and their impact) ── */}
+                  {activeTab === 'transits' && birthData && (
+                    <motion.div key="transits" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <TransitImpactTab birthData={birthData} />
                     </motion.div>
                   )}
 

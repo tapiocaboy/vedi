@@ -25,6 +25,7 @@ import { runMatching, type MatchSummary } from '../lib/services/matchingService'
 import { getVargaReport, type VargaReport, type VargaInsight } from '../lib/services/vargaService';
 import { getPanchangaReport, type PanchangaReport, type ChoghadiyaPeriod } from '../lib/services/panchangaService';
 import { getDoshaReport, type DoshaReport } from '../lib/services/doshaService';
+import { getTransitImpactReport, type TransitImpactReport } from '../lib/services/transitImpactService';
 import {
   getAntardashaDepth as libGetAntardashaDepth,
   type AntardashaDepthReport,
@@ -36,7 +37,8 @@ import { buildWesternNatalReport, type WesternNatalReport } from '../lib/core/we
 import { getWesternTransits, type WesternTransitSnapshot } from '../lib/core/western/transits';
 import type { WesternChart } from '../types/westernAstrology';
 
-export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, DoshaReport };
+export type { VargaReport, VargaInsight, PanchangaReport, ChoghadiyaPeriod, DoshaReport, TransitImpactReport };
+export type { TransitSegment, TransitBody, ImpactArea, ImpactTone, MonthImpact } from '../lib/core/transitImpact';
 export type { AntardashaDepthReport, WeightedPratyantardasha };
 export type { WeightBand, PeriodTone, WeightFactor } from '../lib/core/dashaWeight';
 export type { TransitHit } from '../lib/core/dashaTransits';
@@ -237,6 +239,11 @@ export async function getSookshmaPeriods(birthData: BirthData, targetDate?: Date
 export async function getGochara(birthData: BirthData, asOf?: Date, lang?: Lang): Promise<GocharaSnapshot> {
   const positions = await getRawPositions(birthData.date, birthData.latitude, birthData.longitude, birthData.timezone, birthData.ayanamsa);
   return getCurrentTransits(birthData.ayanamsa, positions['MOON'].rashi, positions['ASCENDANT'].rashi, asOf, undefined, positions, lang ?? getStoredLang());
+}
+
+/** Major transits (Saturn, Jupiter, nodes, Mars, Sun) as dated sign segments scored against the natal chart. */
+export async function getTransitImpact(birthData: BirthData, asOf?: Date): Promise<TransitImpactReport> {
+  return getTransitImpactReport(birthData, asOf);
 }
 
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */
