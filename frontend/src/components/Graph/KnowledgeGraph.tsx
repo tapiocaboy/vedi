@@ -1311,7 +1311,11 @@ const GraphStage: React.FC<{
   };
 
   const canvas = (
-    <div className={`relative rounded-2xl p-2 sm:p-3 overflow-hidden ${big ? 'flex-1 min-h-0 flex items-center justify-center' : ''}`}
+    <div className={`relative rounded-2xl overflow-hidden ${
+      big
+        ? 'flex-1 min-h-0 flex items-center justify-center p-2'
+        : 'p-1 sm:p-2 min-h-[22rem] sm:min-h-[30rem] lg:min-h-[36rem] xl:min-h-[42rem] flex items-center justify-center'
+    }`}
       style={{
         background: isLight
           ? 'radial-gradient(ellipse 70% 60% at 50% 45%, rgba(var(--c-accent-rgb),0.04) 0%, transparent 70%)'
@@ -1347,7 +1351,10 @@ const GraphStage: React.FC<{
   );
 
   const rail = (
-    <div className={`space-y-3 ${big ? 'shrink-0 overflow-y-auto max-h-[38vh] sm:max-h-[30vh] pr-1' : ''}`}>
+    <div className={big
+      ? 'shrink-0 overflow-y-auto max-h-[38vh] sm:max-h-[30vh] pr-1 space-y-3'
+      : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3'
+    }>
       <NowCard summary={graph.summary} isLight={isLight} />
       <DetailPanel graph={view} selected={selected} isLight={isLight} />
       {prediction && <ActivitiesCard prediction={prediction} isLight={isLight} />}
@@ -1373,10 +1380,8 @@ const GraphStage: React.FC<{
         <LayerBar source={graph} extras={extras} onToggle={toggle} isLight={isLight} />
         <Legend isLight={isLight} extras={extras} />
       </div>
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17.5rem] gap-4 items-start">
-        {canvas}
-        <aside className="mt-3 lg:mt-0">{rail}</aside>
-      </div>
+      {canvas}
+      {rail}
     </div>
   );
 };
@@ -1442,7 +1447,7 @@ export const KnowledgeGraph: React.FC<{ birthData: BirthData }> = ({ birthData }
   }
 
   return (
-    <div className="glass-card rounded-2xl p-3 sm:p-6">
+    <div className="glass-card rounded-2xl p-3 sm:p-4">
       <div className="flex items-start gap-2.5 mb-4">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>

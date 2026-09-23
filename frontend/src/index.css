@@ -1086,10 +1086,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* ── Knowledge graph on small screens ──────────────────────────────────────
-   The graph is drawn in a fixed 700×520 viewBox. Letting it shrink to a phone's
-   width scales the 11.5px labels down to about 5px, which is unreadable — so
-   below 700px it keeps a usable minimum width and pans horizontally instead. */
-@media (max-width: 700px) {
+   The scene is an 840×690 viewBox. Shrinking it to a phone width makes the
+   labels unreadable, so below 840px it stays at native size and pans. */
+@media (max-width: 840px) {
   .graph-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1097,7 +1096,7 @@ input:focus, select:focus, textarea:focus {
     scrollbar-width: none;
   }
   .graph-scroll::-webkit-scrollbar { display: none; }
-  .graph-scroll > svg { min-width: 620px; }
+  .graph-scroll > svg { min-width: 840px; }
 }
 
 /* Reduce heavy animations on mobile and when user prefers reduced motion */
