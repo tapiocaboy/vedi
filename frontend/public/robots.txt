@@ -1,4 +1,4 @@
-# trytellme.xyz — free Vedic astrology birth chart, forecast and matching.
+# trytellme.xyz — personalized future prediction from your birth chart.
 # Everything here is public and static; nothing needs to be kept out of an index.
 
 User-agent: *

@@ -903,19 +903,34 @@ function AppContent() {
             links that let those pages accumulate any authority the domain has. */}
         <nav
           aria-label={t('footer.guidesLabel')}
-          className={`max-w-7xl mx-auto px-3 sm:px-5 pb-3 mb-3 border-b flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] sm:text-[11px] ${
+          className={`max-w-7xl mx-auto px-3 sm:px-5 pb-3 mb-3 border-b space-y-2 text-[10px] sm:text-[11px] ${
             isLight ? 'border-slate-200 text-slate-500' : 'border-white/4 text-white/35'
           }`}
         >
-          <span className={`font-mono uppercase tracking-wider ${isLight ? 'text-slate-400' : 'text-white/20'}`}>
-            {t('footer.guidesLabel')}
-          </span>
-          <a href="/birth-chart-reading" className="hover:underline">{t('footer.linkBirthChart')}</a>
-          <a href="/horoscope" className="hover:underline">{t('footer.linkHoroscope')}</a>
-          <a href="/future-forecast" className="hover:underline">{t('footer.linkForecast')}</a>
-          <a href="/kundli-matching" className="hover:underline">{t('footer.linkMatching')}</a>
-          <a href="/vedic-astrology-india" className="hover:underline">{t('footer.linkIndia')}</a>
-          <a href="/vedic-astrology-europe" className="hover:underline">{t('footer.linkEurope')}</a>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <span className={`font-mono uppercase tracking-wider ${isLight ? 'text-slate-400' : 'text-white/20'}`}>
+              {t('footer.predictionsLabel')}
+            </span>
+            <a href="/future-prediction" className="hover:underline">{t('footer.linkFuturePrediction')}</a>
+            <a href="/career-prediction" className="hover:underline">{t('footer.linkCareer')}</a>
+            <a href="/marriage-prediction" className="hover:underline">{t('footer.linkMarriage')}</a>
+            <a href="/love-prediction" className="hover:underline">{t('footer.linkLove')}</a>
+            <a href="/kundli-analysis" className="hover:underline">{t('footer.linkKundli')}</a>
+            <a href="/astrology-2027" className="hover:underline">{t('footer.link2027')}</a>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <span className={`font-mono uppercase tracking-wider ${isLight ? 'text-slate-400' : 'text-white/20'}`}>
+              {t('footer.guidesLabel')}
+            </span>
+            <a href="/birth-chart" className="hover:underline">{t('footer.linkBirthChartCalc')}</a>
+            <a href="/birth-chart-reading" className="hover:underline">{t('footer.linkBirthChart')}</a>
+            <a href="/personalized-horoscope" className="hover:underline">{t('footer.linkPersonalized')}</a>
+            <a href="/horoscope" className="hover:underline">{t('footer.linkHoroscope')}</a>
+            <a href="/kundli-matching" className="hover:underline">{t('footer.linkMatching')}</a>
+            <a href="/ai-astrology" className="hover:underline">{t('footer.linkAi')}</a>
+            <a href="/vedic-astrology-india" className="hover:underline">{t('footer.linkIndia')}</a>
+            <a href="/vedic-astrology-europe" className="hover:underline">{t('footer.linkEurope')}</a>
+          </div>
         </nav>
         <div className={`max-w-7xl mx-auto px-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-0 text-[9px] sm:text-[10px] font-mono ${
           isLight ? 'text-slate-500' : 'text-white/18'

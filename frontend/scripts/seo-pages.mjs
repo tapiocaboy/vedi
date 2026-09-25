@@ -17,8 +17,13 @@
  *   • they cannot break when the app's bundle changes.
  *
  * Run from `npm run build` after Vite, writing into dist/. Content lives in
- * PAGES below and the markup in one template, so the six pages cannot drift
- * apart the way six hand-maintained copies would.
+ * PAGES below and the markup in one template, so the landing pages cannot drift
+ * apart the way hand-maintained copies would.
+ *
+ * Close keyword twins share one URL. "Future prediction" and "future prediction
+ * astrology" are the same intent; "when will I get a job" belongs on career
+ * prediction, not a near-copy. India kundli vocabulary and Western birth-chart
+ * vocabulary stay on separate pages.
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -66,19 +71,51 @@ li{margin:5px 0}
 .links{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 0;padding:0;list-style:none}
 .links li{margin:0}
 .links a{display:inline-block;border:1px solid var(--line);border-radius:9px;padding:8px 13px;font-size:14px}
+.link-group{margin:18px 0 0}
+.link-group h3{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
 footer.foot{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 footer.foot a{color:var(--muted);text-decoration:underline}
 `.trim();
 
 const escapeHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/** Every page links to every other one. Flat and small, so no hub/spoke needed. */
+/** Clustered internal links so 15 pages do not dump as one unsorted chip list. */
+const LINK_GROUPS = [
+  {
+    label: 'Predictions',
+    slugs: [
+      'future-prediction', 'future-forecast', 'career-prediction',
+      'marriage-prediction', 'love-prediction', 'kundli-analysis', 'astrology-2027',
+    ],
+  },
+  {
+    label: 'Charts & readings',
+    slugs: [
+      'birth-chart', 'birth-chart-reading', 'horoscope',
+      'personalized-horoscope', 'ai-astrology',
+    ],
+  },
+  {
+    label: 'Matching & regions',
+    slugs: ['kundli-matching', 'vedic-astrology-india', 'vedic-astrology-europe'],
+  },
+];
+
 function relatedLinks(currentSlug) {
-  const items = PAGES
-    .filter(p => p.slug !== currentSlug)
-    .map(p => `<li><a href="/${p.slug}">${escapeHtml(p.linkLabel)}</a></li>`)
-    .join('');
-  return `<ul class="links"><li><a href="/">Open the calculator</a></li>${items}</ul>`;
+  const bySlug = new Map(PAGES.map(p => [p.slug, p]));
+  const sections = LINK_GROUPS.map(g => {
+    const items = g.slugs
+      .filter(s => s !== currentSlug && bySlug.has(s))
+      .map(s => {
+        const p = bySlug.get(s);
+        return `<li><a href="/${p.slug}">${escapeHtml(p.linkLabel)}</a></li>`;
+      })
+      .join('');
+    return items
+      ? `<div class="link-group"><h3>${escapeHtml(g.label)}</h3><ul class="links">${items}</ul></div>`
+      : '';
+  }).join('');
+  return `<ul class="links"><li><a href="/">Open the calculator</a></li></ul>${sections}`;
 }
 
 function jsonLd(page) {
@@ -157,9 +194,8 @@ ${page.geoRegion ? `<meta name="geo.region" content="${page.geoRegion}">` : ''}
 <meta property="og:image" content="${ORIGIN}/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:locale" content="en_GB">
-<meta property="og:locale:alternate" content="en_IN">
-<meta property="og:locale:alternate" content="si_LK">
+<meta property="og:locale" content="${page.ogLocale ?? 'en_GB'}">
+${['en_IN', 'en_GB', 'si_LK'].filter(l => l !== (page.ogLocale ?? 'en_GB')).map(l => `<meta property="og:locale:alternate" content="${l}">`).join('\n')}
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(page.ogTitle ?? page.title)}">
 <meta name="twitter:description" content="${escapeHtml(page.description)}">
@@ -357,7 +393,8 @@ const PAGES = [
 </div>
 
 <h2>What a forecast can and cannot claim</h2>
-<p>Timing claims are testable — a period either did or did not coincide with the thing. Character claims are not, and are conditioned until they cannot fail. This engine leans on the former: dated windows, the reasoning shown, and the natal weaknesses stated plainly rather than smoothed over. It is a tool for reflection and planning, not a deterministic prediction of events.</p>`,
+<p>Timing claims are testable — a period either did or did not coincide with the thing. Character claims are not, and are conditioned until they cannot fail. This engine leans on the former: dated windows, the reasoning shown, and the natal weaknesses stated plainly rather than smoothed over. It is a tool for reflection and planning, not a deterministic prediction of events.</p>
+<p>If you want the conversion path rather than the dasha explainer — enter a date of birth and read career, marriage and life windows — start at <a href="/future-prediction">future prediction by date of birth</a>.</p>`,
     faq: [
       ['What is a dasha period?', 'A planetary period in the Vimshottari system: a span of time ruled by one of the nine grahas, with a defined start and end date. The full cycle covers 120 years and is keyed to the nakshatra your Moon occupied at birth.'],
       ['How far ahead can I see?', 'The whole 120-year cycle from birth, down to sookshma level for the current window. Most people find the antardasha and pratyantardasha levels the useful ones.'],
@@ -528,6 +565,480 @@ const PAGES = [
       ['Is it free and private?', 'Both. There is no sign-up and no payment, and all calculations run locally in your browser using the Swiss Ephemeris — your birth details are never transmitted or stored, which also means there is no personal data to process under GDPR.'],
     ],
   },
+
+  {
+    slug: 'future-prediction',
+    crumb: 'Future prediction',
+    linkLabel: 'Future prediction by date of birth',
+    priority: '0.9',
+    ogLocale: 'en_IN',
+    title: 'Future Prediction by Date of Birth — Personalized Birth Chart Reading',
+    ogTitle: 'Future Prediction by Date of Birth',
+    description:
+      'Get a personalized future prediction from your birth chart. Enter date, time and place of birth for dated career, marriage, love and life windows — not a sun-sign column. Free and private.',
+    h1: 'Future prediction by date of birth',
+    lede:
+      'A generic horoscope describes a twelfth of the planet. A future prediction from your date, time and place of birth reads the chart you actually have — then times the chapters with start and end dates.',
+    ctaLabel: 'Get my future prediction',
+    howTo: {
+      name: 'How to get a future prediction from your date of birth',
+      totalTime: 'PT3M',
+      steps: [
+        { name: 'Enter date, time and place', text: 'The date sets the sky. The exact clock time sets the ascendant and the dasha start. The place sets the house framework. All three are required for a personal reading.' },
+        { name: 'Cast the birth chart', text: 'The engine computes the sidereal chart in your browser: lagna, nine grahas, nakshatras, houses and the running Vimshottari periods.' },
+        { name: 'Read the life areas against the current period', text: 'Career, marriage, love, wealth and health are judged from the period you are in and from the natal houses that govern them — not from a one-size forecast.' },
+        { name: 'Move the date', text: 'The same chart can be read for a past year or a future one. That is how a 2027 career window or a marriage timing question becomes a dated answer rather than a vibe.' },
+      ],
+    },
+    body: `
+<h2>Why date of birth is not enough on its own</h2>
+<p>Search results for “future prediction by date of birth” often hide a sun-sign gadget behind that phrase. Date of birth without time and place can guess a Moon sign on a quiet day. It cannot set the rising sign, the houses, or the dasha timeline. Those are what turn a horoscope into a personal future reading.</p>
+<table>
+<tr><th>What you enter</th><th>What it unlocks</th></tr>
+<tr><td>Date of birth</td><td>The planetary sky that day — Sun, and usually the Moon if it did not change sign</td></tr>
+<tr><td>Exact birth time</td><td>Lagna, every house, divisional charts, and the start of your 120-year dasha cycle</td></tr>
+<tr><td>Birth place</td><td>The local horizon, so the same UTC instant is not treated as the same chart in two cities</td></tr>
+</table>
+
+<h2>What the reading actually predicts</h2>
+<p>The product proposition is not “read your horoscope.” It is: explore your past and future through your birth chart. The engine scores the period you are in against four life areas — career, relationships, wealth and health — and shows the dated dasha stack (mahadasha down to sookshma) plus the transits running over it.</p>
+<ul>
+<li><strong>Life prediction</strong> — the overall theme of the running chapter, with a natal-foundation check so a weak house is not sold as a lucky year.</li>
+<li><strong>Birth chart future prediction</strong> — the same chart, moved to a date you choose, so 2026, 2027 and later are real sky + period overlays rather than a yearly magazine column.</li>
+<li><strong>Astrology future prediction</strong> — timing first. A period either covers a window or it does not. Character claims stay labelled as character.</li>
+</ul>
+
+<div class="panel">
+<h3>This is not a daily horoscope</h3>
+<p>Vedic timing works in weeks to years. Anything that claims Tuesday’s luck from a birth chart is inventing resolution the chart does not have. If you want the daily sky, the panchanga is on the calculator; it is not a personal event forecast.</p>
+</div>
+
+<h2>Related readings</h2>
+<p>Specific questions belong on their own pages: <a href="/career-prediction">career and job timing</a>, <a href="/marriage-prediction">marriage timing</a>, <a href="/love-prediction">love and relationship astrology</a>, and the dasha explainer at <a href="/future-forecast">future forecast</a>. Indian kundli vocabulary lives on <a href="/kundli-analysis">kundli analysis</a>.</p>`,
+    faq: [
+      ['Can astrology predict my future from my date of birth?', 'It can time planetary periods and describe their character from your birth chart. That is a different claim from naming events. Treat dated windows as context for decisions you are already making.'],
+      ['Why do you ask for birth time and place as well?', 'Date of birth alone cannot set the ascendant or the dasha start. A two-hour error usually changes the rising sign; a few minutes can change a divisional chart. Place fixes the local horizon.'],
+      ['Is this a horoscope future prediction or a birth-chart reading?', 'A birth-chart reading. A horoscope column is twelve texts. This casts your chart and reads the period you are actually in.'],
+      ['Is the future prediction free and private?', 'Yes. No sign-up. The Swiss Ephemeris runs in your browser, so birth details are not uploaded.'],
+    ],
+  },
+
+  {
+    slug: 'career-prediction',
+    crumb: 'Career prediction',
+    linkLabel: 'Career prediction',
+    priority: '0.9',
+    ogLocale: 'en_IN',
+    geoRegion: 'IN',
+    title: 'Career Prediction by Date of Birth — Job Timing from Your Birth Chart',
+    ogTitle: 'Career Prediction by Date of Birth',
+    description:
+      'Career prediction by date of birth: when will I get a job, promotion windows, and career astrology from your dasha timeline and 10th house — not a generic career horoscope. Free, private, in your browser.',
+    h1: 'Career prediction by date of birth',
+    lede:
+      '“When will I get a job?” is a timing question. Career astrology can date the periods that favour work, interviews and promotion — it cannot mint an offer letter. This reading uses your 10th house, dasamsa and the dasha you are in.',
+    ctaLabel: 'See my career prediction',
+    howTo: {
+      name: 'How to read a career prediction from your chart',
+      totalTime: 'PT4M',
+      steps: [
+        { name: 'Cast the chart from birth details', text: 'Date, exact time and place. Career judgement depends on the 10th house, its lord, Saturn, the Sun and the dasamsa (D10) — all of which move if the time is wrong.' },
+        { name: 'Read the natal career foundation', text: 'A strong period over a weak 10th house opens doors that still need pushing. The two scores are shown separately so that mismatch is visible.' },
+        { name: 'Find the running work period', text: 'Vimshottari periods of the 10th lord, Saturn, the Sun, Mercury or a well-placed yogakaraka are the usual job and promotion windows.' },
+        { name: 'Ask the timing question against a year', text: 'Move the forecast to the year you care about. “Job kab milegi” is answered as a window, not a calendar day.' },
+      ],
+    },
+    body: `
+<h2>What career astrology can answer</h2>
+<table>
+<tr><th>Question people actually type</th><th>What the chart can show</th></tr>
+<tr><td>Career prediction by date of birth</td><td>10th house, D10, current dasha and transits judged together</td></tr>
+<tr><td>Job prediction by date of birth / job kab milegi</td><td>Whether a work-producing period is running or approaching, and how strong the natal job foundation is</td></tr>
+<tr><td>When will I get a job? / date of birth se job kab lagegi</td><td>Dated mahadasha and antardasha windows — weeks to years, not a Tuesday</td></tr>
+<tr><td>Promotion prediction / career change</td><td>Whether the same period supports elevation or a change of field, from lordship and transits</td></tr>
+<tr><td>Career horoscope / career astrology prediction</td><td>Your chart, not a sun-sign career column for the week</td></tr>
+</table>
+
+<h2>The houses and charts that actually govern work</h2>
+<ul>
+<li><strong>10th house (karma bhava)</strong> — profession, status, what the world pays you to do.</li>
+<li><strong>6th house</strong> — service, employment, competition, the daily job rather than the vocation.</li>
+<li><strong>2nd and 11th</strong> — income and gains; a job can arrive in a weak 10th if these are firing.</li>
+<li><strong>Dasamsa (D10)</strong> — the career divisional. A planet that looks average in D1 and exalted in D10 is a worker; the reverse is a title without traction.</li>
+<li><strong>Saturn and the Sun</strong> — endurance and authority. Their periods often coincide with the first real role or the first real promotion.</li>
+</ul>
+
+<div class="panel">
+<h3>Separative periods delay jobs even when they are “good”</h3>
+<p>Saturn, Rahu and Ketu stretch timelines. A well-placed Saturn dasha is a late, durable appointment more often than a sudden one. If the question is “job kab milegi,” a strong Saturn window still means wait — and then stay.</p>
+</div>
+
+<h2>Government job, business, career change</h2>
+<p>Those are different 10th-house flavours, not different apps. A Saturn- or Sun-ruled 10th with a supportive 6th leans service and government. A Mercury- or Jupiter-ruled 10th with a strong 11th leans business and clients. The calculator names the lords and the period; it does not print a vacancy list.</p>
+<p>For marriage or love timing see <a href="/marriage-prediction">marriage prediction</a> and <a href="/love-prediction">love prediction</a>. The parent page is <a href="/future-prediction">future prediction by date of birth</a>.</p>`,
+    faq: [
+      ['Can astrology tell me when I will get a job?', 'It can show whether a career-producing dasha and supportive transits are running. It cannot name an employer or a joining date. Use the window; do the applications.'],
+      ['Is job prediction by date of birth accurate without birth time?', 'Not enough. The 10th house and D10 depend on the ascendant. If you only know the hour, treat the career reading as provisional.'],
+      ['What is the difference between a career horoscope and this?', 'A career horoscope is usually twelve paragraphs. This is career astrology from your chart: houses, dashas and the dasamsa.'],
+      ['Do you answer “job kab milegi kundli se”?', 'In substance, yes — the kundli’s 10th house and dasha stack. The Hindi phrasing is the same question as “when will I get a job from my birth chart.”'],
+    ],
+  },
+
+  {
+    slug: 'marriage-prediction',
+    crumb: 'Marriage prediction',
+    linkLabel: 'Marriage prediction',
+    priority: '0.9',
+    ogLocale: 'en_IN',
+    geoRegion: 'IN',
+    title: 'Marriage Prediction by Date of Birth — When Will I Get Married?',
+    ogTitle: 'Marriage Prediction by Date of Birth',
+    description:
+      'Marriage prediction by date of birth: when will I get married, marriage timing astrology, and future spouse indications from the 7th house, navamsa and dasha — not a fake wedding date. Free and private.',
+    h1: 'Marriage prediction by date of birth',
+    lede:
+      '“When will I get married?” is the question. Marriage astrology can time the periods that favour a wedding and describe the chart’s own partnership promise. It cannot book a hall.',
+    ctaLabel: 'See my marriage prediction',
+    howTo: {
+      name: 'How to read marriage timing from a birth chart',
+      totalTime: 'PT4M',
+      steps: [
+        { name: 'Need an accurate birth time', text: 'The 7th house, Upapada and navamsa all move if the time is wrong. Marriage timing from date of birth alone is a guess.' },
+        { name: 'Read the natal marriage promise first', text: '7th house and lord, Venus, Jupiter (for traditional marriage support), darakaraka, Upapada Lagna and D9. A quiet natal 7th will not become loud just because a Venus dasha started.' },
+        { name: 'Find the marriage-producing periods', text: 'Classically, periods of the 7th lord, Venus, Jupiter, the darakaraka or planets in the 7th / navamsa 7th. Overlay transits of Jupiter and Saturn.' },
+        { name: 'Match two charts only after that', text: 'Kundli matching answers “these two people.” Marriage prediction answers “this chart.” Do not skip the second when you only wanted the first.' },
+      ],
+    },
+    body: `
+<h2>Marriage prediction vs kundli matching</h2>
+<p>They are different searches and different jobs. This page is <em>your</em> chart’s marriage timing. <a href="/kundli-matching">Kundli matching</a> is two charts overlaid — guna milan, doshas and synastry. A strong matching score does not create a marriage dasha; a marriage dasha does not fix an adverse overlay.</p>
+<table>
+<tr><th>Search</th><th>What you get here</th></tr>
+<tr><td>Marriage prediction by date of birth</td><td>7th house, navamsa and the dasha windows that favour a wedding</td></tr>
+<tr><td>When will I get married? / meri shaadi kab hogi</td><td>Dated periods, not a calendar day. Shaadi kab hogi kundli se is this reading in other words</td></tr>
+<tr><td>Marriage astrology / marriage horoscope</td><td>Your chart’s partnership promise plus current timing</td></tr>
+<tr><td>Future spouse prediction</td><td>Indications from the 7th, Venus, darakaraka and D9 — character and timing, not a name or photo</td></tr>
+<tr><td>Love marriage vs arranged</td><td>Venus/Rahu/5th signatures vs Jupiter/7th/family-house signatures — tendencies, not a verdict</td></tr>
+</table>
+
+<h2>Future husband, future wife</h2>
+<p>Those queries are the same technique with a gendered label. The chart does not print a passport. It describes the 7th-lord condition, Venus or Jupiter as spouse karaka, and the navamsa. “Future husband prediction astrology” and “future wife prediction astrology” belong here; they are not separate products.</p>
+
+<div class="panel">
+<h3>Delay is a pattern, not a curse</h3>
+<p>Saturn or Ketu on the 7th, a combust Venus, or a late-marriage dasha stack stretches the wait. That is information about timing, not a life sentence. A delay yoga plus a coming 7th-lord antardasha is a much more useful sentence than “Mangal dosha.”</p>
+</div>
+
+<h2>What this will not do</h2>
+<p>It will not give a wedding date to the day, and it will not describe a spouse you could pick out of a crowd. Love-life weather without the marriage question lives on <a href="/love-prediction">love prediction</a>. Compatibility with a specific person is <a href="/kundli-matching">kundli matching</a>.</p>`,
+    faq: [
+      ['When will I get married according to astrology?', 'Look at the running and upcoming periods of the 7th lord, Venus, Jupiter and the navamsa 7th, plus Jupiter/Saturn transits. That yields a window, not a date.'],
+      ['Can you predict marriage from date of birth only?', 'Only roughly. Without birth time the 7th house and navamsa are unreliable. Get the time from a certificate or a relative if you can.'],
+      ['Is this kundli matching?', 'No. Matching needs two birth data. This page is one chart’s marriage promise and timing.'],
+      ['Do you predict love marriage or arranged marriage?', 'The chart can lean — 5th/Venus/Rahu versus 7th/Jupiter/family houses. Plenty of charts show both. Treat it as a tendency.'],
+    ],
+  },
+
+  {
+    slug: 'love-prediction',
+    crumb: 'Love prediction',
+    linkLabel: 'Love prediction',
+    priority: '0.8',
+    title: 'Love Prediction by Date of Birth — Relationship Astrology from Your Chart',
+    ogTitle: 'Love Prediction by Date of Birth',
+    description:
+      'Love prediction by date of birth: relationship astrology, love horoscope and love-marriage timing from the 5th and 7th houses, Venus and the dasha you are in — not a daily love column. Free and private.',
+    h1: 'Love prediction by date of birth',
+    lede:
+      'Love astrology is not a daily sun-sign crush forecast. It is the 5th house (romance), Venus, the Moon, and whether the period you are in actually supports meeting someone — plus whether the 7th house is ready if that meeting is meant to last.',
+    ctaLabel: 'See my love prediction',
+    body: `
+<h2>Love prediction is not marriage prediction</h2>
+<p>People search both on the same afternoon and they are not the same chart question. <a href="/marriage-prediction">Marriage prediction</a> times a wedding from the 7th and navamsa. Love prediction asks whether romance, attraction and emotional weather are supported <em>now</em> — 5th house, Venus, Moon, Rahu, the running dasha — even when marriage is years away.</p>
+<table>
+<tr><th>Term</th><th>What it should mean</th></tr>
+<tr><td>Love prediction by date of birth</td><td>Your 5th/Venus/Moon against the current dasha, from birth data</td></tr>
+<tr><td>Love astrology / relationship astrology</td><td>How you attach, what you chase, where the chart frays under transits</td></tr>
+<tr><td>Love horoscope</td><td>Here: your chart. Not “Libra this week”</td></tr>
+<tr><td>Love prediction astrology / love marriage prediction</td><td>Whether romance periods and marriage periods overlap — a 5th-lord dasha with a silent 7th is dating, not a wedding</td></tr>
+</table>
+
+<h2>What the engine actually looks at</h2>
+<ul>
+<li><strong>5th house</strong> — romance, speculation, the person you cannot stay sensible about.</li>
+<li><strong>Venus</strong> — desire and how you show it; combustion and debility change the plot more than the sign meme.</li>
+<li><strong>Moon</strong> — whether you can feel the relationship you are in. A hard Saturn gochara on the Moon makes even a good Venus period feel lonely.</li>
+<li><strong>7th house</strong> — whether the romance has a container. Relationship astrology that ignores it describes crushes that never become a life.</li>
+<li><strong>Dasha overlay</strong> — the same Venus antardasha is a meet-cute in one chart and a breakup-and-reset in another, depending on lordship and natal condition.</li>
+</ul>
+
+<div class="panel">
+<h3>Compatibility is a second chart</h3>
+<p>Love prediction from one date of birth cannot tell you if <em>this</em> person is the one. For that you need <a href="/kundli-matching">kundli matching</a> or Western synastry — two birth data, both directions. One-chart love readings that name a partner’s appearance are fiction.</p>
+</div>
+
+<h2>Love horoscope today</h2>
+<p>There is no honest “love horoscope today” from a birth chart. Transits of the Moon change every two and a half days; they colour mood, they do not schedule a confession. Use the calculator’s current-period reading for weeks-to-months, and the panchanga if you want the day’s sky without pretending it is personal fate.</p>`,
+    faq: [
+      ['Can I get a love prediction from my date of birth?', 'Yes, as a chart reading: 5th house, Venus, Moon and the dasha you are in. Add birth time or the houses are guesswork.'],
+      ['Is this the same as a love horoscope?', 'Only if “horoscope” means your chart. It is not a daily love horoscope for your sun sign.'],
+      ['Can you predict a love marriage?', 'You can see whether romance periods and marriage periods coincide. That is a tendency, not a certificate.'],
+      ['Do I need my partner’s details?', 'Not for your own love timing. You do for compatibility — use kundli matching.'],
+    ],
+  },
+
+  {
+    slug: 'kundli-analysis',
+    crumb: 'Kundli analysis',
+    linkLabel: 'Kundli analysis',
+    priority: '0.9',
+    ogLocale: 'en_IN',
+    geoRegion: 'IN',
+    areaServed: 'IN',
+    title: 'Kundli Analysis & Janam Kundli — Kundli Future Prediction Online',
+    ogTitle: 'Kundli Analysis & Future Prediction',
+    description:
+      'Free janam kundli and kundli analysis online: lagna, grahas, dasha, yogas and kundli future prediction from your birth details. Kundali prediction without a fake percentage. Private — runs in your browser.',
+    h1: 'Kundli analysis and janam kundli, from your birth details',
+    lede:
+      'A janam kundli is not a stamp. Kundli analysis means reading the chart you were born with — houses, dashas, yogas — and then asking it the life questions people actually type: future, job, shaadi.',
+    ctaLabel: 'Open my janam kundli',
+    howTo: {
+      name: 'How to use this kundli calculator',
+      totalTime: 'PT3M',
+      steps: [
+        { name: 'Enter janam details', text: 'Date, exact time, place. Indian certificates often omit minutes; say so to yourself and treat lagna and vargas as provisional if you only have the hour.' },
+        { name: 'Keep Lahiri unless you practise otherwise', text: 'True Chitrapaksha is the default. KP and Raman are in the settings.' },
+        { name: 'Read lagna, then the running dasha', text: 'Kundli prediction that skips the current mahadasha/antardasha is a static portrait. The future question lives in the period.' },
+        { name: 'Open the life-area scores', text: 'Career, relationships, wealth and health are judged from this kundli against the period — that is the kundli future prediction, not a separate product.' },
+      ],
+    },
+    body: `
+<h2>Kundli, kundali, janam kundli</h2>
+<p>Same chart, different spelling. This page is the Indian vocabulary for what the calculator already is: a sidereal janma kundali with North or South Indian layout, Vimshottari dasha, yogas, doshas and vargas. The Western-facing twin is <a href="/birth-chart">birth chart</a>; the technical reading guide is <a href="/birth-chart-reading">birth chart reading</a>.</p>
+<table>
+<tr><th>Phrase</th><th>What to open</th></tr>
+<tr><td>Janam kundli / kundali</td><td>The D1 chart — lagna, nine grahas, bhavas, nakshatra</td></tr>
+<tr><td>Kundli analysis</td><td>Dignity, combustion, retrogression, yogas, doshas, vargas — not just a sign map</td></tr>
+<tr><td>Kundli future prediction / kundli prediction / kundali prediction</td><td>Dasha stack + gochara on this kundli, including career and marriage windows</td></tr>
+<tr><td>Kundli se job kab milegi / shaadi kab hogi</td><td>The same engine, asked as a timing question — see <a href="/career-prediction">career</a> and <a href="/marriage-prediction">marriage</a></td></tr>
+</table>
+
+<h2>What a serious kundli analysis includes</h2>
+<ul>
+<li>Lagna and house lords, not only planet-in-sign</li>
+<li>Nakshatra and pada — the dasha clock is keyed to the Moon’s mansion</li>
+<li>Condition: exaltation, debility, Neecha Bhanga, combustion, gandanta, retrogression</li>
+<li>Yogas and doshas with the cancellation rules (Mangal, Kaal Sarpa, Sade Sati)</li>
+<li>Divisional charts at least through D9 and D10</li>
+<li>Ashtakavarga bindus for whether a transit lands or glances off</li>
+</ul>
+
+<div class="panel">
+<h3>Kundli future prediction is a period reading</h3>
+<p>A kundli without dasha is a photograph. Kundli prediction is the photograph plus the chapter you are in. Two people with similar D1 maps get different “future” sentences because their Moon nakshatras started the 120-year clock at different offsets.</p>
+</div>
+
+<h2>India setup</h2>
+<p>IST including historical offsets, Lahiri default, both chart styles. Longer notes on Indian timezones and regional words (jathakam, porutham, rashi) are on <a href="/vedic-astrology-india">Vedic astrology for India</a>. Matching two kundlis is <a href="/kundli-matching">kundli matching</a>.</p>`,
+    faq: [
+      ['Is this janam kundli calculator free?', 'Yes. No sign-up, no cap. Calculations run in your browser.'],
+      ['What is kundli analysis vs kundli prediction?', 'Analysis is the chart’s structure. Prediction is that structure read through the current dasha and transits. This tool does both.'],
+      ['Kundli and kundali — which spelling is right?', 'Both. North Indian usage varies. The chart is the same.'],
+      ['Can I ask job kab milegi or shaadi kab hogi from this kundli?', 'Yes — those are career and marriage timing questions on this same janam kundli. Use the life-area reading and the dasha dates, not a single lucky day.'],
+    ],
+  },
+
+  {
+    slug: 'birth-chart',
+    crumb: 'Birth chart',
+    linkLabel: 'Birth chart',
+    priority: '0.9',
+    title: 'Free Birth Chart & Natal Chart Calculator — Personal Astrology Reading',
+    ogTitle: 'Free Birth Chart & Natal Chart Calculator',
+    description:
+      'Free birth chart and natal chart calculator: planets, houses, rising sign and a personal reading from your date, time and place of birth. Sidereal or Western. Private — computed in your browser.',
+    h1: 'Free birth chart and natal chart calculator',
+    lede:
+      'A birth chart is the sky at the moment you were born, mapped onto twelve houses. This calculator draws that natal chart from your date, time and place — then reads it, instead of stopping at a pretty wheel.',
+    ctaLabel: 'Cast my birth chart',
+    howTo: {
+      name: 'How to calculate a birth chart',
+      totalTime: 'PT2M',
+      steps: [
+        { name: 'Date, time, place', text: 'Time matters: the rising sign changes roughly every two hours. Place matters: the same instant is a different ascendant in London and in Lisbon.' },
+        { name: 'Choose the zodiac', text: 'Western (tropical) or Vedic (sidereal). They differ by about 24°. If you only know your star sign from magazines, start Western; if you want dashas and kundli language, use Vedic.' },
+        { name: 'Read rising, Moon and Sun in that order', text: 'Rising sets the houses. Moon is the weather. Sun is vitality. A birth chart that only advertises the Sun is a horoscope column.' },
+        { name: 'Open the reading, not only the glyph', text: 'Dignity, house rulership and current timing are the interpretation. The wheel is the index.' },
+      ],
+    },
+    body: `
+<h2>Birth chart, natal chart, astrology chart</h2>
+<p>Three names for one map. “Natal chart” is the European/US term; “birth chart” is the search most people use; “astrology chart” is the same drawing. This page is the Western-facing calculator. The Vedic how-to is <a href="/birth-chart-reading">birth chart reading</a>; Indian kundli language is <a href="/kundli-analysis">kundli analysis</a>.</p>
+<table>
+<tr><th>Tool people search</th><th>What you get</th></tr>
+<tr><td>Free birth chart / free natal chart</td><td>Full chart, no account</td></tr>
+<tr><td>Birth chart calculator / natal chart calculator / astrology chart calculator</td><td>Swiss Ephemeris positions in the browser</td></tr>
+<tr><td>Birth chart interpretation / analysis / astrology chart reading</td><td>Placements explained next to the wheel, plus current-period timing on the Vedic side</td></tr>
+<tr><td>Moon sign / rising sign / ascendant calculator</td><td>Included in the same chart — they are not separate engines</td></tr>
+</table>
+
+<h2>What must be on a real natal chart</h2>
+<ul>
+<li>All planets (and, in Vedic mode, Rahu and Ketu)</li>
+<li>Ascendant (rising sign) and house cusps — whole-sign in Vedic; Western wheel with aspects</li>
+<li>Dignity: own sign, exaltation, fall, detriment</li>
+<li>A reading path: houses for life areas, then timing (transits; Vimshottari if you use Vedic)</li>
+</ul>
+
+<div class="panel">
+<h3>Sidereal vs tropical in one sentence</h3>
+<p>If your Western Sun is mid-Taurus, your Vedic Sun is usually still in Aries. That 24° gap is precession, not a bug. Pick one system per reading; mixing them in the same sentence is how people decide astrology is random.</p>
+</div>
+
+<h2>Birth chart future prediction</h2>
+<p>The chart is the map; the future question is the map plus time. On the Vedic side that means dashas you can slide to 2027 and beyond. That conversion path — birth chart future prediction — lives on <a href="/future-prediction">future prediction by date of birth</a>, not a second copy of this page.</p>
+<p>Compatibility (two charts) is <a href="/kundli-matching">kundli matching</a>. A sun-sign explainer is not this page; a <a href="/personalized-horoscope">personalized horoscope</a> is.</p>`,
+    faq: [
+      ['Is the birth chart calculator free?', 'Yes. No sign-up and no limit on charts.'],
+      ['What is the difference between a birth chart and a natal chart?', 'None. Natal chart is the same map under the Latin name.'],
+      ['Do I need my exact birth time?', 'For the rising sign and houses, yes. Without time you can still see the planets’ signs that day; you cannot honestly house them.'],
+      ['Is this a Western or Vedic birth chart?', 'Both modes are in the app. This page explains the shared idea. Vedic vocabulary and dashas are on the kundli and birth-chart-reading guides.'],
+    ],
+  },
+
+  {
+    slug: 'personalized-horoscope',
+    crumb: 'Personalized horoscope',
+    linkLabel: 'Personalized horoscope',
+    priority: '0.8',
+    title: 'Personalized Horoscope & Online Astrology Reading from Your Chart',
+    ogTitle: 'Personalized Horoscope & Astrology Reading',
+    description:
+      'Personalized horoscope and online astrology reading from your birth chart — rising sign, Moon, current periods — not a sun-sign column. Personal astrology reading, free and private in your browser.',
+    h1: 'Your personalized horoscope, from your birth chart',
+    lede:
+      'A horoscope that does not use your birth time is a newspaper column. A personalized horoscope is an astrology reading of the chart you actually have — then of the period you are actually in.',
+    ctaLabel: 'Get my personalized horoscope',
+    body: `
+<h2>Personalized horoscope vs daily horoscope</h2>
+<p>Daily, weekly and monthly horoscopes are twelve texts. They can be well written. They cannot be about you. A personal horoscope, a personal astrology reading, an online astrology reading — those phrases only mean something if the page asked for date, time and place and then computed a chart.</p>
+<table>
+<tr><th>Search</th><th>Honest version</th></tr>
+<tr><td>Personalized horoscope / personal horoscope</td><td>Your rising sign, Moon and current transits or dashas</td></tr>
+<tr><td>Astrology reading online / online astrologer</td><td>A computed reading you can check, not a chat that flatters</td></tr>
+<tr><td>Personal astrology reading / personalized astrology reading</td><td>The same chart, written as a sitting rather than a column</td></tr>
+</table>
+
+<h2>What this reading contains</h2>
+<ul>
+<li>Natal placements with the condition of each planet (dignity, combustion, retrogression on the Vedic side; dignity and aspects on the Western side)</li>
+<li>House meanings for career, partnership, money and body</li>
+<li>Current timing — gochara and Vimshottari if you use Vedic; transits on the Western wheel</li>
+<li>The option to move the date and read a past or future year from the same chart</li>
+</ul>
+
+<div class="panel">
+<h3>Online astrologer, without the theatre</h3>
+<p>An “online astrologer” search is usually a request for a human sitting. This is software: Swiss Ephemeris, published rules, every claim tied to a placement you can see. That is stricter than a vague consultation, and weaker than a good one. Use it as the chart on the table, not as a substitute for judgement.</p>
+</div>
+
+<h2>Where to go next</h2>
+<p>If you specifically want the Vedic column-vs-chart distinction, use <a href="/horoscope">horoscope</a>. For the wheel itself, <a href="/birth-chart">birth chart</a>. For dated life windows, <a href="/future-prediction">future prediction</a>. For computed Q&amp;A framing, <a href="/ai-astrology">AI astrology</a>.</p>`,
+    faq: [
+      ['What is a personalized horoscope?', 'A reading from your birth chart — time and place included — rather than a sun-sign paragraph shared with a twelfth of Earth.'],
+      ['Is this an online astrologer?', 'It is an online astrology reading generated from your chart. It is not a live human consultation.'],
+      ['Do I need my birth time?', 'For a personal reading that uses houses or rising sign, yes. Date alone is a sky that day, not a horoscope of you.'],
+      ['Is it free?', 'Yes. The calculator runs locally. Nothing is uploaded.'],
+    ],
+  },
+
+  {
+    slug: 'ai-astrology',
+    crumb: 'AI astrology',
+    linkLabel: 'AI astrology',
+    priority: '0.7',
+    title: 'AI Astrology & AI Horoscope — Personalized Predictions from Your Chart',
+    ogTitle: 'AI Astrology — Personalized Chart Predictions',
+    description:
+      'AI astrology and AI horoscope as a computed birth-chart reading: AI birth chart analysis and personalized future prediction from date, time and place — not a static sun-sign bot. Free and private.',
+    h1: 'AI astrology: a computed reading, not a static horoscope',
+    lede:
+      '“AI astrologer” is a search for something that talks back. The useful version is still a birth chart: positions from the ephemeris, rules you can inspect, then language generated from that chart rather than from your sun sign.',
+    ctaLabel: 'Generate my AI astrology reading',
+    body: `
+<h2>What AI astrology should mean</h2>
+<p>Most “AI horoscope” products are a language model plus twelve signs. That is a chatbot with a costume. An AI birth chart reading has to do the astronomy first: Swiss Ephemeris in your browser, your lagna, your dashas, your transits — then any prose is grounded in those numbers.</p>
+<table>
+<tr><th>Phrase</th><th>What this page is</th></tr>
+<tr><td>AI astrology / AI astrologer</td><td>Personalized predictions computed from your chart, with the placements shown</td></tr>
+<tr><td>AI horoscope</td><td>Not a daily generated column. A chart-based current-period reading</td></tr>
+<tr><td>AI birth chart / AI astrology reading</td><td>The same natal map the rest of the site uses, with interpretation attached</td></tr>
+<tr><td>AI future prediction</td><td>Dasha + transit overlay you can move through years — see <a href="/future-prediction">future prediction</a></td></tr>
+</table>
+
+<h2>Why the chart still comes first</h2>
+<p>Language models invent fluent specifics. Ephemerides do not. This site’s differentiator is the second thing: every career, marriage and life sentence is tied to a house, a period lord or a transit you can open. If a hosted chat assistant is not configured, the reading still stands — it is the engine, not the chat window.</p>
+
+<div class="panel">
+<h3>AI is the differentiator, not the keyword we are betting the domain on</h3>
+<p>Search volume for “AI astrology” is newer and noisier than kundli, birth chart or “when will I get married.” This page exists so the query has a truthful home. The conversion path is still: birth data → chart → dated prediction.</p>
+</div>
+
+<h2>What you should not expect</h2>
+<p>No guaranteed chatbot on the free hosted build, no fortune about a named person without their birth data, and no daily AI horoscope that pretends the Moon’s two-day sign change is your fate. For a human-shaped sitting in software form, start at <a href="/personalized-horoscope">personalized horoscope</a>.</p>`,
+    faq: [
+      ['What is an AI astrologer?', 'At best, software that computes your chart and writes from it. At worst, a chatbot that never calculated a planet. This site does the calculation locally first.'],
+      ['Is an AI horoscope the same as a daily horoscope?', 'No. A daily AI horoscope is usually generated copy for a sign. This is a chart reading.'],
+      ['Do you store my questions or birth data?', 'Birth data stays in the browser for the calculator. Do not paste secrets into any chat field on a shared machine.'],
+      ['Why not make AI the homepage keyword?', 'Because people still search kundli, birth chart and specific life questions in much larger numbers. AI is how the reading is produced, not the only thing the site is.'],
+    ],
+  },
+
+  {
+    slug: 'astrology-2027',
+    crumb: '2027 predictions',
+    linkLabel: '2027 astrology predictions',
+    priority: '0.8',
+    title: 'Horoscope 2027 & Astrology Predictions 2027 — Your Year from Your Chart',
+    ogTitle: 'Astrology Predictions 2027 from Your Birth Chart',
+    description:
+      'Horoscope 2027 and yearly astrology predictions 2027 from your birth chart: move the forecast to 2027 and read career, marriage and life windows for that year. Not a 12-sign 2027 column.',
+    h1: 'Astrology predictions for 2027, from your birth chart',
+    lede:
+      'A “horoscope 2027” that ignores your birth time is a year-ahead magazine. This is the same personal engine as the rest of the site, with the date set to 2027 — dashas and transits for that year, not one paragraph per sign.',
+    ctaLabel: 'Read my 2027 prediction',
+    body: `
+<h2>Yearly astrology without twelve recycled paragraphs</h2>
+<p>Zodiac predictions 2027 and yearly astrology predictions 2027 are enormous search buckets. They are also where sites publish 12×4 essays and hope. You already have a better structure: the chart does not change; the sky and the dasha stack in 2027 do. Set the forecast date forward and read that year.</p>
+<table>
+<tr><th>Query</th><th>What to do here</th></tr>
+<tr><td>Horoscope 2027 / astrology 2027</td><td>Cast your chart, then read 2027’s periods and transits</td></tr>
+<tr><td>Yearly astrology predictions 2027</td><td>Career, marriage, love and life scores for windows that fall in 2027</td></tr>
+<tr><td>Zodiac predictions 2027</td><td>Still your rising and Moon, not “Aries in 2027” as a nation</td></tr>
+</table>
+
+<h2>What actually changes in a future year</h2>
+<ul>
+<li><strong>Dasha levels</strong> — you may still be in the same mahadasha and a different antardasha or pratyantar. That is usually the year-scale plot twist.</li>
+<li><strong>Slow transits</strong> — Saturn, Jupiter, Rahu/Ketu (and outer planets on the Western side) against your natal houses.</li>
+<li><strong>Sade Sati and similar long arcs</strong> — they either include 2027 or they do not. That is a yes/no, not a mood.</li>
+</ul>
+
+<div class="panel">
+<h3>2028, 2029, 2030</h3>
+<p>The same action, different year. This URL is the 2027 door because that is what people will type next. There is no honest reason to clone the article for every year; the calculator is the page that scales.</p>
+</div>
+
+<h2>Specific 2027 questions</h2>
+<p>Career in 2027 is still <a href="/career-prediction">career prediction</a> with the date moved. Marriage in 2027 is <a href="/marriage-prediction">marriage prediction</a>. The general life question is <a href="/future-prediction">future prediction</a>.</p>`,
+    faq: [
+      ['Can I see my 2027 horoscope from my birth chart?', 'Yes. The natal chart stays put; you read the 2027 dasha and transit overlay. That is a yearly prediction, not a daily 2027 horoscope.'],
+      ['Do you publish zodiac predictions for 2027?', 'Not as twelve generic essays. The useful version is your chart in that year.'],
+      ['What about 2028 and later?', 'Use the same calculator and change the date. This page targets the 2027 search; the engine is not limited to one year.'],
+      ['Is this free?', 'Yes. No sign-up. Computation stays on your device.'],
+    ],
+  },
 ];
 
 // ─── Sitemap ─────────────────────────────────────────────────────────────────
@@ -540,7 +1051,7 @@ function sitemap() {
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${[entry(`${ORIGIN}/`, '1.0', 'weekly'), ...PAGES.map(p => entry(`${ORIGIN}/${p.slug}`, '0.8', 'monthly'))].join('\n')}
+${[entry(`${ORIGIN}/`, '1.0', 'weekly'), ...PAGES.map(p => entry(`${ORIGIN}/${p.slug}`, p.priority ?? '0.8', 'monthly'))].join('\n')}
 </urlset>
 `;
 }
