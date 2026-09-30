@@ -63,6 +63,15 @@ export interface ChartContext {
   transitScoreMod?: number;
   /** True when the Lagna-side and Moon-side transit readings materially disagree. */
   transitDiverges?: boolean;
+  /**
+   * Graded Erashtaka (Sade Sati) / Ashtama / Kantaka Shani running now: which
+   * life areas it presses on, and how hard. Strong/severe grades temper an
+   * otherwise positive area trend to mixed.
+   */
+  erashtaka?: {
+    level: 'mild' | 'moderate' | 'strong' | 'severe';
+    areas: { area: 'health' | 'wealth' | 'career' | 'relationships'; note: string }[];
+  };
   /** Divisional signs per varga code, for the area-varga precedence rule. */
   divisionalRashis?: Record<string, Record<string, number>>;
 }
@@ -1010,6 +1019,17 @@ export class DashaPredictionEngine {
       const contested = natalFoundation.filter(f => f.weak).map(f => pick(AREA_NAME[f.area], lang));
       if (contested.length) {
         general.details.push(F_FOUNDATION_TENSION[en2si(lang)](joinAnd(contested, lang), mdName));
+      }
+    }
+
+    // Saturn's long transit from the Moon colours the areas it presses on.
+    const er = this._ctx?.erashtaka;
+    if (er) {
+      const byArea = { health, wealth, career, relationships };
+      for (const { area, note } of er.areas) {
+        const p = byArea[area];
+        p.details.push(note);
+        if ((er.level === 'strong' || er.level === 'severe') && p.trend === 'positive') p.trend = 'mixed';
       }
     }
 

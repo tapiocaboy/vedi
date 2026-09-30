@@ -1156,8 +1156,7 @@ html[lang='si'] .text-2xl      { font-size: 27px; line-height: 2.4rem; }
 html[lang='si'] .text-3xl      { font-size: 34px; line-height: 2.6rem; }
 
 /* SVG charts size their labels with presentation attributes, which CSS wins
-   against — scale those up for Sinhala too (North Indian chart house/planet
-   labels, knowledge-graph node labels). */
+   against — scale those up for Sinhala too (knowledge-graph node labels). */
 html[lang='si'] .si-svg-label   { font-size: 13px; }
 html[lang='si'] .si-svg-label-s { font-size: 10.5px; }
 

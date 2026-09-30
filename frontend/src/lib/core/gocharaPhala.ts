@@ -10,6 +10,8 @@
 import type { GocharaSnapshot, PlanetTransit } from './transits';
 import { valenceFromMoon } from './transits';
 import { VEDHA_FOR_GOOD, VEDHA_EXEMPT } from './transitAnalysis';
+import type { Lang } from './i18n';
+import { GOCHARA_PHALA_I18N } from './text/gocharaPhalaText';
 
 /**
  * Classical effect of each planet transiting house 1–12 from the Moon.
@@ -145,8 +147,9 @@ export const GOCHARA_PHALA: Record<string, string[]> = {
 };
 
 /** Classical effect line for `planet` transiting `houseFromMoon` (1–12). */
-export function gocharaEffect(planet: string, houseFromMoon: number): string {
-  return GOCHARA_PHALA[planet]?.[houseFromMoon - 1] ?? '';
+export function gocharaEffect(planet: string, houseFromMoon: number, lang: Lang = 'en'): string {
+  const table = (lang !== 'en' && GOCHARA_PHALA_I18N[lang]) || GOCHARA_PHALA;
+  return table[planet]?.[houseFromMoon - 1] ?? GOCHARA_PHALA[planet]?.[houseFromMoon - 1] ?? '';
 }
 
 // ── Per-zodiac reading (all 12 signs as Moon sign) ──────────────────────────────
@@ -182,7 +185,7 @@ export interface ZodiacEffects {
  * taken as the Moon sign, the effect of each currently transiting planet with
  * Moon-relative valence and vedha obstruction applied.
  */
-export function computeZodiacEffects(g: GocharaSnapshot): ZodiacEffects[] {
+export function computeZodiacEffects(g: GocharaSnapshot, lang: Lang = 'en'): ZodiacEffects[] {
   const out: ZodiacEffects[] = [];
   for (let rashi = 0; rashi < 12; rashi++) {
     // Which planets occupy each house from this hypothetical Moon sign.
@@ -208,7 +211,7 @@ export function computeZodiacEffects(g: GocharaSnapshot): ZodiacEffects[] {
           }
         }
       }
-      return { planet: t.planet, house, effect: gocharaEffect(t.planet, house), valence, vedhaBy, isRetrograde: t.isRetrograde };
+      return { planet: t.planet, house, effect: gocharaEffect(t.planet, house, lang), valence, vedhaBy, isRetrograde: t.isRetrograde };
     });
 
     let weighted = 0, totalWeight = 0;

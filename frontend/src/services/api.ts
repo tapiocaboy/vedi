@@ -202,7 +202,7 @@ export async function getAntardashaDepth(
   return libGetAntardashaDepth(birthData, antardashaStart, asOf, lang ?? getStoredLang());
 }
 
-export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult> {
+export async function getAshtakavarga(birthData: BirthData): Promise<AshtakavargaResult & { lagnaRashi: number }> {
   return getAshtakavargaForChart(birthData);
 }
 
@@ -242,8 +242,8 @@ export async function getGochara(birthData: BirthData, asOf?: Date, lang?: Lang)
 }
 
 /** Major transits (Saturn, Jupiter, nodes, Mars, Sun) as dated sign segments scored against the natal chart. */
-export async function getTransitImpact(birthData: BirthData, asOf?: Date): Promise<TransitImpactReport> {
-  return getTransitImpactReport(birthData, asOf);
+export async function getTransitImpact(birthData: BirthData, asOf?: Date, lang?: Lang): Promise<TransitImpactReport> {
+  return getTransitImpactReport(birthData, asOf, lang ?? getStoredLang());
 }
 
 /** Divisional charts: Navamsa (D9) + Dasamsa (D10) with marriage/career insights. */

@@ -27,7 +27,7 @@ interface Props {
 export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
   const isLight = useTheme();
   const { lang, t } = useLang();
-  const zodiacs = useMemo(() => computeZodiacEffects(gochara), [gochara]);
+  const zodiacs = useMemo(() => computeZodiacEffects(gochara, lang), [gochara, lang]);
   const [open, setOpen] = useState<number | null>(gochara.natalMoonRashi);
 
   const head = isLight ? 'text-gray-800' : 'text-white';

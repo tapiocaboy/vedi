@@ -448,7 +448,7 @@ const SignDetail: React.FC<{
                   )}
                   <span className={`ml-auto text-[10px] font-mono ${tone}`}>{p.houseFromMoon}{t('now.transitFromMoonShort')}</span>
                 </div>
-                <div className={`text-[11px] mt-0.5 ${body}`}>{gocharaEffect(p.planet, p.houseFromMoon)}</div>
+                <div className={`text-[11px] mt-0.5 ${body}`}>{gocharaEffect(p.planet, p.houseFromMoon, coreLang(lang))}</div>
                 {p.note && <div className={`text-[11px] italic mt-0.5 ${body}`}>{p.note}</div>}
               </li>
             );

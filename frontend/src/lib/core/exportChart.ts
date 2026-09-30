@@ -4,7 +4,9 @@
  * Assembles a portable Markdown document from a generated chart: birth
  * date/time/location, Sun & Moon positions, the full D1 planetary table, all
  * the divisional (varga) charts D2–D60, the dasha periods, and — when a
- * current-period prediction is supplied — the Knowledge Graph section.
+ * current-period prediction is supplied — the Knowledge Graph section. The
+ * download also adds the life-strength map, current transit notes, the graded
+ * Sade Sati (Erashtaka) timeline, doshas and the Transit Impact outlook.
  */
 
 import type { Chart } from '../../types/astrology';
@@ -19,6 +21,15 @@ import { buildKnowledgeGraphMarkdown } from './knowledgeGraph';
 import { marriageInsights, careerInsights } from '../services/vargaService';
 import { getCurrentPeriodPrediction } from '../services/predictionService';
 import { getAscendantSamples } from './ephemeris';
+import { pushLifeStrengthMap, pushCurrentTransits, pushDoshas, pushTransitImpact } from './exportExtras';
+import { getDoshaReport, type DoshaReport } from '../services/doshaService';
+import { getTransitImpactReport, type TransitImpactReport } from '../services/transitImpactService';
+
+/** Heavier, async-computed sections the download adds when available. */
+export interface ChartExportExtras {
+  doshas?: DoshaReport;
+  transitImpact?: TransitImpactReport;
+}
 
 function titleCase(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
@@ -55,6 +66,7 @@ export function buildChartMarkdown(
   prediction?: DashaPredictionData,
   /** Measured ascendant samples across a ±band, for exact minutes-to-boundary. */
   ascendantSamples?: Array<{ offsetMinutes: number; longitude: number }>,
+  extras: ChartExportExtras = {},
 ): string {
   const bd = chart.birthData;
   const asc = chart.ascendant;
@@ -383,6 +395,12 @@ export function buildChartMarkdown(
     push();
   }
 
+  // ── Life-strength map, transits, Sade Sati & doshas, Transit Impact ──
+  pushLifeStrengthMap(push, chart);
+  if (prediction) pushCurrentTransits(push, prediction);
+  if (extras.doshas) pushDoshas(push, extras.doshas);
+  if (extras.transitImpact) pushTransitImpact(push, extras.transitImpact);
+
   // ── Knowledge Graph (current-period entity map) ───────────────────────
   if (prediction) {
     push(buildKnowledgeGraphMarkdown(prediction));
@@ -416,7 +434,11 @@ export async function downloadChartMarkdown(chart: Chart): Promise<void> {
   } catch {
     ascendantSamples = undefined;   // fall back to the nominal-rate estimate
   }
-  const md = buildChartMarkdown(chart, prediction, ascendantSamples);
+  // Sade Sati grading and Transit Impact are heavier; each is optional.
+  const extras: ChartExportExtras = {};
+  try { extras.doshas = await getDoshaReport(chart.birthData, 'en'); } catch { /* skip section */ }
+  try { extras.transitImpact = await getTransitImpactReport(chart.birthData, new Date(), 'en'); } catch { /* skip section */ }
+  const md = buildChartMarkdown(chart, prediction, ascendantSamples, extras);
   const { date } = fmtDateTime(chart.birthData.date);
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);

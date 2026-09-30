@@ -143,7 +143,8 @@ export async function getPratyantardashaPrediction(bd: BirthData, mahadasha: str
 /** Just the Ashtakavarga grid for the chart. */
 export async function getAshtakavargaForChart(bd: BirthData) {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
-  return computeAshtakavarga({
+  // The Lagna lets the UI turn each sign's score into a life area (house).
+  return { lagnaRashi: positions['ASCENDANT'].rashi, ...computeAshtakavarga({
     Lagna: positions['ASCENDANT'].rashi,
     Sun: positions['SUN'].rashi,
     Moon: positions['MOON'].rashi,
@@ -152,7 +153,7 @@ export async function getAshtakavargaForChart(bd: BirthData) {
     Jupiter: positions['JUPITER'].rashi,
     Venus: positions['VENUS'].rashi,
     Saturn: positions['SATURN'].rashi,
-  });
+  }) };
 }
 
 export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
@@ -168,10 +169,17 @@ export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Dat
   // indistinguishable from one crossing empty sky.
   try {
     const gochara = await getCurrentTransits(bd.ayanamsa, ctx.moonRashi!, ctx.ascendantRashi!, td, undefined, positions, lang);
-    const transitSummary = summarizeGocharaForPrediction(gochara, lang);
+    // Dasha lords let the Erashtaka grade see whether the period running now
+    // doubles Saturn's pressure or carries the native through it.
+    const transitSummary = summarizeGocharaForPrediction(gochara, lang, {
+      maha: current.mahadasha.lord, antar: current.antardasha.lord,
+    });
     ctx.transitNotes = transitSummary.notes;
     ctx.transitScoreMod = transitSummary.scoreMod;
     ctx.transitDiverges = transitSummary.diverges;
+    if (transitSummary.erashtaka) {
+      ctx.erashtaka = { level: transitSummary.erashtaka.level, areas: transitSummary.erashtaka.areas };
+    }
   } catch {
     // Transits are an enhancement — never block the core prediction.
   }

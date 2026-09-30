@@ -658,6 +658,20 @@ export interface SadeSatiPhase {
   houseFromMoon: number; // 12, 1, or 2
   start: string;         // ISO
   end: string;           // ISO
+  /** Chart-specific grade of this phase (filled by the dosha service). */
+  grade?: SadeSatiPhaseGrade;
+}
+
+export interface SadeSatiPhaseGrade {
+  intensity: number;
+  level: 'mild' | 'moderate' | 'strong' | 'severe';
+  levelLabel: string;
+  summary: string;
+  aggravating: string[];
+  mitigating: string[];
+  context: string[];
+  /** The antardashas running inside the phase, each graded. */
+  windows: import('./erashtaka').ErashtakaWindow[];
 }
 
 export interface SadeSatiPeriod {
@@ -665,6 +679,8 @@ export interface SadeSatiPeriod {
   end: string;
   phases: SadeSatiPhase[];
   status: 'past' | 'current' | 'upcoming';
+  /** 1-based cycle number in this lifetime (filled by the dosha service). */
+  cycle?: number;
 }
 
 const PHASE_BY_HOUSE: Record<number, SadeSatiPhaseName> = { 12: 'rising', 1: 'peak', 2: 'setting' };

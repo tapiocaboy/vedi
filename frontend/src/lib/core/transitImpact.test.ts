@@ -115,3 +115,38 @@ describe('transit sky overlay copy', () => {
     expect(overlaySentence(seg, 'health')).toMatch(/Jupiter/);
   });
 });
+
+describe('transitImpact in every language', () => {
+  const LANGS = ['si', 'ta', 'zh', 'hi', 'ja', 'ko', 'ar', 'ml'] as const;
+  // Saturn over the natal Moon (Sade Sati peak + graded note) and Jupiter on the Ascendant.
+  const segsFor = (lang: 'en' | typeof LANGS[number]) => [
+    ...buildSegments('SATURN', days(10), days(10).map(() => 335), natal, [{ level: 'Mahadasha', lord: 'Saturn', start: '2024-01-01', end: '2030-01-01' }], lang),
+    ...buildSegments('JUPITER', days(10), days(10).map(() => 245), natal, [], lang),
+  ];
+  const en = segsFor('en');
+
+  it('tags carry stable keys across languages', () => {
+    expect(en[0].tags.map(t => t.key)).toContain('sadePeak');
+    for (const lang of LANGS) expect(segsFor(lang)[0].tags.map(t => t.key)).toEqual(en[0].tags.map(t => t.key));
+  });
+
+  it.each(LANGS)('%s: tags, advice, effect and stories are translated', lang => {
+    const got = segsFor(lang);
+    got.forEach((seg, i) => {
+      const texts = [
+        ...seg.tags.flatMap(t => [t.label, t.note]), seg.advice, seg.effect,
+        happeningHeadline(seg, lang), skyStory(seg, 'Saturn–Venus', lang),
+        overlaySentence(seg, 'career', 'positive', lang), overlaySentence(seg, 'health', undefined, lang),
+      ];
+      const enTexts = [
+        ...en[i].tags.flatMap(t => [t.label, t.note]), en[i].advice, en[i].effect,
+        happeningHeadline(en[i]), skyStory(en[i], 'Saturn–Venus'),
+        overlaySentence(en[i], 'career', 'positive'), overlaySentence(en[i], 'health'),
+      ];
+      texts.forEach((t, j) => {
+        expect(t, `${seg.planet}[${j}]`).not.toBe(enTexts[j]);
+        expect(t, `${seg.planet}[${j}]`).not.toMatch(/\b(the|your|is|and|from|house)\b/);
+      });
+    });
+  });
+});

@@ -7,7 +7,6 @@ const ACCENT = 'var(--c-accent)';
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
-import { NorthIndianChart } from './components/Chart/NorthIndianChart';
 import { PlanetTable } from './components/Chart/PlanetTable';
 import { YogasDisplay } from './components/Chart/YogasDisplay';
 import { AshtakavargaGrid } from './components/Chart/AshtakavargaGrid';
@@ -68,7 +67,6 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
 
-type ChartStyle = 'south' | 'north';
 type ViewTab = 'chart' | 'yogas' | 'dasha' | 'now' | 'transits' | 'match' | 'insights' | 'vargas' | 'graph' | 'doshas';
 type Theme = 'dark' | 'light' | 'mono' | 'azure' | 'terminal';
 
@@ -84,7 +82,6 @@ function isPhoneLayout(): boolean {
 
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
-  const [chartStyle, setChartStyle] = useState<ChartStyle>('south');
   const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
   const [chartData, setChartData]   = useState<Chart | null>(null);
   const [westernChartData, setWesternChartData] = useState<WesternChart | null>(null);
@@ -617,7 +614,7 @@ function AppContent() {
                     <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
                     <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
                     <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
-                    <TabBtn id="transits" label="Transits"          icon={Orbit}      />
+                    <TabBtn id="transits" label={t('tab.transits')} icon={Orbit}      />
                     <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
                     <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
                     <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
@@ -629,51 +626,14 @@ function AppContent() {
                   {/* ── Chart ─────────────────────────────────────── */}
                   {activeTab === 'chart' && (
                     <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                      <div className="tab-bar inline-flex justify-center gap-1 p-1 rounded-xl mx-auto">
-                        {(['south', 'north'] as ChartStyle[]).map(style => (
-                          <button
-                            key={style}
-                            onClick={() => setChartStyle(style)}
-                            className={`relative px-5 py-2 rounded-lg text-xs font-semibold transition-colors ${
-                              chartStyle === style
-                                ? 'text-white on-accent'
-                                : isLight
-                                  ? 'text-slate-500 hover:text-slate-800'
-                                  : 'text-white/40 hover:text-white'
-                            }`}
-                          >
-                            {chartStyle === style && (
-                              <motion.span
-                                layoutId="chart-style-pill"
-                                className="absolute inset-0 rounded-lg shadow-sm"
-                                style={{ backgroundColor: ACCENT }}
-                                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
-                              />
-                            )}
-                            <span className="relative z-10">
-                              {style === 'south' ? t('chart.southIndian') : t('chart.northIndian')}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
-                        {chartStyle === 'south'
-                          ? <SouthIndianChart
-                              planets={chartData.planets}
-                              ascendantRashi={chartData.ascendant.rashiIndex}
-                              currentDasha={chartData.currentDasha}
-                              mahadashaTimeline={chartData.mahadashaTimeline}
-                              birthDate={chartData.birthData.date}
-                            />
-                          : <NorthIndianChart
-                              planets={chartData.planets}
-                              ascendantRashi={chartData.ascendant.rashiIndex}
-                              currentDasha={chartData.currentDasha}
-                              mahadashaTimeline={chartData.mahadashaTimeline}
-                              birthDate={chartData.birthData.date}
-                            />
-                        }
+                        <SouthIndianChart
+                          planets={chartData.planets}
+                          ascendantRashi={chartData.ascendant.rashiIndex}
+                          currentDasha={chartData.currentDasha}
+                          mahadashaTimeline={chartData.mahadashaTimeline}
+                          birthDate={chartData.birthData.date}
+                        />
                       </div>
 
                       <NakshatraInfo nakshatra={chartData.moonNakshatra} />

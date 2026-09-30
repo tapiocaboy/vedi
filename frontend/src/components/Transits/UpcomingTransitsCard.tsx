@@ -120,7 +120,7 @@ export const UpcomingTransitsCard: React.FC<Props> = ({ ayanamsa, natalMoonRashi
                     <p className={`text-[12px] leading-relaxed ${body}`}>{ev.effect}</p>
                     {ev.type === 'ingress' && (
                       <p className={`text-[11px] leading-relaxed italic ${sub}`}>
-                        {gocharaEffect(ev.planet, ev.houseFromMoon)}
+                        {gocharaEffect(ev.planet, ev.houseFromMoon, coreLang(lang))}
                       </p>
                     )}
                     <ul className="space-y-1">

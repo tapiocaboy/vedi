@@ -12,6 +12,8 @@ import { X, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
 import type { GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeTransitNatal } from '../../lib/core/transitAnalysis';
 import { gocharaEffect } from '../../lib/core/gocharaPhala';
+import { type Bi, pick, ordinalNum } from '../../lib/core/i18n';
+import { TR, TR_FALLBACK } from '../../lib/core/text/transitReadingText';
 import { PLANET_SYMBOLS, PLANET_COLORS, RASHIS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
 import { useLang } from '../../i18n/LanguageContext';
@@ -20,14 +22,6 @@ import {
 } from '../../i18n/astroLabels';
 
 const ACCENT = 'var(--c-accent)';
-
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-function titleCase(s: string): string {
-  return s.charAt(0) + s.slice(1).toLowerCase();
-}
 
 type Tone = 'good' | 'bad' | 'neutral';
 const toneColor = (tone: Tone) => (tone === 'good' ? '#10b981' : tone === 'bad' ? '#f43f5e' : '#94a3b8');
@@ -187,65 +181,55 @@ interface Reading {
 }
 
 function natalTheme(planet: string, lang: Lang): string {
-  if (planet === 'ASCENDANT') return 'your body, vitality and how you meet the world';
-  return labelPlanetTheme(planet, lang) || 'its areas of life';
+  if (planet === 'ASCENDANT') return pick(TR_FALLBACK.ascTheme, lang);
+  return labelPlanetTheme(planet, lang) || pick(TR_FALLBACK.areas, lang);
 }
 function natalName(planet: string, lang: Lang): string {
-  return planet === 'ASCENDANT' ? 'Ascendant' : labelPlanet(planet, lang);
+  return planet === 'ASCENDANT' ? pick(TR_FALLBACK.ascName, lang) : labelPlanet(planet, lang);
 }
 
 function buildReading(tr: PlanetTransit, g: GocharaSnapshot, lang: Lang): Reading {
   const name = labelPlanet(tr.planet, lang);
-  const meaning = `${name} stands for ${labelPlanetTheme(tr.planet, lang) || 'its themes'}. Wherever it travels, it colours that part of your life.`;
+  const t = (b: Bi) => pick(b, lang);
+  const meaning = TR.meaning(name, labelPlanetTheme(tr.planet, lang) || t(TR_FALLBACK.themes), lang);
 
-  const classical = gocharaEffect(tr.planet, tr.houseFromMoon);
+  const classical = gocharaEffect(tr.planet, tr.houseFromMoon, lang);
+  const sign = labelRashi(tr.rashi, lang, RASHIS[tr.rashi]);
   const placement =
-    `Right now ${name} is moving through ${labelRashi(tr.rashi, lang, RASHIS[tr.rashi])} — your ${ordinal(tr.houseFromLagna)} house (${labelHouseTheme(tr.houseFromLagna, lang)}), and the ${ordinal(tr.houseFromMoon)} place from your Moon.` +
-    (classical ? ` The classical reading for this position: ${classical}` : '');
+    TR.placement({
+      name, sign, houseL: ordinalNum(tr.houseFromLagna, lang),
+      theme: labelHouseTheme(tr.houseFromLagna, lang), houseM: ordinalNum(tr.houseFromMoon, lang),
+    }, lang) +
+    (classical ? TR.classical(classical, lang) : '');
 
-  const verdict =
-    tr.valence > 0
-      ? { label: 'Helping you now', tone: 'good' as Tone, text: `This is a supportive placement — ${name}'s themes tend to flow more easily and bring benefit at the moment.` }
-      : tr.valence < 0
-        ? { label: 'Needs care now', tone: 'bad' as Tone, text: `This is a demanding placement — ${name}'s themes ask for extra patience and care right now.` }
-        : { label: 'Steady for now', tone: 'neutral' as Tone, text: `This is a neutral placement — ${name} is neither strongly helping nor holding you back at the moment.` };
+  const kind: Tone = tr.valence > 0 ? 'good' : tr.valence < 0 ? 'bad' : 'neutral';
+  const verdict = { label: t(TR.verdictLabel[kind as 'good' | 'bad' | 'neutral']), tone: kind, text: TR.verdictText(kind as 'good' | 'bad' | 'neutral', name, lang) };
 
   const condition: { text: string; tone: Tone }[] = [];
-  if (tr.dignity === 'exalted') condition.push({ text: 'It is at its strongest (exalted) — able to give near-peak results.', tone: 'good' });
-  else if (tr.dignity === 'own-sign') condition.push({ text: 'It sits in its own sign — comfortable, stable and dependable.', tone: 'good' });
-  else if (tr.dignity === 'debilitated') condition.push({ text: `It is weakened (debilitated) in ${labelRashi(tr.rashi, lang, RASHIS[tr.rashi])} — its results are muted, so be patient.`, tone: 'bad' });
-  if (tr.combust) condition.push({ text: 'It is too close to the Sun (combust) — its energy is dimmed for now.', tone: 'bad' });
+  if (tr.dignity === 'exalted') condition.push({ text: t(TR.exalted), tone: 'good' });
+  else if (tr.dignity === 'own-sign') condition.push({ text: t(TR.ownSign), tone: 'good' });
+  else if (tr.dignity === 'debilitated') condition.push({ text: TR.debilitated(sign, lang), tone: 'bad' });
+  if (tr.combust) condition.push({ text: t(TR.combust), tone: 'bad' });
   if (tr.bindus != null) {
-    condition.push(
-      tr.bindus >= 5
-        ? { text: `It holds ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — its results here are strengthened for you.`, tone: 'good' }
-        : tr.bindus <= 2
-          ? { text: `It holds only ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — its results here are weakened for you.`, tone: 'bad' }
-          : { text: `It holds ${tr.bindus} of 8 support points (ashtakavarga bindus) in this sign — an average level of support.`, tone: 'neutral' },
-    );
+    const bk = tr.bindus >= 5 ? 'high' : tr.bindus <= 2 ? 'low' : 'mid';
+    condition.push({ text: TR.bindus(tr.bindus, bk, lang), tone: bk === 'high' ? 'good' : bk === 'low' ? 'bad' : 'neutral' });
   }
-  if (tr.isRetrograde) condition.push({ text: 'It is retrograde — a time to review, revisit and finish things rather than start new ones.', tone: 'neutral' });
-  if (tr.stationary) condition.push({ text: 'It is almost standing still (stationary) — an unusually powerful, pivotal moment for its themes.', tone: 'neutral' });
-  if (tr.vedha) condition.push({ text: `Its good result is currently blocked (vedha) by ${titleCase(tr.vedha.byPlanet)}, so don't over-rely on it.`, tone: 'bad' });
-  if (tr.gandanta) condition.push({ text: 'It sits at a delicate sign-junction (gandanta) — matters here feel a little unstable.', tone: 'bad' });
-  if (tr.war) condition.push({ text: `It is in a close contest (planetary war) with ${titleCase(tr.war.with)} — the weaker planet's results suffer.`, tone: 'bad' });
+  if (tr.isRetrograde) condition.push({ text: t(TR.retro), tone: 'neutral' });
+  if (tr.stationary) condition.push({ text: t(TR.stationary), tone: 'neutral' });
+  if (tr.vedha) condition.push({ text: TR.vedha(labelPlanet(tr.vedha.byPlanet, lang), lang), tone: 'bad' });
+  if (tr.gandanta) condition.push({ text: t(TR.gandanta), tone: 'bad' });
+  if (tr.war) condition.push({ text: TR.war(labelPlanet(tr.war.with, lang), lang), tone: 'bad' });
 
   const natal = computeTransitNatal(g)
     .filter(h => h.transit === tr.planet && h.transit !== h.natal && (h.kind === 'conjunction' ? (h.orb ?? 99) <= 12 : h.virupa >= 30))
     .slice(0, 5)
     .map(h =>
       h.kind === 'conjunction'
-        ? `${name} is sitting right on your natal ${natalName(h.natal, lang)} (${h.orb}° away) — strongly activating ${natalTheme(h.natal, lang)}.`
-        : `${name} is casting a ${Math.round((h.virupa / 60) * 100)}% aspect on your natal ${natalName(h.natal, lang)} — stirring ${natalTheme(h.natal, lang)}.`,
+        ? TR.natalConj({ name, natal: natalName(h.natal, lang), orb: h.orb, theme: natalTheme(h.natal, lang) }, lang)
+        : TR.natalAspect({ name, natal: natalName(h.natal, lang), pct: Math.round((h.virupa / 60) * 100), theme: natalTheme(h.natal, lang) }, lang),
     );
 
-  const takeaway =
-    (tr.valence > 0
-      ? `A good window to lean into the areas above — take initiative where ${name} supports you.`
-      : tr.valence < 0
-        ? `Go gently in the areas above for now — avoid forcing outcomes and look after the basics.`
-        : `Keep a steady routine in these areas — no strong push or pull from ${name} right now.`) +
-    (natal.length ? ' The contacts to your birth chart are the clearest signs of real events during this transit.' : '');
+  const takeaway = TR.takeaway(kind as 'good' | 'bad' | 'neutral', name, lang) + (natal.length ? t(TR.natalTail) : '');
 
   return { meaning, placement, verdict, condition, natal, takeaway };
 }

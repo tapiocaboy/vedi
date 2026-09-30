@@ -1,44 +1,130 @@
 /**
- * Bilingual transit prose — the Gochara snapshot notes (transits.ts) and the
+ * Transit prose in all nine engine languages — the Gochara snapshot notes (transits.ts) and the
  * interpretive transit predictions (transitAnalysis.ts).
  */
 
-import { type Lang, type TableLang, planetName, joinAnd } from '../i18n';
+import { type Bi, type Lang, planetName, joinAnd, ordinalNum } from '../i18n';
+
+/** A full nine-language row; `sel` picks one. */
+type L9 = Record<Lang, string>;
+const sel = (lang: Lang, r: L9): string => r[lang] ?? r.en;
 
 
 // ─── Snapshot notes (transits.ts) ──────────────────────────────────────────
 
 export const TRANSIT_NOTE = {
-  sadeSatiPhase: { en: 'Sade Sati phase from Moon', si: 'චන්ද්‍රයාගෙන් සාඩේ සති අවධිය' },
-  ashtamaShani: { en: 'Ashtama Shani — pressure on health, hidden matters', si: 'අෂ්ටම ශනි — සෞඛ්‍යයට හා සැඟවුණු කරුණුවලට පීඩනය' },
-  kantakaShani: { en: 'Kantaka Shani — stress on home, mother, vehicles', si: 'කණ්ටක ශනි — නිවස, මව හා වාහනවලට ආතතිය' },
-  saturnFavourable: { en: 'Favourable Saturn transit (3/6/11 from Moon)', si: 'හිතකර ශනි ගෝචරය (චන්ද්‍රයාගෙන් 3/6/11)' },
-  guruAuspicious: { en: 'Auspicious Guru transit from Moon', si: 'චන්ද්‍රයාගෙන් සුබ ගුරු ගෝචරය' },
-  guruDemanding: { en: 'Demanding Guru transit — expansion turns to lessons', si: 'දුෂ්කර ගුරු ගෝචරය — ව්‍යාප්තිය පාඩම් බවට හැරේ' },
-  nodeSensitive: { en: 'Node on a sensitive axis from Moon — restlessness, hidden currents', si: 'චන්ද්‍රයාගෙන් සංවේදී අක්ෂයක ඡායා ග්‍රහයා — නොසන්සුන්කම, සැඟවුණු ධාරා' },
-  marsKuja: { en: 'Mars on a Kuja axis from Lagna — manage temper and conflicts', si: 'ලග්නයෙන් කුජ අක්ෂයක කුජ — කෝපය හා ගැටුම් පාලනය කර ගන්න' },
+  sadeSatiPhase: {
+    en: 'Sade Sati phase from Moon', si: 'චන්ද්‍රයාගෙන් ඒරාෂ්ටක ශනි අවධිය',
+    ta: 'சந்திரனிலிருந்து ஏழரைச் சனி கட்டம்', zh: '从月亮起算的土星七年半阶段', hi: 'चंद्र से साढ़े साती का चरण',
+    ja: '月から見たサデ・サティの期間', ko: '달 기준 사데 사티 단계', ar: 'مرحلة سادي ساتي من القمر', ml: 'ചന്ദ്രനിൽ നിന്ന് ഏഴര ശനി ഘട്ടം',
+  },
+  ashtamaShani: {
+    en: 'Ashtama Shani — pressure on health, hidden matters', si: 'අෂ්ටම ශනි — සෞඛ්‍යයට හා සැඟවුණු කරුණුවලට පීඩනය',
+    ta: 'அஷ்டம சனி — உடல்நலம், மறைந்த விஷயங்களில் அழுத்தம்', zh: '八宫土星——健康与隐秘之事承压', hi: 'अष्टम शनि — स्वास्थ्य और छिपे मामलों पर दबाव',
+    ja: 'アシュタマ・シャニ — 健康と隠れた事柄に圧力', ko: '아슈타마 샤니 — 건강과 숨은 일에 압박', ar: 'أشتاما شاني — ضغط على الصحة والأمور الخفية', ml: 'അഷ്ടമ ശനി — ആരോഗ്യത്തിലും ഒളിഞ്ഞ കാര്യങ്ങളിലും സമ്മർദ്ദം',
+  },
+  kantakaShani: {
+    en: 'Kantaka Shani — stress on home, mother, vehicles', si: 'කණ්ටක ශනි — නිවස, මව හා වාහනවලට ආතතිය',
+    ta: 'கண்டக சனி — வீடு, தாய், வாகனங்களில் அழுத்தம்', zh: '四宫土星——家庭、母亲与车辆承压', hi: 'कंटक शनि — घर, माता और वाहनों पर तनाव',
+    ja: 'カンタカ・シャニ — 家庭・母親・乗り物にストレス', ko: '칸타카 샤니 — 가정, 어머니, 차량에 스트레스', ar: 'كانتاكا شاني — ضغط على البيت والأم والمركبات', ml: 'കണ്ടക ശനി — വീട്, അമ്മ, വാഹനങ്ങൾ എന്നിവയിൽ സമ്മർദ്ദം',
+  },
+  saturnFavourable: {
+    en: 'Favourable Saturn transit (3/6/11 from Moon)', si: 'හිතකර ශනි ගෝචරය (චන්ද්‍රයාගෙන් 3/6/11)',
+    ta: 'சாதகமான சனி கோசாரம் (சந்திரனிலிருந்து 3/6/11)', zh: '有利的土星行运（月亮起第3/6/11宫）', hi: 'अनुकूल शनि गोचर (चंद्र से 3/6/11)',
+    ja: '好ましい土星トランジット（月から3/6/11）', ko: '유리한 토성 트랜짓(달 기준 3/6/11)', ar: 'عبور مواتٍ لزحل (3/6/11 من القمر)', ml: 'അനുകൂല ശനി ഗോചരം (ചന്ദ്രനിൽ നിന്ന് 3/6/11)',
+  },
+  guruAuspicious: {
+    en: 'Auspicious Guru transit from Moon', si: 'චන්ද්‍රයාගෙන් සුබ ගුරු ගෝචරය',
+    ta: 'சந்திரனிலிருந்து சுப குரு கோசாரம்', zh: '从月亮起算的吉祥木星行运', hi: 'चंद्र से शुभ गुरु गोचर',
+    ja: '月から見て吉となる木星トランジット', ko: '달 기준 길한 목성 트랜짓', ar: 'عبور مبارك للمشتري من القمر', ml: 'ചന്ദ്രനിൽ നിന്ന് ശുഭ ഗുരു ഗോചരം',
+  },
+  guruDemanding: {
+    en: 'Demanding Guru transit — expansion turns to lessons', si: 'දුෂ්කර ගුරු ගෝචරය — ව්‍යාප්තිය පාඩම් බවට හැරේ',
+    ta: 'கடினமான குரு கோசாரம் — வளர்ச்சி பாடங்களாக மாறும்', zh: '严格的木星行运——扩张转为功课', hi: 'कठिन गुरु गोचर — विस्तार सीख में बदलता है',
+    ja: '厳しい木星トランジット — 拡大が学びに変わる', ko: '까다로운 목성 트랜짓 — 확장이 배움으로 바뀜', ar: 'عبور صعب للمشتري — يتحول التوسع إلى دروس', ml: 'കഠിന ഗുരു ഗോചരം — വളർച്ച പാഠങ്ങളായി മാറും',
+  },
+  nodeSensitive: {
+    en: 'Node on a sensitive axis from Moon — restlessness, hidden currents', si: 'චන්ද්‍රයාගෙන් සංවේදී අක්ෂයක ඡායා ග්‍රහයා — නොසන්සුන්කම, සැඟවුණු ධාරා',
+    ta: 'சந்திரனிலிருந்து உணர்திறன் அச்சில் சாயா கிரகம் — அமைதியின்மை, மறைந்த ஓட்டங்கள்', zh: '交点落在月亮起算的敏感轴线上——不安与暗流', hi: 'चंद्र से संवेदनशील अक्ष पर छाया ग्रह — बेचैनी, छिपी धाराएँ',
+    ja: '月から見て敏感な軸上にノード — 落ち着きのなさと隠れた流れ', ko: '달 기준 민감한 축 위의 노드 — 불안, 숨은 흐름', ar: 'عقدة على محور حساس من القمر — قلق وتيارات خفية', ml: 'ചന്ദ്രനിൽ നിന്ന് സംവേദനക്ഷമ അക്ഷത്തിൽ ഛായാഗ്രഹം — അസ്വസ്ഥത, ഒളിഞ്ഞ ഒഴുക്കുകൾ',
+  },
+  marsKuja: {
+    en: 'Mars on a Kuja axis from Lagna — manage temper and conflicts', si: 'ලග්නයෙන් කුජ අක්ෂයක කුජ — කෝපය හා ගැටුම් පාලනය කර ගන්න',
+    ta: 'லக்னத்திலிருந்து குஜ அச்சில் செவ்வாய் — கோபத்தையும் மோதல்களையும் கட்டுப்படுத்துங்கள்', zh: '火星落在上升起算的 Kuja 轴线——控制脾气与冲突', hi: 'लग्न से कुज अक्ष पर मंगल — क्रोध और टकराव संभालें',
+    ja: 'ラグナから見てクジャ軸上の火星 — 短気と衝突に注意', ko: '라그나 기준 쿠자 축 위의 화성 — 성질과 갈등을 다스리세요', ar: 'المريخ على محور كوجا من الطالع — تحكّم في الغضب والنزاعات', ml: 'ലഗ്നത്തിൽ നിന്ന് കുജ അക്ഷത്തിൽ ചൊവ്വ — ദേഷ്യവും സംഘർഷങ്ങളും നിയന്ത്രിക്കുക',
+  },
 };
 
 export const SADE_SATI_DESC = {
-  rising: (rashi: string, lang: Lang) => lang === 'si'
-    ? `සාඩේ සති පළමු අවධිය — ශනි ${rashi} හි (ජන්ම චන්ද්‍රයාගෙන් 12 වන). අභ්‍යන්තර පීඩනය, වියදම්, නින්දේ වෙනස්කම්. වසර 2.5ක් පමණ පවතී.`
-    : `Sade Sati first phase — Saturn in ${rashi} (12th from natal Moon). Inner pressure, expenses, sleep changes. Last ~2.5 years.`,
-  peak: (rashi: string, lang: Lang) => lang === 'si'
-    ? `සාඩේ සති උච්චය — ශනි ඔබේ ජන්ම චන්ද්‍ර රාශියේ (${rashi}). වඩාත්ම තීව්‍ර අවධිය. ඉවසීම, විනය, සරල කිරීම. වසර 2.5ක් පමණ.`
-    : `Sade Sati peak — Saturn in your natal Moon rashi (${rashi}). Most intense phase. Patience, discipline, simplification. ~2.5 years.`,
-  setting: (rashi: string, lang: Lang) => lang === 'si'
-    ? `සාඩේ සති අවසන් අවධිය — ශනි ${rashi} හි (ජන්ම චන්ද්‍රයාගෙන් 2 වන). ධනය/පවුල/වචනය පරීක්ෂාවට ලක් වේ. අවසන් වසර 2.5ක් පමණ.`
-    : `Sade Sati closing phase — Saturn in ${rashi} (2nd from natal Moon). Wealth/family/speech tested. Final ~2.5 years.`,
-  none: { en: 'Not currently in Sade Sati.', si: 'දැනට සාඩේ සති නොපවතී.' },
+  rising: (r: string, lang: Lang): string => ({
+    en: `Sade Sati first phase — Saturn in ${r} (12th from natal Moon). Inner pressure, expenses, sleep changes. Last ~2.5 years.`,
+    si: `ඒරාෂ්ටක ශනි පළමු අවධිය — ශනි ${r} හි (ජන්ම චන්ද්‍රයාගෙන් 12 වන). අභ්‍යන්තර පීඩනය, වියදම්, නින්දේ වෙනස්කම්. වසර 2.5ක් පමණ පවතී.`,
+    ta: `ஏழரைச் சனி முதல் கட்டம் — சனி ${r} இல் (ஜென்ம சந்திரனிலிருந்து 12-ஆம் இடம்). உள் அழுத்தம், செலவுகள், தூக்க மாற்றங்கள். சுமார் 2.5 ஆண்டுகள்.`,
+    zh: `土星七年半第一阶段——土星在${r}（本命月亮起第12宫）。内在压力、开支、睡眠变化。约2.5年。`,
+    hi: `साढ़े साती का पहला चरण — शनि ${r} में (जन्म चंद्र से 12वाँ)। भीतरी दबाव, खर्च, नींद में बदलाव। लगभग 2.5 वर्ष।`,
+    ja: `サデ・サティ第1期 — 土星は${r}（出生の月から12番目）。内面の圧力、出費、睡眠の変化。約2.5年。`,
+    ko: `사데 사티 1단계 — 토성이 ${r}에 위치(출생 달 기준 12번째). 내적 압박, 지출, 수면 변화. 약 2.5년.`,
+    ar: `المرحلة الأولى من سادي ساتي — زحل في ${r} (الثاني عشر من القمر الولادي). ضغط داخلي ونفقات وتغيّر في النوم. نحو 2.5 سنة.`,
+    ml: `ഏഴര ശനി ഒന്നാം ഘട്ടം — ശനി ${r} ൽ (ജന്മ ചന്ദ്രനിൽ നിന്ന് 12-ാം ഭാവം). ആന്തരിക സമ്മർദ്ദം, ചെലവ്, ഉറക്കത്തിലെ മാറ്റങ്ങൾ. ഏകദേശം 2.5 വർഷം.`,
+  } as Record<Lang, string>)[lang],
+  peak: (r: string, lang: Lang): string => ({
+    en: `Sade Sati peak — Saturn in your natal Moon rashi (${r}). Most intense phase. Patience, discipline, simplification. ~2.5 years.`,
+    si: `ඒරාෂ්ටක ශනි උච්චය — ශනි ඔබේ ජන්ම චන්ද්‍ර රාශියේ (${r}). වඩාත්ම තීව්‍ර අවධිය. ඉවසීම, විනය, සරල කිරීම. වසර 2.5ක් පමණ.`,
+    ta: `ஏழரைச் சனி உச்சம் (ஜென்ம சனி) — சனி உங்கள் ஜென்ம சந்திர ராசியில் (${r}). மிகத் தீவிரமான கட்டம். பொறுமை, ஒழுக்கம், எளிமை. சுமார் 2.5 ஆண்டுகள்.`,
+    zh: `土星七年半顶峰——土星在您的本命月亮星座（${r}）。最强烈的阶段。耐心、自律、简化。约2.5年。`,
+    hi: `साढ़े साती का शिखर — शनि आपकी जन्म चंद्र राशि (${r}) में। सबसे तीव्र चरण। धैर्य, अनुशासन, सरलता। लगभग 2.5 वर्ष।`,
+    ja: `サデ・サティの頂点 — 土星が出生の月のラーシ（${r}）に。最も強烈な時期。忍耐、規律、簡素化。約2.5年。`,
+    ko: `사데 사티 정점 — 토성이 출생 달 라시(${r})에. 가장 강렬한 단계. 인내, 절제, 단순화. 약 2.5년.`,
+    ar: `ذروة سادي ساتي — زحل في برج قمرك الولادي (${r}). أشدّ المراحل. الصبر والانضباط والتبسيط. نحو 2.5 سنة.`,
+    ml: `ഏഴര ശനി ഉച്ചം (ജന്മ ശനി) — ശനി നിങ്ങളുടെ ജന്മ ചന്ദ്രരാശിയിൽ (${r}). ഏറ്റവും തീവ്രമായ ഘട്ടം. ക്ഷമ, അച്ചടക്കം, ലാളിത്യം. ഏകദേശം 2.5 വർഷം.`,
+  } as Record<Lang, string>)[lang],
+  setting: (r: string, lang: Lang): string => ({
+    en: `Sade Sati closing phase — Saturn in ${r} (2nd from natal Moon). Wealth/family/speech tested. Final ~2.5 years.`,
+    si: `ඒරාෂ්ටක ශනි අවසන් අවධිය — ශනි ${r} හි (ජන්ම චන්ද්‍රයාගෙන් 2 වන). ධනය/පවුල/වචනය පරීක්ෂාවට ලක් වේ. අවසන් වසර 2.5ක් පමණ.`,
+    ta: `ஏழரைச் சனி இறுதிக் கட்டம் — சனி ${r} இல் (ஜென்ம சந்திரனிலிருந்து 2-ஆம் இடம்). பணம்/குடும்பம்/பேச்சு சோதிக்கப்படும். இறுதி 2.5 ஆண்டுகள்.`,
+    zh: `土星七年半收尾阶段——土星在${r}（本命月亮起第2宫）。财富、家庭与言语受考验。最后约2.5年。`,
+    hi: `साढ़े साती का अंतिम चरण — शनि ${r} में (जन्म चंद्र से दूसरा)। धन/परिवार/वाणी की परीक्षा। अंतिम लगभग 2.5 वर्ष।`,
+    ja: `サデ・サティ最終期 — 土星は${r}（出生の月から2番目）。財産・家族・言葉が試されます。最後の約2.5年。`,
+    ko: `사데 사티 마지막 단계 — 토성이 ${r}에 위치(출생 달 기준 2번째). 재물·가족·말이 시험받습니다. 마지막 약 2.5년.`,
+    ar: `المرحلة الختامية من سادي ساتي — زحل في ${r} (الثاني من القمر الولادي). يُختبر المال والأسرة والكلام. آخر 2.5 سنة تقريبًا.`,
+    ml: `ഏഴര ശനി അവസാന ഘട്ടം — ശനി ${r} ൽ (ജന്മ ചന്ദ്രനിൽ നിന്ന് 2-ാം ഭാവം). ധനം/കുടുംബം/സംസാരം പരീക്ഷിക്കപ്പെടും. അവസാന 2.5 വർഷം.`,
+  } as Record<Lang, string>)[lang],
+  none: {
+    en: 'Not currently in Sade Sati.', si: 'දැනට ඒරාෂ්ටක ශනි නොපවතී.', ta: 'தற்போது ஏழரைச் சனி இல்லை.',
+    zh: '目前不在土星七年半期间。', hi: 'अभी साढ़े साती नहीं चल रही है।', ja: '現在サデ・サティ中ではありません。',
+    ko: '현재 사데 사티가 아닙니다.', ar: 'لست حاليًا في فترة سادي ساتي.', ml: 'ഇപ്പോൾ ഏഴര ശനി ഇല്ല.',
+  } as Bi,
 };
 
 export const JUPITER_BLESSING = {
-  auspicious: (house: number, lang: Lang) => lang === 'si'
-    ? `ගුරු ඔබේ චන්ද්‍රයාගෙන් ${house} වන ස්ථානය ගෝචරය කරයි — එම භාවයේ කරුණුවල ව්‍යාප්තියට හිතකර කවුළුවකි.`
-    : `Guru is transiting your ${house}th from Moon — supportive window for expansion in matters of that house.`,
-  learning: (house: number, lang: Lang) => lang === 'si'
-    ? `ගුරු ඔබේ චන්ද්‍රයාගෙන් ${house} වන ස්ථානය ගෝචරය කරයි — එම ක්ෂේත්‍රයේ ලාභයට වඩා පාඩම් ලබන කාලයකි.`
-    : `Guru is transiting your ${house}th from Moon — period of learning rather than gain in that area.`,
+  auspicious: (house: number, lang: Lang) => {
+    const h = ordinalNum(house, lang);
+    return sel(lang, {
+      en: `Guru is transiting your ${h} from Moon — supportive window for expansion in matters of that house.`,
+      si: `ගුරු ඔබේ චන්ද්‍රයාගෙන් ${h} ස්ථානය ගෝචරය කරයි — එම භාවයේ කරුණුවල ව්‍යාප්තියට හිතකර කවුළුවකි.`,
+      ta: `குரு உங்கள் சந்திரனிலிருந்து ${h} இடத்தில் சஞ்சரிக்கிறார் — அந்த பாவ விஷயங்களின் வளர்ச்சிக்கு உகந்த காலம்.`,
+      zh: `木星正行经您月亮起算的${h}宫——是该宫事务扩展的有利窗口。`,
+      hi: `गुरु आपके चंद्र से ${h} भाव में गोचर कर रहा है — उस भाव के मामलों में विस्तार का अनुकूल समय।`,
+      ja: `木星が月から${h}のハウスを運行中 — そのハウスの事柄を広げる好機です。`,
+      ko: `목성이 달 기준 ${h} 하우스를 지나는 중 — 그 하우스의 일을 넓히기 좋은 시기입니다.`,
+      ar: `يعبر المشتري البيت ${h} من قمرك — نافذة داعمة للتوسع في شؤون ذلك البيت.`,
+      ml: `ഗുരു നിങ്ങളുടെ ചന്ദ്രനിൽ നിന്ന് ${h} ഭാവത്തിൽ സഞ്ചരിക്കുന്നു — ആ ഭാവ കാര്യങ്ങളുടെ വളർച്ചയ്ക്ക് അനുകൂല കാലം.`,
+    });
+  },
+  learning: (house: number, lang: Lang) => {
+    const h = ordinalNum(house, lang);
+    return sel(lang, {
+      en: `Guru is transiting your ${h} from Moon — period of learning rather than gain in that area.`,
+      si: `ගුරු ඔබේ චන්ද්‍රයාගෙන් ${h} ස්ථානය ගෝචරය කරයි — එම ක්ෂේත්‍රයේ ලාභයට වඩා පාඩම් ලබන කාලයකි.`,
+      ta: `குரு உங்கள் சந்திரனிலிருந்து ${h} இடத்தில் சஞ்சரிக்கிறார் — அந்தத் துறையில் லாபத்தை விடக் கற்றலுக்கான காலம்.`,
+      zh: `木星正行经您月亮起算的${h}宫——该领域重在学习而非收获。`,
+      hi: `गुरु आपके चंद्र से ${h} भाव में गोचर कर रहा है — उस क्षेत्र में लाभ से अधिक सीखने का समय।`,
+      ja: `木星が月から${h}のハウスを運行中 — その分野では利益より学びの時期です。`,
+      ko: `목성이 달 기준 ${h} 하우스를 지나는 중 — 그 분야에서는 이득보다 배움의 시기입니다.`,
+      ar: `يعبر المشتري البيت ${h} من قمرك — فترة تعلّم أكثر منها مكسب في ذلك المجال.`,
+      ml: `ഗുരു നിങ്ങളുടെ ചന്ദ്രനിൽ നിന്ന് ${h} ഭാവത്തിൽ സഞ്ചരിക്കുന്നു — ആ മേഖലയിൽ ലാഭത്തേക്കാൾ പഠനത്തിന്റെ കാലം.`,
+    });
+  },
 };
 
 /**
@@ -50,18 +136,45 @@ export const JUPITER_BLESSING = {
  * a transit reading can say when it happens.
  */
 export const LAGNA_TRANSIT = {
-  slowMoverDignified: (planet: string, dignity: 'exalted' | 'own', house: string, lang: Lang) => lang === 'si'
-    ? `${planet} ගෝචරයේ ${dignity === 'exalted' ? 'උච්ච' : 'ස්වක්ෂේත්‍ර'} වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — වර්ෂ ගණනාවකට මෙම කේන්දරය ලබන ප්‍රබලම ගෝචරවලින් එකකි.`
-    : `${planet} is transiting ${dignity === 'exalted' ? 'exalted' : 'in its own sign'} through your ${house} from the Lagna — among the strongest transits this chart sees for years.`,
+  slowMoverDignified: (planet: string, dignity: 'exalted' | 'own', house: string, lang: Lang) => {
+    const ex = dignity === 'exalted';
+    return sel(lang, {
+      en: `${planet} is transiting ${ex ? 'exalted' : 'in its own sign'} through your ${house} from the Lagna — among the strongest transits this chart sees for years.`,
+      si: `${planet} ගෝචරයේ ${ex ? 'උච්ච' : 'ස්වක්ෂේත්‍ර'} වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — වර්ෂ ගණනාවකට මෙම කේන්දරය ලබන ප්‍රබලම ගෝචරවලින් එකකි.`,
+      ta: `${planet} ${ex ? 'உச்சமாக' : 'சொந்த ராசியில்'} உங்கள் லக்னத்திலிருந்து ${house} வழியாகச் சஞ்சரிக்கிறார் — பல ஆண்டுகளில் இந்த ஜாதகம் காணும் வலிமையான கோசாரங்களில் ஒன்று.`,
+      zh: `${planet}正以${ex ? '入旺' : '入庙（本宫）'}之姿行经您上升起算的${house}——是此命盘多年来最强的行运之一。`,
+      hi: `${planet} ${ex ? 'उच्च होकर' : 'अपनी राशि में'} आपके लग्न से ${house} से गोचर कर रहा है — इस कुंडली के वर्षों के सबसे प्रबल गोचरों में से एक।`,
+      ja: `${planet}が${ex ? '高揚' : '自室'}の状態でラグナから${house}を運行中 — このチャートにとって数年来で最も強いトランジットの一つです。`,
+      ko: `${planet}이(가) ${ex ? '고양' : '자기 별자리'} 상태로 라그나 기준 ${house}를 지나는 중 — 이 차트가 수년 만에 맞는 가장 강한 트랜짓 중 하나입니다.`,
+      ar: `يعبر ${planet} ${ex ? 'في شرفه' : 'في برجه'} عبر ${house} من طالعك — من أقوى العبورات التي تشهدها هذه الخريطة منذ سنوات.`,
+      ml: `${planet} ${ex ? 'ഉച്ചസ്ഥനായി' : 'സ്വക്ഷേത്രത്തിൽ'} നിങ്ങളുടെ ലഗ്നത്തിൽ നിന്ന് ${house} ലൂടെ സഞ്ചരിക്കുന്നു — വർഷങ്ങളിൽ ഈ ജാതകം കാണുന്ന ഏറ്റവും ശക്തമായ ഗോചരങ്ങളിൽ ഒന്ന്.`,
+    });
+  },
 
-  slowMoverAfflicted: (planet: string, house: string, lang: Lang) => lang === 'si'
-    ? `${planet} ගෝචරයේ නීච වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — එම භාවයේ කරුණු මෙම කාලයේ අඩු සහායක් ලබයි.`
-    : `${planet} is transiting debilitated through your ${house} from the Lagna — that house's affairs get less support while it lasts.`,
+  slowMoverAfflicted: (planet: string, house: string, lang: Lang) => sel(lang, {
+    en: `${planet} is transiting debilitated through your ${house} from the Lagna — that house's affairs get less support while it lasts.`,
+    si: `${planet} ගෝචරයේ නීච වී ඔබේ ලග්නයෙන් ${house} ගමන් කරයි — එම භාවයේ කරුණු මෙම කාලයේ අඩු සහායක් ලබයි.`,
+    ta: `${planet} நீசமாக உங்கள் லக்னத்திலிருந்து ${house} வழியாகச் சஞ்சரிக்கிறார் — அந்த பாவ விஷயங்களுக்கு இக்காலத்தில் குறைந்த ஆதரவு.`,
+    zh: `${planet}正以落陷之姿行经您上升起算的${house}——在此期间该宫事务得到的支持较少。`,
+    hi: `${planet} नीच होकर आपके लग्न से ${house} से गोचर कर रहा है — इस दौरान उस भाव के मामलों को कम सहारा मिलता है।`,
+    ja: `${planet}が減衰の状態でラグナから${house}を運行中 — その間、そのハウスの事柄への支えは弱まります。`,
+    ko: `${planet}이(가) 쇠약 상태로 라그나 기준 ${house}를 지나는 중 — 그동안 그 하우스의 일은 지원이 줄어듭니다.`,
+    ar: `يعبر ${planet} في هبوطه عبر ${house} من طالعك — تحظى شؤون ذلك البيت بدعم أقل طوال مدته.`,
+    ml: `${planet} നീചനായി നിങ്ങളുടെ ലഗ്നത്തിൽ നിന്ന് ${house} ലൂടെ സഞ്ചരിക്കുന്നു — ഈ കാലത്ത് ആ ഭാവ കാര്യങ്ങൾക്ക് പിന്തുണ കുറയും.`,
+  }),
 
   /** A slow mover passing over a group of natal planets. */
-  overNatal: (planet: string, natal: string, house: string, lang: Lang) => lang === 'si'
-    ? `${planet} ඔබේ ජන්ම ${natal} මතින් (${house}) ගමන් කරයි — එම ග්‍රහයන් දරන කරුණු මෙම කාලයේ සක්‍රීය වේ.`
-    : `${planet} is passing over your natal ${natal} in your ${house} — the matters those planets carry are live right now.`,
+  overNatal: (planet: string, natal: string, house: string, lang: Lang) => sel(lang, {
+    en: `${planet} is passing over your natal ${natal} in your ${house} — the matters those planets carry are live right now.`,
+    si: `${planet} ඔබේ ජන්ම ${natal} මතින් (${house}) ගමන් කරයි — එම ග්‍රහයන් දරන කරුණු මෙම කාලයේ සක්‍රීය වේ.`,
+    ta: `${planet} உங்கள் ${house} இல் உள்ள ஜென்ம ${natal} மீது கடக்கிறார் — அந்தக் கிரகங்களின் விஷயங்கள் இப்போது செயல்பாட்டில் உள்ளன.`,
+    zh: `${planet}正经过您${house}中的本命${natal}——这些行星所主之事此刻正被激活。`,
+    hi: `${planet} आपके ${house} में जन्म ${natal} के ऊपर से गुज़र रहा है — उन ग्रहों के मामले अभी सक्रिय हैं।`,
+    ja: `${planet}が${house}にある出生の${natal}の上を通過中 — それらの惑星が担う事柄が今まさに動いています。`,
+    ko: `${planet}이(가) ${house}에 있는 출생 ${natal} 위를 지나는 중 — 그 행성들이 맡은 일이 지금 활성화되어 있습니다.`,
+    ar: `يمرّ ${planet} فوق ${natal} الولادي في ${house} — شؤون هذه الكواكب نشطة الآن.`,
+    ml: `${planet} നിങ്ങളുടെ ${house} ലുള്ള ജന്മ ${natal} മുകളിലൂടെ കടന്നുപോകുന്നു — ആ ഗ്രഹങ്ങളുടെ കാര്യങ്ങൾ ഇപ്പോൾ സജീവമാണ്.`,
+  }),
 
   /**
    * External conditions and internal state pulling in opposite directions. This
@@ -69,14 +182,30 @@ export const LAGNA_TRANSIT = {
    * averages the two into one number destroys exactly the information that makes
    * it worth reporting.
    */
-  divergence: (outward: string, inward: string, lang: Lang) => lang === 'si'
-    ? `මෙම කාලය බෙදී ඇත: ලග්නයෙන් බලන විට බාහිර තත්ත්වය හිතකරයි (${outward}), නමුත් චන්ද්‍රයාගෙන් බලන විට අභ්‍යන්තර තත්ත්වය පීඩනයට ලක්ව ඇත (${inward}). යමක් ලැබෙන්නට ඉඩ ඇති නමුත් එය භාර ගැනීමට උවමනාවක් නොදැනෙන කාලයකි — අවස්ථාව ප්‍රතික්ෂේප නොකර, එය ගැලපෙන වේගයකින් භාර ගන්න.`
-    : `This period is split: from the Lagna the outward conditions are unusually good (${outward}), while from the Moon the inner state is under pressure (${inward}). Something significant may well be handed to you in a stretch where you do not much feel like taking it — the useful move is to accept it at a pace that fits, not to decline it.`,
+  divergence: (outward: string, inward: string, lang: Lang) => sel(lang, {
+    en: `This period is split: from the Lagna the outward conditions are unusually good (${outward}), while from the Moon the inner state is under pressure (${inward}). Something significant may well be handed to you in a stretch where you do not much feel like taking it — the useful move is to accept it at a pace that fits, not to decline it.`,
+    si: `මෙම කාලය බෙදී ඇත: ලග්නයෙන් බලන විට බාහිර තත්ත්වය හිතකරයි (${outward}), නමුත් චන්ද්‍රයාගෙන් බලන විට අභ්‍යන්තර තත්ත්වය පීඩනයට ලක්ව ඇත (${inward}). යමක් ලැබෙන්නට ඉඩ ඇති නමුත් එය භාර ගැනීමට උවමනාවක් නොදැනෙන කාලයකි — අවස්ථාව ප්‍රතික්ෂේප නොකර, එය ගැලපෙන වේගයකින් භාර ගන්න.`,
+    ta: `இந்தக் காலம் பிளவுபட்டுள்ளது: லக்னத்திலிருந்து வெளிச் சூழல் வழக்கத்திற்கு மாறாக நன்றாக உள்ளது (${outward}), ஆனால் சந்திரனிலிருந்து உள் நிலை அழுத்தத்தில் உள்ளது (${inward}). ஏற்க மனமில்லாத நேரத்தில் முக்கியமான ஒன்று உங்களுக்குக் கிடைக்கலாம் — மறுக்காமல், உங்களுக்கு ஏற்ற வேகத்தில் ஏற்பதே சரியான வழி.`,
+    zh: `这段时期是分裂的：从上升看，外部条件异常良好（${outward}）；从月亮看，内心状态承受压力（${inward}）。重要的东西可能恰在您不太想接的时候到来——明智之举是以合适的节奏接受，而不是拒绝。`,
+    hi: `यह अवधि बँटी हुई है: लग्न से बाहरी परिस्थितियाँ असामान्य रूप से अच्छी हैं (${outward}), जबकि चंद्र से भीतरी अवस्था दबाव में है (${inward})। कुछ महत्वपूर्ण ऐसे समय मिल सकता है जब उसे लेने का मन न हो — उसे ठुकराएँ नहीं, अपनी गति से स्वीकारें।`,
+    ja: `この時期は二分されています：ラグナから見ると外的条件は異例に良好（${outward}）ですが、月から見ると内面は圧力下にあります（${inward}）。受け取る気分でない時に大切なものが手渡されるかもしれません — 断らず、自分に合うペースで受け入れるのが得策です。`,
+    ko: `이 시기는 갈라져 있습니다: 라그나 기준 외적 여건은 이례적으로 좋지만(${outward}), 달 기준 내면은 압박을 받고 있습니다(${inward}). 받고 싶지 않은 때에 중요한 것이 주어질 수 있습니다 — 거절하지 말고 맞는 속도로 받아들이는 것이 좋습니다.`,
+    ar: `هذه الفترة منقسمة: من الطالع تبدو الظروف الخارجية جيدة على غير العادة (${outward})، بينما من القمر تكون الحالة الداخلية تحت ضغط (${inward}). قد يُقدَّم لك أمر مهم في وقت لا ترغب فيه كثيرًا في أخذه — الخطوة المفيدة أن تقبله بوتيرة تناسبك لا أن ترفضه.`,
+    ml: `ഈ കാലം വിഭജിതമാണ്: ലഗ്നത്തിൽ നിന്ന് ബാഹ്യ സാഹചര്യങ്ങൾ അസാധാരണമാംവിധം നല്ലതാണ് (${outward}), എന്നാൽ ചന്ദ്രനിൽ നിന്ന് ആന്തരിക അവസ്ഥ സമ്മർദ്ദത്തിലാണ് (${inward}). സ്വീകരിക്കാൻ മനസ്സില്ലാത്ത സമയത്ത് പ്രധാനപ്പെട്ട എന്തെങ്കിലും ലഭിച്ചേക്കാം — നിരസിക്കാതെ, അനുയോജ്യമായ വേഗത്തിൽ സ്വീകരിക്കുക.`,
+  }),
 };
 
-export const NODAL_NOTE = (rahu: string, ketu: string, lang: Lang) => lang === 'si'
-  ? `වර්තමාන රාහු-කේතු අක්ෂය: ${rahu} / ${ketu} — ඡායා ග්‍රහයෝ මාස 18කට වරක් පමණ රාශිය මාරු කරති.`
-  : `Current Rahu-Ketu axis: ${rahu} / ${ketu} — the nodes shift rashi roughly every 18 months.`;
+export const NODAL_NOTE = (rahu: string, ketu: string, lang: Lang) => sel(lang, {
+  en: `Current Rahu-Ketu axis: ${rahu} / ${ketu} — the nodes shift rashi roughly every 18 months.`,
+  si: `වර්තමාන රාහු-කේතු අක්ෂය: ${rahu} / ${ketu} — ඡායා ග්‍රහයෝ මාස 18කට වරක් පමණ රාශිය මාරු කරති.`,
+  ta: `தற்போதைய ராகு-கேது அச்சு: ${rahu} / ${ketu} — சாயா கிரகங்கள் சுமார் 18 மாதங்களுக்கு ஒருமுறை ராசி மாறும்.`,
+  zh: `当前罗睺-计都轴线：${rahu} / ${ketu}——交点约每18个月换一次星座。`,
+  hi: `वर्तमान राहु-केतु अक्ष: ${rahu} / ${ketu} — छाया ग्रह लगभग हर 18 महीने में राशि बदलते हैं।`,
+  ja: `現在のラーフ・ケートゥ軸：${rahu} / ${ketu} — ノードは約18か月ごとにサインを移ります。`,
+  ko: `현재 라후-케투 축: ${rahu} / ${ketu} — 노드는 약 18개월마다 별자리를 옮깁니다.`,
+  ar: `محور راهو-كيتو الحالي: ${rahu} / ${ketu} — تنتقل العقدتان بين الأبراج كل 18 شهرًا تقريبًا.`,
+  ml: `നിലവിലെ രാഹു-കേതു അക്ഷം: ${rahu} / ${ketu} — ഛായാഗ്രഹങ്ങൾ ഏകദേശം 18 മാസത്തിലൊരിക്കൽ രാശി മാറും.`,
+});
 
 /** "Saturn: <note>" / "<planet>: <note>" prefix used in summary + predictions. */
 export const NOTE_PREFIX = (planetKey: string, note: string, lang: Lang) =>
@@ -88,26 +217,123 @@ function titleCaseKey(k: string): string {
 
 // ─── Tara Bala (transitAnalysis.computeTaraBala) ───────────────────────────
 
-export const TARA_DESC: Record<number, { name: string; desc: Record<TableLang, string> }> = {
-  1: { name: 'Janma', desc: { en: 'the birth-star day — body and mind are sensitive; routine over risk.', si: 'ජන්ම නක්ෂත්‍ර දිනය — සිරුර හා මනස සංවේදීයි; අවදානමට වඩා දිනචරියාව.' } },
-  2: { name: 'Sampat', desc: { en: 'a wealth star — favourable for gains, purchases and beginnings.', si: 'ධන නක්ෂත්‍රයකි — ලාභ, මිලදී ගැනීම් හා ආරම්භවලට හිතකරයි.' } },
-  3: { name: 'Vipat', desc: { en: 'a danger star — avoid risks, journeys and confrontation.', si: 'අනතුරු නක්ෂත්‍රයකි — අවදානම්, ගමන් හා ගැටුම් වළක්වන්න.' } },
-  4: { name: 'Kshema', desc: { en: 'a well-being star — protective and prosperous; good for most matters.', si: 'සුවතා නක්ෂත්‍රයකි — ආරක්ෂාකාරී හා සමෘද්ධිමත්; බොහෝ කරුණුවලට හොඳයි.' } },
-  5: { name: 'Pratyak', desc: { en: 'an obstacle star — plans meet resistance; postpone what can wait.', si: 'බාධක නක්ෂත්‍රයකි — සැලසුම් විරෝධයට මුහුණ දෙයි; ඉවසිය හැකි දේ කල් දමන්න.' } },
-  6: { name: 'Sadhana', desc: { en: 'an achievement star — efforts succeed; act on goals.', si: 'ජයග්‍රහණ නක්ෂත්‍රයකි — වෑයම් සාර්ථක වේ; ඉලක්ක වෙනුවෙන් ක්‍රියා කරන්න.' } },
-  7: { name: 'Naidhana', desc: { en: 'the most adverse star — keep the day light and defer key decisions.', si: 'වඩාත්ම අහිතකර නක්ෂත්‍රයයි — දිනය සැහැල්ලුව තබා ප්‍රධාන තීරණ කල් දමන්න.' } },
-  8: { name: 'Mitra', desc: { en: 'a friendly star — cooperation, meetings and support flow.', si: 'මිත්‍ර නක්ෂත්‍රයකි — සහයෝගය, හමුවීම් හා සහාය ගලා යයි.' } },
-  9: { name: 'Parama Mitra', desc: { en: 'the best-friend star — highly supportive for anything important.', si: 'පරම මිත්‍ර නක්ෂත්‍රයයි — වැදගත් ඕනෑම දෙයකට ඉතා සහායකයි.' } },
+/** Tara names — Sanskrit terms, written in each language's script. */
+export const TARA_NAME: Record<number, Bi> = {
+  1: { en: 'Janma', si: 'ජන්ම', ta: 'ஜன்ம', zh: 'Janma', hi: 'जन्म', ja: 'ジャンマ', ko: '잔마', ar: 'جانما', ml: 'ജന്മ' },
+  2: { en: 'Sampat', si: 'සම්පත්', ta: 'சம்பத்', zh: 'Sampat', hi: 'संपत्', ja: 'サンパット', ko: '삼파트', ar: 'سامبات', ml: 'സമ്പത്' },
+  3: { en: 'Vipat', si: 'විපත්', ta: 'விபத்', zh: 'Vipat', hi: 'विपत्', ja: 'ヴィパット', ko: '비파트', ar: 'فيبات', ml: 'വിപത്' },
+  4: { en: 'Kshema', si: 'ක්ෂේම', ta: 'க்ஷேம', zh: 'Kshema', hi: 'क्षेम', ja: 'クシェーマ', ko: '크셰마', ar: 'كشيما', ml: 'ക്ഷേമ' },
+  5: { en: 'Pratyak', si: 'ප්‍රත්‍යක්', ta: 'பிரத்யக்', zh: 'Pratyak', hi: 'प्रत्यक्', ja: 'プラティヤク', ko: '프라티야크', ar: 'براتياك', ml: 'പ്രത്യക്' },
+  6: { en: 'Sadhana', si: 'සාධන', ta: 'சாதனா', zh: 'Sadhana', hi: 'साधना', ja: 'サーダナ', ko: '사다나', ar: 'سادانا', ml: 'സാധന' },
+  7: { en: 'Naidhana', si: 'නෛධන', ta: 'நைதன', zh: 'Naidhana', hi: 'नैधन', ja: 'ナイダナ', ko: '나이다나', ar: 'نايدانا', ml: 'നൈധന' },
+  8: { en: 'Mitra', si: 'මිත්‍ර', ta: 'மித்ர', zh: 'Mitra', hi: 'मित्र', ja: 'ミトラ', ko: '미트라', ar: 'ميترا', ml: 'മിത്ര' },
+  9: { en: 'Parama Mitra', si: 'පරම මිත්‍ර', ta: 'பரம மித்ர', zh: 'Parama Mitra', hi: 'परम मित्र', ja: 'パラマ・ミトラ', ko: '파라마 미트라', ar: 'باراما ميترا', ml: 'പരമ മിത്ര' },
+};
+
+export const TARA_DESC: Record<number, Bi> = {
+  1: {
+    en: 'the birth-star day — body and mind are sensitive; routine over risk.', si: 'ජන්ම නක්ෂත්‍ර දිනය — සිරුර හා මනස සංවේදීයි; අවදානමට වඩා දිනචරියාව.',
+    ta: 'ஜென்ம நட்சத்திர நாள் — உடலும் மனமும் உணர்திறனுடன் இருக்கும்; அபாயத்தை விட வழக்கமே நல்லது.', zh: '本命星宿日——身心敏感；宜守常规，不宜冒险。',
+    hi: 'जन्म-नक्षत्र का दिन — शरीर और मन संवेदनशील; जोखिम की जगह दिनचर्या।', ja: '誕生星宿の日 — 心身が敏感です。冒険より日常を。',
+    ko: '출생 별자리의 날 — 몸과 마음이 예민합니다. 모험보다 일상을.', ar: 'يوم نجم الميلاد — الجسد والذهن حساسان؛ الروتين أفضل من المخاطرة.',
+    ml: 'ജന്മ നക്ഷത്ര ദിനം — ശരീരവും മനസ്സും സംവേദനക്ഷമം; സാഹസത്തേക്കാൾ പതിവ് കാര്യങ്ങൾ.',
+  },
+  2: {
+    en: 'a wealth star — favourable for gains, purchases and beginnings.', si: 'ධන නක්ෂත්‍රයකි — ලාභ, මිලදී ගැනීම් හා ආරම්භවලට හිතකරයි.',
+    ta: 'செல்வ நட்சத்திரம் — லாபம், கொள்முதல், தொடக்கங்களுக்கு உகந்தது.', zh: '财富星——利于收益、购置与开端。',
+    hi: 'धन का नक्षत्र — लाभ, ख़रीद और शुरुआत के लिए अनुकूल।', ja: '富の星 — 利益、購入、始まりに好都合。',
+    ko: '재물의 별 — 이익, 구매, 시작에 유리합니다.', ar: 'نجم الثروة — مواتٍ للمكاسب والمشتريات والبدايات.',
+    ml: 'സമ്പത്തിന്റെ നക്ഷത്രം — ലാഭം, വാങ്ങൽ, തുടക്കങ്ങൾക്ക് അനുകൂലം.',
+  },
+  3: {
+    en: 'a danger star — avoid risks, journeys and confrontation.', si: 'අනතුරු නක්ෂත්‍රයකි — අවදානම්, ගමන් හා ගැටුම් වළක්වන්න.',
+    ta: 'ஆபத்து நட்சத்திரம் — அபாயங்கள், பயணங்கள், மோதல்களைத் தவிர்க்கவும்.', zh: '危险星——避免冒险、远行与冲突。',
+    hi: 'विपत्ति का नक्षत्र — जोखिम, यात्रा और टकराव से बचें।', ja: '危険の星 — リスク、旅、対立を避けましょう。',
+    ko: '위험의 별 — 모험, 여행, 대립을 피하세요.', ar: 'نجم الخطر — تجنّب المخاطر والأسفار والمواجهات.',
+    ml: 'അപകട നക്ഷത്രം — അപകടസാധ്യതകൾ, യാത്രകൾ, ഏറ്റുമുട്ടലുകൾ ഒഴിവാക്കുക.',
+  },
+  4: {
+    en: 'a well-being star — protective and prosperous; good for most matters.', si: 'සුවතා නක්ෂත්‍රයකි — ආරක්ෂාකාරී හා සමෘද්ධිමත්; බොහෝ කරුණුවලට හොඳයි.',
+    ta: 'நலன் நட்சத்திரம் — பாதுகாப்பும் வளமும்; பெரும்பாலான விஷயங்களுக்கு நல்லது.', zh: '安康星——护佑而兴旺；诸事多宜。',
+    hi: 'कल्याण का नक्षत्र — रक्षक और समृद्ध; अधिकांश कार्यों के लिए अच्छा।', ja: '安寧の星 — 守られ繁栄する日。多くの事に良好。',
+    ko: '안녕의 별 — 보호와 번영, 대부분의 일에 좋습니다.', ar: 'نجم العافية — حامٍ ومزدهر؛ جيد لمعظم الأمور.',
+    ml: 'ക്ഷേമ നക്ഷത്രം — സംരക്ഷണവും ഐശ്വര്യവും; മിക്ക കാര്യങ്ങൾക്കും നല്ലത്.',
+  },
+  5: {
+    en: 'an obstacle star — plans meet resistance; postpone what can wait.', si: 'බාධක නක්ෂත්‍රයකි — සැලසුම් විරෝධයට මුහුණ දෙයි; ඉවසිය හැකි දේ කල් දමන්න.',
+    ta: 'தடை நட்சத்திரம் — திட்டங்கள் எதிர்ப்பைச் சந்திக்கும்; காத்திருக்கக்கூடியதைத் தள்ளிப்போடுங்கள்.', zh: '阻碍星——计划受阻；能等的事就延后。',
+    hi: 'बाधा का नक्षत्र — योजनाओं में रुकावट; जो रुक सकता है उसे टालें।', ja: '障害の星 — 計画が抵抗に遭います。待てることは延期を。',
+    ko: '장애의 별 — 계획이 저항을 만납니다. 미룰 수 있는 일은 미루세요.', ar: 'نجم العوائق — تواجه الخطط مقاومة؛ أجّل ما يمكن تأجيله.',
+    ml: 'തടസ്സ നക്ഷത്രം — പദ്ധതികൾക്ക് എതിർപ്പ്; കാത്തിരിക്കാവുന്നത് മാറ്റിവയ്ക്കുക.',
+  },
+  6: {
+    en: 'an achievement star — efforts succeed; act on goals.', si: 'ජයග්‍රහණ නක්ෂත්‍රයකි — වෑයම් සාර්ථක වේ; ඉලක්ක වෙනුවෙන් ක්‍රියා කරන්න.',
+    ta: 'சாதனை நட்சத்திரம் — முயற்சிகள் வெற்றி பெறும்; இலக்குகளை நோக்கிச் செயல்படுங்கள்.', zh: '成就星——努力有成；为目标行动。',
+    hi: 'सिद्धि का नक्षत्र — प्रयास सफल होते हैं; लक्ष्यों पर काम करें।', ja: '達成の星 — 努力が実を結びます。目標に向けて行動を。',
+    ko: '성취의 별 — 노력이 성공합니다. 목표를 향해 움직이세요.', ar: 'نجم الإنجاز — تنجح الجهود؛ اعمل على أهدافك.',
+    ml: 'നേട്ടത്തിന്റെ നക്ഷത്രം — പരിശ്രമങ്ങൾ വിജയിക്കും; ലക്ഷ്യങ്ങൾക്കായി പ്രവർത്തിക്കുക.',
+  },
+  7: {
+    en: 'the most adverse star — keep the day light and defer key decisions.', si: 'වඩාත්ම අහිතකර නක්ෂත්‍රයයි — දිනය සැහැල්ලුව තබා ප්‍රධාන තීරණ කල් දමන්න.',
+    ta: 'மிகவும் பாதகமான நட்சத்திரம் — நாளை இலகுவாக வைத்து, முக்கிய முடிவுகளைத் தள்ளிப்போடுங்கள்.', zh: '最不利之星——让这一天保持轻松，推迟重要决定。',
+    hi: 'सबसे प्रतिकूल नक्षत्र — दिन हल्का रखें और मुख्य निर्णय टालें।', ja: '最も不利な星 — 一日を軽く過ごし、重要な決定は延期を。',
+    ko: '가장 불리한 별 — 하루를 가볍게 보내고 중요한 결정은 미루세요.', ar: 'أشدّ النجوم نحسًا — اجعل اليوم خفيفًا وأجّل القرارات المهمة.',
+    ml: 'ഏറ്റവും പ്രതികൂല നക്ഷത്രം — ദിവസം ലഘുവായി കഴിച്ച് പ്രധാന തീരുമാനങ്ങൾ മാറ്റിവയ്ക്കുക.',
+  },
+  8: {
+    en: 'a friendly star — cooperation, meetings and support flow.', si: 'මිත්‍ර නක්ෂත්‍රයකි — සහයෝගය, හමුවීම් හා සහාය ගලා යයි.',
+    ta: 'நட்பு நட்சத்திரம் — ஒத்துழைப்பு, சந்திப்புகள், ஆதரவு சுலபமாக வரும்.', zh: '友好之星——合作、会面与支持顺畅。',
+    hi: 'मित्र नक्षत्र — सहयोग, मुलाक़ातें और सहारा सहज मिलते हैं।', ja: '友好の星 — 協力、会合、支援が流れます。',
+    ko: '우호의 별 — 협력, 만남, 지원이 흐릅니다.', ar: 'نجم صديق — يتدفق التعاون واللقاءات والدعم.',
+    ml: 'മിത്ര നക്ഷത്രം — സഹകരണം, കൂടിക്കാഴ്ചകൾ, പിന്തുണ എന്നിവ ഒഴുകും.',
+  },
+  9: {
+    en: 'the best-friend star — highly supportive for anything important.', si: 'පරම මිත්‍ර නක්ෂත්‍රයයි — වැදගත් ඕනෑම දෙයකට ඉතා සහායකයි.',
+    ta: 'பரம நட்பு நட்சத்திரம் — எந்த முக்கிய காரியத்திற்கும் மிகவும் ஆதரவானது.', zh: '至友之星——对任何重要之事都极为有利。',
+    hi: 'परम मित्र नक्षत्र — किसी भी महत्वपूर्ण कार्य के लिए अत्यंत सहायक।', ja: '最良の友の星 — 大切な事すべてに非常に心強い日。',
+    ko: '가장 친한 별 — 중요한 모든 일에 매우 든든합니다.', ar: 'نجم الصديق الأعزّ — داعم جدًا لأي أمر مهم.',
+    ml: 'പരമ മിത്ര നക്ഷത്രം — പ്രധാനപ്പെട്ട എന്തിനും വളരെ സഹായകരം.',
+  },
 };
 
 // ─── Retrograde review text (transitAnalysis RETRO_TEXT) ───────────────────
 
-export const RETRO_TEXT: Record<string, Record<TableLang, string>> = {
-  MERCURY: { en: 'review communication, contracts, travel and devices — double-check details before committing.', si: 'සන්නිවේදනය, ගිවිසුම්, ගමන් හා උපකරණ නැවත පරීක්ෂා කරන්න — කැප වීමට පෙර විස්තර දෙවරක් පරීක්ෂා කරන්න.' },
-  VENUS: { en: 'revisit relationships, finances and values; reconnect and refine rather than starting anew.', si: 'සම්බන්ධතා, මූල්‍ය හා සාරධර්ම නැවත සලකා බලන්න; අලුතින් ආරම්භ කරනවාට වඩා නැවත සම්බන්ධ වී පිරිපහදු කරන්න.' },
-  MARS: { en: 'channel energy with care; avoid impulsive conflict and rushed decisions.', si: 'ශක්තිය ප්‍රවේශමෙන් යොදවන්න; හදිසි ගැටුම් හා ඉක්මන් තීරණ වළක්වන්න.' },
-  JUPITER: { en: 'turn growth inward — reflect on beliefs, learning and long-term direction.', si: 'වර්ධනය අභ්‍යන්තරයට හරවන්න — විශ්වාස, ඉගෙනීම හා දිගු කාලීන දිශාව මෙනෙහි කරන්න.' },
-  SATURN: { en: 'revisit duties and structures; consolidate and complete rather than expand.', si: 'යුතුකම් හා ව්‍යුහ නැවත සලකා බලන්න; ව්‍යාප්ත කරනවාට වඩා තහවුරු කර නිම කරන්න.' },
+export const RETRO_TEXT: Record<string, Bi> = {
+  MERCURY: {
+    en: 'review communication, contracts, travel and devices — double-check details before committing.', si: 'සන්නිවේදනය, ගිවිසුම්, ගමන් හා උපකරණ නැවත පරීක්ෂා කරන්න — කැප වීමට පෙර විස්තර දෙවරක් පරීක්ෂා කරන්න.',
+    ta: 'தொடர்பு, ஒப்பந்தங்கள், பயணம், கருவிகளை மறுபரிசீலனை செய்யுங்கள் — உறுதியளிக்கும் முன் விவரங்களை இருமுறை சரிபாருங்கள்.', zh: '复核沟通、合同、出行与设备——承诺前再三核对细节。',
+    hi: 'संवाद, अनुबंध, यात्रा और उपकरणों की समीक्षा करें — प्रतिबद्ध होने से पहले विवरण दोबारा जाँचें।', ja: '連絡、契約、移動、機器を見直しましょう — 確定前に細部を再確認。',
+    ko: '소통, 계약, 이동, 기기를 점검하세요 — 결정 전에 세부 사항을 다시 확인하세요.', ar: 'راجع التواصل والعقود والسفر والأجهزة — تحقّق من التفاصيل مرتين قبل الالتزام.',
+    ml: 'ആശയവിനിമയം, കരാറുകൾ, യാത്ര, ഉപകരണങ്ങൾ പുനഃപരിശോധിക്കുക — ഉറപ്പിക്കും മുമ്പ് വിശദാംശങ്ങൾ വീണ്ടും നോക്കുക.',
+  },
+  VENUS: {
+    en: 'revisit relationships, finances and values; reconnect and refine rather than starting anew.', si: 'සම්බන්ධතා, මූල්‍ය හා සාරධර්ම නැවත සලකා බලන්න; අලුතින් ආරම්භ කරනවාට වඩා නැවත සම්බන්ධ වී පිරිපහදු කරන්න.',
+    ta: 'உறவுகள், நிதி, மதிப்பீடுகளை மீண்டும் பாருங்கள்; புதிதாகத் தொடங்குவதை விட மீண்டும் இணைந்து செம்மைப்படுத்துங்கள்.', zh: '重新审视关系、财务与价值观；与其重新开始，不如重新联结、加以完善。',
+    hi: 'रिश्तों, धन और मूल्यों पर फिर से विचार करें; नया शुरू करने के बजाय फिर जुड़ें और निखारें।', ja: '人間関係、財務、価値観を見直しましょう。新しく始めるより、つながり直して磨きを。',
+    ko: '관계, 재정, 가치관을 다시 살피세요. 새로 시작하기보다 다시 연결하고 다듬으세요.', ar: 'أعد النظر في العلاقات والمال والقيم؛ أعد التواصل وحسّن بدل البدء من جديد.',
+    ml: 'ബന്ധങ്ങൾ, സാമ്പത്തികം, മൂല്യങ്ങൾ എന്നിവ വീണ്ടും നോക്കുക; പുതുതായി തുടങ്ങുന്നതിനു പകരം വീണ്ടും ബന്ധപ്പെട്ട് മെച്ചപ്പെടുത്തുക.',
+  },
+  MARS: {
+    en: 'channel energy with care; avoid impulsive conflict and rushed decisions.', si: 'ශක්තිය ප්‍රවේශමෙන් යොදවන්න; හදිසි ගැටුම් හා ඉක්මන් තීරණ වළක්වන්න.',
+    ta: 'ஆற்றலைக் கவனமாகச் செலுத்துங்கள்; அவசர மோதல்களையும் அவசர முடிவுகளையும் தவிர்க்கவும்.', zh: '谨慎引导精力；避免冲动冲突与仓促决定。',
+    hi: 'ऊर्जा को सावधानी से लगाएँ; आवेगी टकराव और जल्दबाज़ी के फ़ैसलों से बचें।', ja: 'エネルギーを慎重に使いましょう。衝動的な衝突や性急な決定は避けて。',
+    ko: '에너지를 신중히 쓰세요. 충동적 갈등과 성급한 결정을 피하세요.', ar: 'وجّه طاقتك بحذر؛ تجنّب النزاعات الاندفاعية والقرارات المتسرعة.',
+    ml: 'ഊർജ്ജം ശ്രദ്ധയോടെ ഉപയോഗിക്കുക; ആവേശപരമായ സംഘർഷങ്ങളും തിടുക്കത്തിലുള്ള തീരുമാനങ്ങളും ഒഴിവാക്കുക.',
+  },
+  JUPITER: {
+    en: 'turn growth inward — reflect on beliefs, learning and long-term direction.', si: 'වර්ධනය අභ්‍යන්තරයට හරවන්න — විශ්වාස, ඉගෙනීම හා දිගු කාලීන දිශාව මෙනෙහි කරන්න.',
+    ta: 'வளர்ச்சியை உள்நோக்கித் திருப்புங்கள் — நம்பிக்கைகள், கற்றல், நீண்டகாலத் திசையைப் பற்றி சிந்தியுங்கள்.', zh: '让成长转向内在——反思信念、学习与长远方向。',
+    hi: 'विकास को भीतर मोड़ें — आस्था, अध्ययन और दीर्घकालिक दिशा पर चिंतन करें।', ja: '成長を内側へ — 信念、学び、長期的な方向性を省みましょう。',
+    ko: '성장을 안으로 돌리세요 — 신념, 배움, 장기적 방향을 돌아보세요.', ar: 'وجّه النمو إلى الداخل — تأمّل في المعتقدات والتعلّم والاتجاه البعيد المدى.',
+    ml: 'വളർച്ചയെ ഉള്ളിലേക്ക് തിരിക്കുക — വിശ്വാസങ്ങൾ, പഠനം, ദീർഘകാല ദിശ എന്നിവ ചിന്തിക്കുക.',
+  },
+  SATURN: {
+    en: 'revisit duties and structures; consolidate and complete rather than expand.', si: 'යුතුකම් හා ව්‍යුහ නැවත සලකා බලන්න; ව්‍යාප්ත කරනවාට වඩා තහවුරු කර නිම කරන්න.',
+    ta: 'கடமைகளையும் அமைப்புகளையும் மீண்டும் பாருங்கள்; விரிவாக்குவதை விட உறுதிப்படுத்தி முடியுங்கள்.', zh: '重新审视职责与结构；巩固并完成，而非扩张。',
+    hi: 'कर्तव्यों और ढाँचों पर फिर विचार करें; विस्तार के बजाय सुदृढ़ करें और पूरा करें।', ja: '義務と仕組みを見直しましょう。拡大より、固めて完成させる時です。',
+    ko: '의무와 구조를 다시 살피세요. 확장보다 다지고 마무리하세요.', ar: 'أعد النظر في الواجبات والهياكل؛ رسّخ وأكمل بدل التوسع.',
+    ml: 'കടമകളും ഘടനകളും വീണ്ടും നോക്കുക; വികസിപ്പിക്കുന്നതിനു പകരം ഉറപ്പിച്ച് പൂർത്തിയാക്കുക.',
+  },
 };
 
 // ─── Interpretive predictions (buildTransitPredictions) ────────────────────
@@ -116,140 +342,717 @@ export const RETRO_TEXT: Record<string, Record<TableLang, string>> = {
 export function joinPlanets(keys: string[], lang: Lang): string {
   return joinAnd(keys.map(k => planetName(titleCaseKey(k), lang)), lang);
 }
-export function isAre(count: number, lang: Lang): string {
-  if (lang === 'si') return 'ය';
-  return count > 1 ? 'are' : 'is';
-}
-export function theirIts(count: number, lang: Lang): string {
-  if (lang === 'si') return count > 1 ? 'ඒවායේ' : 'එහි';
-  return count > 1 ? 'their' : 'its';
-}
 
 const P = (k: string, lang: Lang) => planetName(titleCaseKey(k), lang);
 
-export const TP = {
-  // 1. Overall climate
-  overallTitle: { en: 'Overall transit climate', si: 'සමස්ත ගෝචර තත්ත්වය' },
-  overallPlainTitle: { en: 'The overall weather right now', si: 'දැන් පවතින සමස්ත තත්ත්වය' },
-  overallPlain: (net: number, lang: Lang) => net >= 2
-    ? (lang === 'si' ? 'ඔබ පරීක්ෂා කරනවාට වඩා වැඩි ග්‍රහ සංඛ්‍යාවක් ඔබට උදව් කරයි — දේ ආරම්භ කිරීමට හා එකඟ වීමට හොඳ කාලයකි.' : 'More planets are helping you than testing you — a good time to start things and say yes.')
-    : net <= -2
-      ? (lang === 'si' ? 'ඔබට උදව් කරනවාට වඩා වැඩි ග්‍රහ සංඛ්‍යාවක් ඔබ පරීක්ෂා කරයි — ජීවිතය සරලව තබා අමතර අරගලවලට නොයන්න.' : 'More planets are testing you than helping — keep life simple and don’t take on extra battles.')
-      : (lang === 'si' ? 'අහස මිශ්‍රයි — සමහර දේ ගලා යයි, සමහර දේ ඇදෙයි. ඔබේ මොහොත තෝරා ගන්න.' : 'The sky is mixed — some things flow, some drag. Pick your moments.'),
-  overallText: (net: number, good: number, bad: number, lang: Lang) => net >= 2
-    ? (lang === 'si' ? `පුළුල් ලෙස සහායක කාලයකි — ග්‍රහ ${good}ක් හිතකර ගෝචරයක සිටින අතර ${bad}ක් පීඩනයට ලක්ව ඇත. සැලසුම් ආරම්භ කිරීමට හොඳ ගම්‍යතාවකි.` : `A broadly supportive period — ${good} planets are in favourable transit versus ${bad} under pressure. Good momentum for initiating plans.`)
-    : net <= -2
-      ? (lang === 'si' ? `දුෂ්කර කාලයකි — ග්‍රහ ${bad}ක් අභියෝගාත්මක ගෝචරයක සිටින අතර ${good}ක් හිතකරයි. අත්‍යවශ්‍ය දේ කෙරෙහි අවධානය යොමු කර ඉක්මවා නොයන්න.` : `A demanding stretch — ${bad} planets are in challenging transit versus ${good} favourable. Focus on essentials and avoid overreach.`)
-      : (lang === 'si' ? `මිශ්‍ර කාලයකි — හිතකර ගෝචර ${good}ක් හා අභියෝගාත්මක ${bad}ක්. ඔබේ මොහොත තෝරා ගෙන නම්‍යශීලීව සිටින්න.` : `A mixed period — ${good} favourable and ${bad} challenging transits. Pick your moments and stay flexible.`),
-
-  // 1b. Dasha–Gochara
-  dashaTitle: (role: string, lord: string, lang: Lang) => lang === 'si' ? `${roleName(role, lang)} අධිපති ${lord} ගෝචරයේ` : `${role} lord ${lord} in transit`,
-  dashaPlainTitle: (lord: string, lang: Lang) => lang === 'si' ? `${lord} — ඔබේ වර්තමාන ජීවිත පරිච්ඡේදය ගෙනයන ග්‍රහයා` : `${lord}, the planet running your current life chapter`,
-  dashaPlain: (lord: string, kind: 'good' | 'bad' | 'neutral', lang: Lang) => kind === 'good'
-    ? (lang === 'si' ? `${lord} දැන් ප්‍රබල ස්ථානයක සිටී — ඔබේ වර්තමාන කාලයේ තේමාවලට අනුබල ලැබේ. ඒවා වෙනුවෙන් ක්‍රියා කරන්න.` : `${lord} is in a strong position right now — the themes of your current period get a green light. Act on them.`)
-    : kind === 'bad'
-      ? (lang === 'si' ? `${lord} දැන් අහසේ දුෂ්කර තත්ත්වයක සිටී — ඔබේ වර්තමාන කාලයේ ප්‍රතිඵල මන්දගාමී ලෙස දැනිය හැක. බලෙන් නොකරන්න.` : `${lord} is having a hard time in the sky right now — results from your current period may feel slow. Don’t force it.`)
-      : (lang === 'si' ? `${lord} සුමටව ගමන් කරයි — ඔබේ වර්තමාන කාලය ස්ථාවරව ගමන් කරයි, විශාල තල්ලුවක් නැත.` : `${lord} is coasting — your current period runs steadily, with no big push either way.`),
-
-  // 2. Sade Sati
-  sadeSatiTitle: { en: 'Sade Sati active', si: 'සාඩේ සති සක්‍රියයි' },
-  sadeSatiPlainTitle: { en: 'Saturn’s long 7½-year test is on', si: 'ශනිගේ දිගු වසර 7½ පරීක්ෂණය ක්‍රියාත්මකයි' },
-  sadeSatiPlain: { en: 'Life feels heavier and slower than usual in this phase. It passes — keep routines simple, rest well and avoid shortcuts.', si: 'මෙම අවධියේ ජීවිතය සුපුරුදු පරිදි නොව බර හා මන්දගාමී ලෙස දැනේ. එය පහ වී යයි — දිනචරියාව සරලව තබා, හොඳින් විවේක ගෙන, කෙටි මං වළක්වන්න.' },
-
-  // 3. Jupiter blessing
-  guruTitle: { en: 'Jupiter (Guru) transit', si: 'ගුරු ගෝචරය' },
-  guruPlainTitle: { en: 'Jupiter — your luck and growth planet', si: 'ගුරු — ඔබේ වාසනා හා වර්ධන ග්‍රහයා' },
-  guruPlain: (auspicious: boolean, lang: Lang) => auspicious
-    ? (lang === 'si' ? 'ගුරු දැන් ඔබට හිතවත්ව සිටී — වර්ධනය, අවස්ථා හා අන් අයගේ උදව් පහසුවෙන් ලැබේ. මෙම කවුළුව භාවිත කරන්න.' : 'Jupiter is smiling on you right now — growth, opportunities and help from others come easier. Use this window.')
-    : (lang === 'si' ? 'ගුරු දීමනා ලබා දෙනවාට වඩා ඉගැන්වීමේ ස්වභාවයක සිටී — වර්ධනය වාසනාවෙන් නොව පාඩම් හරහා එයි. ඉගෙන ගන්න, පසුපස නොයන්න.' : 'Jupiter is in teaching mode rather than gifting mode — growth comes through lessons, not luck. Learn, don’t chase.'),
-
-  // 4/5. Aspects
-  lagnaAspectTitle: (planet: string, pct: number, lang: Lang) => lang === 'si' ? `${planet} ඔබේ ලග්නය බලයි (${pct}%)` : `${planet} aspects your Lagna (${pct}%)`,
-  lagnaAspectPlainTitle: (planet: string, lang: Lang) => lang === 'si' ? `${planet} ඔබේ සිරුරට හා විශ්වාසයට බලපායි` : `${planet} is shining on your body & confidence`,
-  lagnaAspectPlain: (planet: string, benefic: boolean, lang: Lang) => benefic
-    ? (lang === 'si' ? `${planet}ගේ දෘෂ්ටිය ඔබේ ශක්තිය හා පැවැත්ම වර්ධනය කරයි — පෙනී සිට, කතා කර, මුල පිරීමට හොඳ කාලයකි.` : `${planet}’s gaze boosts your energy and presence — a good stretch to be seen, speak up and take initiative.`)
-    : (lang === 'si' ? `${planet}ගේ දෘෂ්ටිය ඔබේ ශක්තිය හා ස්වයං ප්‍රතිරූපයට පීඩනය කරයි — වේගය පාලනය කර, ප්‍රමාණවත් නින්දක් ලබා, අධික ලෙස භාර නොගන්න.` : `${planet}’s gaze presses on your energy and self-image — pace yourself, sleep enough and don’t overcommit.`),
-  lagnaAspectText: (planet: string, benefic: boolean, lang: Lang) => benefic
-    ? (lang === 'si' ? `${planet} ඔබේ ලග්නය මත ප්‍රබල දෘෂ්ටියක් හෙළයි — ජීවශක්තිය, විශ්වාසය හා ඔබ පෙනී සිටින ආකාරයට සහාය වේ. ඔබ ඉදිරිපත් වීමට කවුළුවකි.` : `${planet} casts a strong aspect on your ascendant — supports vitality, confidence and how you show up. A window to put yourself forward.`)
-    : (lang === 'si' ? `${planet} ඔබේ ලග්නය මත ප්‍රබල දෘෂ්ටියක් හෙළයි — සෞඛ්‍යය, ශක්තිය හා ස්වයං ප්‍රතිරූපයට පීඩනය එක් කරයි. වේගය පාලනය කර ඔබේ යහපැවැත්ම ආරක්ෂා කර ගන්න.` : `${planet} casts a strong aspect on your ascendant — adds pressure to health, energy and self-image. Pace yourself and protect your wellbeing.`),
-  moonAspectTitle: (planet: string, pct: number, lang: Lang) => lang === 'si' ? `${planet} ඔබේ චන්ද්‍ර රාශිය බලයි (${pct}%)` : `${planet} aspects your Moon sign (${pct}%)`,
-  moonAspectPlainTitle: (planet: string, lang: Lang) => lang === 'si' ? `${planet} ඔබේ මනෝභාවයට බලපායි` : `${planet} is influencing your mood`,
-  moonAspectPlain: (planet: string, benefic: boolean, lang: Lang) => benefic
-    ? (lang === 'si' ? `${planet}ගේ බලපෑම ඔබේ හැඟීම් ස්ථාවර කරයි — දැන් සම්බන්ධතා හා සිතේ සාමය පහසු ලෙස දැනේ.` : `${planet}’s influence steadies your emotions — relationships and peace of mind feel easier now.`)
-    : (lang === 'si' ? `${planet}ගේ බලපෑම ඔබේ හැඟීම් කලඹයි — සුපුරුදුට වඩා වැඩි ආතතියක් අපේක්ෂා කරන්න; නින්ද ආරක්ෂා කර මොහොතේ ප්‍රතික්‍රියා නොකරන්න.` : `${planet}’s influence stirs your emotions — expect more stress than usual; protect sleep and don’t react in the moment.`),
-  moonAspectText: (planet: string, benefic: boolean, lang: Lang) => benefic
-    ? (lang === 'si' ? `${planet} ඔබේ ජන්ම චන්ද්‍රයා බලයි — හැඟීම්බර ස්ථාවරත්වය හා සහාය; මනෝභාවය හා සම්බන්ධතා පහසු ලෙස දැනේ.` : `${planet} aspects your natal Moon — emotional steadiness and support; mood and relationships feel easier.`)
-    : (lang === 'si' ? `${planet} ඔබේ ජන්ම චන්ද්‍රයා බලයි — සිතේ සාමය පරීක්ෂාවට ලක් වේ; ආතතිය, හදිසි ප්‍රතික්‍රියා හා බිඳුණු නින්දෙන් ආරක්ෂා වන්න.` : `${planet} aspects your natal Moon — peace of mind is tested; guard against stress, reactivity and broken sleep.`),
-
-  // 6. Saturn special
-  saturnTitle: { en: 'Saturn transit', si: 'ශනි ගෝචරය' },
-  saturnPlainTitle: { en: 'Saturn — the discipline planet', si: 'ශනි — විනය ග්‍රහයා' },
-  saturnPlain: (good: boolean, lang: Lang) => good
-    ? (lang === 'si' ? 'ශනි දැන් ඔබ පැත්තේ සිටී — ස්ථාවර, ඉවසිලිවන්ත වෑයමට ප්‍රතිඵල ලැබේ. දිගටම කරගෙන යන්න.' : 'Saturn is on your side for now — steady, patient effort gets rewarded. Keep showing up.')
-    : (lang === 'si' ? 'ශනි ජීවිතයේ එක් ක්ෂේත්‍රයක ඔබ පරීක්ෂා කරයි — එහි ප්‍රමාද අපේක්ෂා කර, බලයට නොව ඉවසීමට යොමු වන්න.' : 'Saturn is testing you in one area of life — expect delays there and answer with patience, not force.'),
-
-  // 7. Retrograde
-  retroTitle: (planets: string, lang: Lang) => lang === 'si' ? `වක්‍ර: ${planets}` : `Retrograde: ${planets}`,
-  retroPlainTitle: { en: 'Some planets are in “review mode”', si: 'සමහර ග්‍රහයෝ “යළි සලකා බැලීමේ” ස්වභාවයක සිටිති' },
-  retroPlain: { en: 'A backward-moving planet favours finishing, fixing and double-checking over brand-new starts in its areas.', si: 'පසුපසට ගමන් කරන ග්‍රහයෙක් එහි ක්ෂේත්‍රවල අලුත් ආරම්භවලට වඩා නිම කිරීම, නිවැරදි කිරීම හා දෙවරක් පරීක්ෂා කිරීම වෙනුවෙන් හිතකරයි.' },
-
-  // 8. Gandanta
-  gandantaTitle: { en: 'Gandanta (sign junction)', si: 'ගණ්ඩාන්ත (රාශි සන්ධිය)' },
-  gandantaPlainTitle: (planets: string, lang: Lang) => lang === 'si' ? `${planets} සියුම් හැරවුම් ලක්ෂ්‍යයක` : `${planets} at a delicate turning point`,
-  gandantaPlain: { en: 'Things connected to this planet feel shaky for a few days — hold off on big commitments there until it settles.', si: 'මෙම ග්‍රහයාට සම්බන්ධ දේ දින කිහිපයක් අස්ථිර ලෙස දැනේ — එය සන්සුන් වන තෙක් එහි විශාල බැඳීම්වලින් වළකින්න.' },
-  gandantaText: (planets: string, multi: boolean, lang: Lang) => lang === 'si'
-    ? `${planets} ගණ්ඩාන්තයේ සිටී — කර්මය හා බැඳුණු ජල-ගිනි සන්ධිය. ${multi ? 'මෙම ග්‍රහයන්' : 'මෙම ග්‍රහයා'} විසින් පාලනය වන කරුණු දැන් අස්ථිර හා සියුම්ව දැනේ; ${multi ? 'ඒවා' : 'එය'} හරහා විශාල බැඳීම් වළක්වන්න.`
-    : `${planets} ${multi ? 'are' : 'is'} in gandanta — the karmic water–fire junction. Matters ruled by ${multi ? 'these planets' : 'this planet'} feel unstable and tender now; avoid major commitments through ${multi ? 'them' : 'it'}.`,
-
-  // 9. Planetary war
-  warTitle: { en: 'Planetary war (Graha Yuddha)', si: 'ග්‍රහ යුද්ධය' },
-  warPlainTitle: (pairs: string, lang: Lang) => lang === 'si' ? `${pairs} අහසේ ගැටෙති` : `${pairs} are clashing in the sky`,
-  warPlain: { en: 'Two planets are crowding each other, so the things they stand for pull in opposite directions for a short while — expect friction there.', si: 'ග්‍රහයන් දෙදෙනෙක් එකිනෙකා තදකරයි, එබැවින් ඔවුන් නියෝජනය කරන දේ කෙටි කලකට ප්‍රතිවිරුද්ධ දිශාවලට අදියි — එහි ඝට්ටනයක් අපේක්ෂා කරන්න.' },
-  warText: (pairs: string, multi: boolean, lang: Lang) => lang === 'si'
-    ? `${pairs} අංශක 1ක් ඇතුළත සිටී — ග්‍රහ යුද්ධයකි. ඔවුන්ගේ කරුණු ගැටෙන අතර, මෙතරම් ළං සිටින තාක් දුර්වල ග්‍රහයාගේ ප්‍රතිඵල දුර්වල වේ.`
-    : `${pairs} ${multi ? 'are' : 'is'} within 1° — a planetary war. Their significations clash and the weaker planet's results are compromised while they stay this close.`,
-
-  // Ashtakavarga support
-  avTitle: { en: 'Ashtakavarga support', si: 'අෂ්ටකවර්ග සහාය' },
-  avPlainTitle: { en: 'How much backing each planet has from your birth chart', si: 'ඔබේ ජන්ම කේන්දරයෙන් එක් එක් ග්‍රහයාට ලැබෙන පිටුබලය' },
-
-  // Transit strength
-  strengthTitle: { en: 'Transit strength & state', si: 'ගෝචර ශක්තිය හා තත්ත්වය' },
-  strengthPlainTitle: { en: 'Which planets are strong or weak right now', si: 'දැන් ප්‍රබල හෝ දුර්වල ග්‍රහයෝ කවුරුද' },
-
-  // Transit → Natal
-  tnTitle: { en: 'Transit → Natal contacts', si: 'ගෝචර → ජන්ම සම්බන්ධතා' },
-  tnPlainTitle: { en: 'Planets touching sensitive spots in your birth chart', si: 'ඔබේ ජන්ම කේන්දරයේ සංවේදී ස්ථාන ස්පර්ශ කරන ග්‍රහයෝ' },
-  tnPlain: { en: 'When a moving planet touches a planet you were born with, real events tend to follow in that part of life — these are the contacts to watch.', si: 'චලනය වන ග්‍රහයෙක් ඔබ උපන් ග්‍රහයෙකු ස්පර්ශ කරන විට, ජීවිතයේ එම කොටසේ සැබෑ සිදුවීම් සිදු වීමට නැඹුරු වේ — මේවා අවධානය යොමු කළ යුතු සම්බන්ධතා වේ.' },
-
-  // Daily Moon
-  moonTitle: (tithi: string, paksha: string, lang: Lang) => lang === 'si' ? `චන්ද්‍රයා: ${tithi} (${paksha} පක්ෂය)` : `Moon: ${tithi} (${paksha} paksha)`,
-  moonPlainTitle: { en: 'Today’s Moon — your day-to-day mood', si: 'අද චන්ද්‍රයා — ඔබේ දෛනික මනෝභාවය' },
-
-  // Tara Bala
-  taraTitle: (name: string, ord: string, lang: Lang) => lang === 'si' ? `තාරා බල: ${name} (${ord} තාරාව)` : `Tara Bala: ${name} (${ord} tara)`,
-  taraPlainTitleGood: { en: 'Today’s star is friendly to you', si: 'අද නක්ෂත්‍රය ඔබට හිතවත්ය' },
-  taraPlainTitleBad: { en: 'Today’s star is not on your side', si: 'අද නක්ෂත්‍රය ඔබ පැත්තේ නැත' },
-  taraPlain: (fav: boolean, lang: Lang) => fav
-    ? (lang === 'si' ? 'ඔබේ පෞද්ගලික දින-නක්ෂත්‍ර චක්‍රය අනුව, අද වැදගත් තීරණවලට හිතකරයි — අත්සන් කරන්න, වෙන්කරවා ගන්න, අසන්න, ආරම්භ කරන්න.' : 'By your personal day-star cycle, today favours important moves — sign, book, ask, begin.')
-    : (lang === 'si' ? 'ඔබේ පෞද්ගලික දින-නක්ෂත්‍ර චක්‍රය අනුව, අද අවදානමට වඩා දිනචරියාවට හොඳයි — විශාල තීරණ දිනක් දෙකක් ඉවසිය හැක.' : 'By your personal day-star cycle, today is better for routine than risk — big decisions can wait a day or two.'),
-
-  // Vedha
-  vedhaTitle: { en: 'Vedha (obstruction)', si: 'වේධ (බාධාව)' },
-  vedhaPlainTitle: { en: 'A good influence is temporarily on hold', si: 'හිතකර බලපෑමක් තාවකාලිකව නතර වී ඇත' },
-  vedhaPlain: (planets: string, _multi: boolean, lang: Lang) => lang === 'si'
-    ? `${planets} සාමාන්‍යයෙන් දැන් ඔබට උදව් කරන නමුත්, තවත් ග්‍රහයෙක් එම ප්‍රතිලාභය අවහිර කරයි — බාධාව පහ වන තෙක් එය මත රඳා නොසිටින්න.`
-    : `${planets} would normally be helping you now, but another planet is blocking the benefit — don’t count on it until the block passes.`,
-
-  // Nodes
-  nodesTitle: { en: 'Rahu–Ketu axis', si: 'රාහු-කේතු අක්ෂය' },
-  nodesPlainTitle: { en: 'Where obsession and letting-go live right now', si: 'දැන් ඇබ්බැහිය හා අත්හැරීම පවතින තැන' },
-  nodesPlain: { en: 'Rahu marks where life pulls hardest at your ambition; Ketu marks what you’re being asked to release. They stay put for about 18 months.', si: 'රාහු ඔබේ අභිලාෂය දැඩිම ලෙස ඇදෙන තැන සලකුණු කරයි; කේතු ඔබෙන් අත්හැරීමට ඉල්ලන දේ සලකුණු කරයි. ඔවුන් මාස 18ක් පමණ එතැනම රැඳී සිටිති.' },
+const ROLE: Record<'Mahadasha' | 'Antardasha', L9> = {
+  Mahadasha: { en: 'Mahadasha', si: 'මහා දශා', ta: 'மகாதசை', zh: '大运（Mahadasha）', hi: 'महादशा', ja: 'マハーダシャー', ko: '마하다샤', ar: 'الماهاداشا', ml: 'മഹാദശ' },
+  Antardasha: { en: 'Antardasha', si: 'අන්තර් දශා', ta: 'அந்தர்தசை', zh: '小运（Antardasha）', hi: 'अंतर्दशा', ja: 'アンタルダシャー', ko: '안타르다샤', ar: 'الأنتارداشا', ml: 'അന്തർദശ' },
 };
 
-function roleName(role: string, lang: Lang): string {
-  if (lang !== 'si') return role;
-  return role === 'Mahadasha' ? 'මහා දශා' : 'අන්තර් දශා';
-}
+export const TP = {
+  // 1. Overall climate
+  overallTitle: { en: 'Overall transit climate', si: 'සමස්ත ගෝචර තත්ත්වය', ta: 'ஒட்டுமொத்த கோசாரச் சூழல்', zh: '整体行运气候', hi: 'समग्र गोचर वातावरण', ja: '全体のトランジット傾向', ko: '전체 트랜짓 기상', ar: 'مناخ العبور العام', ml: 'മൊത്തം ഗോചര അന്തരീക്ഷം' } as Bi,
+  overallPlainTitle: { en: 'The overall weather right now', si: 'දැන් පවතින සමස්ත තත්ත්වය', ta: 'இப்போதைய ஒட்டுமொத்த நிலை', zh: '当下的整体天气', hi: 'अभी का समग्र मौसम', ja: '今の全体的な空模様', ko: '지금의 전반적인 날씨', ar: 'الطقس العام الآن', ml: 'ഇപ്പോഴത്തെ മൊത്തം കാലാവസ്ഥ' } as Bi,
+  overallPlain: (net: number, lang: Lang) => net >= 2
+    ? sel(lang, {
+      en: 'More planets are helping you than testing you — a good time to start things and say yes.',
+      si: 'ඔබ පරීක්ෂා කරනවාට වඩා වැඩි ග්‍රහ සංඛ්‍යාවක් ඔබට උදව් කරයි — දේ ආරම්භ කිරීමට හා එකඟ වීමට හොඳ කාලයකි.',
+      ta: 'உங்களைச் சோதிப்பதை விட அதிகக் கிரகங்கள் உதவுகின்றன — புதியவற்றைத் தொடங்கவும் "சரி" சொல்லவும் நல்ல நேரம்.',
+      zh: '帮助您的行星多于考验您的——是开始新事、说“好”的好时机。',
+      hi: 'परीक्षा लेने वालों से अधिक ग्रह आपकी मदद कर रहे हैं — काम शुरू करने और हाँ कहने का अच्छा समय।',
+      ja: '試す惑星より助ける惑星が多い時 — 物事を始め、「はい」と言うのに良い時期です。',
+      ko: '시험하는 행성보다 돕는 행성이 많습니다 — 일을 시작하고 "예"라고 말하기 좋은 때입니다.',
+      ar: 'الكواكب التي تساعدك أكثر من التي تختبرك — وقت جيد للبدء وقول نعم.',
+      ml: 'പരീക്ഷിക്കുന്നതിനേക്കാൾ കൂടുതൽ ഗ്രഹങ്ങൾ സഹായിക്കുന്നു — കാര്യങ്ങൾ തുടങ്ങാനും "ശരി" പറയാനും നല്ല സമയം.',
+    })
+    : net <= -2
+      ? sel(lang, {
+        en: 'More planets are testing you than helping — keep life simple and don’t take on extra battles.',
+        si: 'ඔබට උදව් කරනවාට වඩා වැඩි ග්‍රහ සංඛ්‍යාවක් ඔබ පරීක්ෂා කරයි — ජීවිතය සරලව තබා අමතර අරගලවලට නොයන්න.',
+        ta: 'உதவுவதை விட அதிகக் கிரகங்கள் சோதிக்கின்றன — வாழ்க்கையை எளிமையாக வைத்து, கூடுதல் போராட்டங்களை ஏற்காதீர்கள்.',
+        zh: '考验您的行星多于帮助您的——让生活保持简单，别再揽下额外的仗。',
+        hi: 'मदद से अधिक ग्रह परीक्षा ले रहे हैं — जीवन सरल रखें और अतिरिक्त लड़ाइयाँ न लें।',
+        ja: '助ける惑星より試す惑星が多い時 — 生活をシンプルに保ち、余計な戦いは避けましょう。',
+        ko: '돕는 행성보다 시험하는 행성이 많습니다 — 삶을 단순하게 유지하고 싸움을 더 벌이지 마세요.',
+        ar: 'الكواكب التي تختبرك أكثر من التي تساعدك — أبقِ حياتك بسيطة ولا تخض معارك إضافية.',
+        ml: 'സഹായിക്കുന്നതിനേക്കാൾ കൂടുതൽ ഗ്രഹങ്ങൾ പരീക്ഷിക്കുന്നു — ജീവിതം ലളിതമാക്കി അധിക പോരാട്ടങ്ങൾ ഏറ്റെടുക്കരുത്.',
+      })
+      : sel(lang, {
+        en: 'The sky is mixed — some things flow, some drag. Pick your moments.',
+        si: 'අහස මිශ්‍රයි — සමහර දේ ගලා යයි, සමහර දේ ඇදෙයි. ඔබේ මොහොත තෝරා ගන්න.',
+        ta: 'வானம் கலவையாக உள்ளது — சில விஷயங்கள் ஓடும், சில இழுக்கும். சரியான நேரத்தைத் தேர்ந்தெடுங்கள்.',
+        zh: '天象好坏参半——有些事顺畅，有些拖沓。择机而动。',
+        hi: 'आकाश मिला-जुला है — कुछ बातें सहज, कुछ धीमी। सही क्षण चुनें।',
+        ja: '空模様はまちまち — 順調なこともあれば停滞することも。タイミングを選びましょう。',
+        ko: '하늘이 뒤섞여 있습니다 — 잘 풀리는 일도, 더딘 일도 있습니다. 때를 고르세요.',
+        ar: 'السماء مختلطة — بعض الأمور تسير وبعضها يتعثر. اختر لحظاتك.',
+        ml: 'ആകാശം മിശ്രമാണ് — ചിലത് ഒഴുകും, ചിലത് ഇഴയും. സമയം തിരഞ്ഞെടുക്കുക.',
+      }),
+  overallText: (net: number, good: number, bad: number, lang: Lang) => net >= 2
+    ? sel(lang, {
+      en: `A broadly supportive period — ${good} planets are in favourable transit versus ${bad} under pressure. Good momentum for initiating plans.`,
+      si: `පුළුල් ලෙස සහායක කාලයකි — ග්‍රහ ${good}ක් හිතකර ගෝචරයක සිටින අතර ${bad}ක් පීඩනයට ලක්ව ඇත. සැලසුම් ආරම්භ කිරීමට හොඳ ගම්‍යතාවකි.`,
+      ta: `பொதுவாக ஆதரவான காலம் — ${good} கிரகங்கள் சாதகமான கோசாரத்தில், ${bad} அழுத்தத்தில். திட்டங்களைத் தொடங்க நல்ல உத்வேகம்.`,
+      zh: `整体有利的时期——${good} 颗行星处于有利行运，${bad} 颗承压。启动计划的势头良好。`,
+      hi: `कुल मिलाकर सहायक अवधि — ${good} ग्रह अनुकूल गोचर में, ${bad} दबाव में। योजनाएँ शुरू करने की अच्छी गति।`,
+      ja: `全体に支えのある時期 — 好ましいトランジットの惑星が${good}、圧力下が${bad}。計画を始める良い勢いです。`,
+      ko: `전반적으로 든든한 시기 — 유리한 트랜짓 행성 ${good}개, 압박받는 행성 ${bad}개. 계획을 시작하기 좋은 흐름입니다.`,
+      ar: `فترة داعمة عمومًا — ${good} كواكب في عبور مواتٍ مقابل ${bad} تحت الضغط. زخم جيد لبدء الخطط.`,
+      ml: `പൊതുവെ പിന്തുണയുള്ള കാലം — ${good} ഗ്രഹങ്ങൾ അനുകൂല ഗോചരത്തിൽ, ${bad} സമ്മർദ്ദത്തിൽ. പദ്ധതികൾ തുടങ്ങാൻ നല്ല ഊർജ്ജം.`,
+    })
+    : net <= -2
+      ? sel(lang, {
+        en: `A demanding stretch — ${bad} planets are in challenging transit versus ${good} favourable. Focus on essentials and avoid overreach.`,
+        si: `දුෂ්කර කාලයකි — ග්‍රහ ${bad}ක් අභියෝගාත්මක ගෝචරයක සිටින අතර ${good}ක් හිතකරයි. අත්‍යවශ්‍ය දේ කෙරෙහි අවධානය යොමු කර ඉක්මවා නොයන්න.`,
+        ta: `கடினமான காலம் — ${bad} கிரகங்கள் சவாலான கோசாரத்தில், ${good} சாதகமாக. அத்தியாவசியங்களில் கவனம் செலுத்தி, அளவுக்கு மீறாதீர்கள்.`,
+        zh: `吃力的一段——${bad} 颗行星处于挑战性行运，${good} 颗有利。专注要务，避免贪多。`,
+        hi: `कठिन दौर — ${bad} ग्रह चुनौतीपूर्ण गोचर में, ${good} अनुकूल। ज़रूरी चीज़ों पर ध्यान दें, अति न करें।`,
+        ja: `厳しい時期 — 困難なトランジットの惑星が${bad}、好ましいのは${good}。要点に集中し、無理をしないように。`,
+        ko: `힘든 구간 — 도전적 트랜짓 행성 ${bad}개, 유리한 행성 ${good}개. 핵심에 집중하고 무리하지 마세요.`,
+        ar: `مرحلة صعبة — ${bad} كواكب في عبور صعب مقابل ${good} مواتية. ركّز على الأساسيات وتجنّب المبالغة.`,
+        ml: `കഠിനമായ ഘട്ടം — ${bad} ഗ്രഹങ്ങൾ വെല്ലുവിളി നിറഞ്ഞ ഗോചരത്തിൽ, ${good} അനുകൂലം. അത്യാവശ്യ കാര്യങ്ങളിൽ ശ്രദ്ധിക്കുക, അമിതമാകരുത്.`,
+      })
+      : sel(lang, {
+        en: `A mixed period — ${good} favourable and ${bad} challenging transits. Pick your moments and stay flexible.`,
+        si: `මිශ්‍ර කාලයකි — හිතකර ගෝචර ${good}ක් හා අභියෝගාත්මක ${bad}ක්. ඔබේ මොහොත තෝරා ගෙන නම්‍යශීලීව සිටින්න.`,
+        ta: `கலவையான காலம் — ${good} சாதகமான, ${bad} சவாலான கோசாரங்கள். நேரத்தைத் தேர்ந்தெடுத்து நெகிழ்வாக இருங்கள்.`,
+        zh: `好坏参半的时期——${good} 个有利行运，${bad} 个挑战性行运。择机而动，保持灵活。`,
+        hi: `मिश्रित अवधि — ${good} अनुकूल और ${bad} चुनौतीपूर्ण गोचर। सही क्षण चुनें और लचीले रहें।`,
+        ja: `まちまちの時期 — 好ましいトランジットが${good}、困難なものが${bad}。タイミングを選び、柔軟に。`,
+        ko: `혼재된 시기 — 유리한 트랜짓 ${good}개, 도전적 트랜짓 ${bad}개. 때를 고르고 유연하게.`,
+        ar: `فترة مختلطة — ${good} عبورات مواتية و${bad} صعبة. اختر لحظاتك وابقَ مرنًا.`,
+        ml: `മിശ്ര കാലം — ${good} അനുകൂല, ${bad} വെല്ലുവിളി ഗോചരങ്ങൾ. സമയം തിരഞ്ഞെടുത്ത് വഴക്കത്തോടെ നിൽക്കുക.`,
+      }),
+
+  // 1b. Dasha–Gochara
+  dashaTitle: (role: 'Mahadasha' | 'Antardasha', lord: string, lang: Lang) => {
+    const r = sel(lang, ROLE[role]);
+    return sel(lang, {
+      en: `${r} lord ${lord} in transit`, si: `${r} අධිපති ${lord} ගෝචරයේ`, ta: `${r} அதிபதி ${lord} கோசாரத்தில்`,
+      zh: `${r}主星${lord}的行运`, hi: `${r} स्वामी ${lord} गोचर में`, ja: `${r}の支配星${lord}のトランジット`,
+      ko: `${r} 주인 ${lord}의 트랜짓`, ar: `حاكم ${r} ${lord} في العبور`, ml: `${r} നാഥൻ ${lord} ഗോചരത്തിൽ`,
+    });
+  },
+  dashaPlainTitle: (lord: string, lang: Lang) => sel(lang, {
+    en: `${lord}, the planet running your current life chapter`, si: `${lord} — ඔබේ වර්තමාන ජීවිත පරිච්ඡේදය ගෙනයන ග්‍රහයා`,
+    ta: `${lord} — உங்கள் தற்போதைய வாழ்க்கை அத்தியாயத்தை நடத்தும் கிரகம்`, zh: `${lord}——主导您当前人生篇章的行星`,
+    hi: `${lord} — आपके वर्तमान जीवन-अध्याय को चलाने वाला ग्रह`, ja: `${lord} — 今の人生の章を動かしている惑星`,
+    ko: `${lord} — 지금 인생의 장을 이끄는 행성`, ar: `${lord} — الكوكب الذي يدير فصل حياتك الحالي`,
+    ml: `${lord} — നിങ്ങളുടെ ഇപ്പോഴത്തെ ജീവിത അധ്യായം നയിക്കുന്ന ഗ്രഹം`,
+  }),
+  dashaPlain: (lord: string, kind: 'good' | 'bad' | 'neutral', lang: Lang) => kind === 'good'
+    ? sel(lang, {
+      en: `${lord} is in a strong position right now — the themes of your current period get a green light. Act on them.`,
+      si: `${lord} දැන් ප්‍රබල ස්ථානයක සිටී — ඔබේ වර්තමාන කාලයේ තේමාවලට අනුබල ලැබේ. ඒවා වෙනුවෙන් ක්‍රියා කරන්න.`,
+      ta: `${lord} இப்போது வலுவான நிலையில் — உங்கள் தற்போதைய காலத்தின் கருப்பொருள்களுக்குப் பச்சைக் கொடி. செயல்படுங்கள்.`,
+      zh: `${lord}此刻位置强势——您当前时期的主题获得绿灯。付诸行动吧。`,
+      hi: `${lord} अभी मज़बूत स्थिति में है — आपकी वर्तमान अवधि के विषयों को हरी झंडी। उन पर काम करें।`,
+      ja: `${lord}は今、強い位置にあります — 現在の時期のテーマに青信号。行動に移しましょう。`,
+      ko: `${lord}이(가) 지금 강한 위치에 있습니다 — 현재 시기의 주제에 청신호. 실행하세요.`,
+      ar: `${lord} في موقع قوي الآن — موضوعات فترتك الحالية تحظى بالضوء الأخضر. تصرّف بناءً عليها.`,
+      ml: `${lord} ഇപ്പോൾ ശക്തമായ നിലയിലാണ് — നിലവിലെ കാലത്തിന്റെ വിഷയങ്ങൾക്ക് പച്ചക്കൊടി. പ്രവർത്തിക്കുക.`,
+    })
+    : kind === 'bad'
+      ? sel(lang, {
+        en: `${lord} is having a hard time in the sky right now — results from your current period may feel slow. Don’t force it.`,
+        si: `${lord} දැන් අහසේ දුෂ්කර තත්ත්වයක සිටී — ඔබේ වර්තමාන කාලයේ ප්‍රතිඵල මන්දගාමී ලෙස දැනිය හැක. බලෙන් නොකරන්න.`,
+        ta: `${lord} இப்போது வானில் சிரமப்படுகிறார் — தற்போதைய காலத்தின் பலன்கள் மெதுவாக உணரப்படலாம். கட்டாயப்படுத்தாதீர்கள்.`,
+        zh: `${lord}此刻在天上处境艰难——当前时期的成果可能显得缓慢。不要强求。`,
+        hi: `${lord} अभी आकाश में कठिन स्थिति में है — वर्तमान अवधि के परिणाम धीमे लग सकते हैं। ज़ोर न डालें।`,
+        ja: `${lord}は今、空で苦戦しています — 現在の時期の成果は遅く感じるかも。無理に押し進めないで。`,
+        ko: `${lord}이(가) 지금 하늘에서 고전 중입니다 — 현재 시기의 결과가 더디게 느껴질 수 있습니다. 억지로 밀지 마세요.`,
+        ar: `${lord} يمرّ بوقت صعب في السماء الآن — قد تبدو نتائج فترتك الحالية بطيئة. لا تفرضها.`,
+        ml: `${lord} ഇപ്പോൾ ആകാശത്ത് ബുദ്ധിമുട്ടിലാണ് — നിലവിലെ കാലത്തിന്റെ ഫലങ്ങൾ മന്ദഗതിയിൽ തോന്നാം. നിർബന്ധിക്കരുത്.`,
+      })
+      : sel(lang, {
+        en: `${lord} is coasting — your current period runs steadily, with no big push either way.`,
+        si: `${lord} සුමටව ගමන් කරයි — ඔබේ වර්තමාන කාලය ස්ථාවරව ගමන් කරයි, විශාල තල්ලුවක් නැත.`,
+        ta: `${lord} சீராக நகர்கிறார் — உங்கள் தற்போதைய காலம் பெரிய உந்துதல் இன்றி நிலையாகச் செல்லும்.`,
+        zh: `${lord}平稳滑行——您当前的时期运行平稳，没有大的推力。`,
+        hi: `${lord} सहज चल रहा है — आपकी वर्तमान अवधि बिना बड़े धक्के के स्थिर चलती है।`,
+        ja: `${lord}は惰性で進んでいます — 現在の時期は大きな追い風も向かい風もなく安定しています。`,
+        ko: `${lord}이(가) 순항 중 — 현재 시기는 큰 밀림 없이 꾸준히 흘러갑니다.`,
+        ar: `${lord} يسير بهدوء — فترتك الحالية مستقرة دون دفعة كبيرة في أي اتجاه.`,
+        ml: `${lord} സുഗമമായി നീങ്ങുന്നു — നിലവിലെ കാലം വലിയ തള്ളലില്ലാതെ സ്ഥിരമായി പോകുന്നു.`,
+      }),
+
+  // 2. Sade Sati
+  sadeSatiTitle: { en: 'Sade Sati active', si: 'ඒරාෂ්ටක ශනි සක්‍රියයි', ta: 'ஏழரைச் சனி நடப்பில்', zh: '土星七年半进行中', hi: 'साढ़े साती सक्रिय', ja: 'サデ・サティ進行中', ko: '사데 사티 진행 중', ar: 'سادي ساتي نشطة', ml: 'ഏഴര ശനി നടക്കുന്നു' } as Bi,
+  sadeSatiPlainTitle: { en: 'Saturn’s long 7½-year test is on', si: 'ශනිගේ දිගු වසර 7½ පරීක්ෂණය ක්‍රියාත්මකයි', ta: 'சனியின் நீண்ட 7½ ஆண்டு சோதனை நடக்கிறது', zh: '土星漫长的七年半考验正在进行', hi: 'शनि की लंबी साढ़े सात वर्ष की परीक्षा चल रही है', ja: '土星の長い7年半の試練が進行中', ko: '토성의 긴 7년 반 시험이 진행 중', ar: 'اختبار زحل الطويل لسبع سنوات ونصف جارٍ', ml: 'ശനിയുടെ ദീർഘമായ ഏഴര വർഷ പരീക്ഷണം നടക്കുന്നു' } as Bi,
+  sadeSatiPlain: {
+    en: 'Life feels heavier and slower than usual in this phase. It passes — keep routines simple, rest well and avoid shortcuts.',
+    si: 'මෙම අවධියේ ජීවිතය සුපුරුදු පරිදි නොව බර හා මන්දගාමී ලෙස දැනේ. එය පහ වී යයි — දිනචරියාව සරලව තබා, හොඳින් විවේක ගෙන, කෙටි මං වළක්වන්න.',
+    ta: 'இந்தக் கட்டத்தில் வாழ்க்கை வழக்கத்தை விடக் கனமாகவும் மெதுவாகவும் தோன்றும். இது கடந்து போகும் — வழக்கங்களை எளிமையாக்கி, நன்கு ஓய்வெடுத்து, குறுக்குவழிகளைத் தவிர்க்கவும்.',
+    zh: '这一阶段生活比平时更沉重、更缓慢。它终会过去——保持作息简单、充分休息、不走捷径。',
+    hi: 'इस चरण में जीवन सामान्य से भारी और धीमा लगता है। यह बीत जाएगा — दिनचर्या सरल रखें, अच्छा आराम करें और शॉर्टकट से बचें।',
+    ja: 'この時期は人生がいつもより重く遅く感じられます。やがて過ぎます — 日課をシンプルに、よく休み、近道は避けて。',
+    ko: '이 단계에서는 삶이 평소보다 무겁고 느리게 느껴집니다. 지나갑니다 — 일상을 단순히 하고, 잘 쉬고, 지름길을 피하세요.',
+    ar: 'تبدو الحياة في هذه المرحلة أثقل وأبطأ من المعتاد. ستمضي — أبقِ روتينك بسيطًا ونل قسطًا جيدًا من الراحة وتجنّب الطرق المختصرة.',
+    ml: 'ഈ ഘട്ടത്തിൽ ജീവിതം പതിവിലും ഭാരവും മന്ദവുമായി തോന്നും. ഇത് കടന്നുപോകും — ദിനചര്യ ലളിതമാക്കി, നന്നായി വിശ്രമിച്ച്, കുറുക്കുവഴികൾ ഒഴിവാക്കുക.',
+  } as Bi,
+
+  // 3. Jupiter blessing
+  guruTitle: { en: 'Jupiter (Guru) transit', si: 'ගුරු ගෝචරය', ta: 'குரு கோசாரம்', zh: '木星（Guru）行运', hi: 'गुरु गोचर', ja: '木星（グル）のトランジット', ko: '목성(구루) 트랜짓', ar: 'عبور المشتري (غورو)', ml: 'ഗുരു ഗോചരം' } as Bi,
+  guruPlainTitle: { en: 'Jupiter — your luck and growth planet', si: 'ගුරු — ඔබේ වාසනා හා වර්ධන ග්‍රහයා', ta: 'குரு — உங்கள் அதிர்ஷ்டம் மற்றும் வளர்ச்சிக் கிரகம்', zh: '木星——您的幸运与成长之星', hi: 'गुरु — आपका भाग्य और विकास का ग्रह', ja: '木星 — 幸運と成長の惑星', ko: '목성 — 행운과 성장의 행성', ar: 'المشتري — كوكب حظك ونموك', ml: 'ഗുരു — നിങ്ങളുടെ ഭാഗ്യത്തിന്റെയും വളർച്ചയുടെയും ഗ്രഹം' } as Bi,
+  guruPlain: (auspicious: boolean, lang: Lang) => auspicious
+    ? sel(lang, {
+      en: 'Jupiter is smiling on you right now — growth, opportunities and help from others come easier. Use this window.',
+      si: 'ගුරු දැන් ඔබට හිතවත්ව සිටී — වර්ධනය, අවස්ථා හා අන් අයගේ උදව් පහසුවෙන් ලැබේ. මෙම කවුළුව භාවිත කරන්න.',
+      ta: 'குரு இப்போது உங்களுக்குச் சாதகமாகப் புன்னகைக்கிறார் — வளர்ச்சி, வாய்ப்புகள், பிறர் உதவி எளிதாக வரும். இந்தக் காலத்தைப் பயன்படுத்துங்கள்.',
+      zh: '木星此刻正对您微笑——成长、机会与他人的帮助都更容易到来。好好利用这个窗口。',
+      hi: 'गुरु अभी आप पर मुस्कुरा रहा है — विकास, अवसर और दूसरों की मदद आसानी से मिलती है। इस समय का उपयोग करें।',
+      ja: '木星が今あなたに微笑んでいます — 成長、チャンス、人の助けが得やすい時。この機会を活かして。',
+      ko: '목성이 지금 당신에게 미소 짓고 있습니다 — 성장, 기회, 도움이 쉽게 옵니다. 이 시기를 활용하세요.',
+      ar: 'المشتري يبتسم لك الآن — يأتي النمو والفرص وعون الآخرين بسهولة أكبر. استغل هذه النافذة.',
+      ml: 'ഗുരു ഇപ്പോൾ നിങ്ങളെ നോക്കി പുഞ്ചിരിക്കുന്നു — വളർച്ചയും അവസരങ്ങളും മറ്റുള്ളവരുടെ സഹായവും എളുപ്പം ലഭിക്കും. ഈ സമയം ഉപയോഗിക്കുക.',
+    })
+    : sel(lang, {
+      en: 'Jupiter is in teaching mode rather than gifting mode — growth comes through lessons, not luck. Learn, don’t chase.',
+      si: 'ගුරු දීමනා ලබා දෙනවාට වඩා ඉගැන්වීමේ ස්වභාවයක සිටී — වර්ධනය වාසනාවෙන් නොව පාඩම් හරහා එයි. ඉගෙන ගන්න, පසුපස නොයන්න.',
+      ta: 'குரு பரிசளிப்பதை விடக் கற்பிக்கும் நிலையில் — வளர்ச்சி அதிர்ஷ்டத்தால் அல்ல, பாடங்களால் வரும். கற்றுக்கொள்ளுங்கள், துரத்தாதீர்கள்.',
+      zh: '木星处于教导而非馈赠的状态——成长来自功课而非运气。去学习，别去追逐。',
+      hi: 'गुरु देने की जगह सिखाने की भूमिका में है — विकास भाग्य से नहीं, सीख से आता है। सीखें, पीछा न करें।',
+      ja: '木星は贈り物より教えのモード — 成長は運ではなく学びから。追いかけず、学びましょう。',
+      ko: '목성은 선물보다 가르침의 모드 — 성장은 운이 아니라 배움에서 옵니다. 쫓지 말고 배우세요.',
+      ar: 'المشتري في وضع التعليم لا العطاء — يأتي النمو من الدروس لا الحظ. تعلّم ولا تطارد.',
+      ml: 'ഗുരു സമ്മാനിക്കുന്നതിനേക്കാൾ പഠിപ്പിക്കുന്ന മാനസികാവസ്ഥയിൽ — വളർച്ച ഭാഗ്യത്തിലൂടെയല്ല, പാഠങ്ങളിലൂടെ. പഠിക്കുക, പിന്തുടരരുത്.',
+    }),
+
+  // 4/5. Aspects
+  lagnaAspectTitle: (planet: string, pct: number, lang: Lang) => sel(lang, {
+    en: `${planet} aspects your Lagna (${pct}%)`, si: `${planet} ඔබේ ලග්නය බලයි (${pct}%)`, ta: `${planet} உங்கள் லக்னத்தைப் பார்க்கிறார் (${pct}%)`,
+    zh: `${planet}相位您的上升（${pct}%）`, hi: `${planet} आपके लग्न पर दृष्टि (${pct}%)`, ja: `${planet}がラグナにアスペクト（${pct}%）`,
+    ko: `${planet}이(가) 라그나를 비춤(${pct}%)`, ar: `${planet} ينظر إلى طالعك (${pct}%)`, ml: `${planet} നിങ്ങളുടെ ലഗ്നത്തെ നോക്കുന്നു (${pct}%)`,
+  }),
+  lagnaAspectPlainTitle: (planet: string, lang: Lang) => sel(lang, {
+    en: `${planet} is shining on your body & confidence`, si: `${planet} ඔබේ සිරුරට හා විශ්වාසයට බලපායි`, ta: `${planet} உங்கள் உடல் மற்றும் தன்னம்பிக்கை மீது ஒளி வீசுகிறார்`,
+    zh: `${planet}照耀着您的身体与自信`, hi: `${planet} आपके शरीर और आत्मविश्वास पर प्रभाव डाल रहा है`, ja: `${planet}があなたの身体と自信を照らしています`,
+    ko: `${planet}이(가) 몸과 자신감을 비추고 있습니다`, ar: `${planet} يسطع على جسدك وثقتك`, ml: `${planet} നിങ്ങളുടെ ശരീരത്തിലും ആത്മവിശ്വാസത്തിലും പ്രകാശിക്കുന്നു`,
+  }),
+  lagnaAspectPlain: (planet: string, benefic: boolean, lang: Lang) => benefic
+    ? sel(lang, {
+      en: `${planet}’s gaze boosts your energy and presence — a good stretch to be seen, speak up and take initiative.`,
+      si: `${planet}ගේ දෘෂ්ටිය ඔබේ ශක්තිය හා පැවැත්ම වර්ධනය කරයි — පෙනී සිට, කතා කර, මුල පිරීමට හොඳ කාලයකි.`,
+      ta: `${planet} இன் பார்வை உங்கள் ஆற்றலையும் தோற்றத்தையும் உயர்த்துகிறது — வெளிப்படவும், பேசவும், முன்முயற்சி எடுக்கவும் நல்ல நேரம்.`,
+      zh: `${planet}的注视提升您的精力与存在感——是露面、发声、主动出击的好时段。`,
+      hi: `${planet} की दृष्टि आपकी ऊर्जा और उपस्थिति बढ़ाती है — दिखने, बोलने और पहल करने का अच्छा समय।`,
+      ja: `${planet}の視線があなたの活力と存在感を高めます — 人前に出て、発言し、主導権を取る好機です。`,
+      ko: `${planet}의 시선이 에너지와 존재감을 높입니다 — 드러내고, 말하고, 주도하기 좋은 때입니다.`,
+      ar: `نظرة ${planet} تعزّز طاقتك وحضورك — فترة جيدة للظهور والتحدث وأخذ المبادرة.`,
+      ml: `${planet} ന്റെ ദൃഷ്ടി നിങ്ങളുടെ ഊർജ്ജവും സാന്നിധ്യവും വർദ്ധിപ്പിക്കുന്നു — ശ്രദ്ധിക്കപ്പെടാനും സംസാരിക്കാനും മുൻകൈയെടുക്കാനും നല്ല സമയം.`,
+    })
+    : sel(lang, {
+      en: `${planet}’s gaze presses on your energy and self-image — pace yourself, sleep enough and don’t overcommit.`,
+      si: `${planet}ගේ දෘෂ්ටිය ඔබේ ශක්තිය හා ස්වයං ප්‍රතිරූපයට පීඩනය කරයි — වේගය පාලනය කර, ප්‍රමාණවත් නින්දක් ලබා, අධික ලෙස භාර නොගන්න.`,
+      ta: `${planet} இன் பார்வை உங்கள் ஆற்றலையும் சுயபிம்பத்தையும் அழுத்துகிறது — நிதானமாகச் செயல்பட்டு, போதுமான தூக்கம் பெற்று, அதிகப் பொறுப்பை ஏற்காதீர்கள்.`,
+      zh: `${planet}的注视压在您的精力与自我形象上——放慢节奏、睡足觉、别过度承诺。`,
+      hi: `${planet} की दृष्टि आपकी ऊर्जा और आत्म-छवि पर दबाव डालती है — अपनी गति संभालें, पर्याप्त सोएँ और ज़रूरत से ज़्यादा वादे न करें।`,
+      ja: `${planet}の視線が活力と自己像に圧力をかけます — ペースを守り、十分に眠り、引き受けすぎないで。`,
+      ko: `${planet}의 시선이 에너지와 자아상을 누릅니다 — 속도를 조절하고, 충분히 자고, 과하게 떠맡지 마세요.`,
+      ar: `نظرة ${planet} تضغط على طاقتك وصورتك الذاتية — خفّف الوتيرة ونم جيدًا ولا تُثقل نفسك بالالتزامات.`,
+      ml: `${planet} ന്റെ ദൃഷ്ടി നിങ്ങളുടെ ഊർജ്ജത്തിലും ആത്മചിത്രത്തിലും സമ്മർദ്ദം ചെലുത്തുന്നു — വേഗം നിയന്ത്രിച്ച്, വേണ്ടത്ര ഉറങ്ങി, അമിതമായി ഏറ്റെടുക്കരുത്.`,
+    }),
+  lagnaAspectText: (planet: string, benefic: boolean, lang: Lang) => benefic
+    ? sel(lang, {
+      en: `${planet} casts a strong aspect on your ascendant — supports vitality, confidence and how you show up. A window to put yourself forward.`,
+      si: `${planet} ඔබේ ලග්නය මත ප්‍රබල දෘෂ්ටියක් හෙළයි — ජීවශක්තිය, විශ්වාසය හා ඔබ පෙනී සිටින ආකාරයට සහාය වේ. ඔබ ඉදිරිපත් වීමට කවුළුවකි.`,
+      ta: `${planet} உங்கள் லக்னத்தின் மீது வலுவான பார்வை — உயிர்ச்சக்தி, தன்னம்பிக்கை, உங்கள் வெளிப்பாட்டுக்கு ஆதரவு. உங்களை முன்னிறுத்தும் நேரம்.`,
+      zh: `${planet}对您的上升形成强相位——支持活力、自信与个人展现。是自我推荐的窗口。`,
+      hi: `${planet} आपके लग्न पर प्रबल दृष्टि डालता है — जीवनशक्ति, आत्मविश्वास और आपकी प्रस्तुति को सहारा। आगे आने का समय।`,
+      ja: `${planet}がアセンダントに強いアスペクト — 活力、自信、立ち居振る舞いを支えます。自分を前に出す好機。`,
+      ko: `${planet}이(가) 상승궁에 강한 어스펙트 — 활력, 자신감, 드러나는 모습을 돕습니다. 자신을 내세울 시기입니다.`,
+      ar: `يلقي ${planet} نظرة قوية على طالعك — يدعم الحيوية والثقة وطريقة ظهورك. نافذة لتقديم نفسك.`,
+      ml: `${planet} നിങ്ങളുടെ ലഗ്നത്തിൽ ശക്തമായ ദൃഷ്ടി — ഊർജ്ജം, ആത്മവിശ്വാസം, നിങ്ങളുടെ സാന്നിധ്യം എന്നിവയെ പിന്തുണയ്ക്കുന്നു. മുന്നോട്ടുവരാനുള്ള സമയം.`,
+    })
+    : sel(lang, {
+      en: `${planet} casts a strong aspect on your ascendant — adds pressure to health, energy and self-image. Pace yourself and protect your wellbeing.`,
+      si: `${planet} ඔබේ ලග්නය මත ප්‍රබල දෘෂ්ටියක් හෙළයි — සෞඛ්‍යය, ශක්තිය හා ස්වයං ප්‍රතිරූපයට පීඩනය එක් කරයි. වේගය පාලනය කර ඔබේ යහපැවැත්ම ආරක්ෂා කර ගන්න.`,
+      ta: `${planet} உங்கள் லக்னத்தின் மீது வலுவான பார்வை — உடல்நலம், ஆற்றல், சுயபிம்பத்திற்கு அழுத்தம். நிதானமாக இருந்து நலனைக் காத்துக்கொள்ளுங்கள்.`,
+      zh: `${planet}对您的上升形成强相位——给健康、精力与自我形象增添压力。放慢节奏，照顾好自己。`,
+      hi: `${planet} आपके लग्न पर प्रबल दृष्टि डालता है — स्वास्थ्य, ऊर्जा और आत्म-छवि पर दबाव। गति संभालें और अपना ध्यान रखें।`,
+      ja: `${planet}がアセンダントに強いアスペクト — 健康、活力、自己像に圧力。ペースを守り、心身をいたわって。`,
+      ko: `${planet}이(가) 상승궁에 강한 어스펙트 — 건강, 에너지, 자아상에 압박. 속도를 조절하고 몸을 돌보세요.`,
+      ar: `يلقي ${planet} نظرة قوية على طالعك — يضيف ضغطًا على الصحة والطاقة وصورة الذات. خفّف الوتيرة واحمِ عافيتك.`,
+      ml: `${planet} നിങ്ങളുടെ ലഗ്നത്തിൽ ശക്തമായ ദൃഷ്ടി — ആരോഗ്യം, ഊർജ്ജം, ആത്മചിത്രം എന്നിവയിൽ സമ്മർദ്ദം. വേഗം നിയന്ത്രിച്ച് ക്ഷേമം സംരക്ഷിക്കുക.`,
+    }),
+  moonAspectTitle: (planet: string, pct: number, lang: Lang) => sel(lang, {
+    en: `${planet} aspects your Moon sign (${pct}%)`, si: `${planet} ඔබේ චන්ද්‍ර රාශිය බලයි (${pct}%)`, ta: `${planet} உங்கள் சந்திர ராசியைப் பார்க்கிறார் (${pct}%)`,
+    zh: `${planet}相位您的月亮星座（${pct}%）`, hi: `${planet} आपकी चंद्र राशि पर दृष्टि (${pct}%)`, ja: `${planet}が月星座にアスペクト（${pct}%）`,
+    ko: `${planet}이(가) 달 별자리를 비춤(${pct}%)`, ar: `${planet} ينظر إلى برج قمرك (${pct}%)`, ml: `${planet} നിങ്ങളുടെ ചന്ദ്രരാശിയെ നോക്കുന്നു (${pct}%)`,
+  }),
+  moonAspectPlainTitle: (planet: string, lang: Lang) => sel(lang, {
+    en: `${planet} is influencing your mood`, si: `${planet} ඔබේ මනෝභාවයට බලපායි`, ta: `${planet} உங்கள் மனநிலையைப் பாதிக்கிறார்`,
+    zh: `${planet}正在影响您的情绪`, hi: `${planet} आपके मन पर असर डाल रहा है`, ja: `${planet}があなたの気分に影響しています`,
+    ko: `${planet}이(가) 기분에 영향을 주고 있습니다`, ar: `${planet} يؤثّر في مزاجك`, ml: `${planet} നിങ്ങളുടെ മാനസികാവസ്ഥയെ സ്വാധീനിക്കുന്നു`,
+  }),
+  moonAspectPlain: (planet: string, benefic: boolean, lang: Lang) => benefic
+    ? sel(lang, {
+      en: `${planet}’s influence steadies your emotions — relationships and peace of mind feel easier now.`,
+      si: `${planet}ගේ බලපෑම ඔබේ හැඟීම් ස්ථාවර කරයි — දැන් සම්බන්ධතා හා සිතේ සාමය පහසු ලෙස දැනේ.`,
+      ta: `${planet} இன் செல்வாக்கு உணர்ச்சிகளை நிலைப்படுத்துகிறது — உறவுகளும் மன அமைதியும் இப்போது எளிதாக உணரப்படும்.`,
+      zh: `${planet}的影响让情绪稳定——人际关系与内心平静此刻更显轻松。`,
+      hi: `${planet} का प्रभाव भावनाओं को स्थिर करता है — अभी रिश्ते और मन की शांति आसान लगते हैं।`,
+      ja: `${planet}の影響が感情を安定させます — 人間関係と心の平穏が今は楽に感じられます。`,
+      ko: `${planet}의 영향이 감정을 안정시킵니다 — 지금은 관계와 마음의 평화가 수월합니다.`,
+      ar: `تأثير ${planet} يثبّت مشاعرك — تبدو العلاقات وراحة البال أسهل الآن.`,
+      ml: `${planet} ന്റെ സ്വാധീനം വികാരങ്ങളെ സ്ഥിരപ്പെടുത്തുന്നു — ബന്ധങ്ങളും മനസ്സമാധാനവും ഇപ്പോൾ എളുപ്പമാണ്.`,
+    })
+    : sel(lang, {
+      en: `${planet}’s influence stirs your emotions — expect more stress than usual; protect sleep and don’t react in the moment.`,
+      si: `${planet}ගේ බලපෑම ඔබේ හැඟීම් කලඹයි — සුපුරුදුට වඩා වැඩි ආතතියක් අපේක්ෂා කරන්න; නින්ද ආරක්ෂා කර මොහොතේ ප්‍රතික්‍රියා නොකරන්න.`,
+      ta: `${planet} இன் செல்வாக்கு உணர்ச்சிகளைக் கிளறுகிறது — வழக்கத்தை விட அதிக மன அழுத்தம்; தூக்கத்தைக் காத்து, உடனடியாக எதிர்வினையாற்றாதீர்கள்.`,
+      zh: `${planet}的影响搅动情绪——压力会比平时大；保护睡眠，别在当下冲动反应。`,
+      hi: `${planet} का प्रभाव भावनाओं को उकसाता है — सामान्य से अधिक तनाव की अपेक्षा रखें; नींद बचाएँ और तुरंत प्रतिक्रिया न दें।`,
+      ja: `${planet}の影響が感情をかき立てます — いつもより多いストレスを覚悟し、睡眠を守り、その場で反応しないで。`,
+      ko: `${planet}의 영향이 감정을 휘젓습니다 — 평소보다 스트레스가 많을 수 있으니 수면을 지키고 즉흥적으로 반응하지 마세요.`,
+      ar: `تأثير ${planet} يثير مشاعرك — توقّع ضغطًا أكثر من المعتاد؛ احمِ نومك ولا تتفاعل في اللحظة.`,
+      ml: `${planet} ന്റെ സ്വാധീനം വികാരങ്ങളെ ഇളക്കുന്നു — പതിവിലും കൂടുതൽ സമ്മർദ്ദം പ്രതീക്ഷിക്കുക; ഉറക്കം സംരക്ഷിച്ച് പെട്ടെന്ന് പ്രതികരിക്കരുത്.`,
+    }),
+  moonAspectText: (planet: string, benefic: boolean, lang: Lang) => benefic
+    ? sel(lang, {
+      en: `${planet} aspects your natal Moon — emotional steadiness and support; mood and relationships feel easier.`,
+      si: `${planet} ඔබේ ජන්ම චන්ද්‍රයා බලයි — හැඟීම්බර ස්ථාවරත්වය හා සහාය; මනෝභාවය හා සම්බන්ධතා පහසු ලෙස දැනේ.`,
+      ta: `${planet} உங்கள் ஜென்ம சந்திரனைப் பார்க்கிறார் — உணர்ச்சி நிலைப்பும் ஆதரவும்; மனநிலையும் உறவுகளும் எளிதாகும்.`,
+      zh: `${planet}相位您的本命月亮——情绪稳定且有支持；心情与关系更为轻松。`,
+      hi: `${planet} आपके जन्म चंद्र पर दृष्टि डालता है — भावनात्मक स्थिरता और सहारा; मन और रिश्ते आसान लगते हैं।`,
+      ja: `${planet}が出生の月にアスペクト — 感情の安定と支え。気分と人間関係が楽になります。`,
+      ko: `${planet}이(가) 출생 달을 비춤 — 정서적 안정과 지원. 기분과 관계가 수월해집니다.`,
+      ar: `${planet} ينظر إلى قمرك الولادي — ثبات عاطفي ودعم؛ يصبح المزاج والعلاقات أيسر.`,
+      ml: `${planet} ജന്മ ചന്ദ്രനെ നോക്കുന്നു — വൈകാരിക സ്ഥിരതയും പിന്തുണയും; മാനസികാവസ്ഥയും ബന്ധങ്ങളും എളുപ്പമാകും.`,
+    })
+    : sel(lang, {
+      en: `${planet} aspects your natal Moon — peace of mind is tested; guard against stress, reactivity and broken sleep.`,
+      si: `${planet} ඔබේ ජන්ම චන්ද්‍රයා බලයි — සිතේ සාමය පරීක්ෂාවට ලක් වේ; ආතතිය, හදිසි ප්‍රතික්‍රියා හා බිඳුණු නින්දෙන් ආරක්ෂා වන්න.`,
+      ta: `${planet} உங்கள் ஜென்ம சந்திரனைப் பார்க்கிறார் — மன அமைதி சோதிக்கப்படும்; மன அழுத்தம், அவசர எதிர்வினை, தூக்கக் குறைவிலிருந்து காத்துக்கொள்ளுங்கள்.`,
+      zh: `${planet}相位您的本命月亮——内心平静受考验；提防压力、情绪化反应与睡眠中断。`,
+      hi: `${planet} आपके जन्म चंद्र पर दृष्टि डालता है — मन की शांति की परीक्षा; तनाव, तुरंत प्रतिक्रिया और टूटी नींद से बचें।`,
+      ja: `${planet}が出生の月にアスペクト — 心の平穏が試されます。ストレス、過敏な反応、睡眠不足に注意。`,
+      ko: `${planet}이(가) 출생 달을 비춤 — 마음의 평화가 시험받습니다. 스트레스, 과민 반응, 끊긴 수면에 주의하세요.`,
+      ar: `${planet} ينظر إلى قمرك الولادي — تُختبر راحة البال؛ احذر التوتر وردود الفعل السريعة وتقطّع النوم.`,
+      ml: `${planet} ജന്മ ചന്ദ്രനെ നോക്കുന്നു — മനസ്സമാധാനം പരീക്ഷിക്കപ്പെടും; സമ്മർദ്ദം, പെട്ടെന്നുള്ള പ്രതികരണം, മുറിഞ്ഞ ഉറക്കം എന്നിവ സൂക്ഷിക്കുക.`,
+    }),
+
+  // 6. Saturn special
+  saturnTitle: { en: 'Saturn transit', si: 'ශනි ගෝචරය', ta: 'சனி கோசாரம்', zh: '土星行运', hi: 'शनि गोचर', ja: '土星のトランジット', ko: '토성 트랜짓', ar: 'عبور زحل', ml: 'ശനി ഗോചരം' } as Bi,
+  saturnPlainTitle: { en: 'Saturn — the discipline planet', si: 'ශනි — විනය ග්‍රහයා', ta: 'சனி — ஒழுக்கத்தின் கிரகம்', zh: '土星——自律之星', hi: 'शनि — अनुशासन का ग्रह', ja: '土星 — 規律の惑星', ko: '토성 — 절제의 행성', ar: 'زحل — كوكب الانضباط', ml: 'ശനി — അച്ചടക്കത്തിന്റെ ഗ്രഹം' } as Bi,
+  saturnPlain: (good: boolean, lang: Lang) => good
+    ? sel(lang, {
+      en: 'Saturn is on your side for now — steady, patient effort gets rewarded. Keep showing up.',
+      si: 'ශනි දැන් ඔබ පැත්තේ සිටී — ස්ථාවර, ඉවසිලිවන්ත වෑයමට ප්‍රතිඵල ලැබේ. දිගටම කරගෙන යන්න.',
+      ta: 'சனி இப்போது உங்கள் பக்கம் — நிலையான, பொறுமையான முயற்சிக்குப் பலன் உண்டு. தொடர்ந்து செயல்படுங்கள்.',
+      zh: '土星目前站在您这边——稳定而耐心的努力会得到回报。坚持下去。',
+      hi: 'शनि अभी आपके पक्ष में है — स्थिर, धैर्यपूर्ण प्रयास का फल मिलता है। लगे रहें।',
+      ja: '土星は今あなたの味方 — 着実で辛抱強い努力が報われます。続けましょう。',
+      ko: '토성이 지금은 당신 편 — 꾸준하고 인내하는 노력이 보상받습니다. 계속 나아가세요.',
+      ar: 'زحل في صفك حاليًا — يُكافأ الجهد الثابت الصبور. واصل الحضور.',
+      ml: 'ശനി ഇപ്പോൾ നിങ്ങളുടെ പക്ഷത്താണ് — സ്ഥിരവും ക്ഷമയുള്ളതുമായ പരിശ്രമത്തിന് ഫലം. തുടർന്നുകൊണ്ടിരിക്കുക.',
+    })
+    : sel(lang, {
+      en: 'Saturn is testing you in one area of life — expect delays there and answer with patience, not force.',
+      si: 'ශනි ජීවිතයේ එක් ක්ෂේත්‍රයක ඔබ පරීක්ෂා කරයි — එහි ප්‍රමාද අපේක්ෂා කර, බලයට නොව ඉවසීමට යොමු වන්න.',
+      ta: 'சனி வாழ்க்கையின் ஒரு பகுதியில் உங்களைச் சோதிக்கிறார் — அங்கே தாமதங்களை எதிர்பார்த்து, வலுக்கட்டாயம் அல்ல, பொறுமையால் பதிலளியுங்கள்.',
+      zh: '土星正在人生某个领域考验您——那里会有延误，用耐心而非蛮力去应对。',
+      hi: 'शनि जीवन के एक क्षेत्र में आपकी परीक्षा ले रहा है — वहाँ देरी की अपेक्षा रखें और ज़ोर नहीं, धैर्य से जवाब दें।',
+      ja: '土星が人生のある分野であなたを試しています — そこでは遅れを覚悟し、力ではなく忍耐で応えて。',
+      ko: '토성이 삶의 한 영역에서 당신을 시험합니다 — 그곳에서는 지연을 예상하고 힘이 아닌 인내로 대응하세요.',
+      ar: 'زحل يختبرك في مجال من الحياة — توقّع التأخير هناك وأجب بالصبر لا بالقوة.',
+      ml: 'ശനി ജീവിതത്തിലെ ഒരു മേഖലയിൽ നിങ്ങളെ പരീക്ഷിക്കുന്നു — അവിടെ കാലതാമസം പ്രതീക്ഷിച്ച് ബലത്താലല്ല, ക്ഷമയാൽ പ്രതികരിക്കുക.',
+    }),
+
+  // 7. Retrograde
+  retroTitle: (planets: string, lang: Lang) => sel(lang, {
+    en: `Retrograde: ${planets}`, si: `වක්‍ර: ${planets}`, ta: `வக்ரம்: ${planets}`, zh: `逆行：${planets}`, hi: `वक्री: ${planets}`,
+    ja: `逆行：${planets}`, ko: `역행: ${planets}`, ar: `تراجع: ${planets}`, ml: `വക്രം: ${planets}`,
+  }),
+  retroPlainTitle: { en: 'Some planets are in “review mode”', si: 'සමහර ග්‍රහයෝ “යළි සලකා බැලීමේ” ස්වභාවයක සිටිති', ta: 'சில கிரகங்கள் "மறுபரிசீலனை நிலையில்" உள்ளன', zh: '部分行星处于“复盘模式”', hi: 'कुछ ग्रह "समीक्षा मोड" में हैं', ja: '一部の惑星が「見直しモード」に', ko: '일부 행성이 "점검 모드"에 있습니다', ar: 'بعض الكواكب في "وضع المراجعة"', ml: 'ചില ഗ്രഹങ്ങൾ "പുനരവലോകന മോഡിൽ"' } as Bi,
+  retroPlain: {
+    en: 'A backward-moving planet favours finishing, fixing and double-checking over brand-new starts in its areas.',
+    si: 'පසුපසට ගමන් කරන ග්‍රහයෙක් එහි ක්ෂේත්‍රවල අලුත් ආරම්භවලට වඩා නිම කිරීම, නිවැරදි කිරීම හා දෙවරක් පරීක්ෂා කිරීම වෙනුවෙන් හිතකරයි.',
+    ta: 'பின்னோக்கி நகரும் கிரகம் தன் துறைகளில் புதிய தொடக்கங்களை விட முடித்தல், சரிசெய்தல், இருமுறை சரிபார்த்தலுக்கே சாதகம்.',
+    zh: '逆行的行星在其领域更利于收尾、修补与复核，而非全新开始。',
+    hi: 'पीछे चलता ग्रह अपने क्षेत्रों में नई शुरुआत की बजाय पूरा करने, सुधारने और दोबारा जाँचने के पक्ष में है।',
+    ja: '逆行中の惑星は、その分野で新規の始まりより、仕上げ・修正・再確認に向いています。',
+    ko: '역행하는 행성은 그 분야에서 새 출발보다 마무리, 수정, 재확인에 유리합니다.',
+    ar: 'الكوكب المتراجع يفضّل في مجالاته الإنهاء والإصلاح والتدقيق على البدايات الجديدة.',
+    ml: 'പിന്നോട്ട് നീങ്ങുന്ന ഗ്രഹം അതിന്റെ മേഖലകളിൽ പുതിയ തുടക്കങ്ങളേക്കാൾ പൂർത്തിയാക്കൽ, തിരുത്തൽ, വീണ്ടും പരിശോധന എന്നിവയ്ക്ക് അനുകൂലം.',
+  } as Bi,
+
+  // 8. Gandanta
+  gandantaTitle: { en: 'Gandanta (sign junction)', si: 'ගණ්ඩාන්ත (රාශි සන්ධිය)', ta: 'கண்டாந்தம் (ராசி சந்தி)', zh: 'Gandanta（星座交界）', hi: 'गंडांत (राशि संधि)', ja: 'ガンダーンタ（サインの境目）', ko: '간단타(별자리 경계)', ar: 'غاندانتا (ملتقى البروج)', ml: 'ഗണ്ഡാന്തം (രാശി സന്ധി)' } as Bi,
+  gandantaPlainTitle: (planets: string, lang: Lang) => sel(lang, {
+    en: `${planets} at a delicate turning point`, si: `${planets} සියුම් හැරවුම් ලක්ෂ්‍යයක`, ta: `${planets} ஒரு நுட்பமான திருப்புமுனையில்`,
+    zh: `${planets}处于微妙的转折点`, hi: `${planets} एक नाज़ुक मोड़ पर`, ja: `${planets}が微妙な転換点に`,
+    ko: `${planets}이(가) 미묘한 전환점에`, ar: `${planets} عند نقطة تحوّل دقيقة`, ml: `${planets} ഒരു സൂക്ഷ്മ വഴിത്തിരിവിൽ`,
+  }),
+  gandantaPlain: {
+    en: 'Things connected to this planet feel shaky for a few days — hold off on big commitments there until it settles.',
+    si: 'මෙම ග්‍රහයාට සම්බන්ධ දේ දින කිහිපයක් අස්ථිර ලෙස දැනේ — එය සන්සුන් වන තෙක් එහි විශාල බැඳීම්වලින් වළකින්න.',
+    ta: 'இந்தக் கிரகத்துடன் தொடர்புடையவை சில நாட்கள் நிலையற்றதாகத் தோன்றும் — அது சீராகும் வரை பெரிய பொறுப்புகளைத் தள்ளிவையுங்கள்.',
+    zh: '与这颗行星相关的事几天内会不太稳——等它稳定后再做重大承诺。',
+    hi: 'इस ग्रह से जुड़ी बातें कुछ दिन डगमग लगती हैं — स्थिर होने तक वहाँ बड़े वादे टालें।',
+    ja: 'この惑星に関わる事柄は数日不安定に感じられます — 落ち着くまで大きな約束は控えて。',
+    ko: '이 행성과 관련된 일은 며칠간 불안정합니다 — 안정될 때까지 큰 약속은 미루세요.',
+    ar: 'تبدو الأمور المرتبطة بهذا الكوكب مهتزّة لبضعة أيام — أجّل الالتزامات الكبيرة فيها حتى تستقر.',
+    ml: 'ഈ ഗ്രഹവുമായി ബന്ധപ്പെട്ട കാര്യങ്ങൾ കുറച്ചു ദിവസം അസ്ഥിരമായി തോന്നും — സ്ഥിരമാകുന്നതുവരെ വലിയ പ്രതിബദ്ധതകൾ മാറ്റിവയ്ക്കുക.',
+  } as Bi,
+  gandantaText: (planets: string, multi: boolean, lang: Lang) => sel(lang, {
+    en: `${planets} ${multi ? 'are' : 'is'} in gandanta — the karmic water–fire junction. Matters ruled by ${multi ? 'these planets' : 'this planet'} feel unstable and tender now; avoid major commitments through ${multi ? 'them' : 'it'}.`,
+    si: `${planets} ගණ්ඩාන්තයේ සිටී — කර්මය හා බැඳුණු ජල-ගිනි සන්ධිය. ${multi ? 'මෙම ග්‍රහයන්' : 'මෙම ග්‍රහයා'} විසින් පාලනය වන කරුණු දැන් අස්ථිර හා සියුම්ව දැනේ; ${multi ? 'ඒවා' : 'එය'} හරහා විශාල බැඳීම් වළක්වන්න.`,
+    ta: `${planets} கண்டாந்தத்தில் — கர்ம ரீதியான நீர்-நெருப்புச் சந்தி. இவை ஆளும் விஷயங்கள் இப்போது நிலையற்றும் மென்மையாகவும் உணரப்படும்; அவற்றின் மூலம் பெரிய பொறுப்புகளைத் தவிர்க்கவும்.`,
+    zh: `${planets}处于 Gandanta——业力的水火交界。其所主之事此刻不稳且脆弱；避免借此做重大承诺。`,
+    hi: `${planets} गंडांत में — कर्मिक जल-अग्नि संधि। इनके अधीन मामले अभी अस्थिर और नाज़ुक लगते हैं; इनके ज़रिए बड़े वादे न करें।`,
+    ja: `${planets}はガンダーンタに — カルマ的な水と火の境目。支配する事柄が今は不安定で繊細です。大きな約束は避けて。`,
+    ko: `${planets}이(가) 간단타에 — 업의 물-불 경계. 다스리는 일이 지금 불안정하고 예민합니다. 큰 약속은 피하세요.`,
+    ar: `${planets} في الغاندانتا — ملتقى الماء والنار الكارمي. الشؤون التي يحكمها غير مستقرة وحساسة الآن؛ تجنّب الالتزامات الكبيرة من خلالها.`,
+    ml: `${planets} ഗണ്ഡാന്തത്തിൽ — കർമ്മപരമായ ജല-അഗ്നി സന്ധി. ഭരിക്കുന്ന കാര്യങ്ങൾ ഇപ്പോൾ അസ്ഥിരവും മൃദുവുമാണ്; അവയിലൂടെ വലിയ പ്രതിബദ്ധതകൾ ഒഴിവാക്കുക.`,
+  }),
+
+  // 9. Planetary war
+  warTitle: { en: 'Planetary war (Graha Yuddha)', si: 'ග්‍රහ යුද්ධය', ta: 'கிரக யுத்தம்', zh: '行星之战（Graha Yuddha）', hi: 'ग्रह युद्ध', ja: '惑星戦争（グラハ・ユッダ）', ko: '행성 전쟁(그라하 유따)', ar: 'حرب الكواكب (غراها يودا)', ml: 'ഗ്രഹയുദ്ധം' } as Bi,
+  warPlainTitle: (pairs: string, lang: Lang) => sel(lang, {
+    en: `${pairs} are clashing in the sky`, si: `${pairs} අහසේ ගැටෙති`, ta: `${pairs} வானில் மோதுகின்றன`, zh: `${pairs}在天空中交锋`,
+    hi: `${pairs} आकाश में टकरा रहे हैं`, ja: `${pairs}が空で衝突中`, ko: `${pairs}이(가) 하늘에서 충돌 중`, ar: `${pairs} يتصادمان في السماء`, ml: `${pairs} ആകാശത്ത് ഏറ്റുമുട്ടുന്നു`,
+  }),
+  warPlain: {
+    en: 'Two planets are crowding each other, so the things they stand for pull in opposite directions for a short while — expect friction there.',
+    si: 'ග්‍රහයන් දෙදෙනෙක් එකිනෙකා තදකරයි, එබැවින් ඔවුන් නියෝජනය කරන දේ කෙටි කලකට ප්‍රතිවිරුද්ධ දිශාවලට අදියි — එහි ඝට්ටනයක් අපේක්ෂා කරන්න.',
+    ta: 'இரண்டு கிரகங்கள் நெருக்கமாக உள்ளன, எனவே அவை குறிக்கும் விஷயங்கள் சிறிது காலம் எதிர் திசைகளில் இழுக்கும் — அங்கே உரசலை எதிர்பாருங்கள்.',
+    zh: '两颗行星挤在一起，它们所代表的事短期内会朝相反方向拉扯——那里会有摩擦。',
+    hi: 'दो ग्रह एक-दूसरे को दबा रहे हैं, इसलिए उनसे जुड़ी बातें कुछ समय विपरीत दिशाओं में खिंचती हैं — वहाँ टकराव की अपेक्षा रखें।',
+    ja: '二つの惑星が接近しすぎ、それらが表す事柄がしばらく反対方向に引き合います — 摩擦を覚悟して。',
+    ko: '두 행성이 서로 붙어 있어 그들이 나타내는 일이 잠시 반대로 당깁니다 — 마찰을 예상하세요.',
+    ar: 'كوكبان يتزاحمان، فتتجاذب الأمور التي يمثلانها في اتجاهين متعاكسين لفترة قصيرة — توقّع احتكاكًا هناك.',
+    ml: 'രണ്ട് ഗ്രഹങ്ങൾ പരസ്പരം തിങ്ങുന്നു, അതിനാൽ അവ പ്രതിനിധീകരിക്കുന്ന കാര്യങ്ങൾ കുറച്ചുകാലം എതിർദിശകളിൽ വലിക്കും — അവിടെ ഘർഷണം പ്രതീക്ഷിക്കുക.',
+  } as Bi,
+  warText: (pairs: string, multi: boolean, lang: Lang) => sel(lang, {
+    en: `${pairs} ${multi ? 'are' : 'is'} within 1° — a planetary war. Their significations clash and the weaker planet's results are compromised while they stay this close.`,
+    si: `${pairs} අංශක 1ක් ඇතුළත සිටී — ග්‍රහ යුද්ධයකි. ඔවුන්ගේ කරුණු ගැටෙන අතර, මෙතරම් ළං සිටින තාක් දුර්වල ග්‍රහයාගේ ප්‍රතිඵල දුර්වල වේ.`,
+    ta: `${pairs} 1° க்குள் — கிரக யுத்தம். இவற்றின் காரகத்துவங்கள் மோதும்; இவ்வளவு நெருக்கமாக இருக்கும்வரை பலவீனமான கிரகத்தின் பலன்கள் பாதிக்கப்படும்.`,
+    zh: `${pairs}相距 1° 以内——行星之战。其象征意义相冲，靠得这么近时较弱行星的结果会受损。`,
+    hi: `${pairs} 1° के भीतर — ग्रह युद्ध। इनके कारकत्व टकराते हैं और इतने पास रहने तक कमज़ोर ग्रह के परिणाम प्रभावित होते हैं।`,
+    ja: `${pairs}が1°以内 — 惑星戦争です。象意がぶつかり合い、接近している間は弱い方の惑星の結果が損なわれます。`,
+    ko: `${pairs}이(가) 1° 이내 — 행성 전쟁. 상징이 충돌하며, 이렇게 가까운 동안 약한 행성의 결과가 손상됩니다.`,
+    ar: `${pairs} ضمن درجة واحدة — حرب كواكب. تتصادم دلالاتهما وتتضرر نتائج الكوكب الأضعف ما داما بهذا القرب.`,
+    ml: `${pairs} 1° നുള്ളിൽ — ഗ്രഹയുദ്ധം. അവയുടെ കാരകത്വങ്ങൾ ഏറ്റുമുട്ടും, ഇത്ര അടുത്തിരിക്കുന്നിടത്തോളം ദുർബല ഗ്രഹത്തിന്റെ ഫലങ്ങൾ ബാധിക്കപ്പെടും.`,
+  }),
+
+  // Ashtakavarga support
+  avTitle: { en: 'Ashtakavarga support', si: 'අෂ්ටකවර්ග සහාය', ta: 'அஷ்டகவர்க்க ஆதரவு', zh: 'Ashtakavarga 支持度', hi: 'अष्टकवर्ग सहारा', ja: 'アシュタカヴァルガの支え', ko: '아슈타카바르가 지원', ar: 'دعم الأشتاكافارغا', ml: 'അഷ്ടകവർഗ്ഗ പിന്തുണ' } as Bi,
+  avPlainTitle: { en: 'How much backing each planet has from your birth chart', si: 'ඔබේ ජන්ම කේන්දරයෙන් එක් එක් ග්‍රහයාට ලැබෙන පිටුබලය', ta: 'உங்கள் ஜாதகத்திலிருந்து ஒவ்வொரு கிரகத்திற்கும் கிடைக்கும் ஆதரவு', zh: '每颗行星从您的本命盘获得多少支持', hi: 'आपकी जन्म कुंडली से हर ग्रह को कितना सहारा है', ja: '出生図から各惑星が受ける後押しの大きさ', ko: '출생 차트가 각 행성에 주는 뒷받침', ar: 'مقدار الدعم الذي يتلقاه كل كوكب من خريطتك الولادية', ml: 'ജന്മ ജാതകത്തിൽ നിന്ന് ഓരോ ഗ്രഹത്തിനും ലഭിക്കുന്ന പിന്തുണ' } as Bi,
+
+  // Transit strength
+  strengthTitle: { en: 'Transit strength & state', si: 'ගෝචර ශක්තිය හා තත්ත්වය', ta: 'கோசார வலிமையும் நிலையும்', zh: '行运强度与状态', hi: 'गोचर बल और अवस्था', ja: 'トランジットの強さと状態', ko: '트랜짓의 강도와 상태', ar: 'قوة العبور وحالته', ml: 'ഗോചര ബലവും അവസ്ഥയും' } as Bi,
+  strengthPlainTitle: { en: 'Which planets are strong or weak right now', si: 'දැන් ප්‍රබල හෝ දුර්වල ග්‍රහයෝ කවුරුද', ta: 'இப்போது எந்தக் கிரகங்கள் வலிமையானவை அல்லது பலவீனமானவை', zh: '此刻哪些行星强、哪些弱', hi: 'अभी कौन-से ग्रह बलवान या कमज़ोर हैं', ja: '今どの惑星が強く、どれが弱いか', ko: '지금 어떤 행성이 강하고 약한가', ar: 'أي الكواكب قوية أو ضعيفة الآن', ml: 'ഇപ്പോൾ ഏതൊക്കെ ഗ്രഹങ്ങൾ ശക്തം അല്ലെങ്കിൽ ദുർബലം' } as Bi,
+
+  // Transit → Natal
+  tnTitle: { en: 'Transit → Natal contacts', si: 'ගෝචර → ජන්ම සම්බන්ධතා', ta: 'கோசாரம் → ஜென்ம தொடர்புகள்', zh: '行运 → 本命接触', hi: 'गोचर → जन्म संपर्क', ja: 'トランジット → 出生図への接触', ko: '트랜짓 → 출생 접촉', ar: 'اتصالات العبور → الولادة', ml: 'ഗോചരം → ജന്മ സമ്പർക്കങ്ങൾ' } as Bi,
+  tnPlainTitle: { en: 'Planets touching sensitive spots in your birth chart', si: 'ඔබේ ජන්ම කේන්දරයේ සංවේදී ස්ථාන ස්පර්ශ කරන ග්‍රහයෝ', ta: 'உங்கள் ஜாதகத்தின் உணர்திறன் புள்ளிகளைத் தொடும் கிரகங்கள்', zh: '触及您本命盘敏感点的行星', hi: 'आपकी जन्म कुंडली के संवेदनशील बिंदुओं को छूते ग्रह', ja: '出生図の敏感な点に触れている惑星', ko: '출생 차트의 민감한 지점을 건드리는 행성', ar: 'كواكب تلامس نقاطًا حساسة في خريطتك الولادية', ml: 'ജന്മ ജാതകത്തിലെ സംവേദനക്ഷമ ബിന്ദുക്കളെ സ്പർശിക്കുന്ന ഗ്രഹങ്ങൾ' } as Bi,
+  tnPlain: {
+    en: 'When a moving planet touches a planet you were born with, real events tend to follow in that part of life — these are the contacts to watch.',
+    si: 'චලනය වන ග්‍රහයෙක් ඔබ උපන් ග්‍රහයෙකු ස්පර්ශ කරන විට, ජීවිතයේ එම කොටසේ සැබෑ සිදුවීම් සිදු වීමට නැඹුරු වේ — මේවා අවධානය යොමු කළ යුතු සම්බන්ධතා වේ.',
+    ta: 'நகரும் கிரகம் நீங்கள் பிறந்தபோதிருந்த கிரகத்தைத் தொடும்போது, வாழ்க்கையின் அந்தப் பகுதியில் உண்மையான நிகழ்வுகள் நிகழும் — கவனிக்க வேண்டிய தொடர்புகள் இவை.',
+    zh: '当运行中的行星触及您出生时的行星，人生相应领域往往会发生实际事件——这些是需要关注的接触。',
+    hi: 'जब चलता ग्रह आपके जन्म के ग्रह को छूता है, तो जीवन के उस हिस्से में वास्तविक घटनाएँ होती हैं — इन संपर्कों पर नज़र रखें।',
+    ja: '動いている惑星が生まれ持った惑星に触れると、その分野で実際の出来事が起こりがちです — 注目すべき接触です。',
+    ko: '움직이는 행성이 태어날 때의 행성에 닿으면 그 삶의 영역에서 실제 사건이 따르곤 합니다 — 주목할 접촉입니다.',
+    ar: 'حين يلامس كوكب متحرك كوكبًا وُلدت به، تميل أحداث حقيقية إلى الوقوع في ذلك الجانب من الحياة — هذه هي الاتصالات الجديرة بالمراقبة.',
+    ml: 'ചലിക്കുന്ന ഗ്രഹം നിങ്ങൾ ജനിച്ചപ്പോഴുള്ള ഗ്രഹത്തെ സ്പർശിക്കുമ്പോൾ ജീവിതത്തിന്റെ ആ ഭാഗത്ത് യഥാർത്ഥ സംഭവങ്ങൾ ഉണ്ടാകാറുണ്ട് — ശ്രദ്ധിക്കേണ്ട സമ്പർക്കങ്ങൾ ഇവയാണ്.',
+  } as Bi,
+
+  // Daily Moon
+  moonTitle: (tithi: string, paksha: string, lang: Lang) => sel(lang, {
+    en: `Moon: ${tithi} (${paksha} paksha)`, si: `චන්ද්‍රයා: ${tithi} (${paksha} පක්ෂය)`, ta: `சந்திரன்: ${tithi} (${paksha} பக்ஷம்)`,
+    zh: `月亮：${tithi}（${paksha} paksha）`, hi: `चंद्र: ${tithi} (${paksha} पक्ष)`, ja: `月：${tithi}（${paksha}パクシャ）`,
+    ko: `달: ${tithi} (${paksha} 팍샤)`, ar: `القمر: ${tithi} (باكشا ${paksha})`, ml: `ചന്ദ്രൻ: ${tithi} (${paksha} പക്ഷം)`,
+  }),
+  moonPlainTitle: { en: 'Today’s Moon — your day-to-day mood', si: 'අද චන්ද්‍රයා — ඔබේ දෛනික මනෝභාවය', ta: 'இன்றைய சந்திரன் — உங்கள் அன்றாட மனநிலை', zh: '今日月亮——您每天的心情', hi: 'आज का चंद्र — आपका रोज़ का मिज़ाज', ja: '今日の月 — 日々の気分', ko: '오늘의 달 — 하루하루의 기분', ar: 'قمر اليوم — مزاجك اليومي', ml: 'ഇന്നത്തെ ചന്ദ്രൻ — ദൈനംദിന മാനസികാവസ്ഥ' } as Bi,
+
+  // Tara Bala
+  taraTitle: (name: string, ord: string, lang: Lang) => sel(lang, {
+    en: `Tara Bala: ${name} (${ord} tara)`, si: `තාරා බල: ${name} (${ord} තාරාව)`, ta: `தாரா பலம்: ${name} (${ord} தாரை)`,
+    zh: `Tara Bala：${name}（${ord}颗星）`, hi: `तारा बल: ${name} (${ord} तारा)`, ja: `ターラ・バラ：${name}（${ord}のターラ）`,
+    ko: `타라 발라: ${name} (${ord} 타라)`, ar: `تارا بالا: ${name} (التارا ${ord})`, ml: `താരാബലം: ${name} (${ord} താര)`,
+  }),
+  taraPlainTitleGood: { en: 'Today’s star is friendly to you', si: 'අද නක්ෂත්‍රය ඔබට හිතවත්ය', ta: 'இன்றைய நட்சத்திரம் உங்களுக்கு நட்பானது', zh: '今日的星宿对您友好', hi: 'आज का नक्षत्र आपके अनुकूल है', ja: '今日の星はあなたに友好的', ko: '오늘의 별은 당신에게 우호적입니다', ar: 'نجم اليوم صديق لك', ml: 'ഇന്നത്തെ നക്ഷത്രം നിങ്ങൾക്ക് അനുകൂലം' } as Bi,
+  taraPlainTitleBad: { en: 'Today’s star is not on your side', si: 'අද නක්ෂත්‍රය ඔබ පැත්තේ නැත', ta: 'இன்றைய நட்சத்திரம் உங்கள் பக்கம் இல்லை', zh: '今日的星宿不站在您这边', hi: 'आज का नक्षत्र आपके पक्ष में नहीं है', ja: '今日の星はあなたの味方ではありません', ko: '오늘의 별은 당신 편이 아닙니다', ar: 'نجم اليوم ليس في صفك', ml: 'ഇന്നത്തെ നക്ഷത്രം നിങ്ങളുടെ പക്ഷത്തല്ല' } as Bi,
+  taraPlain: (fav: boolean, lang: Lang) => fav
+    ? sel(lang, {
+      en: 'By your personal day-star cycle, today favours important moves — sign, book, ask, begin.',
+      si: 'ඔබේ පෞද්ගලික දින-නක්ෂත්‍ර චක්‍රය අනුව, අද වැදගත් තීරණවලට හිතකරයි — අත්සන් කරන්න, වෙන්කරවා ගන්න, අසන්න, ආරම්භ කරන්න.',
+      ta: 'உங்கள் தனிப்பட்ட நட்சத்திரச் சுழற்சிப்படி, இன்று முக்கிய நடவடிக்கைகளுக்கு உகந்தது — கையெழுத்திடுங்கள், பதிவு செய்யுங்கள், கேளுங்கள், தொடங்குங்கள்.',
+      zh: '按您个人的日星宿周期，今天适合重要行动——签约、预订、提出请求、开始行动。',
+      hi: 'आपके निजी दिन-नक्षत्र चक्र के अनुसार आज महत्वपूर्ण कदमों के लिए अनुकूल है — हस्ताक्षर करें, बुक करें, माँगें, शुरू करें।',
+      ja: 'あなた個人の日の星のサイクルでは、今日は大事な一手に向いています — 署名、予約、依頼、開始を。',
+      ko: '개인 일별 별 주기로 볼 때 오늘은 중요한 일에 유리합니다 — 서명하고, 예약하고, 요청하고, 시작하세요.',
+      ar: 'وفق دورة نجم يومك الشخصية، اليوم مواتٍ للخطوات المهمة — وقّع واحجز واطلب وابدأ.',
+      ml: 'നിങ്ങളുടെ വ്യക്തിഗത ദിന-നക്ഷത്ര ചക്രം അനുസരിച്ച് ഇന്ന് പ്രധാന നീക്കങ്ങൾക്ക് അനുകൂലം — ഒപ്പിടുക, ബുക്ക് ചെയ്യുക, ചോദിക്കുക, തുടങ്ങുക.',
+    })
+    : sel(lang, {
+      en: 'By your personal day-star cycle, today is better for routine than risk — big decisions can wait a day or two.',
+      si: 'ඔබේ පෞද්ගලික දින-නක්ෂත්‍ර චක්‍රය අනුව, අද අවදානමට වඩා දිනචරියාවට හොඳයි — විශාල තීරණ දිනක් දෙකක් ඉවසිය හැක.',
+      ta: 'உங்கள் தனிப்பட்ட நட்சத்திரச் சுழற்சிப்படி, இன்று அபாயத்தை விட வழக்கமான வேலைக்கே நல்லது — பெரிய முடிவுகள் ஓரிரு நாள் காத்திருக்கலாம்.',
+      zh: '按您个人的日星宿周期，今天适合按部就班而非冒险——重大决定可以等一两天。',
+      hi: 'आपके निजी दिन-नक्षत्र चक्र के अनुसार आज जोखिम से अधिक दिनचर्या के लिए अच्छा है — बड़े फ़ैसले एक-दो दिन रुक सकते हैं।',
+      ja: 'あなた個人の日の星のサイクルでは、今日はリスクより日常向き — 大きな決定は一両日待てます。',
+      ko: '개인 일별 별 주기로 볼 때 오늘은 모험보다 일상에 좋습니다 — 큰 결정은 하루이틀 미뤄도 됩니다.',
+      ar: 'وفق دورة نجم يومك الشخصية، اليوم أنسب للروتين من المخاطرة — يمكن للقرارات الكبيرة أن تنتظر يومًا أو يومين.',
+      ml: 'നിങ്ങളുടെ വ്യക്തിഗത ദിന-നക്ഷത്ര ചക്രം അനുസരിച്ച് ഇന്ന് സാഹസത്തേക്കാൾ പതിവ് കാര്യങ്ങൾക്ക് നല്ലത് — വലിയ തീരുമാനങ്ങൾ ഒന്നുരണ്ട് ദിവസം കാത്തിരിക്കാം.',
+    }),
+
+  // Vedha
+  vedhaTitle: { en: 'Vedha (obstruction)', si: 'වේධ (බාධාව)', ta: 'வேதை (தடை)', zh: 'Vedha（阻碍）', hi: 'वेध (बाधा)', ja: 'ヴェーダ（妨げ）', ko: '베다(방해)', ar: 'فيدها (العرقلة)', ml: 'വേധം (തടസ്സം)' } as Bi,
+  vedhaPlainTitle: { en: 'A good influence is temporarily on hold', si: 'හිතකර බලපෑමක් තාවකාලිකව නතර වී ඇත', ta: 'ஒரு நல்ல செல்வாக்கு தற்காலிகமாக நிறுத்தப்பட்டுள்ளது', zh: '一项良好影响暂时被搁置', hi: 'एक अच्छा प्रभाव अस्थायी रूप से रुका है', ja: '良い影響が一時的に保留中', ko: '좋은 영향이 잠시 보류되어 있습니다', ar: 'تأثير جيد معلّق مؤقتًا', ml: 'ഒരു നല്ല സ്വാധീനം താൽക്കാലികമായി നിർത്തിവച്ചിരിക്കുന്നു' } as Bi,
+  vedhaPlain: (planets: string, _multi: boolean, lang: Lang) => sel(lang, {
+    en: `${planets} would normally be helping you now, but another planet is blocking the benefit — don’t count on it until the block passes.`,
+    si: `${planets} සාමාන්‍යයෙන් දැන් ඔබට උදව් කරන නමුත්, තවත් ග්‍රහයෙක් එම ප්‍රතිලාභය අවහිර කරයි — බාධාව පහ වන තෙක් එය මත රඳා නොසිටින්න.`,
+    ta: `${planets} வழக்கமாக இப்போது உதவியிருக்கும், ஆனால் மற்றொரு கிரகம் அந்த நன்மையைத் தடுக்கிறது — தடை நீங்கும் வரை அதை நம்பாதீர்கள்.`,
+    zh: `${planets}本应此刻帮助您，但另一颗行星挡住了好处——在阻碍解除前别指望它。`,
+    hi: `${planets} सामान्यतः अभी आपकी मदद करते, पर दूसरा ग्रह लाभ रोक रहा है — रुकावट हटने तक उस पर भरोसा न करें।`,
+    ja: `${planets}は本来今あなたを助けるはずですが、別の惑星が恩恵を妨げています — 妨げが去るまで当てにしないで。`,
+    ko: `${planets}은(는) 원래 지금 당신을 도울 텐데 다른 행성이 그 혜택을 막고 있습니다 — 막힘이 풀릴 때까지 기대하지 마세요.`,
+    ar: `كان ${planets} سيساعدك عادةً الآن، لكن كوكبًا آخر يحجب الفائدة — لا تعتمد عليها حتى يزول الحجب.`,
+    ml: `${planets} സാധാരണയായി ഇപ്പോൾ സഹായിക്കേണ്ടതാണ്, പക്ഷേ മറ്റൊരു ഗ്രഹം ആ ഗുണം തടയുന്നു — തടസ്സം മാറുന്നതുവരെ അതിൽ ആശ്രയിക്കരുത്.`,
+  }),
+
+  // Nodes
+  nodesTitle: { en: 'Rahu–Ketu axis', si: 'රාහු-කේතු අක්ෂය', ta: 'ராகு-கேது அச்சு', zh: '罗睺-计都轴线', hi: 'राहु-केतु अक्ष', ja: 'ラーフ・ケートゥ軸', ko: '라후-케투 축', ar: 'محور راهو-كيتو', ml: 'രാഹു-കേതു അക്ഷം' } as Bi,
+  nodesPlainTitle: { en: 'Where obsession and letting-go live right now', si: 'දැන් ඇබ්බැහිය හා අත්හැරීම පවතින තැන', ta: 'இப்போது பற்றும் விடுதலும் எங்கே உள்ளன', zh: '此刻执念与放下分别在哪里', hi: 'अभी आसक्ति और त्याग कहाँ बसते हैं', ja: '今、執着と手放しがどこにあるか', ko: '지금 집착과 놓아줌이 머무는 곳', ar: 'أين يكمن الهوس والتخلي الآن', ml: 'ഇപ്പോൾ ആസക്തിയും ഉപേക്ഷയും എവിടെ' } as Bi,
+  nodesPlain: {
+    en: 'Rahu marks where life pulls hardest at your ambition; Ketu marks what you’re being asked to release. They stay put for about 18 months.',
+    si: 'රාහු ඔබේ අභිලාෂය දැඩිම ලෙස ඇදෙන තැන සලකුණු කරයි; කේතු ඔබෙන් අත්හැරීමට ඉල්ලන දේ සලකුණු කරයි. ඔවුන් මාස 18ක් පමණ එතැනම රැඳී සිටිති.',
+    ta: 'ராகு உங்கள் லட்சியத்தை வாழ்க்கை அதிகம் இழுக்கும் இடத்தைக் குறிக்கிறது; கேது நீங்கள் விட்டுவிடக் கேட்கப்படுவதைக் குறிக்கிறது. இவை சுமார் 18 மாதங்கள் அங்கேயே இருக்கும்.',
+    zh: '罗睺标示生活最强烈牵动您野心之处；计都标示您被要求放下之物。它们约停留18个月。',
+    hi: 'राहु बताता है कि जीवन आपकी महत्वाकांक्षा को सबसे ज़्यादा कहाँ खींचता है; केतु बताता है कि आपसे क्या छोड़ने को कहा जा रहा है। ये लगभग 18 महीने वहीं रहते हैं।',
+    ja: 'ラーフは人生が野心を最も強く引く場所、ケートゥは手放すよう求められているものを示します。約18か月そこに留まります。',
+    ko: '라후는 삶이 야망을 가장 세게 당기는 곳을, 케투는 내려놓으라고 요구받는 것을 가리킵니다. 약 18개월간 머뭅니다.',
+    ar: 'يشير راهو إلى حيث تشدّ الحياة طموحك أكثر؛ ويشير كيتو إلى ما يُطلب منك التخلي عنه. يبقيان في مكانهما نحو 18 شهرًا.',
+    ml: 'ജീവിതം നിങ്ങളുടെ ആഗ്രഹത്തെ ഏറ്റവും കൂടുതൽ വലിക്കുന്നിടം രാഹു കാണിക്കുന്നു; ഉപേക്ഷിക്കാൻ ആവശ്യപ്പെടുന്നത് കേതു കാണിക്കുന്നു. ഏകദേശം 18 മാസം അവ അവിടെ തുടരും.',
+  } as Bi,
+};
 
 export { P as transitPlanet };
+
+// ─── Composed sentences for buildTransitPredictions / applyVedha ───────────
+// These were inline en/si branches in transitAnalysis.ts; kept here so every
+// language lives in one table. English alone agrees verbs with the count.
+
+const isAre = (n: number) => (n > 1 ? 'are' : 'is');
+const theirIts = (n: number) => (n > 1 ? 'their' : 'its');
+
+export const TA = {
+  vedhaNote: (by: string, lang: Lang) => sel(lang, {
+    en: `Auspicious result obstructed (vedha) by ${by}.`, si: `${by} විසින් සුබ ප්‍රතිඵලය අවහිර කර ඇත (වේධ).`,
+    ta: `சுப பலன் ${by} ஆல் தடுக்கப்பட்டுள்ளது (வேதை).`, zh: `吉祥结果被${by}阻碍（Vedha）。`, hi: `शुभ फल ${by} द्वारा बाधित (वेध)।`,
+    ja: `吉の結果が${by}により妨げられています（ヴェーダ）。`, ko: `길한 결과가 ${by}에 의해 막혔습니다(베다).`,
+    ar: `النتيجة المباركة معرقلة (فيدها) بسبب ${by}.`, ml: `ശുഭഫലം ${by} തടഞ്ഞിരിക്കുന്നു (വേധം).`,
+  }),
+
+  bindus: (planet: string, b: number, lang: Lang) => sel(lang, {
+    en: `${planet} (${b}/8 bindus)`, si: `${planet} (බින්දු ${b}/8)`, ta: `${planet} (${b}/8 பிந்துக்கள்)`, zh: `${planet}（${b}/8 点）`,
+    hi: `${planet} (${b}/8 बिंदु)`, ja: `${planet}（${b}/8ビンドゥ）`, ko: `${planet}(${b}/8 빈두)`, ar: `${planet} (${b}/8 نقاط)`, ml: `${planet} (${b}/8 ബിന്ദുക്കൾ)`,
+  }),
+  avRichPlain: (list: string, n: number, lang: Lang) => sel(lang, {
+    en: `${list} ${isAre(n)} running on a full tank for you — lean on ${theirIts(n)} themes`,
+    si: `${list} ඔබ වෙනුවෙන් පූර්ණ ශක්තියෙන් ක්‍රියා කරයි — ${n > 1 ? 'ඒවායේ' : 'එහි'} තේමා මත රැඳෙන්න`,
+    ta: `${list} உங்களுக்காக முழு ஆற்றலுடன் இயங்குகிறது — அவற்றின் கருப்பொருள்களை நம்புங்கள்`,
+    zh: `${list}正为您满油运转——多倚重其主题`,
+    hi: `${list} आपके लिए पूरी ताक़त से चल रहे हैं — उनके विषयों पर भरोसा करें`,
+    ja: `${list}はあなたのために満タンで動いています — そのテーマを頼りに`,
+    ko: `${list}은(는) 당신을 위해 가득 찬 연료로 움직입니다 — 그 주제에 기대세요`,
+    ar: `${list} يعمل لصالحك بخزان ممتلئ — اعتمد على موضوعاته`,
+    ml: `${list} നിങ്ങൾക്കായി പൂർണ്ണ ശക്തിയിൽ പ്രവർത്തിക്കുന്നു — അവയുടെ വിഷയങ്ങളിൽ ആശ്രയിക്കുക`,
+  }),
+  avRichText: (items: string, lang: Lang) => sel(lang, {
+    en: `Well supported — ${items}`, si: `හොඳින් සහාය ලැබේ — ${items}`, ta: `நன்கு ஆதரிக்கப்படுபவை — ${items}`, zh: `支持充足——${items}`,
+    hi: `अच्छा सहारा — ${items}`, ja: `支えが厚い — ${items}`, ko: `지원이 충분함 — ${items}`, ar: `مدعوم جيدًا — ${items}`, ml: `നല്ല പിന്തുണ — ${items}`,
+  }),
+  avPoorPlain: (list: string, n: number, lang: Lang) => sel(lang, {
+    en: `${list} ${isAre(n)} running on low fuel — don’t expect much from ${theirIts(n)} areas right now`,
+    si: `${list} අඩු ශක්තියෙන් ක්‍රියා කරයි — දැන් ${n > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවලින් වැඩිය අපේක්ෂා නොකරන්න`,
+    ta: `${list} குறைந்த ஆற்றலில் இயங்குகிறது — இப்போது அவற்றின் துறைகளில் அதிகம் எதிர்பார்க்காதீர்கள்`,
+    zh: `${list}油量不足——眼下别对其领域期望太高`,
+    hi: `${list} कम ईंधन पर चल रहे हैं — अभी उनके क्षेत्रों से ज़्यादा उम्मीद न रखें`,
+    ja: `${list}は燃料不足 — 今はその分野に多くを期待しないで`,
+    ko: `${list}은(는) 연료가 부족합니다 — 지금은 그 영역에 큰 기대를 하지 마세요`,
+    ar: `${list} يعمل بوقود منخفض — لا تتوقع الكثير من مجالاته الآن`,
+    ml: `${list} കുറഞ്ഞ ഇന്ധനത്തിൽ പ്രവർത്തിക്കുന്നു — ഇപ്പോൾ അവയുടെ മേഖലകളിൽ നിന്ന് കൂടുതൽ പ്രതീക്ഷിക്കരുത്`,
+  }),
+  avPoorText: (items: string, lang: Lang) => sel(lang, {
+    en: `Poorly supported — ${items}`, si: `දුර්වල ලෙස සහාය ලැබේ — ${items}`, ta: `குறைவாக ஆதரிக்கப்படுபவை — ${items}`, zh: `支持不足——${items}`,
+    hi: `कमज़ोर सहारा — ${items}`, ja: `支えが薄い — ${items}`, ko: `지원이 부족함 — ${items}`, ar: `دعم ضعيف — ${items}`, ml: `ദുർബല പിന്തുണ — ${items}`,
+  }),
+  avNote: {
+    en: ' A planet transiting a sign where it holds 5+ bindus in your natal ashtakavarga delivers its good promise even under pressure; with 2 or fewer, even a favourable house yields little.',
+    si: ' ග්‍රහයෙක් තම ජන්ම අෂ්ටකවර්ගයේ බින්දු 5+ක් දරන රාශියක් ගෝචරය කරන විට පීඩනය යටතේ පවා එහි යහ ප්‍රතිඵලය දෙයි; බින්දු 2ක් හෝ අඩු නම්, හිතකර භාවයක් වුවත් අල්ප ඵලයක් දෙයි.',
+    ta: ' ஜென்ம அஷ்டகவர்க்கத்தில் 5+ பிந்துக்கள் உள்ள ராசியில் சஞ்சரிக்கும் கிரகம் அழுத்தத்திலும் நல்ல பலனைத் தரும்; 2 அல்லது குறைவாக இருந்தால் சாதகமான பாவமும் குறைந்த பலனையே தரும்.',
+    zh: ' 行星行经其在您本命 Ashtakavarga 中拥有 5 点以上的星座时，即使承压也能兑现吉意；2 点或更少时，即使宫位有利也收获甚微。',
+    hi: ' जिस राशि में ग्रह के जन्म अष्टकवर्ग में 5+ बिंदु हों, वहाँ गोचर करते हुए वह दबाव में भी शुभ फल देता है; 2 या कम हों तो अनुकूल भाव में भी कम फल मिलता है।',
+    ja: ' 出生のアシュタカヴァルガで5以上のビンドゥを持つサインを運行する惑星は、圧力下でも良い約束を果たします。2以下なら、好ましいハウスでも成果はわずかです。',
+    ko: ' 출생 아슈타카바르가에서 빈두 5개 이상을 가진 별자리를 지나는 행성은 압박 속에서도 좋은 약속을 이행합니다. 2개 이하면 유리한 하우스에서도 성과가 적습니다.',
+    ar: ' الكوكب العابر لبرج يملك فيه 5 نقاط أو أكثر في أشتاكافارغا خريطتك يحقق وعده الطيب حتى تحت الضغط؛ ومع نقطتين أو أقل لا يثمر البيت المواتي إلا قليلًا.',
+    ml: ' ജന്മ അഷ്ടകവർഗ്ഗത്തിൽ 5+ ബിന്ദുക്കളുള്ള രാശിയിലൂടെ സഞ്ചരിക്കുന്ന ഗ്രഹം സമ്മർദ്ദത്തിലും നല്ല ഫലം നൽകും; 2 അല്ലെങ്കിൽ കുറവാണെങ്കിൽ അനുകൂല ഭാവത്തിലും ഫലം കുറവായിരിക്കും.',
+  } as Bi,
+
+  dignityWord: {
+    exalted: { en: 'exalted', si: 'උච්ච', ta: 'உச்சம்', zh: '入旺', hi: 'उच्च', ja: '高揚', ko: '고양', ar: 'في الشرف', ml: 'ഉച്ചം' } as Bi,
+    own: { en: 'own sign', si: 'ස්වක්ෂේත්‍ර', ta: 'சொந்த ராசி', zh: '入庙', hi: 'स्वराशि', ja: '自室', ko: '자기 별자리', ar: 'في برجه', ml: 'സ്വക്ഷേത്രം' } as Bi,
+    combust: { en: 'combust', si: 'අස්තංගත', ta: 'அஸ்தமனம்', zh: '焦伤', hi: 'अस्त', ja: 'コンバスト', ko: '연소', ar: 'محترق', ml: 'അസ്തം' } as Bi,
+    debilitated: { en: 'debilitated', si: 'නීච', ta: 'நீசம்', zh: '落陷', hi: 'नीच', ja: '減衰', ko: '쇠약', ar: 'في الهبوط', ml: 'നീചം' } as Bi,
+  },
+  strongPlain: (list: string, n: number, lang: Lang) => sel(lang, {
+    en: `${list} ${isAre(n)} at full power — ${theirIts(n)} areas of life flow well`,
+    si: `${list} පූර්ණ බලයෙන් සිටී — ${n > 1 ? 'ඒවායේ' : 'එහි'} ජීවන ක්ෂේත්‍ර හොඳින් ගලා යයි`,
+    ta: `${list} முழு வலிமையுடன் — அவற்றின் வாழ்க்கைத் துறைகள் சீராக ஓடும்`,
+    zh: `${list}火力全开——其所主的生活领域运转顺畅`,
+    hi: `${list} पूरी शक्ति में — उनके जीवन-क्षेत्र अच्छे चलते हैं`,
+    ja: `${list}は全開 — その人生の分野は順調に流れます`,
+    ko: `${list}은(는) 최대 출력 — 그 삶의 영역이 잘 흘러갑니다`,
+    ar: `${list} بكامل قوته — تسير مجالاته في الحياة بسلاسة`,
+    ml: `${list} പൂർണ്ണ ശക്തിയിൽ — അവയുടെ ജീവിത മേഖലകൾ നന്നായി ഒഴുകും`,
+  }),
+  strongText: (items: string, lang: Lang) => sel(lang, {
+    en: `Strong — ${items}`, si: `ප්‍රබල — ${items}`, ta: `வலிமையானவை — ${items}`, zh: `强势——${items}`, hi: `बलवान — ${items}`,
+    ja: `強い — ${items}`, ko: `강함 — ${items}`, ar: `قوي — ${items}`, ml: `ശക്തം — ${items}`,
+  }),
+  weakPlain: (list: string, n: number, lang: Lang) => sel(lang, {
+    en: `${list} ${isAre(n)} dimmed — go easy on ${theirIts(n)} areas`,
+    si: `${list} මොට වී ඇත — ${n > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවල පහසුවෙන් කටයුතු කරන්න`,
+    ta: `${list} மங்கியுள்ளது — அவற்றின் துறைகளில் நிதானமாக இருங்கள்`,
+    zh: `${list}光芒黯淡——在其领域放轻脚步`,
+    hi: `${list} मंद पड़े हैं — उनके क्षेत्रों में संभलकर चलें`,
+    ja: `${list}は光が弱まっています — その分野では無理をしないで`,
+    ko: `${list}은(는) 빛이 약해졌습니다 — 그 영역에서는 무리하지 마세요`,
+    ar: `${list} خافت — تمهّل في مجالاته`,
+    ml: `${list} മങ്ങിയിരിക്കുന്നു — അവയുടെ മേഖലകളിൽ സൗമ്യമായി നീങ്ങുക`,
+  }),
+  weakText: (items: string, lang: Lang) => sel(lang, {
+    en: `Weakened — ${items}`, si: `දුර්වල — ${items}`, ta: `பலவீனமானவை — ${items}`, zh: `受削弱——${items}`, hi: `कमज़ोर — ${items}`,
+    ja: `弱体化 — ${items}`, ko: `약화됨 — ${items}`, ar: `ضعيف — ${items}`, ml: `ദുർബലം — ${items}`,
+  }),
+  stationaryPlain: (list: string, n: number, lang: Lang) => sel(lang, {
+    en: `${list} ${isAre(n)} at a standstill — a turning point in ${theirIts(n)} matters`,
+    si: `${list} නතර වී සිටී — ${n > 1 ? 'ඒවායේ' : 'එහි'} කරුණුවල හැරවුම් ලක්ෂ්‍යයකි`,
+    ta: `${list} நிலைத்து நிற்கிறது — அவற்றின் விஷயங்களில் ஒரு திருப்புமுனை`,
+    zh: `${list}处于停滞——其所主之事迎来转折点`,
+    hi: `${list} ठहरे हुए हैं — उनके मामलों में एक मोड़`,
+    ja: `${list}は停止中 — その事柄の転換点です`,
+    ko: `${list}이(가) 정지 상태 — 그 일의 전환점입니다`,
+    ar: `${list} في حالة توقّف — نقطة تحوّل في شؤونه`,
+    ml: `${list} നിശ്ചലം — അവയുടെ കാര്യങ്ങളിൽ ഒരു വഴിത്തിരിവ്`,
+  }),
+  stationaryText: (list: string, lang: Lang) => sel(lang, {
+    en: `Stationary/pivotal — ${list}`, si: `නිශ්චල/තීරණාත්මක — ${list}`, ta: `நிலைத்த/தீர்மானமான — ${list}`, zh: `停滞/关键——${list}`,
+    hi: `स्थिर/निर्णायक — ${list}`, ja: `停止／転機 — ${list}`, ko: `정지/전환점 — ${list}`, ar: `ثابت/محوري — ${list}`, ml: `നിശ്ചലം/നിർണ്ണായകം — ${list}`,
+  }),
+  strNote: {
+    en: ' Exalted/own planets deliver near-peak results; combust or debilitated planets are weakened and need support; stationary planets are unusually potent but unstable as they change direction.',
+    si: ' උච්ච/ස්වක්ෂේත්‍ර ග්‍රහයෝ උච්චතම ප්‍රතිඵල දෙති; අස්තංගත හෝ නීච ග්‍රහයෝ දුර්වල වන අතර සහාය අවශ්‍යය; නිශ්චල ග්‍රහයෝ අසාමාන්‍ය ලෙස බලවත් නමුත් දිශාව මාරු කරන විට අස්ථිරයි.',
+    ta: ' உச்ச/சொந்த ராசிக் கிரகங்கள் உச்சப் பலன் தரும்; அஸ்தமன அல்லது நீசக் கிரகங்கள் பலவீனமாக இருந்து ஆதரவு தேவைப்படும்; நிலைத்த கிரகங்கள் அசாதாரண வலிமை கொண்டவை, ஆனால் திசை மாறும்போது நிலையற்றவை.',
+    zh: ' 入旺/入庙的行星接近巅峰表现；焦伤或落陷的行星受削弱、需要扶持；停滞的行星异常有力，但转向时不稳定。',
+    hi: ' उच्च/स्वराशि ग्रह लगभग सर्वोत्तम फल देते हैं; अस्त या नीच ग्रह कमज़ोर होते हैं और सहारा चाहते हैं; स्थिर ग्रह असामान्य रूप से प्रबल पर दिशा बदलते समय अस्थिर होते हैं।',
+    ja: ' 高揚・自室の惑星はほぼ最高の結果を、コンバストや減衰の惑星は弱く支えが必要です。停止中の惑星は異例に強力ですが、向きを変える時は不安定です。',
+    ko: ' 고양·자기 별자리 행성은 거의 최고의 결과를, 연소·쇠약 행성은 약해져 지원이 필요합니다. 정지 행성은 유난히 강하지만 방향을 바꿀 때 불안정합니다.',
+    ar: ' الكواكب في شرفها أو برجها تعطي نتائج قريبة من الذروة؛ والمحترقة أو الهابطة ضعيفة وتحتاج إلى دعم؛ والثابتة قوية على غير العادة لكنها غير مستقرة حين تغيّر اتجاهها.',
+    ml: ' ഉച്ച/സ്വക്ഷേത്ര ഗ്രഹങ്ങൾ ഏതാണ്ട് ഉയർന്ന ഫലം നൽകും; അസ്ത/നീച ഗ്രഹങ്ങൾ ദുർബലമാണ്, പിന്തുണ വേണം; നിശ്ചല ഗ്രഹങ്ങൾ അസാധാരണ ശക്തിയുള്ളവയെങ്കിലും ദിശ മാറുമ്പോൾ അസ്ഥിരം.',
+  } as Bi,
+
+  tnConj: (tr: string, natal: string, orb: number | undefined, lang: Lang) => sel(lang, {
+    en: `${tr} conjoins natal ${natal} (${orb}° orb)`, si: `${tr} ජන්ම ${natal} සමඟ එක් වේ (අංශක ${orb}ක් ඇතුළත)`,
+    ta: `${tr} ஜென்ம ${natal} உடன் சேர்க்கை (${orb}° இடைவெளி)`, zh: `${tr}会合本命${natal}（容许度 ${orb}°）`,
+    hi: `${tr} जन्म ${natal} से युति (${orb}° अंतर)`, ja: `${tr}が出生の${natal}と合（オーブ${orb}°）`,
+    ko: `${tr}이(가) 출생 ${natal}과(와) 합(오브 ${orb}°)`, ar: `${tr} يقترن بـ${natal} الولادي (مدى ${orb}°)`,
+    ml: `${tr} ജന്മ ${natal} യുമായി യോഗം (${orb}° അകലം)`,
+  }),
+  tnAspect: (tr: string, natal: string, ord: string, pct: number, lang: Lang) => sel(lang, {
+    en: `${tr} aspects natal ${natal} (${ord}, ${pct}%)`, si: `${tr} ජන්ම ${natal} බලයි (${ord}, ${pct}%)`,
+    ta: `${tr} ஜென்ம ${natal} ஐப் பார்க்கிறார் (${ord}, ${pct}%)`, zh: `${tr}相位本命${natal}（${ord}，${pct}%）`,
+    hi: `${tr} जन्म ${natal} पर दृष्टि (${ord}, ${pct}%)`, ja: `${tr}が出生の${natal}にアスペクト（${ord}、${pct}%）`,
+    ko: `${tr}이(가) 출생 ${natal}을(를) 비춤(${ord}, ${pct}%)`, ar: `${tr} ينظر إلى ${natal} الولادي (${ord}، ${pct}%)`,
+    ml: `${tr} ജന്മ ${natal} യെ നോക്കുന്നു (${ord}, ${pct}%)`,
+  }),
+  tnNote: {
+    en: ' These contacts activate the natal significations of the planets involved — the clearest triggers for events during this period.',
+    si: ' මෙම සම්බන්ධතා අදාළ ග්‍රහයන්ගේ ජන්ම කරුණු සක්‍රිය කරයි — මෙම කාලයේ සිදුවීම්වලට පැහැදිලිම උත්තේජක.',
+    ta: ' இந்தத் தொடர்புகள் சம்பந்தப்பட்ட கிரகங்களின் ஜென்மக் காரகத்துவங்களைச் செயல்படுத்தும் — இக்காலத்தின் நிகழ்வுகளுக்கான தெளிவான தூண்டுதல்கள்.',
+    zh: ' 这些接触会激活相关行星的本命象征——是此期间事件最明确的触发点。',
+    hi: ' ये संपर्क संबंधित ग्रहों के जन्म कारकत्व सक्रिय करते हैं — इस अवधि में घटनाओं के सबसे स्पष्ट ट्रिगर।',
+    ja: ' これらの接触は関係する惑星の出生図での象意を活性化します — この時期の出来事の最も明確な引き金です。',
+    ko: ' 이 접촉들은 관련 행성의 출생 상징을 활성화합니다 — 이 시기 사건의 가장 분명한 계기입니다.',
+    ar: ' تنشّط هذه الاتصالات دلالات الكواكب المعنية في الخريطة الولادية — أوضح محفّزات الأحداث في هذه الفترة.',
+    ml: ' ഈ സമ്പർക്കങ്ങൾ ബന്ധപ്പെട്ട ഗ്രഹങ്ങളുടെ ജന്മ കാരകത്വങ്ങളെ സജീവമാക്കും — ഈ കാലത്തെ സംഭവങ്ങളുടെ വ്യക്തമായ പ്രേരകങ്ങൾ.',
+  } as Bi,
+
+  moodWord: {
+    good: { en: 'light and easy', si: 'සැහැල්ලු හා පහසු', ta: 'இலகுவாகவும் எளிதாகவும்', zh: '轻松自在', hi: 'हल्का और सहज', ja: '軽やかで穏やか', ko: '가볍고 편안하게', ar: 'خفيفًا وسهلًا', ml: 'ലഘുവും എളുപ്പവും' } as Bi,
+    bad: { en: 'a bit sensitive — be kind to yourself', si: 'තරමක් සංවේදී — ඔබටම කරුණාවන්ත වන්න', ta: 'சற்று உணர்திறனுடன் — உங்களிடம் அன்பாக இருங்கள்', zh: '有点敏感——善待自己', hi: 'थोड़ा संवेदनशील — अपने प्रति दयालु रहें', ja: '少し敏感 — 自分に優しく', ko: '조금 예민하게 — 스스로에게 너그럽게', ar: 'حساسًا قليلًا — كن لطيفًا مع نفسك', ml: 'അൽപം സംവേദനക്ഷമം — നിങ്ങളോട് തന്നെ ദയ കാണിക്കുക' } as Bi,
+    neutral: { en: 'steady', si: 'ස්ථාවර', ta: 'நிலையாக', zh: '平稳', hi: 'स्थिर', ja: '安定', ko: '안정적으로', ar: 'مستقرًا', ml: 'സ്ഥിരം' } as Bi,
+  },
+  moodTextWord: {
+    good: { en: 'lighter and supportive', si: 'සැහැල්ලු හා සහායක', ta: 'இலகுவாகவும் ஆதரவாகவும்', zh: '更轻松、更有支持', hi: 'हल्का और सहायक', ja: '軽やかで支えのある', ko: '가볍고 든든하게', ar: 'أخفّ وأكثر دعمًا', ml: 'ലഘുവും പിന്തുണയുള്ളതും' } as Bi,
+    bad: { en: 'sensitive and lower-energy', si: 'සංවේදී හා අඩු ශක්තියක්', ta: 'உணர்திறனுடனும் குறைந்த ஆற்றலுடனும்', zh: '敏感且精力偏低', hi: 'संवेदनशील और कम ऊर्जा वाला', ja: '敏感でエネルギー低め', ko: '예민하고 기운이 낮게', ar: 'حساسًا ومنخفض الطاقة', ml: 'സംവേദനക്ഷമവും കുറഞ്ഞ ഊർജ്ജമുള്ളതും' } as Bi,
+    neutral: { en: 'steady', si: 'ස්ථාවර', ta: 'நிலையாக', zh: '平稳', hi: 'स्थिर', ja: '安定', ko: '안정적으로', ar: 'مستقرًا', ml: 'സ്ഥിരം' } as Bi,
+  },
+  waxWord: {
+    waxing: { en: 'The Moon is growing — good for starting and reaching out.', si: 'චන්ද්‍රයා වැඩෙමින් — ආරම්භ කිරීමට හා සම්බන්ධ වීමට හොඳයි.', ta: 'சந்திரன் வளர்கிறது — தொடங்கவும் தொடர்பு கொள்ளவும் நல்லது.', zh: '月亮渐盈——适合开始与主动联系。', hi: 'चंद्र बढ़ रहा है — शुरुआत और संपर्क के लिए अच्छा।', ja: '月は満ちていく途中 — 始めることや連絡に向いています。', ko: '달이 차오르는 중 — 시작하고 손 내밀기에 좋습니다.', ar: 'القمر في تزايد — جيد للبدء والتواصل.', ml: 'ചന്ദ്രൻ വളരുന്നു — തുടങ്ങാനും ബന്ധപ്പെടാനും നല്ലത്.' } as Bi,
+    waning: { en: 'The Moon is shrinking — good for finishing and winding down.', si: 'චන්ද්‍රයා අඩු වෙමින් — නිම කිරීමට හා සන්සුන් වීමට හොඳයි.', ta: 'சந்திரன் தேய்கிறது — முடிக்கவும் ஓய்வெடுக்கவும் நல்லது.', zh: '月亮渐亏——适合收尾与放缓。', hi: 'चंद्र घट रहा है — काम पूरे करने और धीमे होने के लिए अच्छा।', ja: '月は欠けていく途中 — 仕上げやペースダウンに向いています。', ko: '달이 이지러지는 중 — 마무리하고 속도를 늦추기에 좋습니다.', ar: 'القمر في تناقص — جيد للإنهاء والتهدئة.', ml: 'ചന്ദ്രൻ ക്ഷയിക്കുന്നു — പൂർത്തിയാക്കാനും വേഗം കുറയ്ക്കാനും നല്ലത്.' } as Bi,
+  },
+  waxPhrase: {
+    waxing: { en: 'A waxing, building phase — favours initiating, growth and outreach.', si: 'වැඩෙන, ගොඩනැගෙන අවධියකි — ආරම්භ, වර්ධනය හා සම්බන්ධතාවලට හිතකරයි.', ta: 'வளர்பிறை, கட்டியெழுப்பும் கட்டம் — தொடக்கம், வளர்ச்சி, தொடர்புகளுக்கு உகந்தது.', zh: '渐盈的积累阶段——利于开创、成长与拓展。', hi: 'शुक्ल, निर्माण का चरण — आरंभ, विकास और संपर्क के अनुकूल।', ja: '満ちていく構築の時期 — 開始、成長、働きかけに好都合。', ko: '차오르는 구축 단계 — 시작, 성장, 확장에 유리합니다.', ar: 'مرحلة تزايد وبناء — تناسب البدء والنمو والتواصل.', ml: 'വളരുന്ന, കെട്ടിപ്പടുക്കുന്ന ഘട്ടം — തുടക്കം, വളർച്ച, ബന്ധങ്ങൾ എന്നിവയ്ക്ക് അനുകൂലം.' } as Bi,
+    waning: { en: 'A waning, releasing phase — favours completing, letting go and inner work.', si: 'අඩුවන, මුදාහරින අවධියකි — නිම කිරීම, අත්හැරීම හා අභ්‍යන්තර වැඩවලට හිතකරයි.', ta: 'தேய்பிறை, விடுவிக்கும் கட்டம் — முடித்தல், விட்டுவிடுதல், உள்நோக்கிய பணிகளுக்கு உகந்தது.', zh: '渐亏的释放阶段——利于完成、放下与内在功课。', hi: 'कृष्ण, मुक्त करने का चरण — पूरा करने, छोड़ने और आंतरिक काम के अनुकूल।', ja: '欠けていく解放の時期 — 完了、手放し、内面の作業に好都合。', ko: '이지러지는 해방 단계 — 완성, 내려놓기, 내면 작업에 유리합니다.', ar: 'مرحلة تناقص وإطلاق — تناسب الإتمام والتخلي والعمل الداخلي.', ml: 'ക്ഷയിക്കുന്ന, വിട്ടുകൊടുക്കുന്ന ഘട്ടം — പൂർത്തീകരണം, ഉപേക്ഷ, ആന്തരിക പ്രവർത്തനം എന്നിവയ്ക്ക് അനുകൂലം.' } as Bi,
+  },
+  moonPlain: (wax: string, mood: string, lang: Lang) => sel(lang, {
+    en: `${wax} Today’s mood runs ${mood}. This changes every couple of days.`,
+    si: `${wax} අද මනෝභාවය ${mood} ලෙස ගලා යයි. මෙය දින දෙක තුනකට වරක් වෙනස් වේ.`,
+    ta: `${wax} இன்றைய மனநிலை ${mood} இருக்கும். இது ஓரிரு நாளுக்கு ஒருமுறை மாறும்.`,
+    zh: `${wax}今天的心情：${mood}。这每隔一两天就会变化。`,
+    hi: `${wax} आज का मिज़ाज ${mood} रहेगा। यह हर एक-दो दिन में बदलता है।`,
+    ja: `${wax}今日の気分は「${mood}」。これは2日ほどで変わります。`,
+    ko: `${wax} 오늘의 기분은 ${mood}. 이는 이틀 정도마다 바뀝니다.`,
+    ar: `${wax} مزاج اليوم ${mood}. يتغير هذا كل يومين تقريبًا.`,
+    ml: `${wax} ഇന്നത്തെ മാനസികാവസ്ഥ ${mood}. ഇത് ഒന്നുരണ്ട് ദിവസത്തിലൊരിക്കൽ മാറും.`,
+  }),
+  moonText: (a: { pct: number; rashi: string; nak: string; pada: number; ord: string; phase: string; mood: string }, lang: Lang) => sel(lang, {
+    en: `The Moon is ${a.pct}% lit in ${a.rashi}, nakshatra ${a.nak} pada ${a.pada} — the ${a.ord} from your natal Moon. ${a.phase} Daily mood feels ${a.mood}; the Moon changes sign in ~2¼ days.`,
+    si: `චන්ද්‍රයා ${a.rashi} හි ${a.pct}% ක් ආලෝකමත් වී ඇත, ${a.nak} නක්ෂත්‍රයේ ${a.pada} පාදයේ — ඔබේ ජන්ම චන්ද්‍රයාගෙන් ${a.ord}. ${a.phase} දෛනික මනෝභාවය ${a.mood} ලෙස දැනේ; චන්ද්‍රයා දින 2¼කින් පමණ රාශිය මාරු කරයි.`,
+    ta: `சந்திரன் ${a.rashi} இல் ${a.pct}% ஒளிர்கிறது, ${a.nak} நட்சத்திரம் ${a.pada}-ஆம் பாதம் — உங்கள் ஜென்ம சந்திரனிலிருந்து ${a.ord} இடம். ${a.phase} அன்றாட மனநிலை ${a.mood} உணரப்படும்; சந்திரன் சுமார் 2¼ நாட்களில் ராசி மாறும்.`,
+    zh: `月亮在${a.rashi}，亮度 ${a.pct}%，星宿 ${a.nak} 第 ${a.pada} 分——位于您本命月亮起算的${a.ord}宫。${a.phase}日常心情：${a.mood}；月亮约 2¼ 天换一次星座。`,
+    hi: `चंद्र ${a.rashi} में ${a.pct}% प्रकाशित है, नक्षत्र ${a.nak} पाद ${a.pada} — आपके जन्म चंद्र से ${a.ord}। ${a.phase} दैनिक मिज़ाज ${a.mood} लगता है; चंद्र लगभग 2¼ दिन में राशि बदलता है।`,
+    ja: `月は${a.rashi}にあり輝面${a.pct}%、ナクシャトラは${a.nak}の第${a.pada}パーダ — 出生の月から${a.ord}。${a.phase}日々の気分は「${a.mood}」。月は約2¼日でサインを移ります。`,
+    ko: `달은 ${a.rashi}에서 ${a.pct}% 밝고, 낙샤트라 ${a.nak} ${a.pada}파다 — 출생 달 기준 ${a.ord}. ${a.phase} 일상 기분은 ${a.mood}; 달은 약 2¼일마다 별자리를 옮깁니다.`,
+    ar: `القمر مضاء بنسبة ${a.pct}% في ${a.rashi}، ناكشاترا ${a.nak} الربع ${a.pada} — البيت ${a.ord} من قمرك الولادي. ${a.phase} يبدو المزاج اليومي ${a.mood}؛ ينتقل القمر بين الأبراج كل يومين وربع تقريبًا.`,
+    ml: `ചന്ദ്രൻ ${a.rashi} ൽ ${a.pct}% പ്രകാശിതം, ${a.nak} നക്ഷത്രം ${a.pada}-ാം പാദം — ജന്മ ചന്ദ്രനിൽ നിന്ന് ${a.ord}. ${a.phase} ദൈനംദിന മാനസികാവസ്ഥ ${a.mood}; ചന്ദ്രൻ ഏകദേശം 2¼ ദിവസത്തിൽ രാശി മാറും.`,
+  }),
+
+  taraText: (ord: string, name: string, desc: string, lang: Lang) => sel(lang, {
+    en: `The Moon rides your ${ord} tara today — ${name}, ${desc} The tara cycle re-runs every 9 nakshatras (~9 days), so this quality shifts daily.`,
+    si: `අද චන්ද්‍රයා ඔබේ ${ord} තාරාවේ ගමන් කරයි — ${name}, ${desc} තාරා චක්‍රය සෑම නක්ෂත්‍ර 9කට වරක් (දින 9ක් පමණ) නැවත ක්‍රියාත්මක වේ, එබැවින් මෙම ගුණය දිනපතා වෙනස් වේ.`,
+    ta: `இன்று சந்திரன் உங்கள் ${ord} தாரையில் — ${name}, ${desc} தாரைச் சுழற்சி ஒவ்வொரு 9 நட்சத்திரங்களுக்கும் (சுமார் 9 நாட்கள்) மீண்டும் ஓடுவதால், இந்தத் தன்மை தினமும் மாறும்.`,
+    zh: `今天月亮行经您的${ord}颗 tara——${name}，${desc}Tara 周期每 9 个星宿（约 9 天）循环一次，因此这一性质每天都在变。`,
+    hi: `आज चंद्र आपके ${ord} तारा पर है — ${name}, ${desc} तारा चक्र हर 9 नक्षत्रों (लगभग 9 दिन) में दोहराता है, इसलिए यह गुण रोज़ बदलता है।`,
+    ja: `今日、月はあなたの${ord}のターラにあります — ${name}、${desc}ターラの周期は9ナクシャトラ（約9日）ごとに繰り返すため、この性質は毎日変わります。`,
+    ko: `오늘 달은 당신의 ${ord} 타라에 있습니다 — ${name}, ${desc} 타라 주기는 9개 낙샤트라(약 9일)마다 반복되므로 이 성질은 매일 바뀝니다.`,
+    ar: `يعبر القمر اليوم التارا ${ord} لديك — ${name}، ${desc} تتكرر دورة التارا كل 9 ناكشاترات (نحو 9 أيام)، لذا تتبدل هذه الصفة يوميًا.`,
+    ml: `ഇന്ന് ചന്ദ്രൻ നിങ്ങളുടെ ${ord} താരയിൽ — ${name}, ${desc} താരാ ചക്രം ഓരോ 9 നക്ഷത്രങ്ങളിലും (ഏകദേശം 9 ദിവസം) ആവർത്തിക്കുന്നതിനാൽ ഈ ഗുണം ദിവസവും മാറും.`,
+  }),
+
+  vedhaItem: (p: string, by: string, lang: Lang) => sel(lang, {
+    en: `${p}'s favourable transit is obstructed by ${by}`, si: `${p}ගේ හිතකර ගෝචරය ${by} විසින් අවහිර වී ඇත`,
+    ta: `${p} இன் சாதகமான கோசாரம் ${by} ஆல் தடுக்கப்பட்டுள்ளது`, zh: `${p}的有利行运被${by}阻碍`,
+    hi: `${p} का अनुकूल गोचर ${by} द्वारा बाधित है`, ja: `${p}の好ましいトランジットが${by}に妨げられています`,
+    ko: `${p}의 유리한 트랜짓이 ${by}에 막혀 있습니다`, ar: `عبور ${p} المواتي معرقل بسبب ${by}`,
+    ml: `${p} ന്റെ അനുകൂല ഗോചരം ${by} തടഞ്ഞിരിക്കുന്നു`,
+  }),
+  vedhaTail: {
+    en: ' The blocked good result is cancelled for now — don\'t over-rely on it.',
+    si: ' අවහිර වූ යහ ප්‍රතිඵලය දැනට අවලංගු වේ — එය මත අධික ලෙස රඳා නොසිටින්න.',
+    ta: ' தடுக்கப்பட்ட நல்ல பலன் தற்போதைக்கு ரத்து — அதை அதிகம் நம்பாதீர்கள்.',
+    zh: ' 被阻碍的好结果暂时作废——别过度依赖它。',
+    hi: ' रुका हुआ शुभ फल अभी रद्द है — उस पर ज़्यादा भरोसा न करें।',
+    ja: ' 妨げられた良い結果は当面取り消されます — 頼りすぎないで。',
+    ko: ' 막힌 좋은 결과는 당분간 취소됩니다 — 너무 의지하지 마세요.',
+    ar: ' النتيجة الطيبة المعرقلة ملغاة حاليًا — لا تعتمد عليها كثيرًا.',
+    ml: ' തടഞ്ഞ നല്ല ഫലം തൽക്കാലം റദ്ദാണ് — അതിൽ അമിതമായി ആശ്രയിക്കരുത്.',
+  } as Bi,
+  pairJoin: { en: '&', si: 'හා', ta: 'மற்றும்', zh: '与', hi: 'और', ja: 'と', ko: '와', ar: 'و', ml: 'ഉം' } as Bi,
+};

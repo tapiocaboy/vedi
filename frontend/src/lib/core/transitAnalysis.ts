@@ -14,17 +14,11 @@
  */
 
 import type { GocharaSnapshot, PlanetTransit } from './transits';
-import { RASHIS } from './rashi';
 import { NAKSHATRAS } from './nakshatra';
 import { getDignity, getGandanta, type DignityLevel } from './planetaryAnalysis';
 import { computeAshtakavarga, type Contributor, type Planet as AvPlanet } from './ashtakavarga';
-import { type Lang, rashiName, joinAnd } from './i18n';
-import { TP, TARA_DESC, RETRO_TEXT, joinPlanets, transitPlanet as P } from './text/transitText';
-
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
+import { type Lang, type Bi, pick, rashiName, joinAnd, ordinalNum } from './i18n';
+import { TP, TA, TARA_NAME, TARA_DESC, RETRO_TEXT, joinPlanets, transitPlanet as P } from './text/transitText';
 
 /** Structural Title-case (keys getDignity etc.) — not a localised name. */
 function titleCase(s: string): string {
@@ -308,8 +302,7 @@ const TARA_FAVOURABLE: Record<number, boolean> = {
 export function computeTaraBala(natalNakshatra: number, transitNakshatra: number, lang: Lang = 'en'): TaraBala {
   const count = ((transitNakshatra - natalNakshatra + 27) % 27) + 1;
   const tara = ((count - 1) % 9) + 1;
-  const entry = TARA_DESC[tara];
-  return { tara, name: entry.name, favourable: TARA_FAVOURABLE[tara], description: lang === 'si' ? entry.desc.si : entry.desc.en };
+  return { tara, name: pick(TARA_NAME[tara], lang), favourable: TARA_FAVOURABLE[tara], description: pick(TARA_DESC[tara], lang) };
 }
 
 // ── Vedha (obstruction) ─────────────────────────────────────────────────────────
@@ -354,9 +347,7 @@ export function applyVedha(transits: PlanetTransit[], natalMoonRashi: number, la
     if (obstructor) {
       tr.valence = 0;
       tr.vedha = { byPlanet: obstructor, house: vHouse };
-      const msg = lang === 'si'
-        ? `${P(obstructor, lang)} විසින් සුබ ප්‍රතිඵලය අවහිර කර ඇත (වේධ).`
-        : `Auspicious result obstructed (vedha) by ${titleCase(obstructor)}.`;
+      const msg = TA.vedhaNote(P(obstructor, lang), lang);
       tr.note = tr.note ? `${tr.note} · ${msg}` : msg;
     }
   }
@@ -421,10 +412,7 @@ export interface TransitPrediction {
 
 export interface DashaLords { mahadasha?: string; antardasha?: string; }
 
-function ordN(n: number, lang: Lang): string {
-  if (lang === 'si') return `${n} වන`;
-  return ordinal(n);
-}
+const ordN = ordinalNum;
 
 /** Generate interpretive transit predictions from the snapshot + sign analysis. */
 export function buildTransitPredictions(
@@ -436,7 +424,7 @@ export function buildTransitPredictions(
   const preds: TransitPrediction[] = [];
   const lagna = g.natalLagnaRashi;
   const moon = g.natalMoonRashi;
-  const t = (b: { en: string; si: string }) => (lang === 'si' ? b.si : b.en);
+  const t = (b: Bi) => pick(b, lang);
 
   // 1. Overall climate (occupancy valence balance)
   const good = g.transits.filter(t => t.valence > 0).length;
@@ -545,7 +533,7 @@ export function buildTransitPredictions(
       title: TP.retroTitle(joinPlanets(retro.map(r => r.planet), lang), lang),
       plainTitle: t(TP.retroPlainTitle),
       plain: t(TP.retroPlain),
-      text: retro.map(r => `${P(r.planet, lang)} — ${lang === 'si' ? RETRO_TEXT[r.planet].si : RETRO_TEXT[r.planet].en}`).join(' '),
+      text: retro.map(r => `${P(r.planet, lang)} — ${pick(RETRO_TEXT[r.planet], lang)}`).join(' '),
     });
   }
 
@@ -571,7 +559,7 @@ export function buildTransitPredictions(
     const key = [tr.planet, tr.war.with].sort().join('-');
     if (seen.has(key)) continue;
     seen.add(key);
-    warPairs.push(`${P(tr.planet, lang)} ${lang === 'si' ? 'හා' : '&'} ${P(tr.war.with, lang)}`);
+    warPairs.push(`${P(tr.planet, lang)} ${pick(TA.pairJoin, lang)} ${P(tr.war.with, lang)}`);
   }
   if (warPairs.length) {
     const pairs = joinAnd(warPairs, lang);
@@ -596,30 +584,20 @@ export function buildTransitPredictions(
       const plainParts: string[] = [];
       const textParts: string[] = [];
       if (rich.length) {
-        plainParts.push(lang === 'si'
-          ? `${richList} ඔබ වෙනුවෙන් පූර්ණ ශක්තියෙන් ක්‍රියා කරයි — ${rich.length > 1 ? 'ඒවායේ' : 'එහි'} තේමා මත රැඳෙන්න`
-          : `${richList} ${rich.length > 1 ? 'are' : 'is'} running on a full tank for you — lean on ${rich.length > 1 ? 'their' : 'its'} themes`);
-        textParts.push(lang === 'si'
-          ? `හොඳින් සහාය ලැබේ — ${rich.map(t => `${P(t.planet, lang)} (බින්දු ${t.bindus}/8)`).join(', ')}`
-          : `Well supported — ${rich.map(t => `${P(t.planet, lang)} (${t.bindus}/8 bindus)`).join(', ')}`);
+        plainParts.push(TA.avRichPlain(richList, rich.length, lang));
+        textParts.push(TA.avRichText(rich.map(t => TA.bindus(P(t.planet, lang), t.bindus!, lang)).join(', '), lang));
       }
       if (poor.length) {
-        plainParts.push(lang === 'si'
-          ? `${poorList} අඩු ශක්තියෙන් ක්‍රියා කරයි — දැන් ${poor.length > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවලින් වැඩිය අපේක්ෂා නොකරන්න`
-          : `${poorList} ${poor.length > 1 ? 'are' : 'is'} running on low fuel — don’t expect much from ${poor.length > 1 ? 'their' : 'its'} areas right now`);
-        textParts.push(lang === 'si'
-          ? `දුර්වල ලෙස සහාය ලැබේ — ${poor.map(t => `${P(t.planet, lang)} (බින්දු ${t.bindus}/8)`).join(', ')}`
-          : `Poorly supported — ${poor.map(t => `${P(t.planet, lang)} (${t.bindus}/8 bindus)`).join(', ')}`);
+        plainParts.push(TA.avPoorPlain(poorList, poor.length, lang));
+        textParts.push(TA.avPoorText(poor.map(t => TA.bindus(P(t.planet, lang), t.bindus!, lang)).join(', '), lang));
       }
-      const avNote = lang === 'si'
-        ? ' ග්‍රහයෙක් තම ජන්ම අෂ්ටකවර්ගයේ බින්දු 5+ක් දරන රාශියක් ගෝචරය කරන විට පීඩනය යටතේ පවා එහි යහ ප්‍රතිඵලය දෙයි; බින්දු 2ක් හෝ අඩු නම්, හිතකර භාවයක් වුවත් අල්ප ඵලයක් දෙයි.'
-        : ' A planet transiting a sign where it holds 5+ bindus in your natal ashtakavarga delivers its good promise even under pressure; with 2 or fewer, even a favourable house yields little.';
+      const avNote = t(TA.avNote);
       preds.push({
         id: 'ashtakavarga',
         tone: poor.length > rich.length ? 'bad' : rich.length ? 'good' : 'neutral',
         title: t(TP.avTitle),
         plainTitle: t(TP.avPlainTitle),
-        plain: plainParts.join(lang === 'si' ? '; ' : '; ') + '.',
+        plain: plainParts.join('; ') + '.',
         text: `${textParts.join('. ')}.${avNote}`,
       });
     }
@@ -632,33 +610,20 @@ export function buildTransitPredictions(
   if (strong.length || weak.length || stationary.length) {
     const plainParts: string[] = [];
     const textParts: string[] = [];
+    const dw = TA.dignityWord;
     if (strong.length) {
-      plainParts.push(lang === 'si'
-        ? `${joinPlanets(strong.map(t => t.planet), lang)} පූර්ණ බලයෙන් සිටී — ${strong.length > 1 ? 'ඒවායේ' : 'එහි'} ජීවන ක්ෂේත්‍ර හොඳින් ගලා යයි`
-        : `${joinPlanets(strong.map(t => t.planet), lang)} ${strong.length > 1 ? 'are' : 'is'} at full power — ${strong.length > 1 ? 'their' : 'its'} areas of life flow well`);
-      textParts.push(lang === 'si'
-        ? `ප්‍රබල — ${strong.map(t => `${P(t.planet, lang)} (${t.dignity === 'exalted' ? 'උච්ච' : 'ස්වක්ෂේත්‍ර'})`).join(', ')}`
-        : `Strong — ${strong.map(t => `${P(t.planet, lang)} (${t.dignity === 'exalted' ? 'exalted' : 'own sign'})`).join(', ')}`);
+      plainParts.push(TA.strongPlain(joinPlanets(strong.map(t => t.planet), lang), strong.length, lang));
+      textParts.push(TA.strongText(strong.map(x => `${P(x.planet, lang)} (${t(x.dignity === 'exalted' ? dw.exalted : dw.own)})`).join(', '), lang));
     }
     if (weak.length) {
-      plainParts.push(lang === 'si'
-        ? `${joinPlanets(weak.map(t => t.planet), lang)} මොට වී ඇත — ${weak.length > 1 ? 'ඒවායේ' : 'එහි'} ක්ෂේත්‍රවල පහසුවෙන් කටයුතු කරන්න`
-        : `${joinPlanets(weak.map(t => t.planet), lang)} ${weak.length > 1 ? 'are' : 'is'} dimmed — go easy on ${weak.length > 1 ? 'their' : 'its'} areas`);
-      textParts.push(lang === 'si'
-        ? `දුර්වල — ${weak.map(t => `${P(t.planet, lang)} (${t.combust ? 'අස්තංගත' : 'නීච'})`).join(', ')}`
-        : `Weakened — ${weak.map(t => `${P(t.planet, lang)} (${t.combust ? 'combust' : 'debilitated'})`).join(', ')}`);
+      plainParts.push(TA.weakPlain(joinPlanets(weak.map(t => t.planet), lang), weak.length, lang));
+      textParts.push(TA.weakText(weak.map(x => `${P(x.planet, lang)} (${t(x.combust ? dw.combust : dw.debilitated)})`).join(', '), lang));
     }
     if (stationary.length) {
-      plainParts.push(lang === 'si'
-        ? `${joinPlanets(stationary.map(t => t.planet), lang)} නතර වී සිටී — ${stationary.length > 1 ? 'ඒවායේ' : 'එහි'} කරුණුවල හැරවුම් ලක්ෂ්‍යයකි`
-        : `${joinPlanets(stationary.map(t => t.planet), lang)} ${stationary.length > 1 ? 'are' : 'is'} at a standstill — a turning point in ${stationary.length > 1 ? 'their' : 'its'} matters`);
-      textParts.push(lang === 'si'
-        ? `නිශ්චල/තීරණාත්මක — ${joinPlanets(stationary.map(t => t.planet), lang)}`
-        : `Stationary/pivotal — ${joinPlanets(stationary.map(t => t.planet), lang)}`);
+      plainParts.push(TA.stationaryPlain(joinPlanets(stationary.map(t => t.planet), lang), stationary.length, lang));
+      textParts.push(TA.stationaryText(joinPlanets(stationary.map(t => t.planet), lang), lang));
     }
-    const strNote = lang === 'si'
-      ? ' උච්ච/ස්වක්ෂේත්‍ර ග්‍රහයෝ උච්චතම ප්‍රතිඵල දෙති; අස්තංගත හෝ නීච ග්‍රහයෝ දුර්වල වන අතර සහාය අවශ්‍යය; නිශ්චල ග්‍රහයෝ අසාමාන්‍ය ලෙස බලවත් නමුත් දිශාව මාරු කරන විට අස්ථිරයි.'
-      : ' Exalted/own planets deliver near-peak results; combust or debilitated planets are weakened and need support; stationary planets are unusually potent but unstable as they change direction.';
+    const strNote = t(TA.strNote);
     preds.push({
       id: 'strength',
       tone: weak.length > strong.length ? 'bad' : strong.length ? 'good' : 'neutral',
@@ -680,16 +645,10 @@ export function buildTransitPredictions(
   if (tnHits.length) {
     const items = tnHits.slice(0, 4).map(h =>
       h.kind === 'conjunction'
-        ? (lang === 'si'
-            ? `${P(h.transit, lang)} ජන්ම ${P(h.natal, lang)} සමඟ එක් වේ (අංශක ${h.orb}ක් ඇතුළත)`
-            : `${P(h.transit, lang)} conjoins natal ${P(h.natal, lang)} (${h.orb}° orb)`)
-        : (lang === 'si'
-            ? `${P(h.transit, lang)} ජන්ම ${P(h.natal, lang)} බලයි (${ordN(h.house, lang)}, ${aspectPct(h.virupa)}%)`
-            : `${P(h.transit, lang)} aspects natal ${P(h.natal, lang)} (${ordinal(h.house)}, ${aspectPct(h.virupa)}%)`),
+        ? TA.tnConj(P(h.transit, lang), P(h.natal, lang), h.orb, lang)
+        : TA.tnAspect(P(h.transit, lang), P(h.natal, lang), ordN(h.house, lang), aspectPct(h.virupa), lang),
     );
-    const tnNote = lang === 'si'
-      ? ' මෙම සම්බන්ධතා අදාළ ග්‍රහයන්ගේ ජන්ම කරුණු සක්‍රිය කරයි — මෙම කාලයේ සිදුවීම්වලට පැහැදිලිම උත්තේජක.'
-      : ' These contacts activate the natal significations of the planets involved — the clearest triggers for events during this period.';
+    const tnNote = t(TA.tnNote);
     preds.push({
       id: 'transit-natal',
       tone: 'info',
@@ -704,27 +663,18 @@ export function buildTransitPredictions(
   const tMoon = g.transits.find(t => t.planet === 'MOON');
   const mp = g.moonPhase;
   if (tMoon && mp) {
-    const moodWord = tMoon.valence > 0
-      ? (lang === 'si' ? 'සැහැල්ලු හා පහසු' : 'light and easy')
-      : tMoon.valence < 0 ? (lang === 'si' ? 'තරමක් සංවේදී — ඔබටම කරුණාවන්ත වන්න' : 'a bit sensitive — be kind to yourself') : (lang === 'si' ? 'ස්ථාවර' : 'steady');
-    const waxWord = mp.waxing
-      ? (lang === 'si' ? 'චන්ද්‍රයා වැඩෙමින් — ආරම්භ කිරීමට හා සම්බන්ධ වීමට හොඳයි.' : 'The Moon is growing — good for starting and reaching out.')
-      : (lang === 'si' ? 'චන්ද්‍රයා අඩු වෙමින් — නිම කිරීමට හා සන්සුන් වීමට හොඳයි.' : 'The Moon is shrinking — good for finishing and winding down.');
-    const moodTextWord = tMoon.valence > 0 ? (lang === 'si' ? 'සැහැල්ලු හා සහායක' : 'lighter and supportive') : tMoon.valence < 0 ? (lang === 'si' ? 'සංවේදී හා අඩු ශක්තියක්' : 'sensitive and lower-energy') : (lang === 'si' ? 'ස්ථාවර' : 'steady');
-    const waxTextPhrase = mp.waxing
-      ? (lang === 'si' ? 'වැඩෙන, ගොඩනැගෙන අවධියකි — ආරම්භ, වර්ධනය හා සම්බන්ධතාවලට හිතකරයි.' : 'A waxing, building phase — favours initiating, growth and outreach.')
-      : (lang === 'si' ? 'අඩුවන, මුදාහරින අවධියකි — නිම කිරීම, අත්හැරීම හා අභ්‍යන්තර වැඩවලට හිතකරයි.' : 'A waning, releasing phase — favours completing, letting go and inner work.');
+    const moodKey = tMoon.valence > 0 ? 'good' : tMoon.valence < 0 ? 'bad' : 'neutral';
+    const waxKey = mp.waxing ? 'waxing' : 'waning';
     preds.push({
       id: 'tmoon',
       tone: tMoon.valence > 0 ? 'good' : tMoon.valence < 0 ? 'bad' : 'neutral',
       title: TP.moonTitle(mp.tithiName, mp.paksha, lang),
       plainTitle: t(TP.moonPlainTitle),
-      plain: lang === 'si'
-        ? `${waxWord} අද මනෝභාවය ${moodWord} ලෙස ගලා යයි. මෙය දින දෙක තුනකට වරක් වෙනස් වේ.`
-        : `${waxWord} Today’s mood runs ${moodWord}. This changes every couple of days.`,
-      text: lang === 'si'
-        ? `චන්ද්‍රයා ${rashiName(tMoon.rashi, lang)} හි ${mp.illumination}% ක් ආලෝකමත් වී ඇත, ${mp.nakshatra} නක්ෂත්‍රයේ ${mp.pada} පාදයේ — ඔබේ ජන්ම චන්ද්‍රයාගෙන් ${ordN(tMoon.houseFromMoon, lang)}. ${waxTextPhrase} දෛනික මනෝභාවය ${moodTextWord} ලෙස දැනේ; චන්ද්‍රයා දින 2¼කින් පමණ රාශිය මාරු කරයි.`
-        : `The Moon is ${mp.illumination}% lit in ${RASHIS[tMoon.rashi]}, nakshatra ${mp.nakshatra} pada ${mp.pada} — the ${ordinal(tMoon.houseFromMoon)} from your natal Moon. ${waxTextPhrase} Daily mood feels ${moodTextWord}; the Moon changes sign in ~2¼ days.`,
+      plain: TA.moonPlain(t(TA.waxWord[waxKey]), t(TA.moodWord[moodKey]), lang),
+      text: TA.moonText({
+        pct: mp.illumination, rashi: rashiName(tMoon.rashi, lang), nak: mp.nakshatra, pada: mp.pada,
+        ord: ordN(tMoon.houseFromMoon, lang), phase: t(TA.waxPhrase[waxKey]), mood: t(TA.moodTextWord[moodKey]),
+      }, lang),
     });
   }
 
@@ -737,9 +687,7 @@ export function buildTransitPredictions(
       title: TP.taraTitle(tb.name, ordN(tb.tara, lang), lang),
       plainTitle: tb.favourable ? t(TP.taraPlainTitleGood) : t(TP.taraPlainTitleBad),
       plain: TP.taraPlain(tb.favourable, lang),
-      text: lang === 'si'
-        ? `අද චන්ද්‍රයා ඔබේ ${ordN(tb.tara, lang)} තාරාවේ ගමන් කරයි — ${tb.name}, ${tb.description} තාරා චක්‍රය සෑම නක්ෂත්‍ර 9කට වරක් (දින 9ක් පමණ) නැවත ක්‍රියාත්මක වේ, එබැවින් මෙම ගුණය දිනපතා වෙනස් වේ.`
-        : `The Moon rides your ${ordinal(tb.tara)} tara today — ${tb.name}, ${tb.description} The tara cycle re-runs every 9 nakshatras (~9 days), so this quality shifts daily.`,
+      text: TA.taraText(ordN(tb.tara, lang), tb.name, tb.description, lang),
     });
   }
 
@@ -753,9 +701,7 @@ export function buildTransitPredictions(
       title: t(TP.vedhaTitle),
       plainTitle: t(TP.vedhaPlainTitle),
       plain: TP.vedhaPlain(planets, vedhas.length > 1, lang),
-      text: lang === 'si'
-        ? `${vedhas.map(v => `${P(v.planet, lang)}ගේ හිතකර ගෝචරය ${P(v.vedha!.byPlanet, lang)} විසින් අවහිර වී ඇත`).join('; ')}. අවහිර වූ යහ ප්‍රතිඵලය දැනට අවලංගු වේ — එය මත අධික ලෙස රඳා නොසිටින්න.`
-        : `${vedhas.map(v => `${P(v.planet, lang)}'s favourable transit is obstructed by ${P(v.vedha!.byPlanet, lang)}`).join('; ')}. The blocked good result is cancelled for now — don't over-rely on it.`,
+      text: `${vedhas.map(v => TA.vedhaItem(P(v.planet, lang), P(v.vedha!.byPlanet, lang), lang)).join('; ')}.${t(TA.vedhaTail)}`,
     });
   }
 

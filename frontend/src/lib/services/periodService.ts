@@ -197,9 +197,19 @@ export async function getPeriodSnapshot(
   const natalMoonRashi = positions['MOON'].rashi;
   const natalLagnaRashi = positions['ASCENDANT'].rashi;
   const gochara = await getCurrentTransits(bd.ayanamsa, natalMoonRashi, natalLagnaRashi, td, currentLocation, positions, lang);
-  const transitSummary = summarizeGocharaForPrediction(gochara, lang);
+  const transitSummary = summarizeGocharaForPrediction(gochara, lang, {
+    maha: periodsRaw.mahadasha.lord, antar: periodsRaw.antardasha.lord,
+  });
   ctx.transitNotes = transitSummary.notes;
   ctx.transitScoreMod = transitSummary.scoreMod;
+  if (transitSummary.erashtaka) {
+    ctx.erashtaka = { level: transitSummary.erashtaka.level, areas: transitSummary.erashtaka.areas };
+    // The headline card shows this description — carry the dasha-aware grade.
+    if (gochara.sadeSati.active && gochara.erashtaka) {
+      gochara.sadeSati.description = gochara.sadeSati.description
+        .replace(gochara.erashtaka.summary, transitSummary.erashtaka.summary);
+    }
+  }
 
   // Chart-aware prediction.
   const engine = new DashaPredictionEngine();

@@ -16,7 +16,11 @@ import {
   type MoonPhase, type TaraBala,
 } from './transitAnalysis';
 import type { DignityLevel } from './planetaryAnalysis';
-import { type Lang, rashiName, planetName, houseLabel, joinAnd } from './i18n';
+import { type Lang, type Bi, pick, rashiName, planetName, houseLabel, joinAnd } from './i18n';
+import {
+  assessErashtaka, erashtakaChartFromPositions,
+  type ErashtakaAssessment, type ErashtakaChart, type ErashtakaDasha,
+} from './erashtaka';
 import { TRANSIT_NOTE, SADE_SATI_DESC, JUPITER_BLESSING, NODAL_NOTE, NOTE_PREFIX, LAGNA_TRANSIT } from './text/transitText';
 
 /** 'SATURN' → 'Saturn'. Transit keys are upper case; prose helpers are not. */
@@ -82,6 +86,14 @@ export interface GocharaSnapshot {
   sarvaBindus?: number[];
   /** Tara Bala of the transit Moon's nakshatra from the natal Moon's nakshatra. */
   taraBala?: TaraBala;
+  /**
+   * Graded Erashtaka (Sade Sati) / Ashtama / Kantaka Shani assessment for this
+   * chart, or null when Saturn is clear of the 12/1/2/4/8 from the Moon.
+   * Undefined without natal data.
+   */
+  erashtaka?: ErashtakaAssessment | null;
+  /** Natal side used for the Erashtaka grading — lets callers re-grade with dasha lords. */
+  erashtakaChart?: ErashtakaChart;
 }
 
 export interface SadeSatiInfo {
@@ -130,7 +142,7 @@ export function valenceFromMoon(planet: string, house: number): number {
 }
 
 function noteForTransit(planet: string, houseFromMoon: number, houseFromLagna: number, lang: Lang): string | null {
-  const t = (b: { en: string; si: string }) => (lang === 'si' ? b.si : b.en);
+  const t = (b: Bi) => pick(b, lang);
   if (planet === 'SATURN') {
     if (houseFromMoon === 12 || houseFromMoon === 1 || houseFromMoon === 2) return t(TRANSIT_NOTE.sadeSatiPhase);
     if (houseFromMoon === 8) return t(TRANSIT_NOTE.ashtamaShani);
@@ -156,7 +168,7 @@ function computeSadeSati(saturnRashi: number, moonRashi: number, lang: Lang): Sa
   if (house === 12) return { active: true, phase: 'rising', description: SADE_SATI_DESC.rising(rashi, lang) };
   if (house === 1) return { active: true, phase: 'peak', description: SADE_SATI_DESC.peak(rashi, lang) };
   if (house === 2) return { active: true, phase: 'setting', description: SADE_SATI_DESC.setting(rashi, lang) };
-  return { active: false, phase: 'none', description: lang === 'si' ? SADE_SATI_DESC.none.si : SADE_SATI_DESC.none.en };
+  return { active: false, phase: 'none', description: pick(SADE_SATI_DESC.none, lang) };
 }
 
 export interface CurrentLocation {
@@ -182,6 +194,8 @@ export interface GocharaPredictionSummary {
   inwardMod: number;
   /** Set when outward and inward disagree materially. */
   diverges: boolean;
+  /** The graded Saturn-from-Moon affliction, when one is running. */
+  erashtaka: ErashtakaAssessment | null;
 }
 
 /** Slow movers are the only transits worth reading from the Lagna for a dasha. */
@@ -201,23 +215,48 @@ const DIVERGENCE_THRESHOLD = 0.6;
  * dignity, the house from the Lagna, and any pass over a natal stellium all go
  * unmentioned because none of them is a Moon-relative fact.
  */
-export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = 'en'): GocharaPredictionSummary {
+export function summarizeGocharaForPrediction(
+  g: GocharaSnapshot,
+  lang: Lang = 'en',
+  dasha?: ErashtakaDasha,
+): GocharaPredictionSummary {
   const notes: string[] = [];
   // Inward: how the period feels, judged from the natal Moon.
   let inward = 0;
   // Outward: what is on offer, judged from the Lagna and from transit dignity.
   let outward = 0;
 
-  if (g.sadeSati.active) {
-    notes.push(g.sadeSati.description);
-    inward -= 0.75;
+  const saturn = g.transits.find(t => t.planet === 'SATURN');
+
+  // Erashtaka / Ashtama / Kantaka Shani, graded for this chart and — when the
+  // caller knows it — the dasha running now. A flat penalty would read the
+  // same for an exalted, bindu-rich Saturn over a Libra Moon in a Venus period
+  // as for a debilitated one in a Saturn–Rahu period; the two are not alike.
+  let erashtaka: ErashtakaAssessment | null | undefined = g.erashtaka;
+  if (g.erashtakaChart && saturn && dasha) {
+    const jup = g.transits.find(t => t.planet === 'JUPITER');
+    const rahu = g.transits.find(t => t.planet === 'RAHU');
+    const ketu = g.transits.find(t => t.planet === 'KETU');
+    erashtaka = assessErashtaka(
+      { saturnRashi: saturn.rashi, jupiterRashi: jup?.rashi, rahuRashi: rahu?.rashi, ketuRashi: ketu?.rashi },
+      g.erashtakaChart, dasha, {}, lang,
+    );
   }
 
-  const saturn = g.transits.find(t => t.planet === 'SATURN');
-  if (saturn && !g.sadeSati.active) {
+  if (erashtaka) {
+    notes.push(erashtaka.summary);
+    for (const f of erashtaka.aggravating.slice(0, 2)) notes.push(`▲ ${f.text}`);
+    for (const f of erashtaka.mitigating.slice(0, 2)) notes.push(`▼ ${f.text}`);
+    inward += erashtaka.scoreMod;
+  } else if (g.sadeSati.active) {
+    notes.push(g.sadeSati.description);
+    inward -= 0.75;
+  } else if (saturn) {
     if (saturn.houseFromMoon === 8) inward -= 0.5;
     else if (saturn.houseFromMoon === 4) inward -= 0.25;
-    else if ([3, 6, 11].includes(saturn.houseFromMoon)) inward += 0.25;
+  }
+  if (saturn && !g.sadeSati.active && !erashtaka) {
+    if ([3, 6, 11].includes(saturn.houseFromMoon)) inward += 0.25;
     if (saturn.note) notes.push(NOTE_PREFIX('SATURN', saturn.note, lang));
   }
 
@@ -227,6 +266,8 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = '
   // Ashtakavarga refinement: bindu support in the transited sign softens or
   // sharpens the slow planets' verdicts (≥5 bindus helps, ≤3 hinders).
   for (const t of g.transits) {
+    // Saturn's bindus are already inside the Erashtaka grade when it applies.
+    if (t.planet === 'SATURN' && erashtaka) continue;
     if ((t.planet === 'SATURN' || t.planet === 'JUPITER') && t.bindus != null) {
       inward += (t.bindus - 4) * 0.05;
     }
@@ -301,6 +342,7 @@ export function summarizeGocharaForPrediction(g: GocharaSnapshot, lang: Lang = '
     outwardMod: outward,
     inwardMod: inward,
     diverges,
+    erashtaka: erashtaka ?? null,
   };
 }
 
@@ -397,6 +439,18 @@ export async function getCurrentTransits(
     note: NODAL_NOTE(rashiName(rahuTransit.rashi, lang), rashiName(ketuTransit.rashi, lang), lang),
   };
 
+  // Graded Erashtaka — needs the natal chart for everything past the phase.
+  let erashtaka: ErashtakaAssessment | null | undefined;
+  let erashtakaChart: ErashtakaChart | undefined;
+  if (natalPositions?.MOON && natalPositions.ASCENDANT) {
+    erashtakaChart = erashtakaChartFromPositions(natalPositions);
+    erashtaka = assessErashtaka(
+      { saturnRashi: saturnTransit.rashi, jupiterRashi: jupiterTransit.rashi, rahuRashi: rahuTransit.rashi, ketuRashi: ketuTransit.rashi },
+      erashtakaChart, {}, {}, lang,
+    );
+    if (erashtaka && sadeSati.active) sadeSati.description += ` ${erashtaka.summary}`;
+  }
+
   return {
     asOf: now.toISOString(),
     natalMoonRashi,
@@ -409,5 +463,7 @@ export async function getCurrentTransits(
     moonPhase,
     sarvaBindus,
     taraBala,
+    erashtaka,
+    erashtakaChart,
   };
 }

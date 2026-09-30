@@ -12,6 +12,7 @@ import {
   type TransitSegment, type MonthImpact, type NatalContext, type DashaSpan,
 } from '../core/transitImpact';
 import type { BirthData } from '../../types/astrology';
+import type { Lang } from '../core/i18n';
 
 export interface TransitImpactReport {
   asOf: string;
@@ -28,7 +29,7 @@ const YEARS_BACK = 2;
 const YEARS_AHEAD = 6;
 const DAY = 86_400_000;
 
-export async function getTransitImpactReport(bd: BirthData, asOf: Date = new Date()): Promise<TransitImpactReport> {
+export async function getTransitImpactReport(bd: BirthData, asOf: Date = new Date(), lang: Lang = 'en'): Promise<TransitImpactReport> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
 
   const av = computeAshtakavarga({
@@ -71,10 +72,10 @@ export async function getTransitImpactReport(bd: BirthData, asOf: Date = new Dat
   const segments: TransitSegment[] = [];
   for (const body of bodies) {
     const lons = await getBodyLongitudeSeries(body, dates, bd.ayanamsa);
-    segments.push(...buildSegments(body, dates, lons, natal, dasha));
+    segments.push(...buildSegments(body, dates, lons, natal, dasha, lang));
     if (body === 'RAHU') {
       const ketu = lons.map(l => (l + 180) % 360);
-      segments.push(...buildSegments('KETU', dates, ketu, natal, dasha));
+      segments.push(...buildSegments('KETU', dates, ketu, natal, dasha, lang));
     }
   }
 

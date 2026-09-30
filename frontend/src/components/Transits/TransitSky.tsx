@@ -2,7 +2,7 @@
  * Transit Sky — a visual of the major transits that are happening right now
  * and how they colour the running dasha predictions. Planets sit in the house
  * they occupy from the natal Moon; beams run to the life areas they lift or
- * test. English only.
+ * test. All nine languages (chrome in ./transitImpactUi).
  */
 
 import React, { useMemo, useState } from 'react';
@@ -10,11 +10,16 @@ import { motion } from 'framer-motion';
 import { Sparkles, Lightbulb } from 'lucide-react';
 import type { TransitImpactReport, TransitSegment, TransitBody, ImpactArea, ImpactTone, DashaPredictionData } from '../../services/api';
 import {
-  IMPACT_AREAS, AREA_LABEL, BODY_LABEL, HOUSE_THEME,
+  IMPACT_AREAS, areaLabel, bodyLabel, houseThemeShort,
   overlayKind, overlaySentence, happeningHeadline, skyStory,
   type OverlayKind, type DashaTrend,
 } from '../../lib/core/transitImpact';
 import { RASHI_ENGLISH } from '../../lib/core/rashi';
+import { ordinalNum, type Lang } from '../../lib/core/i18n';
+import { useLang } from '../../i18n/LanguageContext';
+import { labelRashi, labelPlanet } from '../../i18n/astroLabels';
+import { RASHIS } from '../../types/astrology';
+import { U, tx } from './transitImpactUi';
 import { PLANET_SYMBOLS } from '../../types/astrology';
 import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
 
@@ -22,15 +27,9 @@ const TONE_HEX: Record<ImpactTone, string> = { good: '#10b981', mixed: '#f59e0b'
 const KIND_HEX: Record<OverlayKind, string> = {
   lifts: TONE_HEX.good, tests: TONE_HEX.bad, colours: TONE_HEX.mixed, quiet: '#94a3b8',
 };
-const KIND_WORD: Record<OverlayKind, string> = {
-  lifts: 'Lifts', tests: 'Tests', colours: 'Colours', quiet: 'Quiet',
-};
 const BODY_HEX: Record<TransitBody, string> = {
   SATURN: LORD_HEX.Saturn, JUPITER: LORD_HEX.Jupiter, RAHU: '#8b93a3',
   KETU: LORD_HEX.Ketu, MARS: LORD_HEX.Mars, SUN: LORD_HEX.Sun,
-};
-const TREND_WORD: Record<string, string> = {
-  positive: 'Favourable', negative: 'Challenging', mixed: 'Mixed', neutral: 'Steady',
 };
 
 const W = 720, H = 560, CX = 360, CY = 278;
@@ -45,11 +44,6 @@ const polar = (deg: number, r: number) => {
   return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
 };
 
-const nth = (n: number) => {
-  const v = n % 100;
-  const s = ['th', 'st', 'nd', 'rd'];
-  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
-};
 
 function planetSlots(segs: TransitSegment[]): Map<string, { x: number; y: number; deg: number }> {
   const byHouse = new Map<number, TransitSegment[]>();
@@ -69,10 +63,13 @@ function planetSlots(segs: TransitSegment[]): Map<string, { x: number; y: number
   return out;
 }
 
-function dashaLabel(prediction?: DashaPredictionData | null): string | undefined {
+function dashaLabel(prediction: DashaPredictionData | null | undefined, lang: Lang): string | undefined {
   if (!prediction) return undefined;
-  return [prediction.dashaLord, prediction.antardasha].filter(Boolean).join('–');
+  return [prediction.dashaLord, prediction.antardasha].filter(Boolean).map(l => labelPlanet(l!, lang)).join('–');
 }
+
+/** Western sign in English, the localised rashi otherwise. */
+const signLabel = (rashi: number, lang: Lang) => (lang === 'en' ? RASHI_ENGLISH[rashi] : labelRashi(rashi, lang, RASHIS[rashi]));
 
 const tones = (isLight: boolean) => isLight
   ? { strong: 'text-slate-800', body: 'text-slate-600', muted: 'text-slate-400', panel: '#ffffff', line: 'rgba(15,23,42,0.06)', ink: '#0f172a', faint: 'rgba(15,23,42,0.42)', track: 'rgba(15,23,42,0.05)' }
@@ -89,6 +86,7 @@ interface Props {
 
 const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, isLight, prediction }) => {
   const t = tones(isLight);
+  const lang = useLang().lang as Lang;
   const [focusArea, setFocusArea] = useState<ImpactArea | null>(null);
   const selected = current.find(s => s.id === selectedId) ?? current[0] ?? null;
   const slots = useMemo(() => planetSlots(current), [current]);
@@ -97,7 +95,7 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
     const start = Date.parse(m.month);
     return start <= now && now < start + 31 * 86_400_000;
   });
-  const period = dashaLabel(prediction);
+  const period = dashaLabel(prediction, lang);
   const events = current.filter(s => s.tags.length > 0);
 
   const areaPos = (area: ImpactArea) => polar(AREA_DEG[area], R_AREA);
@@ -173,7 +171,7 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
             );
           })}
           <text x={CX} y={36} textAnchor="middle" fontSize="10" fontWeight="700" letterSpacing="0.14em" fill={t.faint}>
-            HOUSES FROM THE MOON
+            {tx(U.housesFromMoon, lang)}
           </text>
 
           {current.flatMap(seg => IMPACT_AREAS.filter(area => beamActive(seg, area)).map(area => {
@@ -212,8 +210,8 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
                 <circle cx={p.x} cy={p.y} r={on ? 28 : 24} fill={isLight ? '#fff' : 'color-mix(in srgb, var(--bg-page), white 6%)'}
                   stroke={hex} strokeWidth={on ? 2.4 : 1.6} />
                 <circle cx={p.x} cy={p.y} r={on ? 22 : 18} fill={hex} fillOpacity={0.12 + 0.28 * Math.min(1, Math.abs(v))} />
-                <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={t.ink}>{AREA_LABEL[area]}</text>
-                <title>{`${AREA_LABEL[area]} this month: ${v >= 0.2 ? 'supportive' : v <= -0.2 ? 'testing' : 'mixed'}`}</title>
+                <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={t.ink}>{areaLabel(area, lang)}</text>
+                <title>{U.areaThisMonth(areaLabel(area, lang), tx(U.tone[v >= 0.2 ? 'good' : v <= -0.2 ? 'bad' : 'mixed'], lang), lang)}</title>
               </g>
             );
           })}
@@ -221,12 +219,12 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
           <g>
             <circle cx={CX} cy={CY} r={R_YOU} fill={isLight ? '#fff' : 'color-mix(in srgb, var(--bg-page), white 8%)'}
               stroke="var(--c-accent)" strokeWidth="1.8" />
-            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="11" fontWeight="800" letterSpacing="0.16em" fill="var(--c-accent)">YOU</text>
+            <text x={CX} y={CY - 8} textAnchor="middle" fontSize="11" fontWeight="800" letterSpacing="0.16em" fill="var(--c-accent)">{tx(U.you, lang)}</text>
             <text x={CX} y={CY + 8} textAnchor="middle" fontSize="10" fontWeight="600" fill={t.faint}>
-              Moon {RASHI_ENGLISH[report.moonRashi]}
+              {tx(U.moon, lang)} {signLabel(report.moonRashi, lang)}
             </text>
             <text x={CX} y={CY + 21} textAnchor="middle" fontSize="9" fill={t.faint}>
-              Lagna {RASHI_ENGLISH[report.lagnaRashi]}
+              {tx(U.lagna, lang)} {signLabel(report.lagnaRashi, lang)}
             </text>
           </g>
 
@@ -245,20 +243,19 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
                   {PLANET_SYMBOLS[seg.planet]}
                 </text>
                 <text x={p.x} y={p.y + r + 13} textAnchor="middle" fontSize="11" fontWeight="700" fill={t.ink}>
-                  {BODY_LABEL[seg.planet]}
+                  {bodyLabel(seg.planet, lang)}
                 </text>
                 <text x={p.x} y={p.y + r + 25} textAnchor="middle" fontSize="9" fill={t.faint}>
-                  {seg.westernName}
+                  {signLabel(seg.rashi, lang)}
                 </text>
-                <title>{happeningHeadline(seg)}</title>
+                <title>{happeningHeadline(seg, lang)}</title>
               </g>
             );
           })}
         </svg>
         </div>
         <p className={`text-[11px] leading-relaxed px-1 mt-3 ${t.muted}`}>
-          Planets sit in the house they occupy from your Moon. Beams show which predictions they are lifting or testing today.
-          Tap a planet, an event chip, or a life area.
+          {tx(U.skyHelp, lang)}
         </p>
       </div>
 
@@ -270,9 +267,10 @@ const TransitSky: React.FC<Props> = ({ report, current, selectedId, onSelect, is
             period={period}
             isLight={isLight}
             focusArea={focusArea}
+            lang={lang}
           />
         ) : (
-          <p className={`text-sm ${t.muted}`}>No major transits are in range right now.</p>
+          <p className={`text-sm ${t.muted}`}>{tx(U.noMajor, lang)}</p>
         )}
       </div>
     </div>
@@ -285,7 +283,8 @@ const SkyStory: React.FC<{
   period?: string;
   isLight: boolean;
   focusArea: ImpactArea | null;
-}> = ({ seg, prediction, period, isLight, focusArea }) => {
+  lang: Lang;
+}> = ({ seg, prediction, period, isLight, focusArea, lang }) => {
   const t = tones(isLight);
   const hex = BODY_HEX[seg.planet];
   const areas = focusArea ? [focusArea] : IMPACT_AREAS.filter(a => overlayKind(seg.areas[a]) !== 'quiet');
@@ -299,10 +298,10 @@ const SkyStory: React.FC<{
           {PLANET_SYMBOLS[seg.planet]}
         </span>
         <div className="min-w-0">
-          <div className={`text-sm font-semibold ${t.strong}`}>{happeningHeadline(seg)}</div>
+          <div className={`text-sm font-semibold ${t.strong}`}>{happeningHeadline(seg, lang)}</div>
           <div className={`text-[11px] mt-0.5 ${t.muted}`}>
-            {nth(seg.houseFromMoon)} from Moon · {nth(seg.houseFromLagna)} from Ascendant · {HOUSE_THEME[seg.houseFromLagna].split(',')[0]}
-            {period && <> · Period {period}</>}
+            {U.fromMoonAsc(ordinalNum(seg.houseFromMoon, lang), ordinalNum(seg.houseFromLagna, lang), lang)} · {houseThemeShort(seg.houseFromLagna, lang)}
+            {period && <> · {tx(U.period, lang)} {period}</>}
           </div>
         </div>
       </div>
@@ -314,10 +313,10 @@ const SkyStory: React.FC<{
         </div>
       )}
 
-      <p className={`text-sm leading-relaxed mt-3 ${t.body}`}>{skyStory(seg, period)}</p>
+      <p className={`text-sm leading-relaxed mt-3 ${t.body}`}>{skyStory(seg, period, lang)}</p>
 
       <div className={`text-[10px] uppercase tracking-wider font-semibold mt-4 mb-2 ${t.muted}`}>
-        How this colours the predictions
+        {tx(U.howColours, lang)}
       </div>
       <div className="space-y-2">
         {shown.map(area => {
@@ -327,19 +326,19 @@ const SkyStory: React.FC<{
           return (
             <div key={area} className="rounded-xl px-3 py-2.5" style={{ background: t.panel, border: `1px solid ${t.line}` }}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className={`text-xs font-semibold ${t.strong}`}>{AREA_LABEL[area]}</span>
+                <span className={`text-xs font-semibold ${t.strong}`}>{areaLabel(area, lang)}</span>
                 {trend && (
                   <span className="text-[10px] font-semibold rounded-full px-2 py-0.5"
                     style={{ color: TREND_HEX[trend], background: `${TREND_HEX[trend]}1a` }}>
-                    Period · {TREND_WORD[trend]}
+                    {tx(U.period, lang)} · {tx(U.trend[trend], lang)}
                   </span>
                 )}
                 <span className="text-[10px] font-semibold rounded-full px-2 py-0.5"
                   style={{ color: KIND_HEX[kind], background: `${KIND_HEX[kind]}1a` }}>
-                  Transit · {KIND_WORD[kind]}
+                  {tx(U.transit, lang)} · {tx(U.kind[kind], lang)}
                 </span>
               </div>
-              <p className={`text-xs leading-relaxed mt-1 ${t.body}`}>{overlaySentence(seg, area, trend)}</p>
+              <p className={`text-xs leading-relaxed mt-1 ${t.body}`}>{overlaySentence(seg, area, trend, lang)}</p>
             </div>
           );
         })}

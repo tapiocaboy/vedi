@@ -179,7 +179,7 @@ export const PAIR_EFFECTS: Record<string, PairEffect> = {
     wealth: { en: 'Hard work required; slow gains through service industries', si: 'වෙහෙස මහන්සි විය යුතුය; සේවා කර්මාන්ත හරහා මන්දගාමී ලාභ' },
     career: { en: 'Service, labor, mining, agriculture, administration', si: 'සේවා කටයුතු, ශ්‍රමය, පතල් කැණීම, කෘෂිකර්මය හා පරිපාලනය' },
     relationships: { en: 'Isolation possible; karmic relationship obligations', si: 'තනි වීමට ඉඩ ඇත; කර්මය හා බැඳුණු සම්බන්ධතා යුතුකම්' },
-    warning: { en: 'Sade Sati-like pressure — this is a period of hard karmic lessons', si: 'සාඩේ සාති වැනි පීඩනයක් — මෙය දුෂ්කර කර්ම පාඩම් ලබන කාලයකි' },
+    warning: { en: 'Sade Sati-like pressure — this is a period of hard karmic lessons', si: 'ඒරාෂ්ටක ශනි වැනි පීඩනයක් — මෙය දුෂ්කර කර්ම පාඩම් ලබන කාලයකි' },
     ratingMod: -2,
   },
   'Saturn-Rahu': {

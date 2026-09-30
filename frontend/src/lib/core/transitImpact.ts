@@ -5,12 +5,18 @@
  * occupies and aspects from the Ascendant, Ashtakavarga support for the sign,
  * and whether the transiting planet is also running the dasha at the time.
  *
- * English only by design — this section is not part of the translated surface.
+ * Prose comes from text/transitImpactText in all nine engine languages; the
+ * English tables below stay as the stable source for exports and tests.
  */
 
 import { valenceFromMoon } from './transits';
 import { gocharaEffect } from './gocharaPhala';
 import { RASHIS, RASHI_ENGLISH } from './rashi';
+import { assessErashtaka, type ErashtakaChart } from './erashtaka';
+import { type Lang, pick, planetName, rashiName, joinAnd, ordinalNum } from './i18n';
+import {
+  AREA_NAME, HOUSE_THEME_T, ADVICE_T, TAG_T, GRADED, STORY, houseThemeShort, type TagKey,
+} from './text/transitImpactText';
 
 export type TransitBody = 'SATURN' | 'JUPITER' | 'RAHU' | 'KETU' | 'MARS' | 'SUN';
 export type ImpactArea = 'career' | 'wealth' | 'relationships' | 'health';
@@ -62,40 +68,9 @@ export const HOUSE_THEME: Record<number, string> = {
   12: 'expenses, sleep, foreign lands and letting go',
 };
 
-const ADVICE: Record<TransitBody, Record<ImpactTone, string>> = {
-  SATURN: {
-    good: 'Commit to long projects now. Steady, disciplined work compounds and is finally rewarded.',
-    mixed: 'Keep routines tight and promises realistic. Slow progress is still progress.',
-    bad: 'Reduce load, avoid big leaps and protect health. Patience, service and structure are the remedy.',
-  },
-  JUPITER: {
-    good: 'Say yes to growth: learning, investing, marriage talks and new mentors all carry luck.',
-    mixed: 'Expand carefully. Pick one opportunity and give it your full attention.',
-    bad: 'Guard against over-optimism and over-spending. Put wisdom into practice rather than promises.',
-  },
-  RAHU: {
-    good: 'Take bold, unconventional chances, especially with technology, foreign links and networks.',
-    mixed: 'Ambition is high but so is noise. Verify facts before acting on excitement.',
-    bad: 'Avoid shortcuts, schemes and obsessive choices. Stay grounded and double-check people.',
-  },
-  KETU: {
-    good: 'Let go of what is finished. Research, healing and spiritual practice go deep now.',
-    mixed: 'Expect detachment in this area. Simplify rather than force results.',
-    bad: 'Sudden losses of interest or separations are possible. Do not make exits in haste.',
-  },
-  MARS: {
-    good: 'Energy converts to results. Push competitive goals, property matters and physical training.',
-    mixed: 'Channel the drive into work rather than arguments.',
-    bad: 'Short fuse and accident risk. Drive carefully, avoid disputes and do not rush surgery or contracts.',
-  },
-  SUN: {
-    good: 'A month for visibility. Ask for recognition and speak with authority.',
-    mixed: 'Lead quietly this month and keep ego out of decisions.',
-    bad: 'Energy and pride run low. Rest, avoid clashes with authority and keep a low profile.',
-  },
-};
-
 export interface TransitTag {
+  /** Stable, language-independent id for the event (e.g. 'sadePeak'). */
+  key: TagKey;
   label: string;
   kind: ImpactTone;
   note: string;
@@ -204,39 +179,48 @@ function areaImpacts(planet: TransitBody, houseFromLagna: number, houseFromMoon:
   return out;
 }
 
-function tagsFor(planet: TransitBody, rashi: number, hm: number, hl: number, n: NatalContext): TransitTag[] {
+function tagsFor(planet: TransitBody, rashi: number, hm: number, hl: number, n: NatalContext, lang: Lang = 'en'): TransitTag[] {
   const tags: TransitTag[] = [];
   const natal = n.natalRashi;
+  const add = (key: TagKey, kind: ImpactTone, body = '') =>
+    tags.push({ key, kind, label: sel(TAG_T[key].label(body), lang), note: sel(TAG_T[key].note, lang) });
+  const bodyName = (b: TransitBody) => planetName(titleCase(b), lang);
   if (planet === 'SATURN') {
-    if (hm === 12) tags.push({ label: 'Sade Sati · rising', kind: 'bad', note: 'The first 2.5 years of Sade Sati: expenses, disturbed sleep and hidden worries build up.' });
-    if (hm === 1) tags.push({ label: 'Sade Sati · peak', kind: 'bad', note: 'The heaviest phase of Sade Sati. Mind, health and status are all tested; simplify and endure.' });
-    if (hm === 2) tags.push({ label: 'Sade Sati · setting', kind: 'bad', note: 'The closing phase of Sade Sati. Family and money are tested, then pressure lifts.' });
-    if (hm === 8) tags.push({ label: 'Ashtama Shani', kind: 'bad', note: 'Saturn 8th from the Moon: obstacles, chronic complaints and delays. Patience is the remedy.' });
-    if (hm === 4) tags.push({ label: 'Kantaka Shani', kind: 'bad', note: 'Saturn 4th from the Moon: pressure at home, over property, vehicles or the mother.' });
-    if (natal.SATURN === rashi) tags.push({ label: 'Saturn return', kind: 'mixed', note: 'Saturn back in its birth sign: a maturity checkpoint that rewards responsibility.' });
-    if (natal.SUN === rashi) tags.push({ label: 'Saturn over natal Sun', kind: 'bad', note: 'Authority, father and confidence come under Saturn’s pressure.' });
+    if (hm === 12) add('sadeRising', 'bad');
+    if (hm === 1) add('sadePeak', 'bad');
+    if (hm === 2) add('sadeSetting', 'bad');
+    if (hm === 8) add('ashtama', 'bad');
+    if (hm === 4) add('kantaka', 'bad');
+    if (natal.SATURN === rashi) add('saturnReturn', 'mixed');
+    if (natal.SUN === rashi) add('saturnOverSun', 'bad');
   }
   if (planet === 'JUPITER') {
-    if (natal.JUPITER === rashi) tags.push({ label: 'Jupiter return', kind: 'good', note: 'Jupiter back in its birth sign: a 12-year renewal of faith, learning and opportunity.' });
-    if (hm === 1) tags.push({ label: 'Jupiter over Moon', kind: 'mixed', note: 'Jupiter on the natal Moon: emotional growth, but classically a restless, expense-heavy year.' });
-    if ([5, 7, 9].includes(hm)) tags.push({ label: 'Guru bala', kind: 'good', note: 'Jupiter trine or opposite the Moon: the classic window for marriage, children and good fortune.' });
-    if (hl === 1 || hl === 7) tags.push({ label: 'Jupiter on Ascendant axis', kind: 'good', note: 'Jupiter on the 1st/7th axis protects health and blesses partnerships.' });
+    if (natal.JUPITER === rashi) add('jupiterReturn', 'good');
+    if (hm === 1) add('jupiterOverMoon', 'mixed');
+    if ([5, 7, 9].includes(hm)) add('guruBala', 'good');
+    if (hl === 1 || hl === 7) add('jupiterAxis', 'good');
   }
   if (planet === 'RAHU' || planet === 'KETU') {
-    if (rashi === n.moonRashi) tags.push({ label: `${BODY_LABEL[planet]} over Moon`, kind: 'bad', note: 'A node on the natal Moon unsettles the mind and emotions; keep routines steady.' });
-    if (rashi === n.lagnaRashi) tags.push({ label: `${BODY_LABEL[planet]} on Ascendant`, kind: 'mixed', note: 'A node on the Ascendant rewires identity and direction over about 18 months.' });
-    if (planet === 'RAHU' && natal.RAHU === rashi) tags.push({ label: 'Nodal return', kind: 'mixed', note: 'The nodes return to their birth positions (about every 18.6 years): a destiny reset.' });
-    if (planet === 'RAHU' && natal.KETU === rashi) tags.push({ label: 'Nodal reversal', kind: 'mixed', note: 'The nodes sit on their birth opposites: old patterns are turned inside out.' });
+    if (rashi === n.moonRashi) add('nodeOverMoon', 'bad', bodyName(planet));
+    if (rashi === n.lagnaRashi) add('nodeOnAsc', 'mixed', bodyName(planet));
+    if (planet === 'RAHU' && natal.RAHU === rashi) add('nodalReturn', 'mixed');
+    if (planet === 'RAHU' && natal.KETU === rashi) add('nodalReversal', 'mixed');
   }
-  if (planet === 'SUN' && natal.SUN === rashi) {
-    tags.push({ label: 'Solar return', kind: 'good', note: 'The Sun back in its birth sign: your birthday month and a fresh annual cycle.' });
-  }
+  if (planet === 'SUN' && natal.SUN === rashi) add('solarReturn', 'good');
   if (planet === 'MARS') {
-    if (rashi === n.moonRashi) tags.push({ label: 'Mars over Moon', kind: 'bad', note: 'Mars on the natal Moon: irritability, heat and haste. Cool down before acting.' });
-    if ([1, 7, 8].includes(hl)) tags.push({ label: 'Kuja transit', kind: 'bad', note: 'Mars through the 1st, 7th or 8th: arguments, accidents and inflammation need care.' });
+    if (rashi === n.moonRashi) add('marsOverMoon', 'bad');
+    if ([1, 7, 8].includes(hl)) add('kujaTransit', 'bad');
   }
   return tags;
 }
+
+const sel = (r: Record<Lang, string>, lang: Lang) => r[lang] ?? r.en;
+
+/** Localised labels — the English AREA_LABEL / BODY_LABEL / HOUSE_THEME stay for callers that want them. */
+export const areaLabel = (a: ImpactArea, lang: Lang = 'en') => sel(AREA_NAME[a], lang);
+export const bodyLabel = (b: TransitBody, lang: Lang = 'en') => planetName(titleCase(b), lang);
+export const houseTheme = (h: number, lang: Lang = 'en') => sel(HOUSE_THEME_T[h], lang);
+export { houseThemeShort };
 
 function dashaLinks(planet: TransitBody, startMs: number, endMs: number, spans: DashaSpan[]): DashaLink[] {
   const lord = titleCase(planet);
@@ -247,6 +231,15 @@ function dashaLinks(planet: TransitBody, startMs: number, endMs: number, spans: 
     if (a < endMs && b > startMs && !hits.some(h => h.level === s.level)) hits.push({ level: s.level, lord });
   }
   return hits;
+}
+
+/** NatalContext (upper-case keys) → the Erashtaka scorer's chart shape. */
+function erashtakaChartFromNatal(n: NatalContext): ErashtakaChart {
+  const natalRashis: Record<string, number> = {};
+  for (const [k, r] of Object.entries(n.natalRashi)) {
+    if (k !== 'ASCENDANT') natalRashis[titleCase(k)] = r;
+  }
+  return { moonRashi: n.moonRashi, lagnaRashi: n.lagnaRashi, natalRashis, saturnBhinna: n.bhinna?.Saturn, sarva: n.sarva };
 }
 
 /**
@@ -260,6 +253,7 @@ export function buildSegments(
   lons: number[],
   natal: NatalContext,
   dashaSpans: DashaSpan[] = [],
+  lang: Lang = 'en',
 ): TransitSegment[] {
   const out: TransitSegment[] = [];
   if (dates.length === 0) return out;
@@ -287,7 +281,20 @@ export function buildSegments(
     const valence = valenceFromMoon(planet, hm);
     const bindus = natal.bhinna?.[titleCase(planet)]?.[rashi];
     const sarva = natal.sarva?.[rashi];
-    const score = clamp(0.7 * valence + ashtakaModifier(bindus, sarva));
+    let score = clamp(0.7 * valence + ashtakaModifier(bindus, sarva));
+    const tags = tagsFor(planet, rashi, hm, hl, natal, lang);
+
+    // Saturn 12/1/2/4/8 from the Moon: the chart-specific Erashtaka grade
+    // (dignity, Moon sign, lagna role, bindus, natal Moon) replaces the flat
+    // valence — it already folds the bindus in.
+    if (planet === 'SATURN') {
+      const er = assessErashtaka({ saturnRashi: rashi }, erashtakaChartFromNatal(natal), {}, {}, lang);
+      if (er) {
+        score = clamp(-er.intensity / 10);
+        const tag = tags.find(t => ['sadeRising', 'sadePeak', 'sadeSetting', 'ashtama', 'kantaka'].includes(t.key));
+        if (tag) tag.note += GRADED(er.levelLabel, er.intensity.toFixed(1), lang);
+      }
+    }
     const tone = toneOf(score);
 
     out.push({
@@ -303,12 +310,12 @@ export function buildSegments(
       houseFromLagna: hl,
       valence, bindus, sarva, score, tone,
       retroSpans,
-      tags: tagsFor(planet, rashi, hm, hl, natal),
-      effect: gocharaEffect(planet, hm),
+      tags,
+      effect: gocharaEffect(planet, hm, lang),
       aspects: aspectedHouses(planet, hl),
       areas: areaImpacts(planet, hl, hm, score),
       dasha: dashaLinks(planet, startMs, endMs, dashaSpans),
-      advice: ADVICE[planet][tone],
+      advice: sel(ADVICE_T[planet][tone], lang),
     });
   };
 
@@ -332,24 +339,11 @@ export interface MonthImpact {
 export type OverlayKind = 'lifts' | 'tests' | 'colours' | 'quiet';
 export type DashaTrend = 'positive' | 'negative' | 'mixed' | 'neutral';
 
-const TREND_WORD: Record<DashaTrend, string> = {
-  positive: 'favourable',
-  negative: 'challenging',
-  mixed: 'mixed',
-  neutral: 'steady',
-};
+/** Sign name for prose: the Western name in English (as before), the localised rashi otherwise. */
+const signName = (seg: TransitSegment, lang: Lang) => (lang === 'en' ? seg.westernName : rashiName(seg.rashi, lang));
 
-function ordinalEn(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
-}
-
-function joinAreas(areas: ImpactArea[]): string {
-  const names = areas.map(a => AREA_LABEL[a].toLowerCase());
-  if (names.length <= 1) return names[0] ?? '';
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+function joinAreas(areas: ImpactArea[], lang: Lang): string {
+  return joinAnd(areas.map(a => (lang === 'en' ? areaLabel(a, lang).toLowerCase() : areaLabel(a, lang))), lang);
 }
 
 /** How strongly a transit is rewriting one life-area prediction. */
@@ -361,84 +355,53 @@ export function overlayKind(value: number): OverlayKind {
 }
 
 /** One-line title for a happening transit, with the named event if there is one. */
-export function happeningHeadline(seg: TransitSegment): string {
-  const tag = seg.tags[0];
-  return tag
-    ? `${BODY_LABEL[seg.planet]} in ${seg.westernName} — ${tag.label}`
-    : `${BODY_LABEL[seg.planet]} in ${seg.westernName}`;
+export function happeningHeadline(seg: TransitSegment, lang: Lang = 'en'): string {
+  return STORY.headline(bodyLabel(seg.planet, lang), signName(seg, lang), seg.tags[0]?.label, lang);
 }
 
-/**
- * How this transit colours one dasha prediction. English only — the Transits
- * sky is not on the translated surface.
- */
+/** How this transit colours one dasha prediction. */
 export function overlaySentence(
   seg: TransitSegment,
   area: ImpactArea,
   dashaTrend?: DashaTrend,
+  lang: Lang = 'en',
 ): string {
   const kind = overlayKind(seg.areas[area]);
-  const name = BODY_LABEL[seg.planet];
-  const areaName = AREA_LABEL[area].toLowerCase();
-  const house = `${ordinalEn(seg.houseFromLagna)} house (${HOUSE_THEME[seg.houseFromLagna]})`;
-  const period = dashaTrend
-    ? `The running period looks ${TREND_WORD[dashaTrend]} for ${areaName}`
-    : null;
-
-  if (kind === 'lifts') {
-    return period
-      ? `${period}. ${name} from the ${house} adds a tailwind — results can come through more easily than the period alone would suggest.`
-      : `${name} is lifting ${areaName} from the ${house}.`;
-  }
-  if (kind === 'tests') {
-    return period
-      ? `${period}. ${name} from the ${house} is testing this area — expect slower or heavier results than the period alone would suggest.`
-      : `${name} is testing ${areaName} from the ${house}.`;
-  }
-  if (kind === 'colours') {
-    return period
-      ? `${period}. ${name} tints the result through the ${house} without taking over.`
-      : `${name} is colouring ${areaName} through the ${house}, without taking over.`;
-  }
-  return `${name} is not the main driver of ${areaName} right now.`;
+  const name = bodyLabel(seg.planet, lang);
+  const areaName = lang === 'en' ? areaLabel(area, lang).toLowerCase() : areaLabel(area, lang);
+  const house = STORY.house(ordinalNum(seg.houseFromLagna, lang), houseTheme(seg.houseFromLagna, lang), lang);
+  const period = dashaTrend ? STORY.period(areaName, dashaTrend, lang) : null;
+  if (kind === 'lifts') return STORY.lifts(period, name, areaName, house, lang);
+  if (kind === 'tests') return STORY.tests(period, name, areaName, house, lang);
+  if (kind === 'colours') return STORY.colours(period, name, areaName, house, lang);
+  return STORY.quiet(name, areaName, lang);
 }
 
 /**
- * Short English story of a happening transit against the running dasha:
- * where it sits, which predictions it rewrites, and whether it is amplified.
+ * Short story of a happening transit against the running dasha: where it
+ * sits, which predictions it rewrites, and whether it is amplified.
  */
-export function skyStory(seg: TransitSegment, dashaLabel?: string): string {
-  const name = BODY_LABEL[seg.planet];
+export function skyStory(seg: TransitSegment, dashaLabel?: string, lang: Lang = 'en'): string {
+  const name = bodyLabel(seg.planet, lang);
   const tag = seg.tags[0];
-  const loc = `in ${seg.westernName}, the ${ordinalEn(seg.houseFromMoon)} house from your Moon and the ${ordinalEn(seg.houseFromLagna)} from the Ascendant (${HOUSE_THEME[seg.houseFromLagna]})`;
+  const loc = STORY.loc({
+    sign: signName(seg, lang), hm: ordinalNum(seg.houseFromMoon, lang), hl: ordinalNum(seg.houseFromLagna, lang),
+    theme: houseTheme(seg.houseFromLagna, lang),
+  }, lang);
   const lifts = IMPACT_AREAS.filter(a => overlayKind(seg.areas[a]) === 'lifts');
   const tests = IMPACT_AREAS.filter(a => overlayKind(seg.areas[a]) === 'tests');
 
-  const lead = tag
-    ? `${tag.label} is happening now: ${name} is ${loc}.`
-    : `${name} is ${loc}.`;
-
-  let hit: string;
-  if (lifts.length && tests.length) {
-    hit = `That supports ${joinAreas(lifts)} while testing ${joinAreas(tests)} — so the running predictions in those areas will not land exactly as the dasha alone says.`;
-  } else if (lifts.length) {
-    hit = `That lifts ${joinAreas(lifts)} above what the running period alone would give.`;
-  } else if (tests.length) {
-    hit = `That tests ${joinAreas(tests)} — the running predictions in those areas come through more slowly or heavily.`;
-  } else {
-    hit = 'It tints the climate rather than rewriting any one prediction.';
-  }
-
+  const lead = tag ? STORY.leadTag(tag.label, name, loc, lang) : STORY.lead(name, loc, lang);
+  const hit = lifts.length && tests.length ? STORY.both(joinAreas(lifts, lang), joinAreas(tests, lang), lang)
+    : lifts.length ? STORY.liftsOnly(joinAreas(lifts, lang), lang)
+      : tests.length ? STORY.testsOnly(joinAreas(tests, lang), lang)
+        : pick(STORY.tints, lang);
   const dasha = seg.dasha.length
-    ? `${name} is also the lord of your ${seg.dasha.map(d => d.level.toLowerCase()).join(' and ')}, so this transit is amplified.`
-    : dashaLabel
-      ? `Your running period is ${dashaLabel}. This transit colours that period; it does not replace it.`
-      : '';
+    ? STORY.amplified(name, joinAnd(seg.dasha.map(d => pick(STORY.levelName[d.level], lang)), lang), lang)
+    : dashaLabel ? STORY.period2(dashaLabel, lang) : '';
 
   return [lead, hit, dasha].filter(Boolean).join(' ');
 }
-
-/** Month-by-month life-area climate from every transit active at mid-month. */
 export function monthlyImpact(segments: TransitSegment[], from: Date, months: number): MonthImpact[] {
   const out: MonthImpact[] = [];
   for (let m = 0; m < months; m++) {

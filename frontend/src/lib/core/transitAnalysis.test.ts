@@ -333,3 +333,49 @@ describe('buildTransitPredictions plain language', () => {
     }
   });
 });
+
+describe('transit prose in every language', () => {
+  const LANGS = ['si', 'ta', 'zh', 'hi', 'ja', 'ko', 'ar', 'ml'] as const;
+  // Exercise every card: retrograde, gandanta, war, vedha, bindus, strength, natal contact.
+  const build = (lang: 'en' | typeof LANGS[number]) => {
+    const transits: PlanetTransit[] = [
+      { ...mk('SUN', 2, 3, 1), dignity: 'exalted' }, mk('MOON', 4, 5, -1),
+      { ...mkWar('MARS', 5, 150.2), isRetrograde: true, bindus: 7 },
+      { ...mkWar('MERCURY', 5, 150.5), combust: true, bindus: 1, stationary: true },
+      { ...mk('JUPITER', 8, 9, 0), vedha: { byPlanet: 'SATURN', house: 10 }, gandanta: true },
+      mk('VENUS', 0, 1, 1), mk('SATURN', 7, 8, -1), mk('RAHU', 10, 11, 1), mk('KETU', 4, 5, -1),
+    ];
+    const g = stubGochara(transits, [nat('SUN', 7, 212)]);
+    g.moonPhase = { ...g.moonPhase, illumination: 40, nakshatra: 'Rohini', tithiName: 'Panchami' };
+    g.taraBala = computeTaraBala(3, 5, lang);
+    return buildTransitPredictions(g, computeSignAnalysis(g), { mahadasha: 'SATURN', antardasha: 'MARS' }, lang);
+  };
+  const en = build('en');
+
+  it.each(LANGS)('%s: every card is translated', lang => {
+    const got = build(lang);
+    expect(got.map(p => p.id)).toEqual(en.map(p => p.id));
+    got.forEach((p, i) => {
+      for (const f of ['title', 'plainTitle', 'plain', 'text'] as const) {
+        if (!en[i][f]) continue;
+        expect(p[f], `${p.id}.${f}`).not.toBe(en[i][f]);
+        // English connective words should not survive into other languages.
+        expect(p[f], `${p.id}.${f}`).not.toMatch(/\b(the|your|is|are|and|with|from)\b/);
+      }
+    });
+  });
+});
+
+describe('gochara phala tables', () => {
+  it('every language covers 9 planets × 12 houses', async () => {
+    const { GOCHARA_PHALA } = await import('./gocharaPhala');
+    const { GOCHARA_PHALA_I18N } = await import('./text/gocharaPhalaText');
+    for (const [lang, table] of Object.entries(GOCHARA_PHALA_I18N)) {
+      for (const planet of Object.keys(GOCHARA_PHALA)) {
+        expect(table![planet], `${lang}.${planet}`).toHaveLength(12);
+        table![planet].forEach((line, i) => expect(line, `${lang}.${planet}[${i}]`).not.toBe(GOCHARA_PHALA[planet][i]));
+      }
+    }
+    expect(Object.keys(GOCHARA_PHALA_I18N).sort()).toEqual(['ar', 'hi', 'ja', 'ko', 'ml', 'si', 'ta', 'zh']);
+  });
+});

@@ -136,3 +136,33 @@ describe('chat grounding', () => {
     expect(prompt).toContain('a house means something different in each chart');
   });
 });
+
+describe('buildChartMarkdown — new report sections', () => {
+  it('always includes the plain-language life-strength map', () => {
+    expect(MD).toContain('## Life-Strength Map (Ashtakavarga)');
+    expect(MD).toMatch(/\| 10 \| Career \|/);
+    expect(MD).toContain('### How well each planet is backed');
+  });
+
+  it('merges retrograde-split Sade Sati periods into one cycle', () => {
+    const grade = { intensity: 3, level: 'mild' as const, levelLabel: 'mild', summary: '', aggravating: ['A'], mitigating: ['M'], context: [], windows: [] };
+    const ph = (phase: 'rising' | 'peak', start: string, end: string) =>
+      ({ phase, sign: 9, signName: 'Makara', houseFromMoon: 12, start, end, grade });
+    const md = buildChartMarkdown(CHART, undefined, undefined, {
+      doshas: {
+        doshas: [{ key: 'mangal', name: 'Mangal Dosha', present: true, severity: 'mild', summary: 'S', factors: ['F'], cancellations: [], remedy: '' }],
+        sadeSati: {
+          natalMoonSign: 10, natalMoonSignName: 'Kumbha', currentlyActive: true,
+          periods: [
+            { start: '2020-01-01', end: '2020-06-01', status: 'current', cycle: 2, phases: [ph('rising', '2020-01-01', '2020-06-01')] },
+            { start: '2020-09-01', end: '2023-01-01', status: 'current', cycle: 2, phases: [ph('rising', '2020-09-01', '2021-01-01'), ph('peak', '2021-01-01', '2023-01-01')] },
+          ],
+        },
+      },
+    });
+    expect(md.match(/### Cycle 2:/g)).toHaveLength(1);
+    expect(md.match(/\*\*Rising phase\*\*/g)).toHaveLength(1);
+    expect(md).toContain('## Doshas');
+    expect(md).toContain('- Why: F');
+  });
+});

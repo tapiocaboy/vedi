@@ -131,6 +131,21 @@ function ordinalSuffix(n: number): string {
   }
 }
 
+/** A bare ordinal — "5th", "5 වන", "5-ஆம்", "第5" — for "the 5th from your Moon". */
+export function ordinalNum(n: number, lang: Lang): string {
+  switch (lang) {
+    case 'si': return `${n} වන`;
+    case 'ta': return `${n}-ஆம்`;
+    case 'zh': return `第${n}`;
+    case 'hi': return `${n}वाँ`;
+    case 'ja': return `${n}番目`;
+    case 'ko': return `${n}번째`;
+    case 'ar': return `رقم ${n}`;
+    case 'ml': return `${n}-ാം`;
+    default:   return `${n}${ordinalSuffix(n)}`;
+  }
+}
+
 /**
  * "10th house" in whichever language. Chinese/Japanese/Korean/Arabic don't
  * inflect for ordinals the way English does, so those use each language's own
