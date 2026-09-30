@@ -1,4 +1,4 @@
-import React, { useId } from 'react';
+import React from 'react';
 import { useLang } from '../i18n/LanguageContext';
 
 const PINK = 'var(--c-accent)';
@@ -8,49 +8,29 @@ interface LogoProps {
   className?: string;
 }
 
-export const Logo: React.FC<LogoProps> = ({ size = 40, className = '' }) => {
-  const uid = useId().replace(/:/g, '');
-  const glowId = `g-${uid}`;
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      className={className}
-      aria-hidden
-    >
-      <defs>
-        <radialGradient id={glowId} cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
-          <stop stopColor={PINK} stopOpacity="0.18" />
-          <stop offset="1" stopColor={PINK} stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      {/* Pink rounded square */}
-      <rect width="64" height="64" rx="16" fill={PINK} />
-      <circle cx="32" cy="32" r="28" fill={`url(#${glowId})`} />
-
-      {/* Crescent moon — white */}
-      <path
-        d="M22 18a12 12 0 1 0 0 24 9 9 0 1 1 0-24z"
-        fill="white"
-      />
-
-      {/* Star — white, clean geometry */}
-      <path
-        d="M40 22l2 6.2h6.5l-5.25 3.8 2 6.2L40 34.4l-5.25 3.8 2-6.2-5.25-3.8H38z"
-        fill="white"
-      />
-
-      {/* Small sparkles */}
-      <circle cx="52" cy="14" r="2" fill="white" opacity="0.9" />
-      <circle cx="50" cy="48" r="1.5" fill="white" opacity="0.6" />
-      <circle cx="14" cy="50" r="1" fill="white" opacity="0.5" />
-    </svg>
-  );
-};
+/**
+ * Brand mark: the birth chart reduced to a diamond seal, with the native at the center.
+ * Symmetric, so it stays a mark rather than a figure.
+ */
+export const Logo: React.FC<LogoProps> = ({ size = 40, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 64 64"
+    fill="none"
+    className={className}
+    aria-hidden
+  >
+    <rect width="64" height="64" rx="16" fill={PINK} />
+    <path
+      d="M32 13L51 32L32 51L13 32Z"
+      stroke="white"
+      strokeWidth="5.25"
+      strokeLinejoin="round"
+    />
+    <circle cx="32" cy="32" r="3.15" fill="white" />
+  </svg>
+);
 
 interface BrandTitleProps {
   isLight?: boolean;
