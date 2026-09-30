@@ -702,17 +702,21 @@ function AppContent() {
                   {activeTab === 'yogas' && birthData && (
                     <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
-                        <div className="flex items-center gap-2.5 mb-1">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        <div className="flex items-start gap-2.5 mb-5">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                             style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}
                           >
                             <Stars className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
                           </div>
-                          <h3 className="text-sm font-semibold text-white">{t('patterns.title')}</h3>
+                          <div className="min-w-0 pt-0.5">
+                            <h3 className={`text-sm font-semibold leading-tight ${isLight ? 'text-gray-900' : 'text-white'}`}>
+                              {t('patterns.title')}
+                            </h3>
+                            <p className={`text-xs mt-1 leading-relaxed ${isLight ? 'text-slate-500' : 'text-white/45'}`}>
+                              {t('patterns.subtitle')}
+                            </p>
+                          </div>
                         </div>
-                        <p className={`text-xs mb-5 ml-[2.625rem] ${isLight ? 'text-slate-400' : 'text-white/25'}`}>
-                          {t('patterns.subtitle')}
-                        </p>
                         <YogasDisplay birthData={birthData} />
                       </div>
                     </motion.div>
