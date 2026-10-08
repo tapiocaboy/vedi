@@ -23,10 +23,7 @@ import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar } from '../shared/BarCh
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
 import { AreaReadingList } from '../shared/AreaReadingList';
-import { AstroDisclosure, AreaWhyBody } from '../shared/AreaWhy';
-import { plainPeriodHeader } from '../../lib/core/plainSummary';
-import { buildAreaReading } from '../../lib/core/areaReading';
-import { READING_LABELS } from '../../lib/core/text/readingText';
+import { PlainPeriodSummary } from '../shared/PlainPeriodSummary';
 import {
   labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse, labelRashi,
 } from '../../i18n/astroLabels';
@@ -97,36 +94,6 @@ function HierarchyCard({ prediction }: { prediction: DashaPredictionData }) {
         <ProgressBar pct={prediction.overallRating * 10} color={BAR_PALETTE.gold} index={rows.length} />
         <PlainPeriodSummary prediction={prediction} />
       </div>
-    </div>
-  );
-}
-
-/** The period in plain words, with the astrology (theme line, rating breakdown) one tap away. */
-function PlainPeriodSummary({ prediction }: { prediction: DashaPredictionData }) {
-  const { lang } = useLang();
-  const L = coreLang(lang);
-  const p = prediction.currentPeriods;
-  const header = plainPeriodHeader({
-    lang: L, mahadasha: p?.mahadasha.lord ?? prediction.dashaLord, antardasha: p?.antardasha?.lord ?? prediction.antardasha,
-    overallRating: prediction.overallRating, overallPercentile: prediction.overallPercentile,
-  });
-  const reading = prediction.overallExplanation
-    ? buildAreaReading({
-        area: 'general', lang: L, score: prediction.overallScore ?? prediction.overallRating, trend: prediction.predictions.general?.trend ?? 'neutral',
-        explanation: prediction.overallExplanation, indicators: prediction.indicators, hasSky: true, mahadasha: prediction.dashaLord, overall: true,
-      })
-    : null;
-  return (
-    <div className="mt-3">
-      <p className="text-sm font-semibold text-white">{header.headline}</p>
-      <p className="text-xs text-white/65 mt-0.5 leading-relaxed">{header.line}</p>
-      {header.standing && <p className="text-xs text-white/45 mt-1">{header.standing}</p>}
-      <AstroDisclosure showLabel={READING_LABELS.showWhy[L]} hideLabel={READING_LABELS.hideWhy[L]}>
-        <div className="space-y-4">
-          <p className="text-xs text-white/65 leading-relaxed">{prediction.overallTheme}</p>
-          {reading && <AreaWhyBody reading={reading} />}
-        </div>
-      </AstroDisclosure>
     </div>
   );
 }

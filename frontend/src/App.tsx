@@ -17,7 +17,7 @@ import { DeepInsights } from './components/Insights/DeepInsights';
 import { CurrentPeriodTab } from './components/Period/CurrentPeriodTab';
 import { MatchTab } from './components/Match/MatchTab';
 import { VargaTab } from './components/Varga/VargaTab';
-import { KnowledgeGraph } from './components/Graph/KnowledgeGraph';
+import { LifeOutlookTab } from './components/Graph/LifeOutlookTab';
 import TransitImpactTab from './components/Transits/TransitImpactTab';
 import { DoshaTab } from './components/Dosha/DoshaTab';
 import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModal';
@@ -736,10 +736,10 @@ function AppContent() {
                     </motion.div>
                   )}
 
-                  {/* ── Knowledge Graph (entities critical for now) ─ */}
+                  {/* ── Graph: life in chapters + the year ahead ── */}
                   {activeTab === 'graph' && birthData && (
                     <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <KnowledgeGraph birthData={birthData} />
+                      <LifeOutlookTab birthData={birthData} />
                     </motion.div>
                   )}
 

@@ -20,6 +20,9 @@ import {
 } from '../lib/services/predictionService';
 import type { AshtakavargaResult } from '../lib/core/ashtakavarga';
 import { getPeriodSnapshot, type PeriodSnapshot } from '../lib/services/periodService';
+import {
+  getYearAhead as libGetYearAhead, type YearAhead, type MonthOutlook, type LifeChapter,
+} from '../lib/services/yearAheadService';
 import { getCurrentTransits, type CurrentLocation, type GocharaSnapshot } from '../lib/core/transits';
 import { getPlanetPositions as getRawPositions } from '../lib/core/ephemeris';
 import { runMatching, type MatchSummary } from '../lib/services/matchingService';
@@ -182,6 +185,12 @@ export async function healthCheck() {
 }
 
 // ─── Predictions ─────────────────────────────────────────────────────────────
+
+export type { YearAhead, MonthOutlook, LifeChapter };
+/** Life chapters plus a month-by-month reading of the coming year (Graph tab). */
+export async function getYearAhead(birthData: BirthData, monthsAhead = 12, lang?: Lang): Promise<YearAhead> {
+  return libGetYearAhead(birthData, monthsAhead, new Date(), lang ?? getStoredLang());
+}
 
 export async function getCurrentPrediction(birthData: BirthData, targetDate?: Date, lang?: Lang): Promise<DashaPredictionData> {
   return getCurrentPeriodPrediction(birthData, targetDate, lang ?? getStoredLang());
