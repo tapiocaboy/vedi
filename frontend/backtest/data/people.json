@@ -1,0 +1,2505 @@
+[
+ {
+  "id": 1,
+  "name": "Albert Einstein",
+  "famousFor": "Physicist who created the theories of special and general relativity",
+  "localBirth": "1879-03-14T11:30:00",
+  "utcBirth": "1879-03-14T10:50:00",
+  "offsetMin": 40,
+  "tzLabel": "LMT 0h40m E",
+  "place": "Ulm",
+  "country": "Germany",
+  "lat": 48.4,
+  "lon": 9.9833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1905-06-30",
+    "text": "Special relativity paper received by Annalen der Physik",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1915-11-25",
+    "text": "Presented general relativity field equations to the Prussian Academy",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1922-11-09",
+    "text": "Awarded the 1921 Nobel Prize in Physics",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1933-10-17",
+    "text": "Arrived in the USA to join Princeton Institute for Advanced Study",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1955-04-18",
+  "deathKind": "died"
+ },
+ {
+  "id": 2,
+  "name": "Steve Jobs",
+  "famousFor": "Cofounder and CEO of Apple; launched the Mac and iPhone",
+  "localBirth": "1955-02-24T19:15:00",
+  "utcBirth": "1955-02-25T03:15:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "San Francisco California",
+  "country": "USA",
+  "lat": 37.7833,
+  "lon": -122.4167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1976-04-01",
+    "text": "Founded Apple with Steve Wozniak",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1984-01-24",
+    "text": "Launched the Apple Macintosh",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1996-12-20",
+    "text": "Apple announced purchase of NeXT bringing Jobs back",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2007-01-09",
+    "text": "Unveiled the first iPhone",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2011-10-05",
+  "deathKind": "died"
+ },
+ {
+  "id": 3,
+  "name": "Barack Obama",
+  "famousFor": "44th President of the USA and first African American president",
+  "localBirth": "1961-08-04T19:24:00",
+  "utcBirth": "1961-08-05T05:24:00",
+  "offsetMin": -600,
+  "tzLabel": "AHST 10h W",
+  "place": "Honolulu Hawaii",
+  "country": "USA",
+  "lat": 21.3,
+  "lon": -157.85,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1992-10-03",
+    "text": "Married Michelle Robinson",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2008-11-04",
+    "text": "Elected President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2009-01-20",
+    "text": "Inaugurated as 44th President",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2009-10-09",
+    "text": "Nobel Peace Prize announced",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 4,
+  "name": "Donald Trump",
+  "famousFor": "Businessman and 45th and 47th President of the USA",
+  "localBirth": "1946-06-14T10:54:00",
+  "utcBirth": "1946-06-14T14:54:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "Jamaica Queens New York",
+  "country": "USA",
+  "lat": 40.7,
+  "lon": -73.8,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "2004-01-08",
+    "text": "The Apprentice TV show premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2016-11-08",
+    "text": "Elected 45th President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2024-07-13",
+    "text": "Survived assassination attempt at Butler Pennsylvania",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2024-11-05",
+    "text": "Elected 47th President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 5,
+  "name": "Queen Elizabeth II",
+  "famousFor": "Longest reigning British monarch (70 years)",
+  "localBirth": "1926-04-21T02:40:00",
+  "utcBirth": "1926-04-21T01:40:00",
+  "offsetMin": 60,
+  "tzLabel": "BST 1h E",
+  "place": "Mayfair London",
+  "country": "UK",
+  "lat": 51.5,
+  "lon": -0.15,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1947-11-20",
+    "text": "Married Prince Philip at Westminster Abbey",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1952-02-06",
+    "text": "Became Queen on death of King George VI",
+    "cats": [
+     "A",
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1953-06-02",
+    "text": "Crowned at Westminster Abbey",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2015-09-09",
+    "text": "Became longest reigning British monarch",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2022-09-08",
+  "deathKind": "died"
+ },
+ {
+  "id": 6,
+  "name": "King Charles III",
+  "famousFor": "King of the United Kingdom since 2022",
+  "localBirth": "1948-11-14T21:14:00",
+  "utcBirth": "1948-11-14T21:14:00",
+  "offsetMin": 0,
+  "tzLabel": "GMT 0h",
+  "place": "Buckingham Palace London",
+  "country": "UK",
+  "lat": 51.5,
+  "lon": -0.1333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1969-07-01",
+    "text": "Invested as Prince of Wales at Caernarfon Castle",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1981-07-29",
+    "text": "Married Lady Diana Spencer",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2022-09-08",
+    "text": "Became King on death of Queen Elizabeth II",
+    "cats": [
+     "A",
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2023-05-06",
+    "text": "Crowned at Westminster Abbey",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 7,
+  "name": "Diana Princess of Wales",
+  "famousFor": "Princess of Wales and global humanitarian icon",
+  "localBirth": "1961-07-01T19:45:00",
+  "utcBirth": "1961-07-01T18:45:00",
+  "offsetMin": 60,
+  "tzLabel": "BST 1h E",
+  "place": "Sandringham Norfolk",
+  "country": "UK",
+  "lat": 52.8333,
+  "lon": 0.5,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1981-07-29",
+    "text": "Married Prince Charles at St Pauls Cathedral",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1982-06-21",
+    "text": "Son Prince William born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1995-11-20",
+    "text": "BBC Panorama interview broadcast",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1996-08-28",
+    "text": "Divorce from Charles finalised",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1997-08-31",
+  "deathKind": "died"
+ },
+ {
+  "id": 8,
+  "name": "Prince William",
+  "famousFor": "Prince of Wales and heir to the British throne",
+  "localBirth": "1982-06-21T21:03:00",
+  "utcBirth": "1982-06-21T20:03:00",
+  "offsetMin": 60,
+  "tzLabel": "BST 1h E",
+  "place": "Paddington London",
+  "country": "UK",
+  "lat": 51.5167,
+  "lon": -0.1667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1997-08-31",
+    "text": "Mother Diana died in Paris",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2011-04-29",
+    "text": "Married Catherine Middleton",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2013-07-22",
+    "text": "Son Prince George born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2022-09-09",
+    "text": "Created Prince of Wales",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 9,
+  "name": "Prince Harry",
+  "famousFor": "Duke of Sussex and author of memoir Spare",
+  "localBirth": "1984-09-15T16:20:00",
+  "utcBirth": "1984-09-15T15:20:00",
+  "offsetMin": 60,
+  "tzLabel": "BST 1h E",
+  "place": "Paddington London",
+  "country": "UK",
+  "lat": 51.5167,
+  "lon": -0.1667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "2018-05-19",
+    "text": "Married Meghan Markle at Windsor",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2019-05-06",
+    "text": "Son Archie born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2020-01-08",
+    "text": "Announced stepping back from royal duties",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2023-01-10",
+    "text": "Memoir Spare published",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 10,
+  "name": "Queen Victoria",
+  "famousFor": "British monarch for 63 years and Empress of India",
+  "localBirth": "1819-05-24T04:15:00",
+  "utcBirth": "1819-05-24T04:16:00",
+  "offsetMin": -1,
+  "tzLabel": "LMT 0h01m W",
+  "place": "Kensington Palace London",
+  "country": "UK",
+  "lat": 51.5,
+  "lon": -0.1833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1837-06-20",
+    "text": "Became Queen of the United Kingdom",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1840-02-10",
+    "text": "Married Prince Albert",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1861-12-14",
+    "text": "Prince Albert died",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1876-05-01",
+    "text": "Assumed title Empress of India",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1901-01-22",
+  "deathKind": "died"
+ },
+ {
+  "id": 11,
+  "name": "John F Kennedy",
+  "famousFor": "35th President of the USA",
+  "localBirth": "1917-05-29T15:00:00",
+  "utcBirth": "1917-05-29T20:00:00",
+  "offsetMin": -300,
+  "tzLabel": "EST 5h W",
+  "place": "Brookline Massachusetts",
+  "country": "USA",
+  "lat": 42.3333,
+  "lon": -71.1167,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1953-09-12",
+    "text": "Married Jacqueline Bouvier",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1960-11-08",
+    "text": "Elected President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1961-01-20",
+    "text": "Inaugurated as 35th President",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1962-10-16",
+    "text": "Cuban Missile Crisis began",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1963-11-22",
+  "deathKind": "died"
+ },
+ {
+  "id": 12,
+  "name": "Richard Nixon",
+  "famousFor": "37th President of the USA; resigned after Watergate",
+  "localBirth": "1913-01-09T21:35:00",
+  "utcBirth": "1913-01-10T05:35:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "Yorba Linda California",
+  "country": "USA",
+  "lat": 33.8833,
+  "lon": -117.8167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1968-11-05",
+    "text": "Elected President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1972-02-21",
+    "text": "Historic visit to China began",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1972-06-17",
+    "text": "Watergate break in occurred",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1974-08-09",
+    "text": "Resigned the presidency",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1994-04-22",
+  "deathKind": "died"
+ },
+ {
+  "id": 13,
+  "name": "Ronald Reagan",
+  "famousFor": "Actor and 40th President of the USA",
+  "localBirth": "1911-02-06T04:16:00",
+  "utcBirth": "1911-02-06T10:16:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Tampico Illinois",
+  "country": "USA",
+  "lat": 41.6333,
+  "lon": -89.7833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1966-11-08",
+    "text": "Elected Governor of California",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1980-11-04",
+    "text": "Elected President of the USA",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1981-03-30",
+    "text": "Survived assassination attempt in Washington",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1987-06-12",
+    "text": "Berlin Wall speech at Brandenburg Gate",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2004-06-05",
+  "deathKind": "died"
+ },
+ {
+  "id": 14,
+  "name": "George W Bush",
+  "famousFor": "43rd President of the USA",
+  "localBirth": "1946-07-06T07:26:00",
+  "utcBirth": "1946-07-06T11:26:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "New Haven Connecticut",
+  "country": "USA",
+  "lat": 41.3,
+  "lon": -72.9333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1994-11-08",
+    "text": "Elected Governor of Texas",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2000-12-12",
+    "text": "Supreme Court decision Bush v Gore secured presidency",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2001-09-11",
+    "text": "September 11 attacks during his presidency",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2003-03-20",
+    "text": "Iraq invasion began",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 15,
+  "name": "Kamala Harris",
+  "famousFor": "49th Vice President of the USA",
+  "localBirth": "1964-10-20T21:28:00",
+  "utcBirth": "1964-10-21T04:28:00",
+  "offsetMin": -420,
+  "tzLabel": "PDT 7h W",
+  "place": "Oakland California",
+  "country": "USA",
+  "lat": 37.8,
+  "lon": -122.2667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "2010-11-02",
+    "text": "Elected Attorney General of California",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2016-11-08",
+    "text": "Elected US Senator for California",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2021-01-20",
+    "text": "Sworn in as first female Vice President",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2024-07-21",
+    "text": "Became Democratic presidential candidate after Biden withdrew",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 16,
+  "name": "Winston Churchill",
+  "famousFor": "British Prime Minister who led Britain in World War II",
+  "localBirth": "1874-11-30T01:30:00",
+  "utcBirth": "1874-11-30T01:35:00",
+  "offsetMin": -5,
+  "tzLabel": "LMT 0h05m W",
+  "place": "Blenheim Palace Woodstock",
+  "country": "UK",
+  "lat": 51.8333,
+  "lon": -1.35,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1908-09-12",
+    "text": "Married Clementine Hozier",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1940-05-10",
+    "text": "Became Prime Minister",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1951-10-26",
+    "text": "Returned as Prime Minister",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1953-12-10",
+    "text": "Awarded Nobel Prize in Literature",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1965-01-24",
+  "deathKind": "died"
+ },
+ {
+  "id": 17,
+  "name": "Charles de Gaulle",
+  "famousFor": "Free French leader and founder of the Fifth Republic",
+  "localBirth": "1890-11-22T04:00:00",
+  "utcBirth": "1890-11-22T03:48:00",
+  "offsetMin": 12,
+  "tzLabel": "LMT 0h12m E",
+  "place": "Lille",
+  "country": "France",
+  "lat": 50.6333,
+  "lon": 3.0667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1940-06-18",
+    "text": "Broadcast Appeal of 18 June from London",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1944-08-26",
+    "text": "Led liberation parade in Paris",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1959-01-08",
+    "text": "Became President of the Fifth Republic",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1969-04-28",
+    "text": "Resigned the presidency",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1970-11-09",
+  "deathKind": "died"
+ },
+ {
+  "id": 18,
+  "name": "Martin Luther King Jr",
+  "famousFor": "Civil rights leader and Nobel Peace laureate",
+  "localBirth": "1929-01-15T12:00:00",
+  "utcBirth": "1929-01-15T18:00:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Atlanta Georgia",
+  "country": "USA",
+  "lat": 33.75,
+  "lon": -84.3833,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1955-12-05",
+    "text": "Montgomery bus boycott began under his leadership",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1963-08-28",
+    "text": "Delivered I Have a Dream speech in Washington",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1964-12-10",
+    "text": "Received Nobel Peace Prize",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1965-03-21",
+    "text": "Selma to Montgomery march began",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1968-04-04",
+  "deathKind": "died"
+ },
+ {
+  "id": 19,
+  "name": "Neil Armstrong",
+  "famousFor": "First human to walk on the Moon",
+  "localBirth": "1930-08-05T00:31:00",
+  "utcBirth": "1930-08-05T05:31:00",
+  "offsetMin": -300,
+  "tzLabel": "EST 5h W",
+  "place": "Wapakoneta Ohio",
+  "country": "USA",
+  "lat": 40.5667,
+  "lon": -84.2,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1962-09-17",
+    "text": "Selected as NASA astronaut",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1966-03-16",
+    "text": "Commanded Gemini 8 and first space docking",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1969-07-16",
+    "text": "Apollo 11 launched",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1969-07-20",
+    "text": "Became first person to walk on the Moon",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2012-08-25",
+  "deathKind": "died"
+ },
+ {
+  "id": 20,
+  "name": "Marilyn Monroe",
+  "famousFor": "Hollywood actress and screen icon",
+  "localBirth": "1926-06-01T09:30:00",
+  "utcBirth": "1926-06-01T17:30:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "Los Angeles California",
+  "country": "USA",
+  "lat": 34.05,
+  "lon": -118.25,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1942-06-19",
+    "text": "Married James Dougherty",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1954-01-14",
+    "text": "Married Joe DiMaggio",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1956-06-29",
+    "text": "Married Arthur Miller",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1962-05-19",
+    "text": "Sang birthday song to JFK at Madison Square Garden",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1962-08-04",
+  "deathKind": "died"
+ },
+ {
+  "id": 21,
+  "name": "Elvis Presley",
+  "famousFor": "King of Rock and Roll",
+  "localBirth": "1935-01-08T04:35:00",
+  "utcBirth": "1935-01-08T10:35:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Tupelo Mississippi",
+  "country": "USA",
+  "lat": 34.25,
+  "lon": -88.7,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1954-07-05",
+    "text": "Recorded That's All Right at Sun Studio",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1956-09-09",
+    "text": "First Ed Sullivan Show appearance",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1958-03-24",
+    "text": "Inducted into the US Army",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1967-05-01",
+    "text": "Married Priscilla Beaulieu",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1977-08-16",
+  "deathKind": "died"
+ },
+ {
+  "id": 22,
+  "name": "John Lennon",
+  "famousFor": "Founder and singer songwriter of The Beatles",
+  "localBirth": "1940-10-09T18:30:00",
+  "utcBirth": "1940-10-09T17:30:00",
+  "offsetMin": 60,
+  "tzLabel": "BST 1h E",
+  "place": "Liverpool",
+  "country": "UK",
+  "lat": 53.4167,
+  "lon": -2.9167,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1957-07-06",
+    "text": "Met Paul McCartney",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1964-02-09",
+    "text": "Beatles US debut on Ed Sullivan Show",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1969-03-20",
+    "text": "Married Yoko Ono in Gibraltar",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1970-04-10",
+    "text": "Beatles breakup made public",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1980-12-08",
+  "deathKind": "died"
+ },
+ {
+  "id": 23,
+  "name": "Madonna",
+  "famousFor": "Queen of Pop and best selling female artist",
+  "localBirth": "1958-08-16T07:05:00",
+  "utcBirth": "1958-08-16T12:05:00",
+  "offsetMin": -300,
+  "tzLabel": "EST 5h W",
+  "place": "Bay City Michigan",
+  "country": "USA",
+  "lat": 43.6,
+  "lon": -83.8833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1983-07-27",
+    "text": "Debut album Madonna released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1985-08-16",
+    "text": "Married Sean Penn",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1996-10-14",
+    "text": "Daughter Lourdes born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2000-12-22",
+    "text": "Married Guy Ritchie",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 24,
+  "name": "Bob Dylan",
+  "famousFor": "Singer songwriter and Nobel laureate in Literature",
+  "localBirth": "1941-05-24T21:05:00",
+  "utcBirth": "1941-05-25T03:05:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Duluth Minnesota",
+  "country": "USA",
+  "lat": 46.7833,
+  "lon": -92.1,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1965-07-25",
+    "text": "Went electric at Newport Folk Festival",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1966-07-29",
+    "text": "Motorcycle accident",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2012-05-29",
+    "text": "Received Presidential Medal of Freedom",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2016-10-13",
+    "text": "Nobel Prize in Literature announced",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 25,
+  "name": "Jimi Hendrix",
+  "famousFor": "Most influential electric guitarist in rock",
+  "localBirth": "1942-11-27T10:15:00",
+  "utcBirth": "1942-11-27T17:15:00",
+  "offsetMin": -420,
+  "tzLabel": "PWT 7h W",
+  "place": "Seattle Washington",
+  "country": "USA",
+  "lat": 47.6,
+  "lon": -122.3333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1961-05-31",
+    "text": "Enlisted in the US Army",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1967-05-12",
+    "text": "Album Are You Experienced released in UK",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1967-06-18",
+    "text": "Set guitar on fire at Monterey Pop Festival",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1969-08-18",
+    "text": "Closing performance at Woodstock",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1970-09-18",
+  "deathKind": "died"
+ },
+ {
+  "id": 26,
+  "name": "Kurt Cobain",
+  "famousFor": "Nirvana frontman and voice of grunge",
+  "localBirth": "1967-02-20T19:20:00",
+  "utcBirth": "1967-02-21T03:20:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "Aberdeen Washington",
+  "country": "USA",
+  "lat": 46.9833,
+  "lon": -123.8167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1991-09-24",
+    "text": "Album Nevermind released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1992-02-24",
+    "text": "Married Courtney Love",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1992-08-18",
+    "text": "Daughter Frances Bean born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1993-11-18",
+    "text": "MTV Unplugged session taped",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1994-04-05",
+  "deathKind": "died"
+ },
+ {
+  "id": 27,
+  "name": "David Bowie",
+  "famousFor": "Innovative rock musician and creator of Ziggy Stardust",
+  "localBirth": "1947-01-08T09:00:00",
+  "utcBirth": "1947-01-08T09:00:00",
+  "offsetMin": 0,
+  "tzLabel": "GMT 0h",
+  "place": "Brixton London",
+  "country": "UK",
+  "lat": 51.4667,
+  "lon": -0.1167,
+  "rodden": "A",
+  "events": [
+   {
+    "date": "1969-07-11",
+    "text": "Single Space Oddity released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1973-07-03",
+    "text": "Retired Ziggy Stardust at Hammersmith Odeon",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1992-04-24",
+    "text": "Married Iman",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2016-01-08",
+    "text": "Final album Blackstar released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2016-01-10",
+  "deathKind": "died"
+ },
+ {
+  "id": 28,
+  "name": "Whitney Houston",
+  "famousFor": "Best selling singer known as The Voice",
+  "localBirth": "1963-08-09T20:55:00",
+  "utcBirth": "1963-08-10T00:55:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "Newark New Jersey",
+  "country": "USA",
+  "lat": 40.7333,
+  "lon": -74.1667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1985-02-14",
+    "text": "Debut album Whitney Houston released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1991-01-27",
+    "text": "Sang national anthem at Super Bowl XXV",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1992-07-18",
+    "text": "Married Bobby Brown",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1992-11-25",
+    "text": "Film The Bodyguard released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2012-02-11",
+  "deathKind": "died"
+ },
+ {
+  "id": 29,
+  "name": "Prince",
+  "famousFor": "Singer songwriter and multi instrumentalist",
+  "localBirth": "1958-06-07T18:17:00",
+  "utcBirth": "1958-06-07T23:17:00",
+  "offsetMin": -300,
+  "tzLabel": "CDT 5h W",
+  "place": "Minneapolis Minnesota",
+  "country": "USA",
+  "lat": 44.9833,
+  "lon": -93.2667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1984-06-25",
+    "text": "Album Purple Rain released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1985-03-25",
+    "text": "Won Oscar for Purple Rain score",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1993-06-07",
+    "text": "Changed his name to a symbol",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2007-02-04",
+    "text": "Super Bowl XLI halftime show",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2016-04-21",
+  "deathKind": "died"
+ },
+ {
+  "id": 30,
+  "name": "Bruce Springsteen",
+  "famousFor": "Rock singer songwriter known as The Boss",
+  "localBirth": "1949-09-23T22:50:00",
+  "utcBirth": "1949-09-24T02:50:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "Long Branch New Jersey",
+  "country": "USA",
+  "lat": 40.3,
+  "lon": -73.9833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1975-08-25",
+    "text": "Album Born to Run released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1984-06-04",
+    "text": "Album Born in the USA released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1991-06-08",
+    "text": "Married Patti Scialfa",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1994-03-21",
+    "text": "Won Oscar for Streets of Philadelphia",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 31,
+  "name": "Wolfgang Amadeus Mozart",
+  "famousFor": "Classical composer and child prodigy",
+  "localBirth": "1756-01-27T20:00:00",
+  "utcBirth": "1756-01-27T19:08:00",
+  "offsetMin": 52,
+  "tzLabel": "LMT 0h52m E",
+  "place": "Salzburg",
+  "country": "Austria",
+  "lat": 47.8,
+  "lon": 13.0333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1762-10-13",
+    "text": "Performed for Empress Maria Theresa at Schonbrunn",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1782-08-04",
+    "text": "Married Constanze Weber",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1786-05-01",
+    "text": "Opera The Marriage of Figaro premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1791-09-30",
+    "text": "Opera The Magic Flute premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1791-12-05",
+  "deathKind": "died"
+ },
+ {
+  "id": 32,
+  "name": "Pablo Picasso",
+  "famousFor": "Painter who cofounded Cubism and painted Guernica",
+  "localBirth": "1881-10-25T23:15:00",
+  "utcBirth": "1881-10-25T23:33:00",
+  "offsetMin": -18,
+  "tzLabel": "LMT 0h18m W",
+  "place": "Malaga",
+  "country": "Spain",
+  "lat": 36.7167,
+  "lon": -4.4167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1901-06-24",
+    "text": "First Paris exhibition opened at Vollard gallery",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1918-07-12",
+    "text": "Married Olga Khokhlova",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1944-10-05",
+    "text": "Membership of French Communist Party announced",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1961-03-02",
+    "text": "Married Jacqueline Roque",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1973-04-08",
+  "deathKind": "died"
+ },
+ {
+  "id": 33,
+  "name": "Vincent van Gogh",
+  "famousFor": "Post Impressionist painter of Starry Night and Sunflowers",
+  "localBirth": "1853-03-30T11:00:00",
+  "utcBirth": "1853-03-30T10:41:00",
+  "offsetMin": 19,
+  "tzLabel": "LMT 0h19m E",
+  "place": "Zundert",
+  "country": "Netherlands",
+  "lat": 51.4667,
+  "lon": 4.6667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1888-02-20",
+    "text": "Arrived in Arles",
+    "cats": [
+     "T"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1888-12-23",
+    "text": "Cut off part of his left ear",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1889-05-08",
+    "text": "Entered asylum at Saint Remy",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1890-07-27",
+    "text": "Shot himself at Auvers sur Oise",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1890-07-29",
+  "deathKind": "died"
+ },
+ {
+  "id": 34,
+  "name": "Salvador Dali",
+  "famousFor": "Surrealist painter of The Persistence of Memory",
+  "localBirth": "1904-05-11T08:45:00",
+  "utcBirth": "1904-05-11T08:45:00",
+  "offsetMin": 0,
+  "tzLabel": "GMT 0h",
+  "place": "Figueres",
+  "country": "Spain",
+  "lat": 42.2667,
+  "lon": 2.9667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1934-01-30",
+    "text": "Married Gala in civil ceremony",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1936-12-14",
+    "text": "Featured on cover of Time magazine",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1974-09-28",
+    "text": "Dali Theatre Museum opened in Figueres",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1982-06-10",
+    "text": "Wife Gala died",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1989-01-23",
+  "deathKind": "died"
+ },
+ {
+  "id": 35,
+  "name": "Sigmund Freud",
+  "famousFor": "Founder of psychoanalysis",
+  "localBirth": "1856-05-06T18:30:00",
+  "utcBirth": "1856-05-06T17:17:00",
+  "offsetMin": 73,
+  "tzLabel": "LMT 1h13m E",
+  "place": "Pribor (Freiberg)",
+  "country": "Czech Republic",
+  "lat": 49.6333,
+  "lon": 18.15,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1886-04-25",
+    "text": "Opened private practice in Vienna",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1886-09-14",
+    "text": "Married Martha Bernays",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1899-11-04",
+    "text": "The Interpretation of Dreams published",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1938-06-06",
+    "text": "Arrived in London after fleeing the Nazis",
+    "cats": [
+     "U",
+     "T"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1939-09-23",
+  "deathKind": "died"
+ },
+ {
+  "id": 36,
+  "name": "Amelia Earhart",
+  "famousFor": "Aviation pioneer and first woman to fly solo across the Atlantic",
+  "localBirth": "1897-07-24T23:30:00",
+  "utcBirth": "1897-07-25T05:30:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Atchison Kansas",
+  "country": "USA",
+  "lat": 39.5667,
+  "lon": -95.1167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1928-06-18",
+    "text": "First woman to cross the Atlantic by air (as passenger)",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1931-02-07",
+    "text": "Married George Putnam",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1932-05-20",
+    "text": "Began solo transatlantic flight",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1935-01-11",
+    "text": "Began first solo flight from Hawaii to California",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1937-07-02",
+  "deathKind": "missing"
+ },
+ {
+  "id": 37,
+  "name": "Ernest Hemingway",
+  "famousFor": "Novelist and Nobel laureate in Literature",
+  "localBirth": "1899-07-21T08:00:00",
+  "utcBirth": "1899-07-21T14:00:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Oak Park Illinois",
+  "country": "USA",
+  "lat": 41.8833,
+  "lon": -87.7833,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1918-07-08",
+    "text": "Wounded on the Italian front in WWI",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1926-10-22",
+    "text": "The Sun Also Rises published",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1953-05-04",
+    "text": "Won Pulitzer Prize for The Old Man and the Sea",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1954-10-28",
+    "text": "Nobel Prize in Literature announced",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1961-07-02",
+  "deathKind": "died"
+ },
+ {
+  "id": 38,
+  "name": "Walt Disney",
+  "famousFor": "Animator and founder of The Walt Disney Company",
+  "localBirth": "1901-12-05T00:35:00",
+  "utcBirth": "1901-12-05T06:35:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Chicago Illinois",
+  "country": "USA",
+  "lat": 41.8667,
+  "lon": -87.65,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1923-10-16",
+    "text": "Founded Disney Brothers Studio",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1928-11-18",
+    "text": "Steamboat Willie premiered with Mickey Mouse",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1937-12-21",
+    "text": "Snow White and the Seven Dwarfs premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1955-07-17",
+    "text": "Disneyland opened",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1966-12-15",
+  "deathKind": "died"
+ },
+ {
+  "id": 39,
+  "name": "Leonardo DiCaprio",
+  "famousFor": "Oscar winning actor and climate activist",
+  "localBirth": "1974-11-11T02:47:00",
+  "utcBirth": "1974-11-11T10:47:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "Los Angeles California",
+  "country": "USA",
+  "lat": 34.05,
+  "lon": -118.25,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1997-12-19",
+    "text": "Titanic released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2010-07-16",
+    "text": "Inception released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2014-09-23",
+    "text": "Addressed UN Climate Summit as Messenger of Peace",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2016-02-28",
+    "text": "Won Best Actor Oscar for The Revenant",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 40,
+  "name": "Tom Cruise",
+  "famousFor": "Action film star of Top Gun and Mission Impossible",
+  "localBirth": "1962-07-03T15:06:00",
+  "utcBirth": "1962-07-03T19:06:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "Syracuse New York",
+  "country": "USA",
+  "lat": 43.05,
+  "lon": -76.15,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1986-05-16",
+    "text": "Top Gun released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1990-12-24",
+    "text": "Married Nicole Kidman",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1996-05-22",
+    "text": "Mission Impossible released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2022-05-27",
+    "text": "Top Gun Maverick released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 41,
+  "name": "Angelina Jolie",
+  "famousFor": "Oscar winning actress and humanitarian",
+  "localBirth": "1975-06-04T09:09:00",
+  "utcBirth": "1975-06-04T16:09:00",
+  "offsetMin": -420,
+  "tzLabel": "PDT 7h W",
+  "place": "Los Angeles California",
+  "country": "USA",
+  "lat": 34.05,
+  "lon": -118.25,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "2000-03-26",
+    "text": "Won Oscar for Girl Interrupted",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2001-08-27",
+    "text": "Named UNHCR Goodwill Ambassador",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2006-05-27",
+    "text": "Daughter Shiloh born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2014-08-23",
+    "text": "Married Brad Pitt",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 42,
+  "name": "Brad Pitt",
+  "famousFor": "Oscar winning actor and producer",
+  "localBirth": "1963-12-18T06:31:00",
+  "utcBirth": "1963-12-18T12:31:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Shawnee Oklahoma",
+  "country": "USA",
+  "lat": 35.3333,
+  "lon": -96.9167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1999-10-15",
+    "text": "Fight Club released",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2000-07-29",
+    "text": "Married Jennifer Aniston",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2014-08-23",
+    "text": "Married Angelina Jolie",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2020-02-09",
+    "text": "Won Oscar for Once Upon a Time in Hollywood",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 43,
+  "name": "Meryl Streep",
+  "famousFor": "Most Oscar nominated actor in history",
+  "localBirth": "1949-06-22T08:05:00",
+  "utcBirth": "1949-06-22T12:05:00",
+  "offsetMin": -240,
+  "tzLabel": "EDT 4h W",
+  "place": "Summit New Jersey",
+  "country": "USA",
+  "lat": 40.7167,
+  "lon": -74.3667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1978-09-15",
+    "text": "Married Don Gummer",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1980-04-14",
+    "text": "Won Oscar for Kramer vs Kramer",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1983-04-11",
+    "text": "Won Best Actress Oscar for Sophie's Choice",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2012-02-26",
+    "text": "Won Best Actress Oscar for The Iron Lady",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 44,
+  "name": "Marlon Brando",
+  "famousFor": "Method actor of The Godfather and On the Waterfront",
+  "localBirth": "1924-04-03T23:00:00",
+  "utcBirth": "1924-04-04T05:00:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Omaha Nebraska",
+  "country": "USA",
+  "lat": 41.2667,
+  "lon": -95.9333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1947-12-03",
+    "text": "A Streetcar Named Desire opened on Broadway",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1955-03-30",
+    "text": "Won Oscar for On the Waterfront",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1972-03-14",
+    "text": "The Godfather premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1973-03-27",
+    "text": "Declined Oscar via Sacheen Littlefeather",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2004-07-01",
+  "deathKind": "died"
+ },
+ {
+  "id": 45,
+  "name": "Clint Eastwood",
+  "famousFor": "Actor and Oscar winning director",
+  "localBirth": "1930-05-31T17:35:00",
+  "utcBirth": "1930-06-01T01:35:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "San Francisco California",
+  "country": "USA",
+  "lat": 37.7833,
+  "lon": -122.4167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1959-01-09",
+    "text": "TV series Rawhide premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1986-04-08",
+    "text": "Elected Mayor of Carmel by the Sea",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1993-03-29",
+    "text": "Won Best Director and Picture Oscars for Unforgiven",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2005-02-27",
+    "text": "Won Oscars for Million Dollar Baby",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 46,
+  "name": "Grace Kelly",
+  "famousFor": "Oscar winning actress who became Princess of Monaco",
+  "localBirth": "1929-11-12T05:31:00",
+  "utcBirth": "1929-11-12T10:31:00",
+  "offsetMin": -300,
+  "tzLabel": "EST 5h W",
+  "place": "Philadelphia Pennsylvania",
+  "country": "USA",
+  "lat": 39.95,
+  "lon": -75.1667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1955-03-30",
+    "text": "Won Oscar for The Country Girl",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1956-04-19",
+    "text": "Married Prince Rainier III of Monaco",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1957-01-23",
+    "text": "Daughter Caroline born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1958-03-14",
+    "text": "Son Albert born",
+    "cats": [
+     "C"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "1982-09-14",
+  "deathKind": "died"
+ },
+ {
+  "id": 47,
+  "name": "Muhammad Ali",
+  "famousFor": "Three time world heavyweight boxing champion",
+  "localBirth": "1942-01-17T18:35:00",
+  "utcBirth": "1942-01-18T00:35:00",
+  "offsetMin": -360,
+  "tzLabel": "CST 6h W",
+  "place": "Louisville Kentucky",
+  "country": "USA",
+  "lat": 38.25,
+  "lon": -85.7667,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1960-09-05",
+    "text": "Won Olympic gold in Rome",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1964-02-25",
+    "text": "Won world heavyweight title from Sonny Liston",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1967-04-28",
+    "text": "Refused induction into the US Army",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1974-10-30",
+    "text": "Won Rumble in the Jungle against George Foreman",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": "2016-06-03",
+  "deathKind": "died"
+ },
+ {
+  "id": 48,
+  "name": "Michael Jordan",
+  "famousFor": "Six time NBA champion basketball legend",
+  "localBirth": "1963-02-17T13:40:00",
+  "utcBirth": "1963-02-17T18:40:00",
+  "offsetMin": -300,
+  "tzLabel": "EST 5h W",
+  "place": "Brooklyn New York",
+  "country": "USA",
+  "lat": 40.6333,
+  "lon": -73.9333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1984-06-26",
+    "text": "Drafted by the Chicago Bulls",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1991-06-12",
+    "text": "Won first NBA championship",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1993-10-06",
+    "text": "Announced first retirement",
+    "cats": [
+     "U"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1998-06-14",
+    "text": "Won sixth NBA championship with final shot",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 49,
+  "name": "Tiger Woods",
+  "famousFor": "Golfer with 15 major championships",
+  "localBirth": "1975-12-30T22:50:00",
+  "utcBirth": "1975-12-31T06:50:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "Cypress California",
+  "country": "USA",
+  "lat": 33.8167,
+  "lon": -118.0333,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1996-08-27",
+    "text": "Turned professional",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1997-04-13",
+    "text": "Won first Masters at age 21",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2001-04-08",
+    "text": "Completed the Tiger Slam at the Masters",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "2019-04-14",
+    "text": "Won fifth Masters title",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   }
+  ],
+  "death": null,
+  "deathKind": "living"
+ },
+ {
+  "id": 50,
+  "name": "Bruce Lee",
+  "famousFor": "Martial artist and film star who founded Jeet Kune Do",
+  "localBirth": "1940-11-27T07:12:00",
+  "utcBirth": "1940-11-27T15:12:00",
+  "offsetMin": -480,
+  "tzLabel": "PST 8h W",
+  "place": "San Francisco California",
+  "country": "USA",
+  "lat": 37.7833,
+  "lon": -122.4167,
+  "rodden": "AA",
+  "events": [
+   {
+    "date": "1964-08-17",
+    "text": "Married Linda Emery",
+    "cats": [
+     "M"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1966-09-09",
+    "text": "The Green Hornet TV series premiered",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1971-10-03",
+    "text": "The Big Boss released in Hong Kong",
+    "cats": [
+     "A"
+    ],
+    "posthumous": false
+   },
+   {
+    "date": "1973-08-19",
+    "text": "Enter the Dragon released in the USA (posthumously)",
+    "cats": [
+     "A"
+    ],
+    "posthumous": true
+   }
+  ],
+  "death": "1973-07-20",
+  "deathKind": "died"
+ }
+]

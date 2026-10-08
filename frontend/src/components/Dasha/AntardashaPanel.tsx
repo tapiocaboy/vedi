@@ -1,5 +1,10 @@
 /**
- * Everything about one antardasha, in a single panel.
+ * Everything about one antardasha, in a single panel — plain language first.
+ *
+ * Every view leads with what a reader with no astrology needs (a headline, one
+ * sentence per sub-period, what to do when), and keeps the technical layer —
+ * weights, transit hits, house lordships, the classical judgement — behind
+ * "The astrology behind this".
  *
  * The period's outlook, remedies and activities are governed by the mahadasha
  * and antardasha lords, so they are stated once under "Outlook". The nine
@@ -41,6 +46,10 @@ import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelArea, labelTrend } from '../../i18n/astroLabels';
 import { useTheme } from '../../hooks/useTheme';
 import { PredictionBody } from './PredictionBody';
+import { AstroDisclosure, AreaWhyBody } from '../shared/AreaWhy';
+import { plainPeriodHeader, plainSubPeriodLine } from '../../lib/core/plainSummary';
+import { buildAreaReading } from '../../lib/core/areaReading';
+import { READING_LABELS, SUBPERIODS_INTRO, WINDOW_PLAIN } from '../../lib/core/text/readingText';
 
 /** Matches the app-level tab pills so the accent stays theme-driven. */
 const ACCENT = 'var(--c-accent)';
@@ -122,17 +131,10 @@ const PeriodRow: React.FC<{
             <div className="mt-1.5 font-mono text-xs text-white/50">
               {formatDate(period.start)} – {formatDate(period.end)} · {formatDays(period.days)}
             </div>
-            <p className="mt-1.5 text-xs text-white/50 line-clamp-2">{period.headline}</p>
+            <p className={`mt-1.5 text-xs text-white/65 ${expanded ? '' : 'line-clamp-2'}`}>{plainSubPeriodLine(period.lord, coreLang(lang))}</p>
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
-            <div className="text-right">
-              <div className="text-[10px] uppercase tracking-wide text-white/25">{t('depth.weight')}</div>
-              <div className="text-sm font-bold text-white font-mono">{period.weight.toFixed(1)}</div>
-              <div className="mt-1 w-16 h-1.5 rounded-full bg-white/8 overflow-hidden">
-                <div className={`h-full rounded-full ${band.bar}`} style={{ width: `${period.weight * 10}%` }} />
-              </div>
-            </div>
             {hasDetail && <TapBadge open={expanded} direction="down" />}
           </div>
         </div>
@@ -147,47 +149,8 @@ const PeriodRow: React.FC<{
             className="border-t border-white/6"
           >
             <div className="p-3 space-y-3">
-              {/* Why the window carries weight */}
-              {period.factors.length > 0 && (
-                <div>
-                  <h6 className="text-xs font-semibold text-white/70 mb-2 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-violet-400" />
-                    {t('depth.factors')}
-                  </h6>
-                  <ul className="space-y-1.5">
-                    {period.factors.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs">
-                        <span className="font-mono text-violet-400 shrink-0 w-10 text-right">+{f.points.toFixed(1)}</span>
-                        <span className="text-white/50">
-                          <span className="text-white/70 font-medium">{f.label}</span> — {f.detail}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Dated transit events */}
-              {period.transitHits.length > 0 && (
-                <div>
-                  <h6 className="text-xs font-semibold text-white/70 mb-2 flex items-center gap-1.5">
-                    <Orbit className="w-3.5 h-3.5 text-violet-400" />
-                    {t('depth.transitEvents')}
-                  </h6>
-                  <ul className="space-y-1">
-                    {period.transitHits.map((h: TransitHit, i: number) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-white/50">
-                        <span className="font-mono text-violet-300 shrink-0">{HIT_ICON[h.kind] ?? '•'}</span>
-                        <span className="font-mono text-white/40 shrink-0">{formatDate(h.date)}</span>
-                        <span>{h.detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* What moves relative to the period outlook */}
-              {(period.trendShifts.length > 0 || period.addedDetails.length > 0) && (
+              {/* What moves relative to the period outlook — in plain words */}
+              {period.trendShifts.length > 0 && (
                 <div>
                   <h6 className="text-xs font-semibold text-white/70 mb-2 flex items-center gap-1.5">
                     <Shuffle className="w-3.5 h-3.5 text-violet-400" />
@@ -202,15 +165,70 @@ const PeriodRow: React.FC<{
                         <span className="text-violet-300">{labelTrend(s.to, lang)}</span>
                       </li>
                     ))}
-                    {period.addedDetails.map((d, i) => (
-                      <li key={`d${i}`} className="flex items-start gap-2 text-xs text-white/50">
-                        <span className="text-violet-400 mt-0.5">•</span>
-                        <span>{d}</span>
-                      </li>
-                    ))}
                   </ul>
                 </div>
               )}
+
+              <AstroDisclosure showLabel={READING_LABELS.showWhy[coreLang(lang)]} hideLabel={READING_LABELS.hideWhy[coreLang(lang)]}>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-white/50">{t('depth.weight')}</span>
+                    <span className="font-mono font-bold text-white">{period.weight.toFixed(1)}</span>
+                    <div className="w-16 h-1.5 rounded-full bg-white/8 overflow-hidden">
+                      <div className={`h-full rounded-full ${band.bar}`} style={{ width: `${period.weight * 10}%` }} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-white/55">{period.headline}</p>
+
+                  {period.factors.length > 0 && (
+                    <div>
+                      <h6 className="text-xs font-semibold text-white/70 mb-2 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-violet-400" />
+                        {t('depth.factors')}
+                      </h6>
+                      <ul className="space-y-1.5">
+                        {period.factors.map((f, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs">
+                            <span className="font-mono text-violet-400 shrink-0 w-10 text-right">+{f.points.toFixed(1)}</span>
+                            <span className="text-white/50">
+                              <span className="text-white/70 font-medium">{f.label}</span> — {f.detail}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {period.transitHits.length > 0 && (
+                    <div>
+                      <h6 className="text-xs font-semibold text-white/70 mb-2 flex items-center gap-1.5">
+                        <Orbit className="w-3.5 h-3.5 text-violet-400" />
+                        {t('depth.transitEvents')}
+                      </h6>
+                      <ul className="space-y-1">
+                        {period.transitHits.map((h: TransitHit, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-white/50">
+                            <span className="font-mono text-violet-300 shrink-0">{HIT_ICON[h.kind] ?? '•'}</span>
+                            <span className="font-mono text-white/40 shrink-0">{formatDate(h.date)}</span>
+                            <span>{h.detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {period.addedDetails.length > 0 && (
+                    <ul className="space-y-1">
+                      {period.addedDetails.map((d, i) => (
+                        <li key={`d${i}`} className="flex items-start gap-2 text-xs text-white/50">
+                          <span className="text-violet-400 mt-0.5">•</span>
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </AstroDisclosure>
             </div>
           </motion.div>
         )}
@@ -223,30 +241,61 @@ const PeriodRow: React.FC<{
 
 const WindowList: React.FC<{
   title: string;
+  /** What this kind of window is for, in plain words — said once for the list. */
+  plain: string;
   icon: React.ComponentType<{ className?: string }>;
   accent: string;
   windows: StrategyWindow[];
-}> = ({ title, icon: Icon, accent, windows }) => {
+}> = ({ title, plain, icon: Icon, accent, windows }) => {
   const { lang } = useLang();
   if (!windows.length) return null;
   return (
     <div className="p-3 bg-white/3 rounded-lg border border-white/6">
-      <h6 className={`text-xs font-semibold mb-2 flex items-center gap-1.5 ${accent}`}>
+      <h6 className={`text-xs font-semibold mb-1 flex items-center gap-1.5 ${accent}`}>
         <Icon className="w-3.5 h-3.5" />
         {title}
       </h6>
-      <ul className="space-y-2">
+      <p className="text-xs text-white/60 mb-2">{plain}</p>
+      <ul className="space-y-1.5">
         {windows.map((w, i) => (
-          <li key={i} className="text-xs">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`dasha-dot w-2 h-2 rounded-full ${DASHA_COLORS[w.lord] || 'bg-slate-500'}`} />
-              <span className="text-white/70 font-medium">{labelPlanet(w.lord, lang)}</span>
-              <span className="font-mono text-white/40">{formatDate(w.start)} – {formatDate(w.end)}</span>
-            </div>
-            <p className="text-white/50 mt-0.5 pl-4">{w.reason}</p>
+          <li key={i} className="text-xs flex items-center gap-2 flex-wrap">
+            <span className={`dasha-dot w-2 h-2 rounded-full ${DASHA_COLORS[w.lord] || 'bg-slate-500'}`} />
+            <span className="text-white/70 font-medium">{labelPlanet(w.lord, lang)}</span>
+            <span className="font-mono text-white/40">{formatDate(w.start)} – {formatDate(w.end)}</span>
           </li>
         ))}
       </ul>
+    </div>
+  );
+};
+
+/** The classical judgement of the pair: score, verdict, headline and its factors. */
+const ClassicalReading: React.FC<{ judgement: AntardashaDepthReport['judgement'] }> = ({ judgement }) => {
+  const { t } = useLang();
+  return (
+    <div>
+      <h5 className="text-xs font-semibold text-white/70 mb-1.5 flex items-center gap-2">
+        <Scale className="w-3.5 h-3.5 text-violet-400" />
+        {t('depth.classicalReading')} · {judgement.score}/10 · {t(`depth.verdict.${judgement.verdict}` as 'depth.verdict.mixed')}
+      </h5>
+      <p className="text-xs text-white/65">{judgement.headline}</p>
+      {judgement.factors.length > 0 && (
+        <div className="mt-2">
+          <h6 className="text-xs font-semibold text-white/60 mb-1.5">{t('depth.whyThisPeriod')}</h6>
+          <ul className="space-y-1.5">
+            {judgement.factors.map((f, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs">
+                <span className={`font-mono shrink-0 w-11 text-right ${f.points > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {f.points > 0 ? '+' : ''}{f.points}
+                </span>
+                <span className="text-white/50">
+                  <span className="text-white/70 font-medium">{f.label}</span> — {f.detail}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
@@ -262,7 +311,6 @@ export const AntardashaPanel: React.FC<Props> = ({
   const { lang, t } = useLang();
   const isLight = useTheme();
   const [tab, setTab] = useState<Tab>('periods');
-  const [showDefinition, setShowDefinition] = useState(false);
 
   const { data: report, isLoading } = useQuery<AntardashaDepthReport | null>({
     queryKey: ['antardashaDepth', antardashaStart, birthData, lang],
@@ -288,6 +336,19 @@ export const AntardashaPanel: React.FC<Props> = ({
   }
 
   const { strategy, prediction, judgement } = report;
+  const L = coreLang(lang);
+  const header = plainPeriodHeader({
+    lang: L, mahadasha: mahadashaLord, antardasha: antardashaLord,
+    overallRating: prediction.overallRating, overallPercentile: prediction.overallPercentile,
+  });
+  const overallReading = prediction.overallExplanation
+    ? buildAreaReading({
+        area: 'general', lang: L, score: prediction.overallScore ?? prediction.overallRating, trend: prediction.predictions.general?.trend ?? 'neutral',
+        explanation: prediction.overallExplanation, indicators: prediction.indicators, hasSky: false, mahadasha: mahadashaLord, overall: true,
+      })
+    : null;
+  const showWhy = READING_LABELS.showWhy[L];
+  const hideWhy = READING_LABELS.hideWhy[L];
 
   const TABS: Array<{ id: Tab; label: string; icon: React.ElementType }> = [
     { id: 'periods', label: t('depth.tabPeriods'), icon: CalendarRange },
@@ -301,7 +362,7 @@ export const AntardashaPanel: React.FC<Props> = ({
       animate={{ opacity: 1, y: 0 }}
       className="mt-3 glass-card rounded-lg overflow-hidden"
     >
-      {/* Period header — stated once for the whole panel */}
+      {/* Period header — stated once for the whole panel, in plain words */}
       <div className="p-4 bg-gradient-to-r from-violet-800 to-violet-700">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -311,19 +372,29 @@ export const AntardashaPanel: React.FC<Props> = ({
             <div className="font-mono text-xs text-white/70 mt-0.5">
               {formatDate(report.start)} – {formatDate(report.end)} · {formatDays(report.days)}
             </div>
-            <p className="text-white/70 text-sm mt-1.5 line-clamp-2">{prediction.overallTheme}</p>
+            <p className="text-white text-sm font-semibold mt-2">{header.headline}</p>
+            <p className="text-white/80 text-sm mt-0.5">{header.line}</p>
           </div>
           <div className="text-right shrink-0">
             <div className="text-white/70 text-xs">{t('dasha.rating')}</div>
             <div className="flex items-center gap-1 justify-end">
               <Star className="w-4 h-4 text-violet-300 fill-violet-300" />
-              <span className="font-bold text-lg text-white">{judgement.score}/10</span>
-            </div>
-            <div className="text-white/70 text-xs mt-0.5">
-              {t(`depth.verdict.${judgement.verdict}` as 'depth.verdict.mixed')}
+              <span className="font-bold text-lg text-white">{prediction.overallRating}/10</span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Where the period stands, and the astrology behind the headline */}
+      <div className="px-4 pt-3 pb-1">
+        {header.standing && <p className="text-xs text-white/55">{header.standing}</p>}
+        <AstroDisclosure showLabel={showWhy} hideLabel={hideWhy}>
+          <div className="space-y-4">
+            <p className="text-xs text-white/65 leading-relaxed">{prediction.overallTheme}</p>
+            <ClassicalReading judgement={judgement} />
+            {overallReading && <AreaWhyBody reading={overallReading} />}
+          </div>
+        </AstroDisclosure>
       </div>
 
       {/* Tabs — a segmented control on its own track, so the whole strip reads
@@ -373,49 +444,7 @@ export const AntardashaPanel: React.FC<Props> = ({
       {tab === 'periods' && (
         <div>
           <div className="p-4 pb-0">
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <p className="text-xs text-white/50">{t('depth.subtitle')}</p>
-            </div>
-
-            <button
-              onClick={() => setShowDefinition(!showDefinition)}
-              aria-expanded={showDefinition}
-              data-open={showDefinition}
-              className="tap-row tap-blink w-full py-3 pl-5 pr-3 flex items-center justify-between rounded-lg border border-white/6 transition-colors"
-              style={tapVars(undefined, 'rgba(255,255,255,0.03)')}
-            >
-              <span className="text-sm font-semibold text-white/70 flex items-center gap-2">
-                <Scale className="w-4 h-4 text-violet-400" />
-                {t('depth.whatIsWeight')}
-              </span>
-              <TapBadge open={showDefinition} direction="down" />
-            </button>
-
-            <AnimatePresence>
-              {showDefinition && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                >
-                  <ul className="mt-2 space-y-2 p-3 bg-white/3 rounded-lg border border-white/6">
-                    {report.weightDefinition.map((line, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-white/50">
-                        <span className="text-violet-400 mt-0.5">•</span>
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {strategy.peaks && (
-              <div className="mt-3 p-3 bg-violet-500/8 rounded-lg border border-violet-500/20">
-                <h5 className="text-xs font-semibold text-violet-300 mb-1">{t('depth.peaks')}</h5>
-                <p className="text-xs text-white/70">{strategy.peaks}</p>
-              </div>
-            )}
+            <p className="text-xs text-white/55">{SUBPERIODS_INTRO[L]}</p>
           </div>
 
           <div className="p-4 space-y-2">
@@ -428,44 +457,45 @@ export const AntardashaPanel: React.FC<Props> = ({
               />
             ))}
           </div>
+
+          <div className="px-4 pb-4">
+            <AstroDisclosure showLabel={showWhy} hideLabel={hideWhy}>
+              <div className="space-y-3">
+                {strategy.peaks && (
+                  <div>
+                    <h5 className="text-xs font-semibold text-violet-300 mb-1">{t('depth.peaks')}</h5>
+                    <p className="text-xs text-white/65">{strategy.peaks}</p>
+                  </div>
+                )}
+                <div>
+                  <h5 className="text-xs font-semibold text-white/70 mb-1.5 flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5 text-violet-400" />
+                    {t('depth.whatIsWeight')}
+                  </h5>
+                  <ul className="space-y-1.5">
+                    {report.weightDefinition.map((line, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-white/50">
+                        <span className="text-violet-400 mt-0.5">•</span>
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </AstroDisclosure>
+          </div>
         </div>
       )}
 
       {/* Outlook — stated once for the period */}
       {tab === 'outlook' && <PredictionBody prediction={prediction} />}
 
-      {/* Strategy */}
+      {/* Strategy — what to do, in plain words; the classical reasoning underneath */}
       {tab === 'strategy' && (
         <div className="p-4 space-y-3">
-          {/* The classical judgement the whole strategy rests on */}
-          <div className="p-3 bg-white/3 rounded-lg border border-white/6">
-            <h5 className="text-sm font-semibold text-white/70 mb-2 flex items-center gap-2">
-              <Scale className="w-4 h-4 text-violet-400" />
-              {t('depth.classicalReading')}
-            </h5>
-            <p className="text-xs text-white/70">{judgement.headline}</p>
-
-            {judgement.factors.length > 0 && (
-              <div className="mt-3">
-                <h6 className="text-xs font-semibold text-white/70 mb-2">{t('depth.whyThisPeriod')}</h6>
-                <ul className="space-y-1.5">
-                  {judgement.factors.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs">
-                      <span
-                        className={`font-mono shrink-0 w-11 text-right ${
-                          f.points > 0 ? 'text-emerald-400' : 'text-rose-400'
-                        }`}
-                      >
-                        {f.points > 0 ? '+' : ''}{f.points}
-                      </span>
-                      <span className="text-white/50">
-                        <span className="text-white/70 font-medium">{f.label}</span> — {f.detail}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          <div className="p-3 bg-violet-500/10 rounded-lg border border-violet-500/25">
+            <h6 className="text-xs font-semibold text-violet-300 mb-1">{t('depth.oneLine')}</h6>
+            <p className="text-sm text-white/85">{strategy.oneLine}</p>
           </div>
 
           <div className="p-3 bg-white/3 rounded-lg border border-white/6">
@@ -473,24 +503,26 @@ export const AntardashaPanel: React.FC<Props> = ({
               <Target className="w-4 h-4 text-emerald-400" />
               {t('depth.profitTitle')}
             </h5>
-            <div className="text-sm font-medium text-white mt-2">{strategy.stanceHeadline}</div>
-            <p className="text-xs text-white/50 mt-1">{strategy.stanceBody}</p>
+            <div className="text-sm font-medium text-white mt-1">{strategy.stanceHeadline}</div>
           </div>
 
           <WindowList
             title={t('depth.actionWindows')}
+            plain={WINDOW_PLAIN.action[L]}
             icon={Target}
             accent="text-emerald-400"
             windows={strategy.actionWindows}
           />
           <WindowList
             title={t('depth.defensiveWindows')}
+            plain={WINDOW_PLAIN.defensive[L]}
             icon={Scissors}
             accent="text-rose-400"
             windows={strategy.defensiveWindows}
           />
           <WindowList
             title={t('depth.buildWindows')}
+            plain={WINDOW_PLAIN.build[L]}
             icon={Hammer}
             accent="text-violet-300"
             windows={strategy.buildWindows}
@@ -531,10 +563,26 @@ export const AntardashaPanel: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="p-3 bg-violet-500/10 rounded-lg border border-violet-500/25">
-            <h6 className="text-xs font-semibold text-violet-300 mb-1">{t('depth.oneLine')}</h6>
-            <p className="text-sm text-white/80">{strategy.oneLine}</p>
-          </div>
+          <AstroDisclosure showLabel={showWhy} hideLabel={hideWhy}>
+            <div className="space-y-4">
+              <ClassicalReading judgement={judgement} />
+              <p className="text-xs text-white/60 leading-relaxed">{strategy.stanceBody}</p>
+              {[...strategy.actionWindows, ...strategy.defensiveWindows, ...strategy.buildWindows].length > 0 && (
+                <ul className="space-y-2">
+                  {[...strategy.actionWindows, ...strategy.defensiveWindows, ...strategy.buildWindows].map((w, i) => (
+                    <li key={i} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className={`dasha-dot w-2 h-2 rounded-full ${DASHA_COLORS[w.lord] || 'bg-slate-500'}`} />
+                        <span className="text-white/70 font-medium">{labelPlanet(w.lord, lang)}</span>
+                        <span className="font-mono text-white/40">{formatDate(w.start)}</span>
+                      </div>
+                      <p className="text-white/50 mt-0.5 pl-4">{w.reason}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </AstroDisclosure>
         </div>
       )}
     </motion.div>

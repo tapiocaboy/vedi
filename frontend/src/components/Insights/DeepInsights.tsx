@@ -3,12 +3,12 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { addYears, format, differenceInYears } from 'date-fns';
 import {
   Loader2, Layers, AlertTriangle, Sparkles,
-  Heart, Briefcase, Wallet, Users, Star, Zap, Info, Orbit, CalendarDays, CalendarClock, RotateCcw,
+  Star, Zap, Info, Orbit, CalendarDays, CalendarClock, RotateCcw,
 } from 'lucide-react';
 import { getSookshmaPeriods, getCurrentPrediction, getGochara } from '../../services/api';
 import type { BirthData, DashaPredictionData, LordStrengthData, GocharaSnapshot, PlanetTransit } from '../../services/api';
@@ -19,11 +19,16 @@ import { ZodiacEffectsCard } from '../Transits/ZodiacEffectsCard';
 import { TransitPredictionCards } from '../shared/TransitPredictionCards';
 import { RASHIS, PLANET_SYMBOLS, PLANET_COLORS } from '../../types/astrology';
 import { PanchangaTab } from '../Panchanga/PanchangaTab';
-import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar, TREND_HEX } from '../shared/BarCharts';
+import { BAR_PALETTE, DashaBarRow, LORD_HEX, ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
+import { AreaReadingList } from '../shared/AreaReadingList';
+import { AstroDisclosure, AreaWhyBody } from '../shared/AreaWhy';
+import { plainPeriodHeader } from '../../lib/core/plainSummary';
+import { buildAreaReading } from '../../lib/core/areaReading';
+import { READING_LABELS } from '../../lib/core/text/readingText';
 import {
-  labelArea, labelTrend, labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse, labelRashi,
+  labelDashaLevel, labelPlanet, labelDignity, labelOrdinalHouse, labelRashi,
 } from '../../i18n/astroLabels';
 
 interface Props {
@@ -52,21 +57,6 @@ const PLANET_LIGHT: Record<string, string> = {
   Saturn:  'text-sky-400',
   Rahu:    'text-slate-400',
   Ketu:    'text-orange-400',
-};
-
-const TREND_STYLES = {
-  positive: { color: TREND_HEX.positive, text: 'text-green-400' },
-  negative: { color: TREND_HEX.negative, text: 'text-red-400' },
-  mixed:    { color: TREND_HEX.mixed,    text: 'text-amber-300' },
-  neutral:  { color: TREND_HEX.neutral,  text: 'text-white/50' },
-};
-
-const AREA_META = {
-  health:        { icon: Heart,    weight: 15 },
-  wealth:        { icon: Wallet,   weight: 25 },
-  career:        { icon: Briefcase,weight: 30 },
-  relationships: { icon: Users,    weight: 20 },
-  general:       { icon: Sparkles, weight: 10 },
 };
 
 // ── Dasha Hierarchy Card (bar chart) ─────────────────────────────────────────
@@ -105,8 +95,38 @@ function HierarchyCard({ prediction }: { prediction: DashaPredictionData }) {
           <span className="text-sm font-bold text-white">{prediction.overallRating}<span className="text-white/30 font-normal">/10</span></span>
         </div>
         <ProgressBar pct={prediction.overallRating * 10} color={BAR_PALETTE.gold} index={rows.length} />
-        <p className="text-xs text-white/50 mt-2 leading-relaxed">{prediction.overallTheme}</p>
+        <PlainPeriodSummary prediction={prediction} />
       </div>
+    </div>
+  );
+}
+
+/** The period in plain words, with the astrology (theme line, rating breakdown) one tap away. */
+function PlainPeriodSummary({ prediction }: { prediction: DashaPredictionData }) {
+  const { lang } = useLang();
+  const L = coreLang(lang);
+  const p = prediction.currentPeriods;
+  const header = plainPeriodHeader({
+    lang: L, mahadasha: p?.mahadasha.lord ?? prediction.dashaLord, antardasha: p?.antardasha?.lord ?? prediction.antardasha,
+    overallRating: prediction.overallRating, overallPercentile: prediction.overallPercentile,
+  });
+  const reading = prediction.overallExplanation
+    ? buildAreaReading({
+        area: 'general', lang: L, score: prediction.overallScore ?? prediction.overallRating, trend: prediction.predictions.general?.trend ?? 'neutral',
+        explanation: prediction.overallExplanation, indicators: prediction.indicators, hasSky: true, mahadasha: prediction.dashaLord, overall: true,
+      })
+    : null;
+  return (
+    <div className="mt-3">
+      <p className="text-sm font-semibold text-white">{header.headline}</p>
+      <p className="text-xs text-white/65 mt-0.5 leading-relaxed">{header.line}</p>
+      {header.standing && <p className="text-xs text-white/45 mt-1">{header.standing}</p>}
+      <AstroDisclosure showLabel={READING_LABELS.showWhy[L]} hideLabel={READING_LABELS.hideWhy[L]}>
+        <div className="space-y-4">
+          <p className="text-xs text-white/65 leading-relaxed">{prediction.overallTheme}</p>
+          {reading && <AreaWhyBody reading={reading} />}
+        </div>
+      </AstroDisclosure>
     </div>
   );
 }
@@ -411,100 +431,14 @@ const TransitInsights: React.FC<{ gochara: GocharaSnapshot; dashaLords?: DashaLo
 // ── Area Breakdown ────────────────────────────────────────────────────────────
 
 function AreaBreakdown({ prediction }: { prediction: DashaPredictionData }) {
-  const { lang, t } = useLang();
-  const [expanded, setExpanded] = useState<string | null>(null);
-
+  const { t } = useLang();
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center gap-2 mb-4">
         <Star className="w-4 h-4 text-violet-400" />
         <span className="text-sm font-semibold text-white">{t('insights.lifeAreaTitle')}</span>
       </div>
-
-      <div className="space-y-2">
-        {Object.entries(prediction.predictions).map(([area, data]) => {
-          const meta = AREA_META[area as keyof typeof AREA_META];
-          if (!meta) return null;
-          const Icon = meta.icon;
-          const ts = TREND_STYLES[data.trend] ?? TREND_STYLES.neutral;
-          const isOpen = expanded === area;
-
-          return (
-            <div key={area} className="rounded-xl border border-white/5 overflow-hidden">
-              <button
-                onClick={() => setExpanded(isOpen ? null : area)}
-                aria-expanded={isOpen}
-                data-open={isOpen}
-                className="tap-row tap-blink w-full flex items-center gap-3 pl-5 pr-3 py-3 transition-colors text-left"
-                style={tapVars(ts.color)}
-              >
-                <Icon className="w-4 h-4 text-white/40 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-sm font-medium text-white/80">{labelArea(area, lang)}</span>
-                    <span className={`text-xs font-mono ${ts.text}`}>{labelTrend(data.trend, lang)}</span>
-                  </div>
-                  <ProgressBar pct={meta.weight * 3} color={ts.color} height="sm" index={0} animate={false} />
-                </div>
-                <TapBadge open={isOpen} direction="down" />
-              </button>
-
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="border-t border-white/5"
-                  >
-                    <div className="px-4 py-3 space-y-3">
-                      <p className="text-sm text-white/60 leading-relaxed">{data.summary}</p>
-
-                      {data.details.length > 0 && (
-                        <ul className="space-y-1">
-                          {data.details.map((d, i) => (
-                            <li key={i} className="flex items-start gap-2 text-xs text-white/45">
-                              <span className="text-violet-400 mt-0.5 shrink-0">›</span>
-                              <span>{d}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {data.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {data.keywords.map((kw, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-violet-500/8 text-violet-300 border border-violet-500/15">
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Remedies — hidden for now, kept for when they come back
-                      {data.remedies.length > 0 && (
-                        <div className="pt-1 border-t border-white/5">
-                          <p className="text-[10px] text-white/25 uppercase tracking-widest mb-1.5">{t('common.remedies')}</p>
-                          <ul className="space-y-1">
-                            {data.remedies.map((r, i) => (
-                              <li key={i} className="flex items-start gap-2 text-xs text-green-300/60">
-                                <span className="mt-0.5">✓</span>
-                                <span>{r}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      */}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </div>
+      <AreaReadingList prediction={prediction} />
     </div>
   );
 }

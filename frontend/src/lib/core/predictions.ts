@@ -1,8 +1,10 @@
 /** Dasha Prediction Engine — enhanced with planet-pair combinations and sookshma-level awareness */
 
+import { trendFor, intensityFor, ratingFor, percentileOf, type CalibratedArea } from './calibration';
 import { bindusToScoreModifier, bindusToLabel, type AshtakavargaResult, type Planet as AVPlanet, PLANETS as AV_PLANETS } from './ashtakavarga';
 import { assessPlanetStrength, type PlanetStrength } from './dashaStrength';
 import { assessNatalFoundation, type NatalFoundation, type LifeArea } from './natalFoundation';
+import { activeIndicators, type TransitSigns, type IndicatorKey, type IndicatorArea } from './classicalIndicators';
 import {
   assessCareerActivation, assessWealthActivation, careerSignature, wealthSignature, type Activation,
 } from './careerWealth';
@@ -74,6 +76,12 @@ export interface ChartContext {
   };
   /** Divisional signs per varga code, for the area-varga precedence rule. */
   divisionalRashis?: Record<string, Record<string, number>>;
+  /**
+   * Signs of transiting Jupiter, Saturn and Rahu on the day being read — lets
+   * the classical-indicator layer name double transits, Sade Sati and the like.
+   * Absent for past/future period readings, which then list dasha indicators only.
+   */
+  transitSigns?: TransitSigns;
 }
 
 // House quality per bhava (kendra/trikona/…). The display prose (theme,
@@ -86,12 +94,69 @@ const HOUSE_QUALITY: Record<number, 'kendra' | 'trikona' | 'dusthana' | 'upachay
 
 export interface PredictionResult {
   area: string;
+  /** The 1–10 area score the trend and intensity were read from. */
+  score: number;
   trend: 'positive' | 'negative' | 'mixed' | 'neutral';
   intensity: string;
   summary: string;
   details: string[];
   remedies: string[];
   keywords: string[];
+  /** How the score was put together, part by part — the "why" view. */
+  explanation?: AreaExplanation;
+}
+
+/**
+ * One additive part of an area score. The parts of an area sum, from the
+ * neutral midpoint, to its score (before the 1–10 clamp), so the "why" view can
+ * show exactly what lifted or lowered it and by how much.
+ */
+export interface ScorePart {
+  kind: 'dasha' | 'foundation' | 'activation' | 'separative' | 'subPeriod' | 'area' | 'transit';
+  /** Signed contribution in points on the 1–10 scale. */
+  points: number;
+  planet?: string;
+  /** Dasha parts: chain level, 0 maha · 1 antar · 2 pratyantar · 3 sookshma. */
+  level?: number;
+  /** Separative part: every separative lord running, top level first. */
+  planets?: string[];
+  /** General area: the life area this part summarises. */
+  area?: string;
+  /** Dasha parts: the lord's natal condition, which sets its own reading for the area. */
+  lord?: {
+    /** The lord's own 1–10 reading for the area (base, bindus, strength, lordship). */
+    areaScore: number;
+    base: number;
+    bindus: number | null;
+    dignity: string | null;
+    functionalNature: string | null;
+    natalHouse: number | null;
+    lordedHouses: number[];
+    combust: boolean;
+    retrograde: boolean;
+    neechaBhanga: boolean;
+  };
+  /** subPeriod: how the sub-period lord stands to the main lord ('pair' = a named classical pairing). */
+  relation?: 'friend' | 'enemy' | 'neutral' | 'pair';
+  /** Engine prose behind this part, already in the reader's language. */
+  notes: string[];
+}
+
+export interface AreaExplanation {
+  /** Where every area starts before any factor is counted. */
+  neutral: number;
+  parts: ScorePart[];
+  /** Share (0–100) of measured periods this area score is above. */
+  percentile: number;
+}
+
+/** A classical indicator active for this period (see classicalIndicators.ts). */
+export interface IndicatorHit {
+  key: IndicatorKey;
+  area: IndicatorArea;
+  tone: 'support' | 'strain';
+  planet?: string;
+  house?: number;
 }
 
 /** Structured natal-condition summary for a dasha lord, for UI display. */
@@ -136,6 +201,8 @@ export interface DashaPrediction {
    * has to read this rather than the displayed rating.
    */
   overallScore: number;
+  /** Share (0–100) of measured periods this one scores above — the basis of `overallRating`. */
+  overallPercentile: number;
   /**
    * How much of the rating comes from the birth chart's own promise versus the
    * running dasha. Lets the UI show *why* a strong dasha can still feel hard.
@@ -151,6 +218,14 @@ export interface DashaPrediction {
   deity: string | null;
   combinationWarning?: string;
   combinationBonus?: string;
+  /** Classical indicators active for this chain (and today's sky, when given). Descriptive — they move no score. */
+  indicators?: IndicatorHit[];
+  /**
+   * How the overall rating is put together: each area at its weight (career 30%,
+   * wealth 25%, relationships 20%, health 15%, general 10%), the classical
+   * pairing of the two period rulers, and today's transits.
+   */
+  overallExplanation?: AreaExplanation;
 }
 
 // ─── Planet significations ─────────────────────────────────────────────────
@@ -301,9 +376,6 @@ const LEVEL_KEYS = ['mahadasha', 'antardasha', 'pratyantardasha', 'sookshma'] as
 
 /** The midpoint of the 1–10 area scale — an unremarkable period on a plain chart. */
 const NEUTRAL_SCORE = 5;
-
-/** At or above this, an area genuinely reads as strong rather than workable. */
-const STRONG_SCORE = 6.5;
 
 const clampScore = (v: number) => Math.max(1, Math.min(10, v));
 
@@ -541,8 +613,9 @@ export class DashaPredictionEngine {
    * block is trimmed and flagged as potential rather than delivery — otherwise
    * a corrected score sits directly above six lines of contradicting prose.
    */
-  private _specDetails(lines: string[], score: number): string[] {
-    if (score >= STRONG_SCORE || !lines.length) return lines;
+  private _specDetails(lines: string[], score: number, area: string): string[] {
+    const band = intensityFor(this._calArea(area), score);
+    if (band === 'strong' || band === 'very strong' || !lines.length) return lines;
     return [F_POTENTIAL_ONLY[en2si(this._lang)](), ...lines.slice(0, 2)];
   }
 
@@ -565,11 +638,64 @@ export class DashaPredictionEngine {
     return null;
   }
 
-  private _trendFromScore(score: number): PredictionResult['trend'] {
-    if (score >= 7) return 'positive';
-    if (score >= 5) return 'neutral';
-    if (score >= 3) return 'mixed';
-    return 'negative';
+  /**
+   * The additive parts of an area score (see ScorePart). `preAdjust` is the score
+   * before the sub-period relationship was applied; whatever the generator added
+   * after that is reported as one 'subPeriod' part.
+   */
+  private _explain(area: string, finalScore: number, preAdjust: number, relation: ScorePart['relation']): AreaExplanation {
+    const parts: ScorePart[] = [];
+    if (area === 'general') {
+      for (const a of ['career', 'wealth', 'relationship', 'health']) {
+        parts.push({ kind: 'area', area: a === 'relationship' ? 'relationships' : a, points: (this._areaScore(a) - NEUTRAL_SCORE) / 4, notes: [] });
+      }
+    } else {
+      const chain = this._chain;
+      const w = CHAIN_WEIGHTS.slice(0, chain.length);
+      const W = w.reduce((a, b) => a + b, 0);
+      chain.forEach((lord, i) => {
+        const areaScore = this._planetScore(lord, area);
+        const st = this._strengthFor(lord);
+        parts.push({
+          kind: 'dasha', level: i, planet: lord, points: 0.6 * (w[i] / W) * (areaScore - NEUTRAL_SCORE),
+          lord: {
+            areaScore,
+            base: ((PLANET_SIGNIFICATIONS[lord] ?? {})[area + 'Score'] as number) ?? 5,
+            bindus: this._bindusForLord(lord),
+            dignity: st?.dignity ?? null,
+            functionalNature: st?.functionalNature ?? null,
+            natalHouse: st?.natalHouse ?? this._natalHouseFor(lord),
+            lordedHouses: st?.lordedHouses ?? [],
+            combust: st?.isCombust ?? false,
+            retrograde: st?.isRetrograde ?? false,
+            neechaBhanga: st?.neechaBhanga ?? false,
+          },
+          notes: st?.notes.slice(0, 2) ?? [],
+        });
+      });
+      const f = this._foundationFor(area);
+      if (f && f.score) parts.push({ kind: 'foundation', points: f.score * 0.7, notes: f.notes.slice(0, 3) });
+      const act = area === 'career' || area === 'wealth' ? this._activation[area] : null;
+      if (act && act.points) parts.push({ kind: 'activation', points: act.points, notes: act.notes.slice(0, 3) });
+      const sep = this._separativeMod();
+      if (sep) parts.push({ kind: 'separative', points: sep, planets: [...new Set(this._chain.filter(l => SEPARATIVE.has(l)))], notes: [] });
+    }
+    const adj = finalScore - preAdjust;
+    if (Math.abs(adj) > 1e-9) parts.push({ kind: 'subPeriod', points: adj, planet: this._chain[1], relation, notes: [] });
+    return { neutral: NEUTRAL_SCORE, parts, percentile: Math.round(percentileOf(this._calArea(area), finalScore)) };
+  }
+
+  /** Engine area keys → the calibration table's keys. */
+  private _calArea(area: string): CalibratedArea {
+    return area === 'relationship' ? 'relationships' : (area as CalibratedArea);
+  }
+
+  /**
+   * Label from the score's population percentile (see ./calibration), so that
+   * "positive" means the same share of periods for every area.
+   */
+  private _trendFromScore(score: number, area: string): PredictionResult['trend'] {
+    return trendFor(this._calArea(area), score);
   }
 
   private _intensityLabel(rel: string, area: string, score: number): string {
@@ -577,12 +703,9 @@ export class DashaPredictionEngine {
     // cannot deliver "very strong" in an area it never promised, no matter how
     // friendly the running lords are to each other.
     const foundation = this._foundationFor(area);
-    let key: string;
-    if (score >= 8 && !foundation?.weak) key = 'very strong';
-    else if (score >= STRONG_SCORE && !foundation?.weak) key = 'strong';
-    else if (score <= 3) key = 'very challenging';
-    else if (score <= 4.5 || rel === 'enemy') key = 'challenging';
-    else key = 'moderate';
+    let key: string = intensityFor(this._calArea(area), score);
+    if (foundation?.weak && (key === 'very strong' || key === 'strong')) key = 'moderate';
+    else if (rel === 'enemy' && key === 'moderate') key = 'challenging';
     return intensityLabel(key, this._lang);
   }
 
@@ -599,6 +722,8 @@ export class DashaPredictionEngine {
     const bodyParts = this._terms(mahadasha, 'bodyParts');
     const diseases = this._terms(mahadasha, 'diseases');
     let score = this._areaScore('health');
+    const preAdjust = score;
+    let relation: ScorePart['relation'] = 'neutral';
     const spec = HEALTH_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     const details: string[] = [];
     // The mind's natal condition leads: it is the most decisive and the most
@@ -606,7 +731,7 @@ export class DashaPredictionEngine {
     details.push(...this._foundationNotes('health', 3));
     if (bodyParts.length) details.push(F_BODY_AREAS[en2si(lang)](joinComma(bodyParts)));
     if (diseases.length) details.push(F_HEALTH_CONCERNS[en2si(lang)](joinComma(diseases.slice(0, 3))));
-    details.push(...this._specDetails(pickList(spec.details, lang), score));
+    details.push(...this._specDetails(pickList(spec.details, lang), score, 'health'));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
 
@@ -616,6 +741,7 @@ export class DashaPredictionEngine {
       const adDiseases = this._terms(antardasha, 'diseases');
       const adBodyParts = this._terms(antardasha, 'bodyParts');
       const pairEff = getPairEffect(mahadasha, antardasha);
+      relation = pairEff ? 'pair' : (rel as ScorePart['relation']);
       if (pairEff) {
         details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.health, lang)));
       } else {
@@ -641,16 +767,17 @@ export class DashaPredictionEngine {
       else if (pdRel === 'friend') details.push(F_PD_HEALTH_FRIEND[en2si(lang)](pdName));
     }
 
-    const trend = this._trendFromScore(score);
+    const trend = this._trendFromScore(score, 'health');
     const intensity = this._intensityLabel(rel, 'health', score);
     const md = planetName(mahadasha, lang);
-    const summary = score >= 7
+    const summary = trend === 'positive'
       ? F_HEALTH_SUMMARY.good[en2si(lang)](md)
-      : score >= 5
+      : trend === 'neutral'
         ? F_HEALTH_SUMMARY.balanced[en2si(lang)](md)
         : F_HEALTH_SUMMARY.priority[en2si(lang)](md);
 
-    return { area:'health', trend, intensity, summary, details, remedies, keywords:[...bodyParts, ...diseases.slice(0,2)] };
+    const explanation = this._explain('health', score, preAdjust, relation);
+    return { area:'health', score, trend, intensity, summary, details, remedies, keywords:[...bodyParts, ...diseases.slice(0,2)], explanation };
   }
 
   // ─── Wealth ───────────────────────────────────────────────────────────────
@@ -658,6 +785,8 @@ export class DashaPredictionEngine {
   generateWealthPrediction(mahadasha: string, antardasha?: string, pratyantardasha?: string): PredictionResult {
     const lang = this._lang;
     let score = this._areaScore('wealth');
+    const preAdjust = score;
+    let relation: ScorePart['relation'] = 'neutral';
     const spec = WEALTH_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     // Order: what this chart's wealth houses say (standing), why this period
     // touches them (timing), the foundation's strains and supports, and only
@@ -667,7 +796,7 @@ export class DashaPredictionEngine {
       ...(signature?.notes ?? []),
       ...this._activationNotes('wealth'),
       ...this._foundationNotes('wealth'),
-      ...this._specDetails(pickList(spec.details, lang), score),
+      ...this._specDetails(pickList(spec.details, lang), score, 'wealth'),
     ];
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
@@ -676,6 +805,7 @@ export class DashaPredictionEngine {
       rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
+      relation = pairEff ? 'pair' : (rel as ScorePart['relation']);
       if (pairEff) {
         details.unshift(pick(pairEff.wealth, lang));
         score = clampScore(score + pairEff.ratingMod * 0.5);
@@ -687,16 +817,17 @@ export class DashaPredictionEngine {
     // The pratyantar lord's own wealth score already enters through _chainScore.
     void pratyantardasha;
 
-    const trend = this._trendFromScore(score);
+    const trend = this._trendFromScore(score, 'wealth');
     const intensity = this._intensityLabel(rel, 'wealth', score);
     const md = planetName(mahadasha, lang);
-    const summary = score >= 7
+    const summary = trend === 'positive'
       ? F_WEALTH_SUMMARY.strong[en2si(lang)](md)
-      : score >= 5
+      : trend === 'neutral'
         ? F_WEALTH_SUMMARY.moderate[en2si(lang)](md)
         : F_WEALTH_SUMMARY.careful[en2si(lang)](md);
 
-    return { area:'wealth', trend, intensity, summary, details, remedies, keywords:['money','income','savings','investments','wealth'] };
+    const explanation = this._explain('wealth', score, preAdjust, relation);
+    return { area:'wealth', score, trend, intensity, summary, details, remedies, keywords:['money','income','savings','investments','wealth'], explanation };
   }
 
   // ─── Career ───────────────────────────────────────────────────────────────
@@ -704,6 +835,8 @@ export class DashaPredictionEngine {
   generateCareerPrediction(mahadasha: string, antardasha?: string, pratyantardasha?: string): PredictionResult {
     const lang = this._lang;
     let score = this._areaScore('career');
+    const preAdjust = score;
+    let relation: ScorePart['relation'] = 'neutral';
     const professions = this._terms(mahadasha, 'professions');
     const spec = CAREER_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     // The chart's own vocation leads. The dasha lord's profession list used to
@@ -716,7 +849,7 @@ export class DashaPredictionEngine {
       ...this._foundationNotes('career'),
     ];
     if (professions.length) details.push(F_CAREER_AREAS[en2si(lang)](joinComma(professions.slice(0, 4))));
-    details.push(...this._specDetails(pickList(spec.details, lang), score));
+    details.push(...this._specDetails(pickList(spec.details, lang), score, 'career'));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
 
@@ -724,6 +857,7 @@ export class DashaPredictionEngine {
       rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
+      relation = pairEff ? 'pair' : (rel as ScorePart['relation']);
       if (pairEff) {
         details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.career, lang)));
         score = clampScore(score + pairEff.ratingMod * 0.5);
@@ -740,18 +874,19 @@ export class DashaPredictionEngine {
       else if (pdRel === 'friend') details.push(F_PD_CAREER_FRIEND[en2si(lang)](pdName));
     }
 
-    const trend = this._trendFromScore(score);
+    const trend = this._trendFromScore(score, 'career');
     const intensity = this._intensityLabel(rel, 'career', score);
     const md = planetName(mahadasha, lang);
-    const summary = score >= 7
+    const summary = trend === 'positive'
       ? F_CAREER_SUMMARY.strong[en2si(lang)](md)
-      : score >= 5
+      : trend === 'neutral'
         ? F_CAREER_SUMMARY.steady[en2si(lang)](md)
         : F_CAREER_SUMMARY.patient[en2si(lang)](md);
 
     // Keywords name the chart's own fields first, the period lord's second.
     const keywords = [...new Set(['job','profession','promotion','business', ...(signature?.fields.slice(0, 3) ?? []), ...professions.slice(0,2)])];
-    return { area:'career', trend, intensity, summary, details, remedies, keywords };
+    const explanation = this._explain('career', score, preAdjust, relation);
+    return { area:'career', score, trend, intensity, summary, details, remedies, keywords, explanation };
   }
 
   // ─── Relationships ────────────────────────────────────────────────────────
@@ -759,11 +894,13 @@ export class DashaPredictionEngine {
   generateRelationshipPrediction(mahadasha: string, antardasha?: string, pratyantardasha?: string): PredictionResult {
     const lang = this._lang;
     let score = this._areaScore('relationship');
+    const preAdjust = score;
+    let relation: ScorePart['relation'] = 'neutral';
     const relationships = this._terms(mahadasha, 'relationships');
     const spec = REL_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     const details: string[] = this._foundationNotes('relationship');
     if (relationships.length) details.push(F_KEY_RELATIONSHIPS[en2si(lang)](joinComma(relationships)));
-    details.push(...this._specDetails(pickList(spec.details, lang), score));
+    details.push(...this._specDetails(pickList(spec.details, lang), score, 'relationship'));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
 
@@ -771,6 +908,7 @@ export class DashaPredictionEngine {
       rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
+      relation = pairEff ? 'pair' : (rel as ScorePart['relation']);
       if (pairEff) {
         details.push(F_SUB_PERIOD[en2si(lang)](adName, pick(pairEff.relationships, lang)));
         score = clampScore(score + pairEff.ratingMod * 0.4);
@@ -787,16 +925,17 @@ export class DashaPredictionEngine {
       else if (pdRel === 'friend') details.push(F_PD_REL_FRIEND[en2si(lang)](pdName));
     }
 
-    const trend = this._trendFromScore(score);
+    const trend = this._trendFromScore(score, 'relationship');
     const intensity = this._intensityLabel(rel, 'relationship', score);
     const md = planetName(mahadasha, lang);
-    const summary = score >= 7
+    const summary = trend === 'positive'
       ? F_REL_SUMMARY.harmony[en2si(lang)](md)
-      : score >= 5
+      : trend === 'neutral'
         ? F_REL_SUMMARY.stable[en2si(lang)](md)
         : F_REL_SUMMARY.challenging[en2si(lang)](md);
 
-    return { area:'relationships', trend, intensity, summary, details, remedies, keywords:['marriage','spouse','love','family',...relationships.slice(0,2)] };
+    const explanation = this._explain('relationship', score, preAdjust, relation);
+    return { area:'relationships', score, trend, intensity, summary, details, remedies, keywords:['marriage','spouse','love','family',...relationships.slice(0,2)], explanation };
   }
 
   // ─── General ─────────────────────────────────────────────────────────────
@@ -807,6 +946,8 @@ export class DashaPredictionEngine {
     const nature = (pd.nature as string) ?? 'neutral';
     const keywords = this._terms(mahadasha, 'keywords');
     let score = this._generalScore();
+    const preAdjust = score;
+    let relation: ScorePart['relation'] = 'neutral';
     const specSrc = GENERAL_SPEC[mahadasha] ?? { details: { en: [], si: [] }, remedies: { en: [], si: [] } };
     const spec = { details: pickList(specSrc.details, lang), remedies: pickList(specSrc.remedies, lang) };
     let rel = 'neutral';
@@ -821,6 +962,7 @@ export class DashaPredictionEngine {
       rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
       const pairEff = getPairEffect(mahadasha, antardasha);
+      relation = pairEff ? 'pair' : (rel as ScorePart['relation']);
       if (pairEff) {
         score = clampScore(score + pairEff.ratingMod * 0.5);
         if (pairEff.bonus) spec.details.unshift(`${BONUS_MARK}${pick(pairEff.bonus, lang)}`);
@@ -830,15 +972,15 @@ export class DashaPredictionEngine {
       }
     }
 
-    const trend = this._trendFromScore(score);
+    const trend = this._trendFromScore(score, 'general');
     const intensity = this._intensityLabel(rel, 'general', score);
     const md = planetName(mahadasha, lang);
     // Keyed on the score, not on the lord's natural benevolence — a benefic
     // mahadasha running a hard phase was previously still summarised as
     // "genuinely positive life experiences", contradicting its own trend.
-    const summary = score >= 6.5
+    const summary = trend === 'positive'
       ? F_GENERAL_SUMMARY.benefic[en2si(lang)](md)
-      : score <= 4.5
+      : trend === 'mixed' || trend === 'negative'
         ? F_GENERAL_SUMMARY.malefic[en2si(lang)](md)
         : F_GENERAL_SUMMARY.neutral[en2si(lang)](md);
     void nature;
@@ -848,7 +990,8 @@ export class DashaPredictionEngine {
       if (pdRel === 'friend') spec.details.push(F_SD_GENERAL_FRIEND[en2si(lang)](planetName(pratyantardasha, lang)));
     }
 
-    return { area:'general', trend, intensity, summary, details:spec.details, remedies:spec.remedies, keywords:keywords.slice(0,5) };
+    const explanation = this._explain('general', score, preAdjust, relation);
+    return { area:'general', score, trend, intensity, summary, details:spec.details, remedies:spec.remedies, keywords:keywords.slice(0,5), explanation };
   }
 
   /** Balanced life-wide score — the mean of the four measured areas. */
@@ -904,7 +1047,15 @@ export class DashaPredictionEngine {
     if (transitMod !== 0) weightedAvg = clampScore(weightedAvg + transitMod);
 
     const overallScore = Math.min(10, Math.max(1, weightedAvg));
-    const overallRating = Math.round(overallScore);
+    const overallParts: ScorePart[] = (
+      [['career', cScore, 0.30], ['wealth', wScore, 0.25], ['relationships', rScore, 0.20], ['health', hScore, 0.15], ['general', this._generalScore(), 0.10]] as const
+    ).map(([area, sc, w]) => ({ kind: 'area' as const, area, points: w * (sc - NEUTRAL_SCORE), notes: [] }));
+    if (pairEff?.ratingMod) overallParts.push({ kind: 'subPeriod', relation: 'pair', planet: antardasha, points: pairEff.ratingMod, notes: [] });
+    if (transitMod) overallParts.push({ kind: 'transit', points: transitMod, notes: (this._ctx?.transitNotes ?? []).slice(0, 3) });
+    // Decile of the population of measured periods (10 = top tenth), not the
+    // raw score rounded — see ./calibration.
+    const overallRating = ratingFor(overallScore);
+    const overallPercentile = Math.round(percentileOf('overall', overallScore));
     const nature = (pd.nature as string) ?? 'neutral';
 
     let overallTheme = pairEff
@@ -1036,7 +1187,7 @@ export class DashaPredictionEngine {
     const sig = SIG_TEXT[mahadasha];
     return {
       dashaLord: mahadasha, antardasha, pratyantardasha, sookshmaDasha,
-      periodType, overallTheme, overallRating, overallScore,
+      periodType, overallTheme, overallRating, overallScore, overallPercentile,
       natalFoundation: natalFoundation.length ? natalFoundation : undefined,
       predictions: { health, wealth, career, relationships, general },
       favorableActivities: this._favorable(mahadasha),
@@ -1048,6 +1199,11 @@ export class DashaPredictionEngine {
       deity: sig ? pick(sig.deity, lang) : ((pd.deity as string) ?? null),
       combinationWarning: pairEff?.warning ? pick(pairEff.warning, lang) : undefined,
       combinationBonus: pairEff?.bonus ? pick(pairEff.bonus, lang) : undefined,
+      overallExplanation: { neutral: NEUTRAL_SCORE, parts: overallParts, percentile: overallPercentile },
+      indicators: chartCtx
+        ? activeIndicators(this._chain, chartCtx, chartCtx.transitSigns)
+            .map(({ def, planet, house }) => ({ key: def.key, area: def.area, tone: def.tone, planet, house }))
+        : undefined,
     };
     } finally {
       this._ctx = null;

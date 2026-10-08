@@ -11,6 +11,7 @@ import {
 } from '../core/doshas';
 import { RASHIS } from '../core/rashi';
 import { VimshottariDasha } from '../core/dasha';
+import { birthInstant } from '../core/birthInstant';
 import {
   assessErashtaka, erashtakaChartFromPositions, erashtakaWindows, type DashaSpanLite,
 } from '../core/erashtaka';
@@ -70,7 +71,7 @@ export async function getDoshaReport(bd: BirthData, lang: Lang = 'en'): Promise<
     const rahu = sign(rahuLons[i]);
     return { jupiterRashi: sign(jupLons[i]), rahuRashi: rahu, ketuRashi: (rahu + 6) % 12 };
   };
-  const calc = new VimshottariDasha(positions.MOON.longitude, new Date(bd.date));
+  const calc = new VimshottariDasha(positions.MOON.longitude, birthInstant(bd));
   const spans: DashaSpanLite[] = [];
   for (const md of calc.generateMahadashaTimeline(SADE_SATI_YEARS + 1)) {
     for (const ad of calc.calculateAntardasha(md)) {

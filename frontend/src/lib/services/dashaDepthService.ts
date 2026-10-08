@@ -8,6 +8,7 @@
 
 import { getPlanetPositions } from '../core/ephemeris';
 import { VimshottariDasha, type AntardashaPeriodInfo } from '../core/dasha';
+import { birthInstant } from '../core/birthInstant';
 import { DashaPredictionEngine, type ChartContext } from '../core/predictions';
 import { type Lang, getStoredLang } from '../core/i18n';
 import { assessPlanetStrength, type PlanetStrength } from '../core/dashaStrength';
@@ -172,7 +173,7 @@ export async function getAntardashaDepth(
 ): Promise<AntardashaDepthReport | null> {
   const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
   const ctx: ChartContext = buildChartContext(positions);
-  const calc = new VimshottariDasha(positions['MOON'].longitude, new Date(bd.date));
+  const calc = new VimshottariDasha(positions['MOON'].longitude, birthInstant(bd));
 
   const located = locateAntardasha(calc, antardashaStartISO);
   if (!located) return null;

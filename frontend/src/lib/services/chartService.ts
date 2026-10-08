@@ -7,6 +7,7 @@ import { getPlanetPositions, getAyanamsaValue, type PlanetPosition as EphemerisP
 import { RASHIS } from '../core/rashi';
 import { getNakshatra } from '../core/nakshatra';
 import { VimshottariDasha } from '../core/dasha';
+import { birthInstant } from '../core/birthInstant';
 import { YogaCalculator, type YogaResult } from '../core/yogas';
 import type {
   BirthData, Chart, DashaTimeline, CurrentDasha,
@@ -79,7 +80,7 @@ export class ChartService {
 
   private async _createDashaCalc(bd: BirthData): Promise<VimshottariDasha> {
     const positions = await getPlanetPositions(bd.date, bd.latitude, bd.longitude, bd.timezone, bd.ayanamsa);
-    return new VimshottariDasha(positions['MOON'].longitude, new Date(bd.date));
+    return new VimshottariDasha(positions['MOON'].longitude, birthInstant(bd));
   }
 
   async getDashaTimeline(bd: BirthData, yearsAhead = 120): Promise<DashaTimeline> {

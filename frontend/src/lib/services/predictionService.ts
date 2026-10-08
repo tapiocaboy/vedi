@@ -4,12 +4,14 @@
 
 import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
 import { VimshottariDasha } from '../core/dasha';
+import { birthInstant } from '../core/birthInstant';
 import { DashaPredictionEngine, type DashaPrediction, type ChartContext } from '../core/predictions';
 import { type Lang, getStoredLang } from '../core/i18n';
 import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
 import { getNakshatra } from '../core/nakshatra';
 import { computeVargas } from '../core/vargas';
 import { getCurrentTransits, summarizeGocharaForPrediction } from '../core/transits';
+import { transitSignsFrom } from '../core/classicalIndicators';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
 
@@ -18,8 +20,8 @@ function toIso(d: Date): string { return d.toISOString(); }
 export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
   const predictions = Object.fromEntries(
     Object.entries(pred.predictions).map(([area, p]) => [area, {
-      trend: p.trend, intensity: p.intensity, summary: p.summary,
-      details: p.details, remedies: p.remedies, keywords: p.keywords,
+      score: p.score, trend: p.trend, intensity: p.intensity, summary: p.summary,
+      details: p.details, remedies: p.remedies, keywords: p.keywords, explanation: p.explanation,
     }])
   ) as DashaPredictionData['predictions'];
 
@@ -32,6 +34,7 @@ export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
     overallTheme: pred.overallTheme,
     overallRating: pred.overallRating,
     overallScore: pred.overallScore,
+    overallPercentile: pred.overallPercentile,
     predictions,
     favorableActivities: pred.favorableActivities,
     unfavorableActivities: pred.unfavorableActivities,
@@ -41,6 +44,8 @@ export function formatPrediction(pred: DashaPrediction): DashaPredictionData {
     remedies: { gemstone: pred.gemstone, mantra: pred.mantra, deity: pred.deity },
     combinationWarning: pred.combinationWarning,
     combinationBonus: pred.combinationBonus,
+    indicators: pred.indicators,
+    overallExplanation: pred.overallExplanation,
   };
 }
 
@@ -158,7 +163,7 @@ export async function getAshtakavargaForChart(bd: BirthData) {
 
 export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Date, lang: Lang = getStoredLang()): Promise<DashaPredictionData> {
   const { moonLon, ctx, positions } = await getCurrentDashaContext(bd);
-  const calc = new VimshottariDasha(moonLon, new Date(bd.date));
+  const calc = new VimshottariDasha(moonLon, birthInstant(bd));
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
   if ('error' in current) throw new Error(current.error);
@@ -177,6 +182,7 @@ export async function getCurrentPeriodPrediction(bd: BirthData, targetDate?: Dat
     ctx.transitNotes = transitSummary.notes;
     ctx.transitScoreMod = transitSummary.scoreMod;
     ctx.transitDiverges = transitSummary.diverges;
+    ctx.transitSigns = transitSignsFrom(gochara.transits);
     if (transitSummary.erashtaka) {
       ctx.erashtaka = { level: transitSummary.erashtaka.level, areas: transitSummary.erashtaka.areas };
     }
@@ -226,7 +232,7 @@ export interface SookshmaPeriodList {
 
 export async function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: Date): Promise<SookshmaPeriodList | null> {
   const moonLon = await getMoonLon(bd);
-  const calc = new VimshottariDasha(moonLon, new Date(bd.date));
+  const calc = new VimshottariDasha(moonLon, birthInstant(bd));
   const td = targetDate ?? new Date();
   const current = calc.getCurrentPeriods(td);
   if ('error' in current || !current.pratyantardasha) return null;
@@ -263,7 +269,7 @@ export async function getSookshmaPeriodsForCurrent(bd: BirthData, targetDate?: D
 
 export async function getTimelineWithPredictions(bd: BirthData, yearsAhead = 80, lang: Lang = getStoredLang()): Promise<unknown[]> {
   const { moonLon, ctx } = await getCurrentDashaContext(bd);
-  const calc = new VimshottariDasha(moonLon, new Date(bd.date));
+  const calc = new VimshottariDasha(moonLon, birthInstant(bd));
   const mahadashas = calc.generateMahadashaTimeline(yearsAhead);
 
   return mahadashas.map(md => {

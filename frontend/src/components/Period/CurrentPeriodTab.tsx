@@ -5,10 +5,13 @@ import { Clock, Compass, MapPin, AlertTriangle, Sparkles, Zap, ArrowRight, Loade
 import { getCurrentPeriodSnapshot, type BirthData, type CurrentLocation, type PeriodSnapshot } from '../../services/api';
 import { DashaBarRow } from '../shared/BarCharts';
 import { TransitChart } from './TransitChart';
+import { PlainSummaryCard } from './PlainSummaryCard';
+import { AstroDisclosure } from '../shared/AreaWhy';
+import { READING_LABELS } from '../../lib/core/text/readingText';
 import { UpcomingTransitsCard } from '../Transits/UpcomingTransitsCard';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
-import { labelArea, labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
+import { labelDashaLevel, labelPlanet } from '../../i18n/astroLabels';
 
 interface Props {
   birthData: BirthData;
@@ -72,9 +75,11 @@ const PeriodBanner: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
         ))}
       </div>
 
-      <p className="text-xs text-white/70 mt-5 leading-relaxed border-t border-white/6 pt-4">
-        {snap.prediction.overallTheme}
-      </p>
+      <div className="mt-5 border-t border-white/6 pt-3">
+        <AstroDisclosure showLabel={READING_LABELS.showWhy[coreLang(lang)]} hideLabel={READING_LABELS.hideWhy[coreLang(lang)]}>
+          <p className="text-xs text-white/70 leading-relaxed">{snap.prediction.overallTheme}</p>
+        </AstroDisclosure>
+      </div>
     </div>
   );
 };
@@ -310,54 +315,6 @@ const PlaybookCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
   );
 };
 
-const PredictionDetailsCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) => {
-  const { lang, t } = useLang();
-  const areas = snap.prediction.predictions;
-  const order: Array<{ key: keyof typeof areas; area: string }> = [
-    { key: 'career', area: 'career' },
-    { key: 'wealth', area: 'wealth' },
-    { key: 'relationships', area: 'relationships' },
-    { key: 'health', area: 'health' },
-    { key: 'general', area: 'general' },
-  ];
-  return (
-    <div className="glass-card rounded-2xl p-6 space-y-3">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.18)' }}>
-          <Sparkles className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-white">{t('now.periodAnalysisTitle')}</h3>
-          <p className="text-[11px] text-white/40">{t('now.periodAnalysisSubtitle')}</p>
-        </div>
-      </div>
-      {order.map(({ key, area }) => {
-        const a = areas[key];
-        if (!a) return null;
-        return (
-          <div key={key} className="rounded-xl border border-white/8 bg-black/30 p-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="text-[11px] uppercase tracking-wider text-white/50">{labelArea(area, lang)}</div>
-              <div className="text-[10px] text-white/40 font-mono">{a.intensity}</div>
-            </div>
-            <p className="text-xs text-white/85 mb-2 leading-relaxed">{a.summary}</p>
-            {a.details.length > 0 && (
-              <ul className="space-y-1">
-                {a.details.slice(0, 4).map((d, i) => (
-                  <li key={i} className="text-[11px] text-white/60 leading-relaxed flex gap-2">
-                    <span className="text-violet-400 shrink-0">•</span>
-                    <span>{d}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
   const { lang, t } = useLang();
   const [currentLocation, setCurrentLocation] = useState<CurrentLocation | null>(null);
@@ -387,6 +344,7 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+      <PlainSummaryCard snap={data} />
       <PeriodBanner snap={data} />
       <TransitChart
         gochara={data.gochara}
@@ -397,7 +355,6 @@ export const CurrentPeriodTab: React.FC<Props> = ({ birthData }) => {
         natalMoonRashi={data.gochara.natalMoonRashi}
         natalLagnaRashi={data.gochara.natalLagnaRashi}
       />
-      <PredictionDetailsCard snap={data} />
       <TransitsCard snap={data} />
       <LocationCard current={currentLocation} setCurrent={setCurrentLocation} relocation={data.relocation} />
       <PlaybookCard snap={data} />

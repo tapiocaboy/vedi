@@ -38,3 +38,6 @@ Thumbs.db
 # Misc
 *.log
 
+
+# Backtest intermediates (regenerate with backtest/comboEval.ts)
+backtest/data/combo_samples.json

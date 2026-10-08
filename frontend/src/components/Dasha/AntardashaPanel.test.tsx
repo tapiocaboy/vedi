@@ -161,33 +161,45 @@ function renderPanel() {
   );
 }
 
+const ASTRO = 'The astrology behind this';
+
 describe('AntardashaPanel', () => {
-  it('fetches the period once and names it once in the header', async () => {
+  it('leads with a plain headline and the calibrated rating; the astrology is one tap away', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
     await screen.findByText('Saturn – Ketu');
     expect(getAntardashaDepth).toHaveBeenCalledTimes(1);
-    // The header shows the antardasha-specific judgement, not the
-    // mahadasha-driven engine rating (which is 2/10 for all nine).
-    expect(screen.getByText('5.7/10')).toBeInTheDocument();
-    expect(screen.getByText('Mixed')).toBeInTheDocument();
-    expect(screen.getByText(/karmic clearing through hardship/)).toBeInTheDocument();
+    // The same calibrated 1–10 rating the rest of the app shows…
+    expect(screen.getByText('2/10')).toBeInTheDocument();
+    // …and plain words, no Sanskrit or house numbers.
+    expect(screen.getByText('A testing stretch — go slowly')).toBeInTheDocument();
+    expect(screen.getByText(/The Ketu sub-period of your Saturn main period/)).toBeInTheDocument();
+    expect(screen.queryByText(/karmic clearing through hardship/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.7\/10/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText(ASTRO)[0]);
+    expect(await screen.findByText(/karmic clearing through hardship/)).toBeInTheDocument();
+    expect(screen.getByText(/Classical reading · 5\.7\/10/)).toBeInTheDocument();
+    expect(screen.getByText('Ketu stands in the 11th from Saturn')).toBeInTheDocument();
   });
 
-  it('opens on the sub-periods tab, with weight, band and tone per window', async () => {
+  it('opens on the sub-periods tab: one plain line per window, weight kept for the astrology view', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
     await screen.findByText('Saturn – Ketu – Ketu');
     expect(screen.getByText('Saturn – Ketu – Venus')).toBeInTheDocument();
-    expect(screen.getByText('6.5')).toBeInTheDocument();
+    expect(screen.getByText(/^Ketu sets the tone — /)).toBeInTheDocument();
     expect(screen.getByText('Strong')).toBeInTheDocument();
     expect(screen.getByText('Testing')).toBeInTheDocument();
     expect(screen.getByText('Now')).toBeInTheDocument();
+    // The technical headline and the weight number are not in the collapsed row.
+    expect(screen.queryByText('Ketu runs both the antardasha and the pratyantardasha.')).not.toBeInTheDocument();
+    expect(screen.queryByText('6.5')).not.toBeInTheDocument();
   });
 
-  it('keeps remedies and activities out of the sub-period list entirely', async () => {
+  it('expands a window to what changes, with the astrology one level further down', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
@@ -196,11 +208,16 @@ describe('AntardashaPanel', () => {
     expect(screen.queryByText('Blue Sapphire')).not.toBeInTheDocument();
     expect(screen.queryByText('Long-term financial planning')).not.toBeInTheDocument();
 
-    // Expanding a window shows only what is specific to it.
     fireEvent.click(screen.getByText('Saturn – Ketu – Ketu'));
+    expect(await screen.findByText('What changes in this window')).toBeInTheDocument();
+    expect(screen.queryByText('Doubled sub-lord')).not.toBeInTheDocument();
+
+    // Header disclosure first, then the window's own.
+    const toggles = screen.getAllByText(ASTRO);
+    fireEvent.click(toggles[1]);
     expect(await screen.findByText('Doubled sub-lord')).toBeInTheDocument();
     expect(screen.getByText('Transit Saturn crosses your natal Ketu')).toBeInTheDocument();
-    expect(screen.getByText('What changes in this window')).toBeInTheDocument();
+    expect(screen.getByText('6.5')).toBeInTheDocument();
     expect(screen.queryByText('Blue Sapphire')).not.toBeInTheDocument();
   });
 
@@ -212,7 +229,7 @@ describe('AntardashaPanel', () => {
     expect(screen.getByText('Saturn – Ketu – Venus').closest('button')).toBeDisabled();
   });
 
-  it('states the outlook and activities once, under Outlook', async () => {
+  it('states the outlook and activities once, under Outlook, in plain words', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
@@ -221,6 +238,9 @@ describe('AntardashaPanel', () => {
 
     expect(await screen.findByText('Life Area Outlook')).toBeInTheDocument();
     expect(screen.getByText('Activities Guide')).toBeInTheDocument();
+    // Plain area lines, not the engine's summary.
+    expect(screen.getByText(/Avoid loans, speculation and big commitments/)).toBeInTheDocument();
+    expect(screen.queryByText('Careful financial management')).not.toBeInTheDocument();
     // Remedies are commented out of the UI for now.
     expect(screen.queryByText('Blue Sapphire')).not.toBeInTheDocument();
     expect(screen.queryByText('Om Shanaishcharaya Namah')).not.toBeInTheDocument();
@@ -228,7 +248,7 @@ describe('AntardashaPanel', () => {
     expect(screen.queryByText('Saturn – Ketu – Ketu')).not.toBeInTheDocument();
   });
 
-  it('puts the profitability framing on its own tab', async () => {
+  it('leads the strategy with plain advice and keeps the classical reasoning behind the disclosure', async () => {
     getAntardashaDepth.mockResolvedValue(REPORT);
     renderPanel();
 
@@ -236,11 +256,15 @@ describe('AntardashaPanel', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Strategy' }));
 
     expect(await screen.findByText('Consolidation, not accumulation')).toBeInTheDocument();
-    // The classical reasoning behind the stance is shown, not just the verdict.
-    expect(screen.getByText('Ketu stands in the 11th from Saturn')).toBeInTheDocument();
-    expect(screen.getByText(/rules your 9th house of fortune/)).toBeInTheDocument();
-    expect(screen.getByText(/Venus rules your 11th house of gains/)).toBeInTheDocument();
     expect(screen.getByText(/Position here so you win/)).toBeInTheDocument();
+    expect(screen.getByText(/^A window to act:/)).toBeInTheDocument();
+    expect(screen.getByText(/Venus rules your 11th house of gains/)).toBeInTheDocument();
+    expect(screen.queryByText(/rules your 9th house of fortune/)).not.toBeInTheDocument();
+
+    const toggles = screen.getAllByText(ASTRO);
+    fireEvent.click(toggles[toggles.length - 1]);
+    expect(await screen.findByText(/rules your 9th house of fortune/)).toBeInTheDocument();
+    expect(screen.getAllByText('Ketu stands in the 11th from Saturn').length).toBeGreaterThan(0);
   });
 
   it('degrades gracefully when the report cannot be built', async () => {

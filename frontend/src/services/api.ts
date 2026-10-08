@@ -1,3 +1,4 @@
+import type { AreaExplanation, IndicatorHit } from '../lib/core/predictions';
 /**
  * API surface — all calculations run locally (no HTTP backend).
  */
@@ -65,12 +66,16 @@ export type { WesternSynastryResult, WesternSynastryContact, DirectedEdges as We
 // ─── Prediction types ────────────────────────────────────────────────────────
 
 export interface AreaPrediction {
+  /** The raw 1–10 score the trend was read from (before population calibration). */
+  score?: number;
   trend: 'positive' | 'negative' | 'mixed' | 'neutral';
   intensity: string;
   summary: string;
   details: string[];
   remedies: string[];
   keywords: string[];
+  /** Additive parts of the score, for the "why" view. */
+  explanation?: AreaExplanation;
 }
 
 /** Natal-condition summary of a dasha lord (dignity, lordship, combustion…). */
@@ -112,6 +117,8 @@ export interface DashaPredictionData {
    * this rather than the rounded rating.
    */
   overallScore?: number;
+  /** Share (0–100) of measured periods this one scores above; `overallRating` is its decile. */
+  overallPercentile?: number;
   predictions: {
     health: AreaPrediction;
     wealth: AreaPrediction;
@@ -131,6 +138,10 @@ export interface DashaPredictionData {
   };
   combinationWarning?: string;
   combinationBonus?: string;
+  /** Classical indicators active now — descriptive, they move no score. */
+  indicators?: IndicatorHit[];
+  /** Additive parts of the overall rating. */
+  overallExplanation?: AreaExplanation;
   currentPeriods?: {
     mahadasha: { lord: string; start: string; end: string };
     antardasha?: { lord: string; start: string; end: string };

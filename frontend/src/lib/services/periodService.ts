@@ -8,13 +8,16 @@
  */
 
 import { VimshottariDasha } from '../core/dasha';
-import { DashaPredictionEngine, type ChartContext } from '../core/predictions';
-import { type Lang, getStoredLang } from '../core/i18n';
-import { computeAshtakavarga, type Contributor } from '../core/ashtakavarga';
+import { birthInstant } from '../core/birthInstant';
+import { DashaPredictionEngine } from '../core/predictions';
+import { type Lang, getStoredLang, planetName } from '../core/i18n';
+import { PLAYBOOK_TEXT, WEEKDAY } from '../core/text/readingText';
+import { PLANET_THEME, type PlanetKey } from '../core/text/plainSummaryText';
 import { getCurrentTransits, summarizeGocharaForPrediction, type GocharaSnapshot, type CurrentLocation } from '../core/transits';
 import { relocateChart, type RelocatedChart } from '../core/relocation';
-import { getPlanetPositions, type PlanetPosition } from '../core/ephemeris';
-import { formatPrediction } from './predictionService';
+import { getPlanetPositions } from '../core/ephemeris';
+import { formatPrediction, buildChartContext } from './predictionService';
+import { transitSignsFrom } from '../core/classicalIndicators';
 import type { BirthData } from '../../types/astrology';
 import type { DashaPredictionData } from '../../services/api';
 
@@ -24,9 +27,9 @@ function toName(canonicalKey: string): string {
   return canonicalKey.charAt(0) + canonicalKey.slice(1).toLowerCase();
 }
 
-const PLANET_WEEKDAY: Record<string, string> = {
-  Sun: 'Sunday',  Moon: 'Monday',   Mars: 'Tuesday',  Mercury: 'Wednesday',
-  Jupiter: 'Thursday', Venus: 'Friday', Saturn: 'Saturday',
+/** Weekday ruled by each planet, Sunday = 0 (indexes WEEKDAY in text/readingText). */
+const PLANET_WEEKDAY: Record<string, number> = {
+  Sun: 0, Moon: 1, Mars: 2, Mercury: 3, Jupiter: 4, Venus: 5, Saturn: 6,
 };
 
 const PLANET_FRIENDS: Record<string, string[]> = {
@@ -93,41 +96,6 @@ export interface PeriodSnapshot {
   playbook: Playbook;
 }
 
-function buildChartContext(positions: Record<string, PlanetPosition>): ChartContext {
-  const rashis: Record<Contributor, number> = { Lagna: positions['ASCENDANT'].rashi } as never;
-  rashis.Sun = positions['SUN'].rashi;
-  rashis.Moon = positions['MOON'].rashi;
-  rashis.Mars = positions['MARS'].rashi;
-  rashis.Mercury = positions['MERCURY'].rashi;
-  rashis.Jupiter = positions['JUPITER'].rashi;
-  rashis.Venus = positions['VENUS'].rashi;
-  rashis.Saturn = positions['SATURN'].rashi;
-
-  const ascRashi = positions['ASCENDANT'].rashi;
-  const planetHouses: Record<string, number> = {};
-  const planetRashis: Record<string, number> = {};
-  const planetLongitudes: Record<string, number> = {};
-  const planetRetro: Record<string, boolean> = {};
-  for (const k of PLANET_KEYS) {
-    const name = toName(k);
-    const p = positions[k];
-    planetHouses[name] = ((p.rashi - ascRashi + 12) % 12) + 1;
-    planetRashis[name] = p.rashi;
-    planetLongitudes[name] = p.longitude;
-    planetRetro[name] = p.isRetrograde;
-  }
-
-  return {
-    ashtakavarga: computeAshtakavarga(rashis),
-    planetHouses,
-    ascendantRashi: ascRashi,
-    planetRashis,
-    planetLongitudes,
-    planetRetro,
-    moonRashi: positions['MOON'].rashi,
-  };
-}
-
 function daysBetween(a: Date, b: Date): number {
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86_400_000));
 }
@@ -137,37 +105,37 @@ function buildPlaybook(
   adLord: string,
   pdLord: string | null,
   prediction: DashaPredictionData,
+  lang: Lang,
 ): Playbook {
-  const good = new Set<string>();
-  const bad = new Set<string>();
+  const good = new Set<number>();
+  const bad = new Set<number>();
 
   for (const lord of [mdLord, adLord]) {
-    if (PLANET_WEEKDAY[lord]) good.add(PLANET_WEEKDAY[lord]);
+    if (lord in PLANET_WEEKDAY) good.add(PLANET_WEEKDAY[lord]);
     for (const f of PLANET_FRIENDS[lord] ?? []) {
-      if (PLANET_WEEKDAY[f]) good.add(PLANET_WEEKDAY[f]);
+      if (f in PLANET_WEEKDAY) good.add(PLANET_WEEKDAY[f]);
     }
     for (const e of PLANET_ENEMIES[lord] ?? []) {
-      if (PLANET_WEEKDAY[e]) bad.add(PLANET_WEEKDAY[e]);
+      if (e in PLANET_WEEKDAY) bad.add(PLANET_WEEKDAY[e]);
     }
   }
   // A day can't be both — when in doubt, favourable wins.
   for (const d of good) bad.delete(d);
+  const dayNames = (set: Set<number>) => [...set].sort((a, b) => a - b).map(i => WEEKDAY[i][lang]);
 
-  const decisionWindow = (() => {
-    const friend = (PLANET_FRIENDS[mdLord] ?? []).includes(adLord);
-    const enemy = (PLANET_ENEMIES[mdLord] ?? []).includes(adLord);
-    if (friend) return `Major decisions are well-timed — ${mdLord} and ${adLord} are aligned. Commit to a 90-day plan in the area of life this sub-period emphasizes.`;
-    if (enemy) return `Hold off on irreversible commitments — ${mdLord} and ${adLord} create friction. Use this window to test, learn, and tighten plans; do not sign on the dotted line.`;
-    return `Neutral decision window — small consistent actions accumulate. Reserve the big move for when ${mdLord} and the antardasha lord are aligned.`;
-  })();
+  // Plain wording, no planet jargon: the reader needs when to commit, not why.
+  const friend = (PLANET_FRIENDS[mdLord] ?? []).includes(adLord);
+  const enemy = (PLANET_ENEMIES[mdLord] ?? []).includes(adLord);
+  const decisionWindow = PLAYBOOK_TEXT[friend ? 'decisionFriend' : enemy ? 'decisionEnemy' : 'decisionNeutral'][lang];
 
-  const monthAhead = pdLord
-    ? `Next 30 days are coloured by Pratyantardasha of ${pdLord}: themes are ${pdLord}-style — see the Pratyantardasha guidance below. Use this short window for ${pdLord}-friendly activities; avoid ${(PLANET_ENEMIES[pdLord] ?? []).join(', ') || 'none in particular'}.`
-    : `Use the current Antardasha (${adLord}) to set the tone for the next several months.`;
+  const monthLord = pdLord ?? adLord;
+  const monthAhead = PLAYBOOK_TEXT[pdLord ? 'monthPd' : 'monthAd'][lang]
+    .replace('{planet}', planetName(monthLord, lang))
+    .replace('{theme}', PLANET_THEME[monthLord as PlanetKey]?.[lang] ?? '');
 
   return {
-    bestDays: [...good],
-    avoidDays: [...bad],
+    bestDays: dayNames(good),
+    avoidDays: dayNames(bad),
     dailyPractice: PLANET_REMEDY[mdLord] ?? { mantra: '', charity: '' },
     opportunities: prediction.favorableActivities.slice(0, 6),
     pitfalls: prediction.unfavorableActivities.slice(0, 6),
@@ -189,7 +157,7 @@ export async function getPeriodSnapshot(
   const ctx = buildChartContext(positions);
 
   // Dasha tree.
-  const calc = new VimshottariDasha(positions['MOON'].longitude, new Date(bd.date));
+  const calc = new VimshottariDasha(positions['MOON'].longitude, birthInstant(bd));
   const periodsRaw = calc.getCurrentPeriods(td);
   if ('error' in periodsRaw) throw new Error(periodsRaw.error);
 
@@ -202,6 +170,8 @@ export async function getPeriodSnapshot(
   });
   ctx.transitNotes = transitSummary.notes;
   ctx.transitScoreMod = transitSummary.scoreMod;
+  ctx.transitDiverges = transitSummary.diverges;
+  ctx.transitSigns = transitSignsFrom(gochara.transits);
   if (transitSummary.erashtaka) {
     ctx.erashtaka = { level: transitSummary.erashtaka.level, areas: transitSummary.erashtaka.areas };
     // The headline card shows this description — carry the dasha-aware grade.
@@ -252,6 +222,7 @@ export async function getPeriodSnapshot(
     periodsRaw.antardasha.lord,
     periodsRaw.pratyantardasha?.lord ?? null,
     prediction,
+    lang,
   );
 
   return {
