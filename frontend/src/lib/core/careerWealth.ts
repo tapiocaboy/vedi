@@ -94,10 +94,14 @@ function occupantsOfRashi(rashi: number, input: StrengthInput): string[] {
     .map(([p]) => p);
 }
 
-/** Localised profession terms for a planet (first `n`). */
-function professionsOf(planet: string, lang: Lang, n: number): string[] {
+/**
+ * Localised profession terms for a planet — all of them. Taking only the first
+ * few meant the later terms were never printed for anyone (Mars's "surgery"
+ * and "sports", Rahu's "aviation"), since the list order is fixed.
+ */
+function professionsOf(planet: string, lang: Lang): string[] {
   const sig = SIG_TEXT[planet];
-  return sig ? pickList(sig.professions, lang).slice(0, n) : [];
+  return sig ? pickList(sig.professions, lang) : [];
 }
 
 function dedupe<T>(xs: T[]): T[] { return [...new Set(xs)]; }
@@ -227,8 +231,7 @@ export function careerSignature(input: StrengthInput, lang: Lang = 'en'): Career
   // The 10th lord always has a say, even when occupants lead.
   planets = dedupe([...planets, tenthLord]).slice(0, 3);
 
-  const perPlanet = planets.length >= 3 ? 2 : 3;
-  const fields = dedupe(planets.flatMap(p => professionsOf(p, lang, perPlanet))).slice(0, 5);
+  const fields = dedupe(planets.flatMap(p => professionsOf(p, lang)));
   if (fields.length) {
     notes.push(F_CAREER_SIGNATURE[L](
       CAREER_SOURCE[source][L],
@@ -247,14 +250,14 @@ export function careerSignature(input: StrengthInput, lang: Lang = 'en'): Career
       .map(([p]) => p)
       .slice(0, 2);
     if (d10Tenth.length) {
-      const d10Fields = dedupe(d10Tenth.flatMap(p => professionsOf(p, lang, 2))).slice(0, 4);
+      const d10Fields = dedupe(d10Tenth.flatMap(p => professionsOf(p, lang)));
       notes.push(F_D10_TENTH[L](joinAnd(d10Tenth.map(p => planetName(p, lang)), lang), joinComma(d10Fields)));
     }
   }
 
   const amk = amatyakaraka(input.planetLongitudes);
   if (amk) {
-    notes.push(F_AMATYAKARAKA[L](planetName(amk, lang), joinComma(professionsOf(amk, lang, 3))));
+    notes.push(F_AMATYAKARAKA[L](planetName(amk, lang), joinComma(professionsOf(amk, lang))));
   }
 
   return { planets, fields, amatyakaraka: amk, notes };

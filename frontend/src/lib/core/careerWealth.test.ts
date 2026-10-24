@@ -82,6 +82,19 @@ describe('reference chart — career signature', () => {
     expect(sig.fields.some(f => ['nursing', 'hospitality', 'engineering', 'military'].includes(f))).toBe(true);
   });
 
+  it("names every profession of its planets, not just the first few", () => {
+    // Mars's 4th and 5th terms; the old 3-per-planet cut never printed them.
+    expect(sig.fields).toEqual(expect.arrayContaining(['surgery', 'sports', 'real estate', 'public relations']));
+    expect(sig.notes[0]).toContain('sports');
+  });
+
+  it("reaches a planet's last term (Rahu's aviation)", () => {
+    // Aries lagna, Rahu alone in Capricorn (the 10th), Saturn its lord elsewhere.
+    const s = careerSignature({ ascendantRashi: 0, planetRashis: { Rahu: 9, Saturn: 4, Moon: 2 } }, 'en')!;
+    expect(s.planets).toEqual(['Rahu', 'Saturn']);
+    expect(s.fields).toContain('aviation');
+  });
+
   it('names Saturn as the Amatyakaraka', () => {
     expect(sig.amatyakaraka).toBe('Saturn');
     expect(sig.notes.some(n => n.includes('Saturn is your Amatyakaraka'))).toBe(true);

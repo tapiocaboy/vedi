@@ -848,7 +848,7 @@ export class DashaPredictionEngine {
       ...this._activationNotes('career'),
       ...this._foundationNotes('career'),
     ];
-    if (professions.length) details.push(F_CAREER_AREAS[en2si(lang)](joinComma(professions.slice(0, 4))));
+    if (professions.length) details.push(F_CAREER_AREAS[en2si(lang)](joinComma(professions)));
     details.push(...this._specDetails(pickList(spec.details, lang), score, 'career'));
     const remedies = pickList(spec.remedies, lang);
     let rel = 'neutral';
