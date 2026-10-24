@@ -1,9 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
-import { Moon, Sun, Presentation, Droplet, Terminal as TerminalIcon, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen, Languages } from 'lucide-react';
+import { sectionTransition } from './components/shared/motion';
+import { Moon, Sun, Aperture, DraftingCompass, Radio, Check, ChevronDown, LayoutGrid, List, Stars, Zap, AlertCircle, Compass, Heart, Layers, Share2, CalendarRange, Orbit, Download, MessageCircle, ShieldAlert, PanelLeftClose, PanelLeftOpen, Languages } from 'lucide-react';
 
 const ACCENT = 'var(--c-accent)';
+
+function SectionPane({ tab, children }: { tab: string; children: ReactNode }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={tab}
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -14 }}
+        transition={sectionTransition}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 import { BirthDataForm } from './components/Forms/BirthDataForm';
 import { SouthIndianChart } from './components/Chart/SouthIndianChart';
@@ -63,6 +80,9 @@ const LANG_OPTIONS: { code: Lang; short: string; native: string; titleKey: Trans
   { code: 'ml', short: 'മ',   native: 'മലയാളം',  titleKey: 'lang.malayalamTitle' },
 ];
 
+const LEGAL_KEY = 'trytellme_legal_accepted';
+const DISCLAIMER_KEY = 'trytellme_disclaimer_accepted';
+
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
@@ -80,6 +100,90 @@ function isPhoneLayout(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches;
 }
 
+function SectionTabs({
+  tabs,
+  active,
+  onSelect,
+  isLight,
+}: {
+  tabs: { id: ViewTab; label: string; icon: React.ElementType }[];
+  active: ViewTab;
+  onSelect: (id: ViewTab) => void;
+  isLight: boolean;
+}) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+
+  const updateEdges = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const next = {
+      left: el.scrollLeft > 8,
+      right: el.scrollLeft + el.clientWidth < el.scrollWidth - 8,
+    };
+    setEdges(prev => (prev.left === next.left && prev.right === next.right ? prev : next));
+  }, []);
+
+  const signature = tabs.map(tab => tab.id).join('|');
+  useEffect(() => {
+    const el = scrollerRef.current;
+    const btn = el?.querySelector<HTMLElement>('[aria-current="page"]');
+    btn?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    updateEdges();
+  }, [active, signature, updateEdges]);
+
+  useEffect(() => {
+    updateEdges();
+    window.addEventListener('resize', updateEdges);
+    return () => window.removeEventListener('resize', updateEdges);
+  }, [updateEdges]);
+
+  return (
+    <div id="section-tabs" className="section-tabs relative">
+      <div
+        ref={scrollerRef}
+        onScroll={updateEdges}
+        className="tab-bar tab-bar-mobile flex gap-1 rounded-xl p-1 overflow-x-auto"
+        role="tablist"
+      >
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const selected = active === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-current={selected ? 'page' : undefined}
+              onClick={() => onSelect(id)}
+              className={`relative flex items-center justify-center gap-1.5 min-h-[40px] sm:min-h-0 py-2 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-colors duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
+                selected
+                  ? 'text-white on-accent'
+                  : isLight
+                    ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                    : 'text-white/40 hover:text-white/70 hover:bg-white/5'
+              }`}
+            >
+              {selected && (
+                <motion.span
+                  layoutId="active-tab-pill"
+                  className="absolute inset-0 rounded-lg shadow-sm"
+                  style={{ backgroundColor: ACCENT }}
+                  transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                />
+              )}
+              <Icon className="relative z-10 w-3.5 h-3.5 shrink-0" />
+              <span className="relative z-10">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+      {edges.left && <div className="tab-edge tab-edge-left" aria-hidden />}
+      {edges.right && <div className="tab-edge tab-edge-right" aria-hidden />}
+    </div>
+  );
+}
+
 function AppContent() {
   const [birthData, setBirthData]   = useState<BirthData | null>(null);
   const [activeTab, setActiveTab]   = useState<ViewTab>('chart');
@@ -92,14 +196,15 @@ function AppContent() {
   });
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
-  // "mono" (chalkboard) and "terminal" both ride on the DARK layout (a
-  // blackboard and a CRT are both dark surfaces), so they count as not-light
-  // here and in useTheme().
+  // Ink and Signal ride on the dark layout, so they count as not-light
+  // here and in useTheme(). Glass rides on the light layout.
   const isLight = theme !== 'dark' && theme !== 'mono' && theme !== 'terminal';
   // Hide all chat affordances when the NVIDIA key is missing/empty.
   const chatConfigured = isChatConfigured();
-  // Legal gate — shown on every site load / refresh / first visit
-  const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(true);
+  // Legal gate — once per device. Returning visits go straight to the form.
+  const [welcomeLegalVisible, setWelcomeLegalVisible] = useState(
+    () => localStorage.getItem(LEGAL_KEY) !== 'accepted',
+  );
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
@@ -129,8 +234,7 @@ function AppContent() {
 
 
   // Apply theme classes to <html> so body background + tokens respond.
-  // "mono" is the chalkboard: it rides on top of the DARK layout and repaints
-  // the surface as a school blackboard with chalk-coloured ink.
+  // Ink and Signal ride on the dark layout. Glass rides on the light layout.
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('theme-dark', theme === 'dark' || theme === 'mono' || theme === 'terminal');
@@ -142,12 +246,40 @@ function AppContent() {
     localStorage.setItem('trytellme_theme', theme);
   }, [theme]);
 
+  // A click plays out after the pointer is up. :active ends too fast to see,
+  // and the chart houses are divs, so a button rule never reached them.
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const press = (event: PointerEvent) => {
+      if (reduce.matches) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const el = target.closest('button, a, summary, [role="button"], [role="tab"], [role="menuitem"], [role="menuitemradio"], .tap-row, .tap-cell, .tap-card, .tap-tr');
+      if (!(el instanceof HTMLElement)) return;
+      if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return;
+      el.classList.remove('press');
+      void el.offsetWidth;
+      el.classList.add('press');
+    };
+    const clear = (event: AnimationEvent) => {
+      if (event.animationName !== 'press' && event.animationName !== 'press-tint') return;
+      const el = event.target;
+      if (el instanceof HTMLElement) el.classList.remove('press');
+    };
+    document.addEventListener('pointerdown', press);
+    document.addEventListener('animationend', clear);
+    return () => {
+      document.removeEventListener('pointerdown', press);
+      document.removeEventListener('animationend', clear);
+    };
+  }, []);
+
   const themeOptions: { id: Theme; label: string; icon: React.ElementType }[] = [
-    { id: 'terminal', label: t('theme.terminal'), icon: TerminalIcon },
     { id: 'dark',     label: t('theme.dark'),     icon: Moon },
     { id: 'light',    label: t('theme.light'),    icon: Sun },
-    { id: 'azure',    label: t('theme.azure'),    icon: Droplet },
-    { id: 'mono',     label: t('theme.mono'),     icon: Presentation },
+    { id: 'azure',    label: t('theme.azure'),    icon: Aperture },
+    { id: 'mono',     label: t('theme.mono'),     icon: DraftingCompass },
+    { id: 'terminal', label: t('theme.terminal'), icon: Radio },
   ];
   const activeTheme = themeOptions.find(o => o.id === theme) ?? themeOptions[0];
 
@@ -159,9 +291,8 @@ function AppContent() {
         setWesternChartData(result);
         setChartData(null);
         setActiveTab('chart');
-        // Every theme gets its own reveal style (see LagnaIntro), chalkboard
-        // included, so this now only checks the OS-level accessibility
-        // preference, not the theme.
+        // Every theme gets its own reveal colour (see LagnaIntro). This only
+        // checks the OS-level accessibility preference, not the theme.
         const wantsMotion = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         if (wantsMotion) setLagnaIntroRashi(result.ascendant.signIndex);
         if (isPhoneLayout()) setSidebarHidden(true);
@@ -184,16 +315,22 @@ function AppContent() {
   };
 
   const handleSubmit = (data: BirthData) => {
-    // Step 1: store data, open the "Before You Continue" disclaimer
+    // The notice says it will not appear again on this device. Honour that,
+    // and don't make the chart wait on it.
+    if (localStorage.getItem(DISCLAIMER_KEY) === 'accepted') {
+      runGenerate(data);
+      return;
+    }
     setPendingBirthData(data);
     setDisclaimerVisible(true);
   };
 
   const handleDisclaimerAccept = () => {
-    // Step 2: disclaimer accepted → show privacy banner
+    localStorage.setItem(DISCLAIMER_KEY, 'accepted');
     setDisclaimerVisible(false);
-    setPrivacyTrigger('generate');
-    setPrivacyVisible(true);
+    const data = pendingBirthData;
+    setPendingBirthData(null);
+    if (data) runGenerate(data);
   };
 
   const handleCookieConsent = (granted: boolean) => {
@@ -219,49 +356,29 @@ function AppContent() {
     // is always available. The experimental notice still shows on entry.
     if (id === 'match') setMatchExperimentalVisible(true);
     setActiveTab(id);
+    // A long reading scrolls the section away. Bring the new section back
+    // under the header instead of leaving the user at the bottom of the last one.
+    const bar = document.getElementById('section-tabs');
+    if (!bar) return;
+    const stickyTop = parseFloat(getComputedStyle(bar).top) || 0;
+    if (bar.getBoundingClientRect().top <= stickyTop + 1) {
+      bar.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
   };
-
-  const TabBtn = ({
-    id, label, icon: Icon,
-  }: { id: ViewTab; label: string; icon: React.ElementType }) => (
-    <button
-      onClick={() => handleTabClick(id)}
-      // min-h-[40px] on touch: the tab strip was ~32px tall, under a comfortable
-      // tap target. Desktop keeps the tighter height.
-      className={`relative flex items-center justify-center gap-1 sm:gap-1.5 min-h-[40px] sm:min-h-0 py-2.5 sm:py-2.5 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold tracking-wide transition-colors duration-200 whitespace-nowrap shrink-0 sm:flex-1 ${
-        activeTab === id
-          ? 'text-white on-accent'
-          : isLight
-            ? 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-            : 'text-white/40 hover:text-white/70 hover:bg-white/5'
-      }`}
-    >
-      {activeTab === id && (
-        <motion.span
-          layoutId="active-tab-pill"
-          className="absolute inset-0 rounded-lg shadow-sm"
-          style={{ backgroundColor: ACCENT }}
-          transition={{ type: 'spring', stiffness: 480, damping: 38 }}
-        />
-      )}
-      <Icon className="relative z-10 w-3.5 h-3.5 shrink-0" />
-      <span className="relative z-10 hidden xs:inline sm:inline">{label}</span>
-    </button>
-  );
 
   return (
     <MotionConfig
-      reducedMotion={theme === 'mono' ? 'always' : 'never'}
-      transition={theme === 'mono' ? { duration: 0 } : undefined}
+      reducedMotion="user"
     >
     <div className={`min-h-screen tech-grid transition-colors duration-300 ${isLight ? 'theme-light' : ''}`}
       style={{ backgroundColor: 'var(--bg-page)' }}
     >
-      {/* Legal gate — shown on every site load / refresh / first visit.
-          Accepting it surfaces the "your data stays on your device" banner. */}
+      {/* Legal gate — first visit on this device. Accepting it surfaces the
+          "your data stays on your device" banner. */}
       <WelcomeLegalModal
         visible={welcomeLegalVisible}
         onAccept={() => {
+          localStorage.setItem(LEGAL_KEY, 'accepted');
           setWelcomeLegalVisible(false);
           setPrivacyTrigger('load');
           setPrivacyVisible(true);
@@ -367,15 +484,17 @@ function AppContent() {
               </span>
             )}
 
-            {/* Natal chart — full birth-chart reading */}
+            {/* Natal chart — only once there is a chart to read */}
+            {(chartData || westernChartData) && (
             <button
               onClick={() => setNatalChartVisible(true)}
               title={t('natal.title')}
               className="chrome-btn flex items-center gap-1.5 text-xs px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl font-semibold"
             >
               <Orbit className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xs:inline">{t('header.natalChart')}</span>
+              <span className="hidden sm:inline">{t('header.natalChart')}</span>
             </button>
+            )}
 
             {/* Export — download the full chart as Markdown (needs a chart) */}
             {(chartData || westernChartData) && (
@@ -391,12 +510,12 @@ function AppContent() {
                 className="btn-cta btn-cta-blink flex items-center gap-1.5 text-xs px-3 h-9 rounded-xl font-bold transition-all duration-200"
               >
                 <Download className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xs:inline">{t('header.export')}</span>
+                <span className="hidden sm:inline">{t('header.export')}</span>
               </button>
             )}
 
             {/* Monthly transits — Vedic-only (dasha/gochara sign-change timing); no Western equivalent in this pass */}
-            {!isWestern && (
+            {chartData && (
               <button
                 onClick={() => setMonthlyTransitsVisible(true)}
                 title={t('monthly.title')}
@@ -404,7 +523,7 @@ function AppContent() {
               >
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--c-accent)' }} />
                 <CalendarRange className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden xs:inline">{t('header.monthlyTransits')}</span>
+                <span className="hidden sm:inline">{t('header.monthlyTransits')}</span>
               </button>
             )}
 
@@ -517,19 +636,19 @@ function AppContent() {
 
       {/* ── Main ─────────────────────────────────────────────────────── */}
       <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-6">
-        <div className={`grid grid-cols-1 gap-3 sm:gap-5 ${sidebarHidden ? '' : 'lg:grid-cols-[minmax(16.5rem,19.5rem)_minmax(0,1fr)]'}`}>
+        <div className={`app-split ${sidebarHidden ? '' : 'is-open'}`}>
 
-          {/* Left — Birth form (slides away to widen the predictions area) */}
-          <AnimatePresence initial={false}>
-          {!sidebarHidden && (
-          <motion.div
-            key="sidebar"
-            className="min-w-0"
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -24 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          {/* Left — Birth form. The column width (desktop) or height (narrow) eases open and shut. */}
+          <div
+            className="birth-rail"
+            aria-hidden={sidebarHidden}
+            ref={node => {
+              if (!node) return;
+              if (sidebarHidden) node.setAttribute('inert', '');
+              else node.removeAttribute('inert');
+            }}
           >
+            <div className="birth-rail-clip">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -577,9 +696,8 @@ function AppContent() {
                 )}
               </div>
             </motion.div>
-          </motion.div>
-          )}
-          </AnimatePresence>
+            </div>
+          </div>
 
           {/* Right — Results */}
           <div className="min-w-0">
@@ -609,23 +727,28 @@ function AppContent() {
                   exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  {/* Tab bar */}
-                  <div className="tab-bar tab-bar-mobile flex gap-1 rounded-xl p-1 overflow-x-auto">
-                    <TabBtn id="chart"    label={t('tab.chart')}    icon={LayoutGrid} />
-                    <TabBtn id="dasha"    label={t('tab.timeline')} icon={List}       />
-                    <TabBtn id="now"      label={t('tab.now')}      icon={Compass}    />
-                    <TabBtn id="transits" label={t('tab.transits')} icon={Orbit}      />
-                    <TabBtn id="match"    label={t('tab.match')}    icon={Heart}      />
-                    <TabBtn id="yogas"    label={t('tab.patterns')} icon={Stars}      />
-                    <TabBtn id="vargas"   label={t('tab.vargas')}   icon={Layers}     />
-                    <TabBtn id="doshas"   label={t('tab.doshas')}   icon={ShieldAlert} />
-                    <TabBtn id="graph"    label={t('tab.graph')}    icon={Share2}     />
-                    <TabBtn id="insights" label={t('tab.insights')} icon={Zap}        />
-                  </div>
+                  <SectionTabs
+                    isLight={isLight}
+                    active={activeTab}
+                    onSelect={handleTabClick}
+                    tabs={[
+                      { id: 'chart', label: t('tab.chart'), icon: LayoutGrid },
+                      { id: 'dasha', label: t('tab.timeline'), icon: List },
+                      { id: 'now', label: t('tab.now'), icon: Compass },
+                      { id: 'transits', label: t('tab.transits'), icon: Orbit },
+                      { id: 'match', label: t('tab.match'), icon: Heart },
+                      { id: 'yogas', label: t('tab.patterns'), icon: Stars },
+                      { id: 'vargas', label: t('tab.vargas'), icon: Layers },
+                      { id: 'doshas', label: t('tab.doshas'), icon: ShieldAlert },
+                      { id: 'graph', label: t('tab.graph'), icon: Share2 },
+                      { id: 'insights', label: t('tab.insights'), icon: Zap },
+                    ]}
+                  />
 
+                  <SectionPane tab={activeTab}>
                   {/* ── Chart ─────────────────────────────────────── */}
                   {activeTab === 'chart' && (
-                    <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                    <motion.div key="chart"  className="space-y-4">
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <SouthIndianChart
                           planets={chartData.planets}
@@ -658,7 +781,7 @@ function AppContent() {
 
                   {/* ── Dasha ─────────────────────────────────────── */}
                   {activeTab === 'dasha' && (
-                    <motion.div key="dasha" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                    <motion.div key="dasha"  className="space-y-4">
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <CurrentDasha currentDasha={chartData.currentDasha} />
                       </div>
@@ -679,28 +802,28 @@ function AppContent() {
 
                   {/* ── Now (current period + transits + relocation) ── */}
                   {activeTab === 'now' && birthData && (
-                    <motion.div key="now" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="now" >
                       <CurrentPeriodTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Transits (major sign changes and their impact) ── */}
                   {activeTab === 'transits' && birthData && (
-                    <motion.div key="transits" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="transits" >
                       <TransitImpactTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Match (Horoscope compatibility) ──────────── */}
                   {activeTab === 'match' && birthData && (
-                    <motion.div key="match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="match" >
                       <MatchTab person={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Patterns (Yogas) ──────────────────────────── */}
                   {activeTab === 'yogas' && birthData && (
-                    <motion.div key="yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="yogas" >
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <div className="flex items-start gap-2.5 mb-5">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -724,31 +847,32 @@ function AppContent() {
 
                   {/* ── Vargas (divisional charts D9/D10) ─────────── */}
                   {activeTab === 'vargas' && birthData && (
-                    <motion.div key="vargas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="vargas" >
                       <VargaTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Doshas (Mangal, Kaal Sarpa, Pitra, Sade Sati) ─ */}
                   {activeTab === 'doshas' && birthData && (
-                    <motion.div key="doshas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="doshas" >
                       <DoshaTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Graph: life in chapters + the year ahead ── */}
                   {activeTab === 'graph' && birthData && (
-                    <motion.div key="graph" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="graph" >
                       <LifeOutlookTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Insights ──────────────────────────────────── */}
                   {activeTab === 'insights' && birthData && (
-                    <motion.div key="insights" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="insights" >
                       <DeepInsights birthData={birthData} />
                     </motion.div>
                   )}
+                  </SectionPane>
                 </motion.div>
               ) : westernChartData ? (
                 <motion.div
@@ -758,17 +882,22 @@ function AppContent() {
                   exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  {/* Tab bar — Western mode has no dasha/varga/dosha/graph/insights equivalent */}
-                  <div className="tab-bar tab-bar-mobile flex gap-1 rounded-xl p-1 overflow-x-auto">
-                    <TabBtn id="chart" label={t('tab.chart')}    icon={LayoutGrid} />
-                    <TabBtn id="now"   label={t('tab.now')}      icon={Compass}    />
-                    <TabBtn id="match" label={t('tab.match')}    icon={Heart}      />
-                    <TabBtn id="yogas" label={t('tab.patterns')} icon={Stars}      />
-                  </div>
+                  <SectionTabs
+                    isLight={isLight}
+                    active={activeTab}
+                    onSelect={handleTabClick}
+                    tabs={[
+                      { id: 'chart', label: t('tab.chart'), icon: LayoutGrid },
+                      { id: 'now', label: t('tab.now'), icon: Compass },
+                      { id: 'match', label: t('tab.match'), icon: Heart },
+                      { id: 'yogas', label: t('tab.patterns'), icon: Stars },
+                    ]}
+                  />
 
+                  <SectionPane tab={`western-${activeTab}`}>
                   {/* ── Chart ─────────────────────────────────────── */}
                   {activeTab === 'chart' && (
-                    <motion.div key="western-chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                    <motion.div key="western-chart"  className="space-y-4">
                       <div className="glass-card rounded-2xl p-3 sm:p-6">
                         <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                           <Sun className="w-4 h-4" style={{ color: 'var(--c-accent)' }} />
@@ -801,24 +930,25 @@ function AppContent() {
 
                   {/* ── Now (transits to natal) ───────────────────── */}
                   {activeTab === 'now' && birthData && (
-                    <motion.div key="western-now" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="western-now" >
                       <WesternTransitsTab birthData={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Match (Synastry) ──────────────────────────── */}
                   {activeTab === 'match' && birthData && (
-                    <motion.div key="western-match" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="western-match" >
                       <WesternMatchTab person={birthData} />
                     </motion.div>
                   )}
 
                   {/* ── Patterns (aspect patterns) ────────────────── */}
                   {activeTab === 'yogas' && (
-                    <motion.div key="western-yogas" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <motion.div key="western-yogas" >
                       <WesternPatternsTab chart={westernChartData} />
                     </motion.div>
                   )}
+                  </SectionPane>
                 </motion.div>
               ) : (
                 <motion.div
@@ -835,6 +965,22 @@ function AppContent() {
                     <p className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
                       {t('empty.body')}
                     </p>
+                    <ol className="flex flex-wrap items-center justify-center gap-2 mt-5">
+                      {[t('form.birthDate'), t('form.birthPlace'), t('form.generate')].map((label, i) => (
+                        <li
+                          key={label}
+                          className="empty-step inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                          style={{
+                            background: 'rgba(var(--c-accent-rgb),0.10)',
+                            color: 'var(--c-accent)',
+                            animationDelay: `${i * 90}ms`,
+                          }}
+                        >
+                          <span className="font-mono">{i + 1}</span>
+                          {label}
+                        </li>
+                      ))}
+                    </ol>
                     <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-6 sm:mt-8">
                       {[
                         { symbol: '☉', color: '#f59e0b', labelKey: 'planet.sun' as const },
@@ -843,9 +989,12 @@ function AppContent() {
                         { symbol: '♃', color: '#eab308', labelKey: 'planet.jupiter' as const },
                         { symbol: '♀', color: '#f472b6', labelKey: 'planet.venus' as const },
                         { symbol: '♄', color: '#38bdf8', labelKey: 'planet.saturn' as const },
-                      ].map((p) => (
+                      ].map((p, i) => (
                         <div key={p.labelKey} className="flex flex-col items-center gap-1">
-                          <span className="text-2xl" style={{ color: p.color }}>{p.symbol}</span>
+                          <span
+                            className="empty-planet text-2xl"
+                            style={{ color: p.color, animationDelay: `${i * 0.35}s`, animationDuration: `${4.2 + (i % 3) * 0.7}s` }}
+                          >{p.symbol}</span>
                           <span className={`text-[9px] font-mono ${isLight ? 'text-slate-400' : 'text-white/25'}`}>{t(p.labelKey)}</span>
                         </div>
                       ))}

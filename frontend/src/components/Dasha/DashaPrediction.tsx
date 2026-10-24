@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, 
   Wallet, 
@@ -134,12 +134,17 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           </div>
         </button>
 
+        <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
+            key={area}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="border-t border-white/6 p-4 bg-white/3"
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+            className="border-t border-white/6 bg-white/3 overflow-hidden"
           >
+          <div className="p-4">
             <div className="space-y-4">
               {/* Details */}
               <div>
@@ -184,8 +189,10 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
                 </div>
               )}
             </div>
+          </div>
           </motion.div>
         )}
+        </AnimatePresence>
       </div>
     );
   };
@@ -314,12 +321,17 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
           <TapBadge open={showActivities} direction="down" />
         </button>
 
+        <AnimatePresence initial={false}>
         {showActivities && (
           <motion.div
+            key="activities"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            className="mt-3 grid md:grid-cols-2 gap-4"
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+            className="overflow-hidden"
           >
+          <div className="mt-3 grid md:grid-cols-2 gap-4">
             <div className="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/30">
               <h5 className="font-medium text-emerald-400 mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4" /> {t('dasha.favorableActivities')}
@@ -347,8 +359,10 @@ export const DashaPrediction: React.FC<Props> = ({ prediction, compact = false }
                 ))}
               </ul>
             </div>
+          </div>
           </motion.div>
         )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
   Heart, Check, X, AlertTriangle, RefreshCcw, Loader2,
@@ -526,6 +526,14 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
         </div>
       </div>
 
+      <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={pane}
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+      >
       {pane === 'overview' && (
         <div className="space-y-4">
           <MatchVerdict summary={summary} />
@@ -599,7 +607,16 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
               </span>
               <TapBadge open={showSynDetail} direction="down" />
             </button>
+            <AnimatePresence initial={false}>
             {showSynDetail && (
+              <motion.div
+                key="syn"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
               <div className="space-y-3 mt-3">
                 <p className={`text-[11.5px] leading-relaxed ${body}`}>{r.layer4Synastry.summary}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -607,7 +624,9 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
                   <SynastryList title={t('match.bToA')} contacts={r.layer4Synastry.bToA.contacts} net={r.layer4Synastry.bToA.netValence} />
                 </div>
               </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </div>
       )}
@@ -661,14 +680,27 @@ const ReportView: React.FC<{ summary: MatchSummary; onReset: () => void }> = ({ 
               </span>
               <TapBadge open={showClassical} direction="down" />
             </button>
+            <AnimatePresence initial={false}>
             {showClassical && (
+              <motion.div
+                key="classical"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
                 {r.layer1Temperament.kootas.map((k: KootaScore, i: number) => <KootaCard key={k.name} k={k} index={i} />)}
               </div>
+              </motion.div>
             )}
+            </AnimatePresence>
           </div>
         </div>
       )}
+      </motion.div>
+      </AnimatePresence>
     </motion.div>
   );
 };

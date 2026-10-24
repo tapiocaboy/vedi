@@ -126,7 +126,9 @@ export const TransitChart: React.FC<Props> = ({ gochara, dasha }) => {
         type="button"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: rashi * 0.015 }}
+        transition={{
+          opacity: { delay: rashi * 0.015, duration: 0.3 },
+        }}
         onClick={() => setSelected(isSel ? null : rashi)}
         onMouseEnter={() => setHovered(rashi)}
         onMouseLeave={() => setHovered(h => (h === rashi ? null : h))}

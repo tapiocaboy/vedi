@@ -50,6 +50,13 @@ coverage/
 
 TODO_2.md
 TODO.md
+WESTERN_TODO.md
+
+datasets/people_events_combined.csv
+datasets/proof_of_payment_8b8b57e8-acbc-4ce0-aef8-e5ab863867f0.csv
+datasets/real_events.csv
+
+frontend/backtest/
 
 # wrangler files
 .wrangler

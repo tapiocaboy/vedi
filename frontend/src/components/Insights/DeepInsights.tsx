@@ -163,7 +163,7 @@ function LordStrengthRow({ lord, index }: { lord: LordStrengthData; index: numbe
       <div className="flex items-center gap-2.5 flex-wrap">
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: LORD_HEX[lord.planet] ?? '#FF2E51' }}
+          style={{ backgroundColor: LORD_HEX[lord.planet] ?? '#5B7CFA' }}
         />
         <span className="text-sm font-bold text-white">{labelPlanet(lord.planet, lang)}</span>
         <span className="text-[10px] font-mono uppercase text-white/35">

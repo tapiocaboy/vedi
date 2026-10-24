@@ -1,5 +1,5 @@
-/* Caveat is the chalkboard theme's hand-lettering; the rest are the UI faces. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@500;600;700&display=swap');
+/* UI faces: a geometric display sans, a neutral body sans, and a mono for figures. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,57 +10,54 @@
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Accent palette (single source of truth) ──────────────────────────────
-   Dark & Light themes resolve these to the pink brand colour. The "mono"
-   enterprise theme (see :root.theme-mono) redefines them to greyscale, so the
-   entire UI — class rules AND inline styles — recolours by overriding a handful
-   of variables. RGB-triplet vars let rgba() tints keep their exact alpha. */
+   Night and Day use this cool starlight blue. Ink, Glass, and Signal override
+   it. RGB-triplet vars let rgba() tints keep their exact alpha. */
 :root {
-  --c-accent:            #FF2E51;
-  --c-accent-2:          #ff6b81;
-  --c-accent-dark:       #e01f3d;
-  --c-accent-darker:     #c91838;
-  --c-accent-3:          #ff9dab;
-  --c-accent-4:          #ffcdd4;
-  --c-accent-5:          #ffe5e9;
-  --c-accent-edge:       #3a0a14;
+  --c-accent:            #5B7CFA;
+  --c-accent-2:          #8EAAFF;
+  --c-accent-dark:       #3E5FE0;
+  --c-accent-darker:     #2C49C4;
+  --c-accent-3:          #B7C7FF;
+  --c-accent-4:          #D9E2FF;
+  --c-accent-5:          #EEF2FF;
+  --c-accent-edge:       #10182e;
 
-  --c-accent-rgb:        255,46,81;
-  --c-accent2-rgb:       255,107,129;
-  --c-accent-dark-rgb:   224,31,61;
-  --c-accent-darker-rgb: 201,24,56;
-  --c-accent3-rgb:       255,157,171;
-  --c-accent4-rgb:       255,205,212;
-  --c-accent5-rgb:       255,229,233;
+  --c-accent-rgb:        91,124,250;
+  --c-accent2-rgb:       142,170,255;
+  --c-accent-dark-rgb:   62,95,224;
+  --c-accent-darker-rgb: 44,73,196;
+  --c-accent3-rgb:       183,199,255;
+  --c-accent4-rgb:       217,226,255;
+  --c-accent5-rgb:       238,242,255;
 }
 
-/* ── Dark theme (default) — Deep space with pink accent ────────────────── */
+/* ── Night (default) — void black, hairline panels, starlight accent ──── */
 :root {
   --color-primary:    var(--c-accent);
   --color-secondary:  var(--c-accent-2);
 
-  --bg-page:          #070910;
-  --bg-page-grid:     rgba(255,255,255,0.028);
+  --bg-page:          #06080e;
+  --bg-page-grid:     rgba(142,170,255,0.045);
 
-  --bg-card:          rgba(14,17,28,0.72);
-  --bg-card-hover:    rgba(18,22,36,0.82);
+  --bg-card:          rgba(10,14,24,0.84);
+  --bg-card-hover:    rgba(14,18,30,0.92);
   --bg-inset:         rgba(255,255,255,0.035);
   --bg-inset-hover:   rgba(255,255,255,0.055);
 
-  --border-card:      rgba(255,255,255,0.07);
+  --border-card:      rgba(255,255,255,0.08);
   --border-subtle:    rgba(255,255,255,0.06);
 
-  --bg-header:        rgba(7,9,16,0.72);
+  --bg-header:        rgba(6,8,14,0.86);
   --border-header:    rgba(255,255,255,0.06);
 
-  --scrollbar-track:  #070910;
+  --scrollbar-track:  #06080e;
   --scrollbar-thumb:  var(--c-accent);
 
   --shadow-card:      0 0 0 1px rgba(255,255,255,0.03),
-                      inset 0 1px 0 rgba(255,255,255,0.06),
-                      0 18px 40px rgba(0,0,0,0.38);
+                      0 10px 28px rgba(0,0,0,0.32);
 }
 
-/* ── Light theme — Clean white with pink accents ───────────────────────── */
+/* ── Day — cool observatory white, same starlight accent ───────────────── */
 :root.theme-light {
   --color-primary:    var(--c-accent);
   --color-secondary:  var(--c-accent-dark);
@@ -69,8 +66,8 @@
   --text-muted:       71, 85, 105;
   --text-subtle:      100, 116, 139;
 
-  --bg-page:          #f3f4f7;
-  --bg-page-grid:     rgba(15,23,42,0.035);
+  --bg-page:          #f3f5f9;
+  --bg-page-grid:     rgba(15,23,42,0.045);
 
   --bg-card:          #ffffff;
   --bg-card-hover:    #ffffff;
@@ -125,9 +122,11 @@ form label { text-shadow: none; }
   background: rgba(var(--c-accent-rgb),0.18);
 }
 
-/* ── Tactile press feedback on every interactive control ───────────────── */
+/* ── Press ────────────────────────────────────────────────────────────────
+   The click itself is handled in App: a .press class plays the full
+   settle after the pointer is already up. Chart cells are not <button>s,
+   so a :active rule never reached them. */
 button { -webkit-tap-highlight-color: transparent; }
-button:not(:disabled):active { transform: scale(0.97); }
 
 /* ── Keyboard focus — visible ring for buttons/links/selects ───────────── */
 button:focus-visible,
@@ -171,6 +170,100 @@ a:focus-visible,
 .animate-pulse-glow  { animation: pulse-glow 2.5s ease-in-out infinite; }
 .animate-glow-ring   { animation: glow-ring 2s ease-in-out infinite; }
 
+/* Small instrument motion. Slow on purpose: a sweep, a drift, a breath.
+   Turned off together under prefers-reduced-motion. */
+@keyframes logo-sweep {
+  to { transform: rotate(360deg); }
+}
+@keyframes logo-breathe {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+@keyframes grid-drift {
+  to { background-position: 56px 56px; }
+}
+@keyframes sky-drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(-14px, -10px, 0); }
+}
+@keyframes planet-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 1px 2px rgba(0,0,0,0.18); }
+  50%      { box-shadow: 0 6px 18px rgba(var(--c-accent-rgb), 0.32); }
+}
+@keyframes lagna-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes zodiac-mark {
+  0%, 100% { transform: translateY(0); opacity: 0.82; }
+  50%      { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes press {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--c-accent-rgb), 0);
+  }
+  40% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 2px rgba(var(--c-accent-rgb), 0.5), 0 0 18px rgba(var(--c-accent-rgb), 0.45);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--c-accent-rgb), 0);
+  }
+}
+@keyframes press-tint {
+  0%, 100% {
+    background-color: var(--tap-base, transparent);
+    box-shadow: inset 0 0 0 0 rgba(var(--c-accent-rgb), 0);
+  }
+  40% {
+    background-color: rgba(var(--c-accent-rgb), 0.16);
+    box-shadow: inset 0 0 0 1px rgba(var(--c-accent-rgb), 0.55);
+  }
+}
+
+.logo-sweep {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: logo-sweep 32s linear infinite;
+}
+.logo-dot {
+  transform-origin: center;
+  animation: logo-breathe 2.8s ease-in-out infinite;
+}
+.tech-grid { animation: grid-drift 48s linear infinite; }
+.particle-field-canvas { animation: sky-drift 32s ease-in-out infinite; }
+.empty-planet { animation: planet-float 4.6s ease-in-out infinite; }
+.empty-step { animation: rise-in 0.5s ease both; }
+.zodiac-mark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: zodiac-mark 4.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 0 rgba(var(--c-accent-rgb), 0));
+  transition: filter 0.22s ease;
+}
+.lagna-figure {
+  transform-origin: center;
+  animation: lagna-breathe 3.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 0 rgba(var(--c-accent-rgb), 0));
+  transition: filter 0.22s ease;
+}
+:is(.tap-cell, [role='button'], .lagna-well):is(:hover, :focus-visible, .press, [data-open='true']) :is(.zodiac-mark, .lagna-figure) {
+  filter: drop-shadow(0 0 6px rgba(var(--c-accent-rgb), 0.95)) drop-shadow(0 0 16px rgba(var(--c-accent-rgb), 0.55));
+}
+/* Plays through after the pointer lifts, so a quick click still moves. */
+.press { animation: press 0.42s ease; }
+.tap-tr.press { animation-name: press-tint; }
+
 /* ══════════════════════════════════════════════════════════════════════════
    STRUCTURAL COMPONENTS
    ══════════════════════════════════════════════════════════════════════════ */
@@ -178,8 +271,8 @@ a:focus-visible,
 /* ── Glass card ─────────────────────────────────────────────────────────── */
 .glass-card {
   background: var(--bg-card);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
   border: 1px solid var(--border-card);
   box-shadow: var(--shadow-card);
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -204,7 +297,7 @@ a:focus-visible,
   background-image:
     linear-gradient(var(--bg-page-grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--bg-page-grid) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: 56px 56px;
   transition: background 0.3s ease;
 }
 
@@ -215,6 +308,43 @@ a:focus-visible,
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   transition: background 0.3s ease, border-color 0.3s ease;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Section tabs stick just under the header so a long reading can be switched
+   without scrolling back to the top. The page colour stops the cards underneath
+   showing through the translucent tab bar. */
+.section-tabs {
+  position: sticky;
+  z-index: 20;
+  top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  scroll-margin-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  background: var(--bg-page);
+  padding-bottom: 0.25rem;
+}
+@media (min-width: 640px) {
+  .section-tabs {
+    top: calc(4.75rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(4.75rem + env(safe-area-inset-top, 0px));
+  }
+}
+.tab-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0.25rem;
+  width: 1.75rem;
+  pointer-events: none;
+  z-index: 2;
+}
+.tab-edge-left {
+  left: 0;
+  border-radius: 0.75rem 0 0 0.75rem;
+  background: linear-gradient(to right, var(--bg-page) 20%, transparent);
+}
+.tab-edge-right {
+  right: 0;
+  border-radius: 0 0.75rem 0.75rem 0;
+  background: linear-gradient(to left, var(--bg-page) 20%, transparent);
 }
 
 /* Quiet chrome — header tools, language, theme */
@@ -437,7 +567,7 @@ input:focus, select:focus, textarea:focus {
 .btn-glow:hover::after { transform: translateX(100%); }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   GLOBAL — violet / indigo / purple → pink brand (var(--c-accent))
+   GLOBAL — violet / indigo / purple utilities follow the starlight accent
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* Text */
@@ -770,17 +900,13 @@ input:focus, select:focus, textarea:focus {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 42% 36% at 6% 0%, rgba(var(--c-accent-rgb),0.13), transparent 70%),
-    radial-gradient(ellipse 34% 30% at 94% 32%, rgba(56,189,248,0.08), transparent 70%),
-    radial-gradient(ellipse 40% 28% at 38% 100%, rgba(250,204,21,0.05), transparent 72%),
-    radial-gradient(ellipse 28% 24% at 78% 78%, rgba(251,146,60,0.06), transparent 70%);
+    radial-gradient(ellipse 48% 36% at 0% 0%, rgba(var(--c-accent-rgb),0.10), transparent 68%),
+    radial-gradient(ellipse 36% 32% at 100% 100%, rgba(var(--c-accent-rgb),0.05), transparent 70%);
 }
 .theme-light .page-wash {
   background:
-    radial-gradient(ellipse 42% 36% at 6% 0%, rgba(var(--c-accent-rgb),0.07), transparent 70%),
-    radial-gradient(ellipse 34% 30% at 94% 32%, rgba(56,189,248,0.05), transparent 70%),
-    radial-gradient(ellipse 40% 28% at 38% 100%, rgba(250,204,21,0.04), transparent 72%),
-    radial-gradient(ellipse 28% 24% at 78% 78%, rgba(251,146,60,0.04), transparent 70%);
+    radial-gradient(ellipse 48% 36% at 0% 0%, rgba(var(--c-accent-rgb),0.07), transparent 68%),
+    radial-gradient(ellipse 36% 32% at 100% 100%, rgba(var(--c-accent-rgb),0.04), transparent 70%);
 }
 
 .form-wash {
@@ -869,6 +995,9 @@ input:focus, select:focus, textarea:focus {
 .tap-blink { background-color: var(--tap-base, transparent); }
 .tap-blink:hover { background-color: var(--tap-tint); }
 .tap-blink[data-open='true'] { background-color: var(--tap-tint-strong); }
+.tap-blink:active {
+  background-color: color-mix(in srgb, var(--tap-clr) 22%, transparent);
+}
 
 /* Kept as no-ops so existing markup stays valid: the badge and SVG marks used
    to pulse forever, which made every panel flicker. */
@@ -1031,14 +1160,14 @@ input:focus, select:focus, textarea:focus {
   .btn-primary {
     position: relative;
     overflow: hidden;
-    background-image: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-dark) 100%);
-    box-shadow: 0 4px 16px rgba(var(--c-accent-rgb), 0.30);
+    background-image: linear-gradient(180deg, var(--c-accent) 0%, var(--c-accent-dark) 100%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.18);
     transition: box-shadow 0.25s ease, transform 0.2s ease, filter 0.2s ease;
   }
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(var(--c-accent-rgb), 0.40);
-    filter: brightness(1.06);
+    box-shadow: 0 6px 16px rgba(var(--c-accent-rgb), 0.28);
+    filter: brightness(1.05);
   }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0) scale(0.98);
@@ -1055,6 +1184,10 @@ input:focus, select:focus, textarea:focus {
   }
   .btn-primary:hover:not(:disabled)::after { transform: translateX(120%); }
   .theme-mono .btn-primary::after { display: none; }
+
+  .btn-primary:not(:disabled) { animation: cta-glow 3.8s ease-in-out infinite; }
+  .btn-primary:hover:not(:disabled),
+  .btn-primary:active:not(:disabled) { animation: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1099,13 +1232,101 @@ input:focus, select:focus, textarea:focus {
   .graph-scroll > svg { min-width: 840px; }
 }
 
-/* Reduce heavy animations on mobile and when user prefers reduced motion */
-@media (max-width: 640px), (prefers-reduced-motion: reduce) {
+/* The star canvas is the expensive paint. Hide it on phones, and hide it
+   plus every small motion when the reader asks for reduced motion. */
+@media (max-width: 640px) {
   .particle-field-canvas {
     display: none !important;
   }
   .form-bg-particles {
     display: none !important;
+  }
+}
+/* Birth column opens and closes by width (desktop) or height (narrow),
+   instead of the grid track appearing and disappearing at once. */
+.app-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+  transition: row-gap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-split.is-open { row-gap: 0.75rem; }
+@media (min-width: 640px) {
+  .app-split.is-open { row-gap: 1.25rem; }
+}
+.birth-rail {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s ease;
+}
+.app-split.is-open .birth-rail {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  pointer-events: auto;
+}
+.birth-rail-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+@media (min-width: 1024px) {
+  .app-split {
+    grid-template-columns: 0px minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 0;
+    transition:
+      grid-template-columns 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+      column-gap 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .app-split.is-open {
+    grid-template-columns: 19.5rem minmax(0, 1fr);
+    column-gap: 1.25rem;
+  }
+  .birth-rail {
+    grid-template-rows: 1fr;
+    overflow: hidden;
+    opacity: 1;
+  }
+  .birth-rail-clip {
+    opacity: 0;
+    transform: translateX(-18px);
+    transition:
+      opacity 0.32s ease,
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .app-split.is-open .birth-rail-clip {
+    opacity: 1;
+    transform: none;
+  }
+  .app-split:not(.is-open) .birth-rail {
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle-field-canvas,
+  .form-bg-particles {
+    display: none !important;
+  }
+  .logo-sweep,
+  .logo-dot,
+  .tech-grid,
+  .empty-planet,
+  .empty-step,
+  .lagna-figure,
+  .zodiac-mark,
+  .press,
+  .btn-primary {
+    animation: none !important;
+  }
+  .app-split,
+  .birth-rail,
+  .birth-rail-clip {
+    transition: none !important;
   }
 }
 
@@ -1161,213 +1382,123 @@ html[lang='si'] .si-svg-label   { font-size: 13px; }
 html[lang='si'] .si-svg-label-s { font-size: 10.5px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CHALKBOARD (theme id: "mono") — a classroom blackboard drawn in chalk.
-   Rides on the default (dark) token set rather than .theme-light, because a
-   blackboard is a dark surface and the light layer's dark-text rules would
-   fight it at every turn. On top of that base it repaints every surface: the
-   page becomes near-black slate with chalk-dust grain, cards become chalk-
-   outlined boxes, and the accent is pale yellow chalk. Motion stays disabled —
-   chalk does not animate. Data-viz colours (planet, dignity, trend) are left
-   untouched so charts stay readable.
+   INK (theme id: "mono") — a printed star chart. Black, white, hairlines.
+   Rides on the dark layout. The accent is near-white, so filled controls use
+   ink-dark labels. No texture, no script face.
    ══════════════════════════════════════════════════════════════════════════ */
 :root.theme-mono {
-  scroll-behavior: auto;
+  --c-accent:            #e7eaf0;
+  --c-accent-2:          #f8fafc;
+  --c-accent-dark:       #c5cad3;
+  --c-accent-darker:     #a8b0bc;
+  --c-accent-3:          #f1f5f9;
+  --c-accent-4:          #f8fafc;
+  --c-accent-5:          #ffffff;
+  --c-accent-edge:       #94a3b8;
 
-  /* Yellow chalk — the stick you reach for to underline something */
-  --c-accent:            #f0dc94;
-  --c-accent-2:          #fbf1c6;
-  --c-accent-dark:       #d9c079;
-  --c-accent-darker:     #bda45f;
-  --c-accent-3:          #e9e5d6;
-  --c-accent-4:          #f3f0e5;
-  --c-accent-5:          #faf9f2;
-  --c-accent-edge:       #8a8880;
+  --c-accent-rgb:        231,234,240;
+  --c-accent2-rgb:       248,250,252;
+  --c-accent-dark-rgb:   197,202,211;
+  --c-accent-darker-rgb: 168,176,188;
+  --c-accent3-rgb:       241,245,249;
+  --c-accent4-rgb:       248,250,252;
+  --c-accent5-rgb:       255,255,255;
 
-  --c-accent-rgb:        240,220,148;
-  --c-accent2-rgb:       251,241,198;
-  --c-accent-dark-rgb:   217,192,121;
-  --c-accent-darker-rgb: 189,164,95;
-  --c-accent3-rgb:       233,229,214;
-  --c-accent4-rgb:       243,240,229;
-  --c-accent5-rgb:       250,249,242;
+  --text-primary:     236,238,242;
+  --text-muted:       186,192,204;
+  --text-subtle:      138,146,160;
 
-  /* Chalk white is never pure white — it is warm and slightly dusty */
-  --text-primary:     240,240,234;
-  --text-muted:       206,208,199;
-  --text-subtle:      168,172,164;
+  --bg-page:          #090b10;
+  --bg-page-grid:     rgba(255,255,255,0.05);
 
-  /* The board itself — near-black slate, warmed a shade so it reads as a
-     board rather than as an unpainted #000 panel */
-  --bg-page:          #1a1a19;
-  --bg-page-grid:     rgba(240,240,234,0.045);
+  --bg-card:          rgba(255,255,255,0.03);
+  --bg-card-hover:    rgba(255,255,255,0.05);
+  --bg-inset:         rgba(255,255,255,0.04);
+  --bg-inset-hover:   rgba(255,255,255,0.06);
 
-  /* On a black board a "recessed" surface cannot go darker and still be seen,
-     so insets lift away from the board instead of sinking into it. */
-  --bg-card:          rgba(255,255,255,0.030);
-  --bg-card-hover:    rgba(255,255,255,0.055);
-  --bg-inset:         rgba(255,255,255,0.035);
-  --bg-inset-hover:   rgba(255,255,255,0.060);
+  --border-card:      rgba(255,255,255,0.16);
+  --border-subtle:    rgba(255,255,255,0.10);
 
-  --border-card:      rgba(240,240,234,0.26);
-  --border-subtle:    rgba(240,240,234,0.14);
+  --bg-header:        rgba(9,11,16,0.94);
+  --border-header:    rgba(255,255,255,0.12);
 
-  --bg-header:        rgba(20,20,19,0.94);
-  --border-header:    rgba(240,240,234,0.22);
+  --scrollbar-track:  #090b10;
+  --scrollbar-thumb:  rgba(255,255,255,0.28);
 
-  --scrollbar-track:  #141413;
-  --scrollbar-thumb:  rgba(240,240,234,0.32);
-
-  --shadow-card:      inset 0 0 0 1px rgba(240,240,234,0.05),
-                      0 8px 26px rgba(0,0,0,0.30);
+  --shadow-card:      0 0 0 1px rgba(255,255,255,0.04);
 }
 
-/* ── The board surface ─────────────────────────────────────────────────────
-   Three stacked layers: fine chalk-dust grain (SVG turbulence), the ghost of
-X   board fall into shadow the way a real one does under classroom lights. */
-.theme-mono body {
-  background-color: var(--bg-page);
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E"),
-    repeating-linear-gradient(
-      98deg,
-      rgba(255,255,255,0.016) 0px,
-      rgba(255,255,255,0.016) 3px,
-      transparent 3px,
-      transparent 34px
-    ),
-    radial-gradient(ellipse 120% 80% at 50% 40%, rgba(255,255,255,0.035) 0%, transparent 60%),
-    radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.42) 100%);
-  background-size: 180px 180px, auto, auto, auto;
-  background-attachment: fixed;
-  /* Every glyph gets a faint bloom — chalk never sits flat on the board */
-  text-shadow: 0 0 1.1px rgba(255,255,255,0.22);
-}
-
-/* The app shell paints --bg-page as an inline style, which would sit on top of
-   the board texture and hide it. Punch it back to transparent (a stylesheet
-   !important outranks an inline declaration) so the grain and vignette show,
-   and let the chalk grid ride over them. */
-.theme-mono .tech-grid {
-  background-color: transparent !important;
-}
-
-/* Headings are hand-lettered. Body copy deliberately stays in the UI sans:
-   this app renders a lot of 9–11px labels, and a script face at that size is
-   decoration at the cost of legibility. */
-.theme-mono h1,
-.theme-mono h2,
-.theme-mono h3,
-.theme-mono h4,
-.theme-mono h5,
-.theme-mono h6,
-.theme-mono .font-display,
-.theme-mono .brand-title {
-  font-family: 'Caveat', 'Patrick Hand', 'Comic Sans MS', cursive;
-  font-weight: 700;
-  letter-spacing: 0.005em;
-}
-
-/* Cards are boxes drawn on the board, not panes of glass */
+/* Flat panels — no frost, no grain. */
 .theme-mono .glass-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-color: rgba(240,240,234,0.26);
+  border-color: rgba(255,255,255,0.16);
   box-shadow: var(--shadow-card);
 }
 .theme-mono .glass-card:hover {
-  border-color: rgba(240,240,234,0.38);
+  border-color: rgba(255,255,255,0.28);
 }
 
-/* The modals and the privacy banner hard-code a deep-navy fill for the dark
-   theme; against the black board that reads as a hole, so repaint them as a
-   slightly darker patch of the same board with a chalk outline. */
 .theme-mono .disclaimer-modal,
 .theme-mono .privacy-banner {
-  background: #1f1f1e;
-  border-color: rgba(240,240,234,0.28);
+  background: #10131a;
+  border-color: rgba(255,255,255,0.16);
   box-shadow: 0 20px 60px rgba(0,0,0,0.45);
 }
 
-/* Chalk-filled controls: pale yellow stick on slate, so the label must be
-   BOARD-coloured rather than white or it disappears into the fill. */
+/* Near-white fills need ink-dark labels. */
 .theme-mono .on-accent,
 .theme-mono .on-accent * {
-  color: #141413 !important;
-  fill: #141413 !important;
+  color: #090b10 !important;
+  fill: #090b10 !important;
   text-shadow: none;
 }
 
-/* Timeline (Dasha) — Mahadasha headers become a chalk-yellow band with board-
-   dark lettering; the per-lord dots flatten to chalk. */
 .theme-mono .dasha-md-header {
   background-color: var(--c-accent) !important;
   background-image: none !important;
 }
 .theme-mono .dasha-md-header,
 .theme-mono .dasha-md-header * {
-  color: #141413 !important;
-  fill: #141413 !important;
+  color: #090b10 !important;
+  fill: #090b10 !important;
   text-shadow: none;
 }
 .theme-mono .dasha-dot {
   background-color: var(--c-accent-3) !important;
 }
 
-/* Gradient text flattens to plain chalk */
 .theme-mono .text-gradient {
   background-image: none;
-  color: #f0f0ea !important;
-  -webkit-text-fill-color: #f0f0ea;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc;
 }
 
-/* Anything filled with the accent is a chalk-yellow block, so its label has to
-   be board-dark. Covers the primary CTA, the attention buttons and the modal
-   accept button, all of which hard-code white text for the other themes. */
 .theme-mono .btn-primary,
 .theme-mono .btn-primary *,
 .theme-mono .btn-cta,
 .theme-mono .btn-cta *,
 .theme-mono .disclaimer-cta,
 .theme-mono .disclaimer-cta * {
-  color: #141413 !important;
-  fill: #141413 !important;
+  color: #090b10 !important;
+  fill: #090b10 !important;
   text-shadow: none;
 }
 .theme-mono .btn-cta {
-  border-color: rgba(240,240,234,0.45);
+  border-color: rgba(255,255,255,0.4);
   box-shadow: none;
 }
 
-/* Inputs read as ruled boxes chalked onto the board */
 .theme-mono .form-field {
-  background: rgba(255,255,255,0.035);
-  border-color: rgba(240,240,234,0.28);
-  color: #f0f0ea;
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.16);
+  color: #f8fafc;
 }
 .theme-mono .form-field:hover:not(:focus) {
-  border-color: rgba(240,240,234,0.42);
-  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.05);
 }
 
-/* Kill every animation + transition. Loading spinners are functional, so they
-   are re-enabled immediately below at higher specificity. */
-.theme-mono *,
-.theme-mono *::before,
-.theme-mono *::after {
-  animation: none !important;
-  transition: none !important;
-  scroll-behavior: auto !important;
-}
-/* No press-scale or hover-lift micro-motion in the static mono theme */
-.theme-mono button:not(:disabled):active { transform: none; }
-.theme-mono .preset-btn:hover,
-.theme-mono .btn-primary:hover:not(:disabled) { transform: none; }
-.theme-mono .animate-spin,
-.theme-mono .spinner {
-  animation: spin 0.7s linear infinite !important;
-}
-
-/* Remove decorative/animated background layers entirely in mono */
 .theme-mono .ambient-orbs,
 .theme-mono .page-wash,
 .theme-mono .particle-field-canvas,
@@ -1385,38 +1516,36 @@ X   board fall into shadow the way a real one does under classroom lights. */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   AZURE — sleek blue theme (blue · white · green/red)
-   Applied alongside .theme-light, so it inherits the light layout, the near-
-   black text and the green/red status colours; it only (a) recolours the accent
-   palette to blue and (b) pins a pure-white page background. Declared AFTER
-   .theme-light so its --bg-page override wins (same specificity).
+   GLASS (theme id: "azure") — daylight observatory. Light layout, a deeper
+   instrument blue, a pale blue-gray field so it stays distinct from Day.
    ══════════════════════════════════════════════════════════════════════════ */
 :root.theme-azure {
-  --c-accent:            #2563eb;
-  --c-accent-2:          #3b82f6;
-  --c-accent-dark:       #1d4ed8;
-  --c-accent-darker:     #1e40af;
-  --c-accent-3:          #60a5fa;
-  --c-accent-4:          #93c5fd;
-  --c-accent-5:          #dbeafe;
-  --c-accent-edge:       #0a1f4d;
+  --c-accent:            #2F5FE0;
+  --c-accent-2:          #5B7CFA;
+  --c-accent-dark:       #244BC2;
+  --c-accent-darker:     #1C3C9E;
+  --c-accent-3:          #8EAAFF;
+  --c-accent-4:          #C5D4FF;
+  --c-accent-5:          #E7EEFF;
+  --c-accent-edge:       #0c1838;
 
-  --c-accent-rgb:        37,99,235;
-  --c-accent2-rgb:       59,130,246;
-  --c-accent-dark-rgb:   29,78,216;
-  --c-accent-darker-rgb: 30,64,175;
-  --c-accent3-rgb:       96,165,250;
-  --c-accent4-rgb:       147,197,253;
-  --c-accent5-rgb:       219,234,254;
+  --c-accent-rgb:        47,95,224;
+  --c-accent2-rgb:       91,124,250;
+  --c-accent-dark-rgb:   36,75,194;
+  --c-accent-darker-rgb: 28,60,158;
+  --c-accent3-rgb:       142,170,255;
+  --c-accent4-rgb:       197,212,255;
+  --c-accent5-rgb:       231,238,255;
 
-  /* Crisp pure-white surface + faint blue grid */
-  --bg-page:             #ffffff;
-  --bg-page-grid:        rgba(37,99,235,0.04);
+  --bg-page:             #e8eef8;
+  --bg-page-grid:        rgba(47,95,224,0.06);
+  --bg-header:           rgba(232,238,248,0.88);
 }
 
-/* Accent-filled controls (active tabs, Generate, language toggle, chat FAB)
-   keep WHITE labels on the blue fill. Without this the light layer's
-   `.text-white → navy` rule would make low-contrast navy-on-blue text. */
+/* Filled controls keep white labels. The light layer remaps .text-white to
+   navy, which disappears on a blue fill. */
+.theme-light .on-accent,
+.theme-light .on-accent *,
 .theme-azure .on-accent,
 .theme-azure .on-accent * {
   color: #fff !important;
@@ -1424,140 +1553,72 @@ X   board fall into shadow the way a real one does under classroom lights. */
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   TERMINAL — a CRT command line: black screen, phosphor green, monospace
-   Rides on the default (dark) token set, same reasoning as chalkboard — a CRT
-   is a dark surface. Recolours the accent to phosphor green, pins the page to
-   true black, forces the app's monospace face everywhere (not just numerals —
-   a CLI has no second typeface), and layers scanlines + a vignette on the
-   screen. Unlike chalkboard, glow effects are KEPT rather than flattened:
-   `.shadow-neon` and `.text-gradient` already read the accent variables, so
-   they render as green phosphor bloom for free — a CRT glows, it doesn't
-   stay flat — and motion stays on; `.btn-cta`'s existing blink animation
-   reads as a blinking cursor prompt for free too.
+   SIGNAL (theme id: "terminal") — a dim instrument panel. Near-black field,
+   one restrained green, the same UI type as Night. No scanlines, no phosphor
+   bloom, no forced monospace.
    ══════════════════════════════════════════════════════════════════════════ */
 :root.theme-terminal {
-  /* Phosphor green */
-  --c-accent:            #33ff66;
-  --c-accent-2:          #7dffa3;
-  --c-accent-dark:       #22cc4d;
-  --c-accent-darker:     #189938;
-  --c-accent-3:          #a6ffc1;
-  --c-accent-4:          #cfffdf;
-  --c-accent-5:          #e9ffef;
-  --c-accent-edge:       #052610;
+  --c-accent:            #3DDC97;
+  --c-accent-2:          #7CE8B8;
+  --c-accent-dark:       #22B874;
+  --c-accent-darker:     #178F59;
+  --c-accent-3:          #A7F0CE;
+  --c-accent-4:          #D2F8E8;
+  --c-accent-5:          #EDFCF5;
+  --c-accent-edge:       #06301c;
 
-  --c-accent-rgb:        51,255,102;
-  --c-accent2-rgb:       125,255,163;
-  --c-accent-dark-rgb:   34,204,77;
-  --c-accent-darker-rgb: 24,153,56;
-  --c-accent3-rgb:       166,255,193;
-  --c-accent4-rgb:       207,255,223;
-  --c-accent5-rgb:       233,255,239;
+  --c-accent-rgb:        61,220,151;
+  --c-accent2-rgb:       124,232,184;
+  --c-accent-dark-rgb:   34,184,116;
+  --c-accent-darker-rgb: 23,143,89;
+  --c-accent3-rgb:       167,240,206;
+  --c-accent4-rgb:       210,248,232;
+  --c-accent5-rgb:       237,252,245;
 
-  /* Phosphor white is faintly green, never neutral */
-  --text-primary:     214,255,222;
-  --text-muted:        150,196,162;
-  --text-subtle:       104,150,116;
+  --text-primary:     226,236,230;
+  --text-muted:       160,184,170;
+  --text-subtle:      110,140,122;
 
-  /* True black screen */
-  --bg-page:          #000000;
-  --bg-page-grid:     rgba(51,255,102,0.04);
+  --bg-page:          #070b09;
+  --bg-page-grid:     rgba(61,220,151,0.05);
 
-  /* Opaque, not a light lift like chalkboard's: `.glass-card` doubles as the
-     surface for every fixed-position modal/overlay in the app (Natal Chart,
-     Knowledge Graph's expand, the disclaimer…), which sit over a blurred
-     backdrop rather than the plain page. A few-percent tint there let the
-     backdrop and whatever was behind it show straight through — on the
-     Knowledge Graph's expand, that made the close button unreadable against
-     the page bleeding through underneath it. */
-  --bg-card:          rgba(2,12,6,0.94);
-  --bg-card-hover:    rgba(4,18,9,0.96);
-  --bg-inset:         rgba(51,255,102,0.045);
-  --bg-inset-hover:   rgba(51,255,102,0.07);
+  /* Opaque cards: modals sit over a blurred backdrop, and a thin tint let
+     that backdrop show through and hide the close control. */
+  --bg-card:          rgba(8,16,12,0.94);
+  --bg-card-hover:    rgba(10,22,16,0.96);
+  --bg-inset:         rgba(61,220,151,0.05);
+  --bg-inset-hover:   rgba(61,220,151,0.08);
 
-  --border-card:      rgba(51,255,102,0.28);
-  --border-subtle:    rgba(51,255,102,0.14);
+  --border-card:      rgba(61,220,151,0.22);
+  --border-subtle:    rgba(61,220,151,0.12);
 
-  --bg-header:        rgba(0,0,0,0.92);
-  --border-header:    rgba(51,255,102,0.24);
+  --bg-header:        rgba(7,11,9,0.92);
+  --border-header:    rgba(61,220,151,0.18);
 
-  --scrollbar-track:  #000000;
-  --scrollbar-thumb:  rgba(51,255,102,0.40);
+  --scrollbar-track:  #070b09;
+  --scrollbar-thumb:  rgba(61,220,151,0.40);
 
-  --shadow-card:      inset 0 0 0 1px rgba(51,255,102,0.06),
-                      0 0 26px rgba(51,255,102,0.10);
+  --shadow-card:      0 0 0 1px rgba(61,220,151,0.06);
 }
 
-/* Force the CLI typeface everywhere — headings included */
-.theme-terminal,
-.theme-terminal body,
-.theme-terminal h1,
-.theme-terminal h2,
-.theme-terminal h3,
-.theme-terminal h4,
-.theme-terminal h5,
-.theme-terminal h6,
-.theme-terminal .font-display,
-.theme-terminal .brand-title {
-  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-}
-.theme-terminal h1,
-.theme-terminal h2,
-.theme-terminal h3,
-.theme-terminal h4,
-.theme-terminal h5,
-.theme-terminal h6,
-.theme-terminal .font-display,
-.theme-terminal .brand-title {
-  font-weight: 700;
-}
-
-/* Scanlines + a soft vignette on the screen */
-.theme-terminal body {
-  background-color: var(--bg-page);
-  background-image:
-    repeating-linear-gradient(
-      180deg,
-      rgba(51,255,102,0.035) 0px,
-      rgba(51,255,102,0.035) 1px,
-      transparent 1px,
-      transparent 3px
-    ),
-    radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
-  background-attachment: fixed;
-  /* Phosphor bloom on every glyph */
-  text-shadow: 0 0 1.5px rgba(51,255,102,0.45), 0 0 6px rgba(51,255,102,0.12);
-}
-
-/* The app shell paints --bg-page as an inline style, which would sit on top
-   of the scanlines and hide them (same fix chalkboard needs). */
-.theme-terminal .tech-grid {
-  background-color: transparent !important;
-}
-
-/* Cards read as terminal windows, not frosted glass */
 .theme-terminal .glass-card {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-color: rgba(51,255,102,0.28);
+  border-color: rgba(61,220,151,0.22);
   box-shadow: var(--shadow-card);
 }
 .theme-terminal .glass-card:hover {
-  border-color: rgba(51,255,102,0.45);
+  border-color: rgba(61,220,151,0.38);
 }
 
-/* The modals + privacy banner hard-code a navy fill for the dark theme;
-   against a true-black screen that reads as a mismatched patch, so repaint
-   as black with a green outline instead. */
 .theme-terminal .disclaimer-modal,
 .theme-terminal .privacy-banner {
-  background: #000000;
-  border-color: rgba(51,255,102,0.30);
-  box-shadow: 0 0 60px rgba(51,255,102,0.10), 0 20px 60px rgba(0,0,0,0.6);
+  background: #070b09;
+  border-color: rgba(61,220,151,0.24);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
 }
 
-/* Solid accent-filled controls need black labels — phosphor green is bright
-   enough that white text loses contrast against it. */
+/* Green fills are bright enough that white labels lose contrast. */
 .theme-terminal .on-accent,
 .theme-terminal .on-accent *,
 .theme-terminal .btn-primary,
@@ -1571,10 +1632,9 @@ X   board fall into shadow the way a real one does under classroom lights. */
   text-shadow: none;
 }
 .theme-terminal .btn-cta {
-  border-color: rgba(51,255,102,0.55);
+  border-color: rgba(61,220,151,0.45);
+  box-shadow: none;
 }
-
-/* Timeline (Dasha) headers/dots — same accent-fill contrast fix */
 .theme-terminal .dasha-md-header {
   background-color: var(--c-accent) !important;
   background-image: none !important;
@@ -1589,19 +1649,15 @@ X   board fall into shadow the way a real one does under classroom lights. */
   background-color: var(--c-accent-3) !important;
 }
 
-/* Inputs read as a prompt line: black field, phosphor-green border */
 .theme-terminal .form-field {
-  background: rgba(51,255,102,0.04);
-  border-color: rgba(51,255,102,0.30);
-  color: #d6ffde;
+  background: rgba(61,220,151,0.04);
+  border-color: rgba(61,220,151,0.24);
+  color: #e8f7ef;
 }
 .theme-terminal .form-field:hover:not(:focus) {
-  border-color: rgba(51,255,102,0.45);
-  background: rgba(51,255,102,0.07);
+  border-color: rgba(61,220,151,0.4);
+  background: rgba(61,220,151,0.07);
 }
-
-/* No multi-colour decorative particle layers — a terminal has one colour.
-   (Belt-and-suspenders: App.tsx also skips mounting these for this theme.) */
 .theme-terminal .ambient-orbs,
 .theme-terminal .page-wash,
 .theme-terminal .particle-field-canvas,

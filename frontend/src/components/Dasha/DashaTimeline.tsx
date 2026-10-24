@@ -165,8 +165,8 @@ export const DashaTimeline: React.FC<Props> = ({ timeline, birthData, currentDat
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.22)' }}
+                  transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ overflow: 'hidden', background: isLight ? '#f8fafc' : 'rgba(0,0,0,0.22)' }}
                 >
                   <div className="p-3 space-y-2">
                     {antardashas.map((ad, adIdx) => {

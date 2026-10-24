@@ -80,18 +80,16 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
   };
 
   // Theme tokens
-  const headerBg    = isLight
-    ? `linear-gradient(to right, #92400e, ${ACCENT})`
-    : `linear-gradient(to right, #3b1a00, #c97a2a)`;
+  const headerBg    = `linear-gradient(to right, var(--c-accent-dark), var(--c-accent))`;
   const rowEven     = isLight ? '#ffffff'          : 'rgba(255,255,255,0.008)';
   const rowOdd      = isLight ? '#f8fafc'          : 'rgba(255,255,255,0.004)';
   const borderClr   = isLight ? '#e2e8f0'          : 'rgba(255,255,255,0.06)';
   const cellTxt     = isLight ? '#0f172a'          : 'rgba(255,255,255,0.88)';
   const mutedTxt    = isLight ? '#64748b'          : 'rgba(255,255,255,0.50)';
   const degreeTxt   = ACCENT;
-  const padaBg      = isLight ? 'rgba(255,175,97,0.18)' : 'rgba(255,175,97,0.20)';
-  const padaTxt     = isLight ? '#92400e'          : 'rgba(255,175,97,0.90)';
-  const padaBorder  = isLight ? 'rgba(255,175,97,0.35)' : 'rgba(255,175,97,0.30)';
+  const padaBg      = 'rgba(var(--c-accent-rgb),0.14)';
+  const padaTxt     = isLight ? 'var(--c-accent-darker)' : 'var(--c-accent-2)';
+  const padaBorder  = 'rgba(var(--c-accent-rgb),0.32)';
 
   return (
     <>
@@ -107,7 +105,7 @@ export const PlanetTable: React.FC<Props> = ({ planets, ascendant }) => {
           transition={{ duration: 0.5 }}
         >
           <thead>
-            <tr style={{ background: headerBg }}>
+            <tr className="on-accent" style={{ background: headerBg }}>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left rounded-tl-lg font-bold text-white">{t('chart.table.colPlanet')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colRashi')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-white">{t('chart.table.colDegree')}</th>

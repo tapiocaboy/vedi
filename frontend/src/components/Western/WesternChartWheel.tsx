@@ -179,7 +179,8 @@ export const WesternChartWheel: React.FC<Props> = ({ chart, minAspectStrength = 
               >
                 <circle cx={glyphPt.x} cy={glyphPt.y} r={13} fill={hitFill} />
                 <text x={glyphPt.x} y={glyphPt.y} textAnchor="middle" dominantBaseline="central"
-                  fontSize={15} fill={signTextClr} style={{ fontFamily: 'system-ui, sans-serif' }}>
+                  fontSize={15} fill={signTextClr} className="zodiac-mark"
+                  style={{ fontFamily: 'system-ui, sans-serif', animationDelay: `${i * 0.55}s` }}>
                   {SIGN_GLYPHS[i]}
                 </text>
               </g>

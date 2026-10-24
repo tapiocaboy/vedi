@@ -39,5 +39,5 @@ Thumbs.db
 *.log
 
 
-# Backtest intermediates (regenerate with backtest/comboEval.ts)
-backtest/data/combo_samples.json
+# Backtest harness and generated datasets
+backtest/

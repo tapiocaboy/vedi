@@ -8,6 +8,7 @@ import { useLang } from '../../i18n/LanguageContext';
 import {
   labelPlanet, labelRashi, labelRashiWestern, labelDignity, labelOrdinalHouse,
 } from '../../i18n/astroLabels';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -77,6 +78,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
           <motion.div
             key="varga-bd"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={onClose}
             className="fixed inset-0 z-40 backdrop-blur-sm"
             style={{ background: isLight ? 'rgba(15,23,42,0.25)' : 'rgba(0,0,0,0.50)' }}
@@ -87,7 +89,7 @@ export const VargaHouseDetailPanel: React.FC<Props> = ({
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            transition={drawerTransition}
             className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg overflow-y-auto"
             style={{ background: panelBg, borderLeft: `1px solid ${panelBdr}` }}
           >

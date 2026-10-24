@@ -13,6 +13,7 @@ import type { GocharaSnapshot, PlanetTransit } from '../../services/api';
 import { computeTransitNatal } from '../../lib/core/transitAnalysis';
 import { gocharaEffect } from '../../lib/core/gocharaPhala';
 import { type Bi, pick, ordinalNum } from '../../lib/core/i18n';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 import { TR, TR_FALLBACK } from '../../lib/core/text/transitReadingText';
 import { PLANET_SYMBOLS, PLANET_COLORS, RASHIS } from '../../types/astrology';
 import { useTheme } from '../../hooks/useTheme';
@@ -71,6 +72,7 @@ export const TransitDetailPanel: React.FC<Props> = ({ transit, gochara, onClose 
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={onClose}
             className="fixed inset-0 z-40 backdrop-blur-sm"
             style={{ background: backdropBg }}
@@ -80,7 +82,7 @@ export const TransitDetailPanel: React.FC<Props> = ({ transit, gochara, onClose 
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            transition={drawerTransition}
             className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md overflow-y-auto"
             style={{ background: panelBg, borderLeft: `1px solid ${panelBdr}` }}
           >

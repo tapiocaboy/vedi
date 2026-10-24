@@ -97,7 +97,8 @@ export const AreaReadingList: React.FC<{ prediction: DashaPredictionData; title?
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="border-t border-white/6"
+                  transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+                  className="border-t border-white/6 overflow-hidden"
                 >
                   <div className="p-4 bg-white/3">
                     {reading?.why && <p className="text-sm text-white/75 leading-relaxed">{reading.why}</p>}

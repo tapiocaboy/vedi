@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { panelTokens } from '../Chart/panelTokens';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 import type { Tone } from '../../lib/core/western/natal';
 
 export interface DetailSection { heading: string; body?: string; bullets?: string[]; tone?: Tone }
@@ -31,7 +32,7 @@ const TONE_HEX: Record<Tone, string> = {
   good: '#22c55e', bad: '#f43f5e', neutral: '#94a3b8', info: 'var(--c-accent)',
 };
 
-const spring = { type: 'spring' as const, stiffness: 320, damping: 32 };
+const spring = drawerTransition;
 
 export const WesternDetailPanel: React.FC<{ content: DetailContent | null; onClose: () => void }> = ({ content, onClose }) => {
   const isLight = useTheme();
@@ -44,6 +45,7 @@ export const WesternDetailPanel: React.FC<{ content: DetailContent | null; onClo
           <motion.div
             key="bd"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={onClose}
             className="fixed inset-0 z-[70] backdrop-blur-sm"
             style={{ background: tk.backdropBg }}

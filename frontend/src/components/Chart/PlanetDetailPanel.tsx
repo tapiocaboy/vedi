@@ -8,6 +8,7 @@ import { ProgressBar } from '../shared/BarCharts';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
 import { labelPlanet, labelRashi, labelDignity, labelArea, labelOrdinalHouse } from '../../i18n/astroLabels';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 
 const ACCENT = 'var(--c-accent)';
 
@@ -87,6 +88,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={onClose}
             className="fixed inset-0 z-40 backdrop-blur-sm"
             style={{ background: backdropBg }}
@@ -97,7 +99,7 @@ export const PlanetDetailPanel: React.FC<Props> = ({ planet, ascendantRashiIndex
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            transition={drawerTransition}
             className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg overflow-y-auto"
             style={{ background: panelBg, borderLeft: `1px solid ${panelBdr}` }}
           >
@@ -155,7 +157,7 @@ function AscendantContent({ planet, lang, t, isLight, panelBg, titleClr, bodyClr
   return (
     <div className="p-6 space-y-5">
       <div className="rounded-xl p-5"
-        style={{ background: 'rgba(255,175,97,0.08)', border: '1px solid rgba(255,175,97,0.25)' }}>
+        style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.24)' }}>
         <div className="flex items-center gap-2 mb-3">
           <Home className="w-4 h-4" style={{ color: ACCENT }} />
           <span className="text-sm font-semibold" style={{ color: ACCENT }}>{t('planet.ascendantTitle')}</span>
@@ -373,9 +375,9 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
 
       {/* House placement */}
       {analysis.placement && (
-        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid rgba(255,175,97,0.25)` }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(255,175,97,0.08)' }}>
-            <span className="text-sm font-semibold" style={{ color: isLight ? '#92400e' : ACCENT }}>{analysis.placement.keynote}</span>
+        <div className="rounded-xl overflow-hidden" style={{ border: `1px solid rgba(var(--c-accent-rgb),0.24)` }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(var(--c-accent-rgb),0.08)' }}>
+            <span className="text-sm font-semibold" style={{ color: isLight ? 'var(--c-accent-darker)' : ACCENT }}>{analysis.placement.keynote}</span>
             <span className="text-[10px] font-mono uppercase" style={{ color: mutedClr }}>{analysis.houseData.name}</span>
           </div>
           <div className="px-4 pb-4 pt-3 space-y-4" style={{ background: panelBg }}>
@@ -440,7 +442,7 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
             <div className="flex flex-wrap gap-1.5">
               {analysis.keywords.slice(0, 6).map(k => (
                 <span key={k} className="px-2 py-0.5 rounded-full text-[11px] font-mono"
-                  style={{ background: 'rgba(255,175,97,0.10)', border: '1px solid rgba(255,175,97,0.22)', color: isLight ? '#92400e' : ACCENT }}>
+                  style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)', color: isLight ? 'var(--c-accent-darker)' : ACCENT }}>
                   {k}
                 </span>
               ))}
@@ -464,7 +466,7 @@ function AnalysisContent({ analysis, planet, color, lang, t, isLight,
 
       {/* Remedies — hidden for now, kept for when they come back
       {(analysis.gemstone || analysis.mantra || (planet.isRetrograde && analysis.retrogradeEffect?.remedies.length)) && (
-        <div className="rounded-xl p-4" style={{ background: 'rgba(255,175,97,0.06)', border: '1px solid rgba(255,175,97,0.20)' }}>
+        <div className="rounded-xl p-4" style={{ background: 'rgba(var(--c-accent-rgb),0.06)', border: '1px solid rgba(var(--c-accent-rgb),0.20)' }}>
           <p className="text-[10px] font-mono uppercase mb-3" style={{ color: mutedClr }}>{t('planet.remedies')}</p>
           <div className="space-y-2">
             {analysis.gemstone && (

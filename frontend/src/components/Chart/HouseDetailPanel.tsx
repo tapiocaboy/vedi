@@ -16,6 +16,7 @@ import {
 } from '../../i18n/astroLabels';
 import { PairDetail, PairListCard } from './PlanetPairPanel';
 import { panelTokens } from './panelTokens';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 
 interface Props {
   houseNumber: number | null;
@@ -52,7 +53,7 @@ const ACCENT = 'var(--c-accent)';
 /** Width of the pair pane on a wide screen — the panel and pane fit side by side. */
 const PANE_WIDTH = 440;
 
-const spring = { type: 'spring' as const, stiffness: 320, damping: 32 };
+const spring = drawerTransition;
 
 export const HouseDetailPanel: React.FC<Props> = ({
   houseNumber, ascendantRashiIndex, planets, onClose,
@@ -88,9 +89,9 @@ export const HouseDetailPanel: React.FC<Props> = ({
   const selectedPair = pairIndex !== null ? pairs[pairIndex] ?? null : null;
 
   const tk = panelTokens(isLight);
-  const tagBg      = isLight ? 'rgba(255,175,97,0.12)' : 'rgba(139,92,246,0.10)';
-  const tagBdr     = isLight ? 'rgba(255,175,97,0.30)' : 'rgba(139,92,246,0.20)';
-  const tagClr     = isLight ? '#92400e'               : '#c4b5fd';
+  const tagBg      = 'rgba(var(--c-accent-rgb),0.10)';
+  const tagBdr     = 'rgba(var(--c-accent-rgb),0.28)';
+  const tagClr     = isLight ? 'var(--c-accent-darker)' : 'var(--c-accent-2)';
   const dignityClr = isLight ? DIGNITY_COLOR_LIGHT     : DIGNITY_COLOR_DARK;
 
   const rashiIdx = analysis ? (ascendantRashiIndex + (houseNumber! - 1)) % 12 : 0;
@@ -114,6 +115,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
           <motion.div
             key="bd"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={closeAll}
             className="fixed inset-0 z-[70] backdrop-blur-sm"
             style={{ background: tk.backdropBg }}
@@ -136,7 +138,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
                 style={{ background: tk.headerBg, borderBottom: `1px solid ${tk.headerBdr}`, backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(255,175,97,0.12)', border: `1px solid rgba(255,175,97,0.30)` }}>
+                    style={{ background: 'rgba(var(--c-accent-rgb),0.12)', border: `1px solid rgba(var(--c-accent-rgb),0.28)` }}>
                     <span className="text-sm font-bold font-mono" style={{ color: ACCENT }}>{houseNumber}</span>
                   </div>
                   <div>
@@ -164,7 +166,7 @@ export const HouseDetailPanel: React.FC<Props> = ({
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                   className="rounded-xl px-4 py-4"
-                  style={{ background: 'rgba(255,175,97,0.08)', border: '1px solid rgba(255,175,97,0.25)' }}
+                  style={{ background: 'rgba(var(--c-accent-rgb),0.08)', border: '1px solid rgba(var(--c-accent-rgb),0.24)' }}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Info className="w-3.5 h-3.5" style={{ color: ACCENT }} />
@@ -196,9 +198,9 @@ export const HouseDetailPanel: React.FC<Props> = ({
                 {/* Ascendant badge */}
                 {analysis.isAscendant && (
                   <div className="rounded-xl px-4 py-3 flex items-center gap-2"
-                    style={{ background: 'rgba(255,175,97,0.10)', border: `1px solid rgba(255,175,97,0.30)` }}>
+                    style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: `1px solid rgba(var(--c-accent-rgb),0.28)` }}>
                     <Home className="w-4 h-4" style={{ color: ACCENT }} />
-                    <p className="text-sm font-semibold" style={{ color: isLight ? '#92400e' : ACCENT }}>
+                    <p className="text-sm font-semibold" style={{ color: isLight ? 'var(--c-accent-darker)' : ACCENT }}>
                       {t('house.ascendantBadge')}
                     </p>
                   </div>

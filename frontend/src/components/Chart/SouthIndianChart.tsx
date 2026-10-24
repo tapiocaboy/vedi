@@ -43,22 +43,21 @@ export const SouthIndianChart: React.FC<Props> = ({
   const rashiToHouse = (rashiIndex: number) =>
     ((rashiIndex - ascendantRashi + 12) % 12) + 1;
 
-  // Theme-aware tokens
-  // Dark surfaces mix from the theme's own page colour so Terminal, Chalkboard
-  // and the default dark each get cells in their own tone.
-  const lagnaBg     = isLight ? '#fff6ec' : 'color-mix(in srgb, var(--bg-page), rgb(255,175,97) 7%)';
+  // Cells take their tone from the page and the theme accent, so each
+  // theme draws the same chart in its own colour.
+  const lagnaBg     = isLight ? 'rgba(var(--c-accent-rgb),0.07)' : 'color-mix(in srgb, var(--bg-page), var(--c-accent) 8%)';
   const cellBgBase  = isLight ? '#ffffff' : 'color-mix(in srgb, var(--bg-page), #ffffff 3%)';
-  const cellBgSel   = isLight ? '#fff4e8' : 'color-mix(in srgb, var(--bg-page), rgb(255,175,97) 11%)';
-  const lineClr     = isLight ? 'rgba(148,163,184,0.45)' : 'rgba(255,175,97,0.16)';
-  const ascRing     = isLight ? 'rgba(234,120,20,0.75)'  : 'rgba(255,175,97,0.70)';
-  const selRing     = isLight ? 'rgba(234,120,20,0.45)'  : 'rgba(255,175,97,0.40)';
+  const cellBgSel   = isLight ? 'rgba(var(--c-accent-rgb),0.12)' : 'color-mix(in srgb, var(--bg-page), var(--c-accent) 14%)';
+  const lineClr     = isLight ? 'rgba(148,163,184,0.45)' : 'rgba(var(--c-accent-rgb),0.16)';
+  const ascRing     = isLight ? 'rgba(var(--c-accent-rgb),0.70)' : 'rgba(var(--c-accent-rgb),0.65)';
+  const selRing     = isLight ? 'rgba(var(--c-accent-rgb),0.40)' : 'rgba(var(--c-accent-rgb),0.38)';
   const houseNumClr = isLight ? '#64748b'                : 'rgba(255,255,255,0.50)';
   const planetClr   = isLight ? '#1e293b'                : 'rgba(255,255,255,0.88)';
-  const glyphClr    = isLight ? 'rgba(234,120,20,0.16)'  : 'rgba(255,175,97,0.14)';
-  const glyphAscClr = isLight ? 'rgba(234,120,20,0.30)'  : 'rgba(255,175,97,0.28)';
+  const glyphClr    = isLight ? 'rgba(var(--c-accent-rgb),0.42)' : 'rgba(var(--c-accent-rgb),0.5)';
+  const glyphAscClr = isLight ? 'rgba(var(--c-accent-rgb),0.72)' : 'rgba(var(--c-accent-rgb),0.78)';
   const gridShadow  = isLight
     ? '0 1px 2px rgba(15,23,42,0.06), 0 12px 32px -12px rgba(15,23,42,0.18)'
-    : '0 12px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,175,97,0.10)';
+    : '0 12px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(var(--c-accent-rgb),0.12)';
 
   // The four middle squares are one space in the South Indian chart — the
   // centre panel spans them rather than filling one and leaving three blank.
@@ -66,12 +65,12 @@ export const SouthIndianChart: React.FC<Props> = ({
     const lagnaPlanets = planetsByRashi[ascendantRashi];
     return (
       <motion.div
-        className="flex flex-col items-center justify-center text-center p-3"
+        className="lagna-well flex flex-col items-center justify-center text-center p-3"
         style={{
           gridRow: '2 / 4', gridColumn: '2 / 4',
           background: isLight
-            ? 'radial-gradient(circle at 50% 45%, #fff7ee 0%, #ffffff 70%)'
-            : 'radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--bg-page), rgb(255,175,97) 8%) 0%, var(--bg-page) 75%)',
+            ? 'radial-gradient(circle at 50% 45%, rgba(var(--c-accent-rgb),0.07) 0%, #ffffff 70%)'
+            : 'radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--bg-page), var(--c-accent) 10%) 0%, var(--bg-page) 75%)',
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -79,8 +78,8 @@ export const SouthIndianChart: React.FC<Props> = ({
       >
         <ZodiacSymbol
           index={ascendantRashi}
-          color={isLight ? 'rgba(234,120,20,0.85)' : 'rgba(255,220,160,0.92)'}
-          className="w-[4.5rem] h-[4.5rem] sm:w-24 sm:h-24"
+          color={isLight ? 'var(--c-accent-dark)' : 'var(--c-accent-2)'}
+          className="lagna-figure w-[4.5rem] h-[4.5rem] sm:w-24 sm:h-24"
           title={labelRashiWestern(ascendantRashi, lang, RASHI_ENGLISH[ascendantRashi])}
         />
         <div className="mt-2 text-[10px] font-mono uppercase tracking-[0.2em] font-bold" style={{ color: ACCENT }}>
@@ -109,8 +108,9 @@ export const SouthIndianChart: React.FC<Props> = ({
         key={rashiIndex}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: rashiIndex * 0.03, duration: 0.3 }}
-        whileTap={{ scale: 0.98 }}
+        transition={{
+          opacity: { delay: rashiIndex * 0.03, duration: 0.3 },
+        }}
         onClick={() => setSelectedHouse(houseNum)}
         role="button"
         tabIndex={0}
@@ -132,20 +132,25 @@ export const SouthIndianChart: React.FC<Props> = ({
           english: labelRashiWestern(rashiIndex, lang, RASHI_ENGLISH[rashiIndex]),
         })}
       >
-        {/* Zodiac glyph watermark — instant sign recognition */}
-        <ZodiacSymbol
-          index={rashiIndex}
-          color={isAscendant ? glyphAscClr : glyphClr}
-          className="absolute inset-[18%] pointer-events-none"
-        />
+        {/* Zodiac figure. A slow stagger walks around the square. */}
+        <div
+          className="zodiac-mark absolute inset-[18%] pointer-events-none"
+          style={{ animationDelay: `${rashiIndex * 0.55}s` }}
+        >
+          <ZodiacSymbol
+            index={rashiIndex}
+            color={isAscendant ? glyphAscClr : glyphClr}
+            className="w-full h-full"
+          />
+        </div>
 
         {/* House number badge top-left */}
         <div
-          className="absolute top-1.5 left-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-mono font-bold"
+          className={`absolute top-1.5 left-1.5 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-mono font-bold ${isAscendant ? 'on-accent' : ''}`}
           style={{
             color: isAscendant ? '#ffffff' : houseNumClr,
             background: isAscendant
-              ? 'rgb(234,120,20)'
+              ? 'var(--c-accent)'
               : isLight ? 'rgba(15,23,42,0.05)' : 'rgba(255,255,255,0.06)',
           }}
         >
@@ -171,7 +176,7 @@ export const SouthIndianChart: React.FC<Props> = ({
                 transition={{ delay: 0.45 + rashiIndex * 0.03 + idx * 0.09, type: 'spring', stiffness: 380, damping: 22 }}
                 className="flex items-baseline gap-[3px] px-1.5 py-0.5 rounded-full leading-none border"
                 style={{
-                  background: isLight ? '#ffffff' : 'rgba(18,15,26,0.92)',
+                  background: isLight ? '#ffffff' : 'color-mix(in srgb, var(--bg-page), #000 35%)',
                   borderColor: isLight ? `${color}40` : `${color}50`,
                   boxShadow: isLight ? '0 1px 2px rgba(15,23,42,0.06)' : undefined,
                 }}

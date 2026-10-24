@@ -43,21 +43,21 @@ interface Star {
 const GLYPH_COUNT = 26;
 const STAR_COUNT = 90;
 
-// Warm celestial palette — dark theme (r,g,b)
+// Cool instrument palette — ice, silver, and a little sky.
 const HUES_DARK: [number, number, number][] = [
-  [255, 175, 97],   // warm orange (chart accent)
-  [255, 46, 81],    // brand pink
-  [200, 160, 255],  // soft violet
-  [120, 200, 255],  // pale sky blue
-  [255, 220, 130],  // pale gold
+  [232, 238, 255],
+  [142, 170, 255],
+  [186, 204, 255],
+  [255, 255, 255],
+  [110, 140, 230],
 ];
 
 const HUES_LIGHT: [number, number, number][] = [
-  [234, 120, 20],
-  [220, 30, 70],
-  [140, 90, 220],
-  [30, 130, 200],
-  [190, 140, 20],
+  [62, 95, 224],
+  [91, 124, 250],
+  [47, 70, 160],
+  [120, 145, 220],
+  [30, 48, 120],
 ];
 
 function mulberry(seed: number) {

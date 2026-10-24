@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLang } from '../i18n/LanguageContext';
 
-const PINK = 'var(--c-accent)';
+const ACCENT = 'var(--c-accent)';
 
 interface LogoProps {
   size?: number;
@@ -9,8 +9,8 @@ interface LogoProps {
 }
 
 /**
- * Brand mark: the birth chart reduced to a diamond seal, with the native at the center.
- * Symmetric, so it stays a mark rather than a figure.
+ * Brand mark: a reticle. A ring, a center, and four ticks — an instrument,
+ * not a seal.
  */
 export const Logo: React.FC<LogoProps> = ({ size = 40, className = '' }) => (
   <svg
@@ -21,14 +21,12 @@ export const Logo: React.FC<LogoProps> = ({ size = 40, className = '' }) => (
     className={className}
     aria-hidden
   >
-    <rect width="64" height="64" rx="16" fill={PINK} />
-    <path
-      d="M32 13L51 32L32 51L13 32Z"
-      stroke="white"
-      strokeWidth="5.25"
-      strokeLinejoin="round"
-    />
-    <circle cx="32" cy="32" r="3.15" fill="white" />
+    <rect x="5" y="5" width="54" height="54" rx="16" stroke={ACCENT} strokeWidth="1.75" />
+    <g className="logo-sweep">
+      <circle cx="32" cy="32" r="12" stroke={ACCENT} strokeWidth="1.5" />
+      <path d="M32 9v7M32 48v7M9 32h7M48 32h7" stroke={ACCENT} strokeWidth="1.5" strokeLinecap="round" />
+    </g>
+    <circle className="logo-dot" cx="32" cy="32" r="2.25" fill={ACCENT} />
   </svg>
 );
 
@@ -40,18 +38,19 @@ interface BrandTitleProps {
 export const BrandTitle: React.FC<BrandTitleProps> = ({ isLight = false, compact = false }) => {
   const { lang, t } = useLang();
   return (
-    <div>
+    <div className="min-w-0">
       <h1
-        className={`brand-wordmark ${compact ? 'text-base' : 'text-lg sm:text-xl'}`}
+        className={`brand-wordmark truncate ${compact ? 'text-base' : 'text-base sm:text-xl'}`}
         style={{ color: isLight ? '#0f172a' : '#ffffff' }}
       >
         trytellme
-        <span style={{ color: PINK }}>.xyz</span>
+        <span style={{ color: ACCENT }}>.xyz</span>
       </h1>
       {!compact && (
         <p
-          // Letter-spacing breaks Sinhala ligatures, so only track the Latin text
-          className={`text-[10px] font-mono ${lang === 'si' ? 'text-[11px]' : 'uppercase tracking-[0.22em]'}`}
+          // Letter-spacing breaks Sinhala ligatures, so only track the Latin text.
+          // Hidden on phones so the header tools fit beside the wordmark.
+          className={`hidden sm:block text-[10px] font-mono ${lang === 'si' ? 'text-[11px]' : 'uppercase tracking-[0.22em]'}`}
           style={{ color: isLight ? 'rgba(var(--c-accent-rgb),0.70)' : 'rgba(255,255,255,0.45)' }}
         >
           {t('footer.tagline')}

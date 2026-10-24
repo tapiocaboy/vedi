@@ -12,21 +12,15 @@
  * one. That is what produces the look: a still particle is a speck, a fast one
  * is a long curved dash, and the whole cloud reads as flowing rather than
  * sliding. The assemble/hold/dissolve physics is shared by every theme; only
- * the *skin* changes per `theme` — palette, backdrop, label colour, and for
- * two of them the render primitive itself:
- *   - default (dark theme):  gold streaks, unchanged from the original.
- *   - chalk (mono theme):    chalk-yellow strokes with a hand-trembled jitter.
- *   - terminal (terminal):   phosphor-green monospace characters — digital
- *                             rain assembling into the glyph, not dots.
- *   - aqua (azure theme):    blue droplets with a specular highlight, plus a
- *                             couple of expanding ripples once the figure lands.
- *   - petals (light theme):  rose-pink petals that tumble as they fly, in the
- *                             app's own accent colour. The backdrop here is
- *                             pale rather than dark, so this variant also
- *                             swaps the 'lighter' glow blending (which needs
- *                             a dark backdrop to read as glow) for ordinary
- *                             alpha compositing — overlapping petals layer
- *                             instead of blowing out to white.
+ * the *skin* changes per `theme` — palette, backdrop, and label colour.
+ * Every theme draws the same ice sparks; only the colour and backdrop differ:
+ *   - default (Night):  ice-blue streaks on a near-black field.
+ *   - chalk (Ink):      silver hairlines on a flat black field.
+ *   - terminal (Signal): restrained green streaks on a dim field.
+ *   - aqua (Glass):     instrument blue on a deep blue field.
+ *   - day (Day):        ice blue on a pale field. The backdrop is light, so
+ *                       this variant swaps 'lighter' glow blending for ordinary
+ *                       alpha compositing.
  *
  * The figures are sampled, not drawn: each sign's pictorial silhouette
  * (Sagittarius is the archer-centaur, Leo a lion, Cancer a crab, …) is
@@ -106,40 +100,43 @@ const DETAIL_SHARE  = 0.31;
 const ALPHA_MIN = 110;
 const LUM_STEP  = 46;
 
-type Variant = 'default' | 'chalk' | 'terminal' | 'aqua' | 'petals';
+type Variant = 'default' | 'chalk' | 'terminal' | 'aqua' | 'day' | 'petals';
 
 /** Which reveal skin each theme id gets. Anything unrecognised is 'default'. */
 function variantFor(theme: string | undefined): Variant {
   if (theme === 'mono') return 'chalk';
   if (theme === 'terminal') return 'terminal';
   if (theme === 'azure') return 'aqua';
-  if (theme === 'light') return 'petals';
+  if (theme === 'light') return 'day';
   return 'default';
 }
 
 /** Three tiers per variant: core, deep, pale highlight — same shape as the original GOLD table. */
 const PALETTE: Record<Variant, [number, number, number][]> = {
-  default:  [[255, 203, 58], [246, 166, 35], [255, 236, 178]], // gold
-  chalk:    [[240, 220, 148], [217, 192, 121], [250, 249, 242]], // chalk yellow, matches the chalkboard theme's accent
-  terminal: [[51, 255, 102], [34, 204, 77], [207, 255, 223]], // phosphor green, matches the terminal theme's accent
-  aqua:     [[37, 99, 235], [29, 78, 216], [147, 197, 253]], // azure blue, matches the azure theme's accent
-  petals:   [[255, 46, 81], [219, 39, 119], [255, 214, 224]], // rose — the light theme's own accent (#FF2E51), a deeper magenta, and a pale blush
+  default:  [[142, 170, 255], [91, 124, 250], [232, 238, 255]],
+  chalk:    [[226, 232, 240], [148, 163, 184], [248, 250, 252]],
+  terminal: [[61, 220, 151], [34, 184, 116], [210, 248, 232]],
+  aqua:     [[91, 124, 250], [47, 95, 224], [197, 212, 255]],
+  day:      [[62, 95, 224], [91, 124, 250], [210, 220, 255]],
+  petals:   [[91, 124, 250], [62, 95, 224], [232, 238, 255]],
 };
 
 const BACKDROP: Record<Variant, string> = {
-  default:  'radial-gradient(ellipse at center, #0a0803 0%, #000000 68%)',
-  chalk:    'radial-gradient(ellipse at center, #232320 0%, #141413 70%)',
-  terminal: 'radial-gradient(ellipse at center, #04140a 0%, #000000 70%)',
-  aqua:     'radial-gradient(ellipse at center, #0a2a5c 0%, #020817 72%)',
-  petals:   'radial-gradient(ellipse at center, #fff7f8 0%, #ffe3ea 55%, #ffcdda 100%)',
+  default:  'radial-gradient(ellipse at center, #0c1224 0%, #05060c 70%)',
+  chalk:    'radial-gradient(ellipse at center, #12141a 0%, #07080c 72%)',
+  terminal: 'radial-gradient(ellipse at center, #07140f 0%, #030605 72%)',
+  aqua:     'radial-gradient(ellipse at center, #102044 0%, #070b16 72%)',
+  day:      'radial-gradient(ellipse at center, #f7f8fb 0%, #e4eaf5 72%)',
+  petals:   'radial-gradient(ellipse at center, #f7f8fb 0%, #e4eaf5 72%)',
 };
 
 const LABEL_COLOR: Record<Variant, { tag: string; title: string; sub: string }> = {
-  default:  { tag: 'rgba(255,203,58,0.8)',  title: '#ffecb2', sub: 'rgba(246,166,35,0.55)' },
-  chalk:    { tag: 'rgba(240,220,148,0.85)', title: '#faf9f2', sub: 'rgba(217,192,121,0.6)' },
-  terminal: { tag: 'rgba(51,255,102,0.85)',  title: '#cfffdf', sub: 'rgba(51,255,102,0.55)' },
-  aqua:     { tag: 'rgba(96,165,250,0.9)',   title: '#dbeafe', sub: 'rgba(147,197,253,0.65)' },
-  petals:   { tag: 'rgba(190,24,93,0.8)',    title: '#9d174d', sub: 'rgba(157,23,77,0.6)' },
+  default:  { tag: 'rgba(142,170,255,0.85)', title: '#eef2ff', sub: 'rgba(142,170,255,0.55)' },
+  chalk:    { tag: 'rgba(226,232,240,0.8)',  title: '#f8fafc', sub: 'rgba(148,163,184,0.7)' },
+  terminal: { tag: 'rgba(61,220,151,0.85)',  title: '#e8f7ef', sub: 'rgba(61,220,151,0.55)' },
+  aqua:     { tag: 'rgba(142,170,255,0.9)',  title: '#eef2ff', sub: 'rgba(142,170,255,0.6)' },
+  day:      { tag: 'rgba(62,95,224,0.85)',   title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
+  petals:   { tag: 'rgba(62,95,224,0.85)',   title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
 };
 
 /** ASCII-only so canvas monospace metrics stay predictable across platforms. */
@@ -398,7 +395,7 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
               : 0.7 + Math.random() * 0.55,
           tint: tier === 0 ? (i % 4 === 0 ? 2 : 0) : tier === 1 ? 0 : 1,
           lead: tier === 0 && i % 8 === 0,
-          char: variant === 'terminal' ? randomRainChar() : undefined,
+          char: undefined,
         });
       }
     };
@@ -423,11 +420,9 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
       last = now;
 
       ctx.clearRect(0, 0, w, h);
-      // 'lighter' additive blending is what makes overlapping particles read
-      // as glow — but that only works over a dark backdrop. Petals sit on a
-      // pale one, so it stays plain alpha compositing: petals layer over each
-      // other like real ones instead of blowing out toward white.
-      ctx.globalCompositeOperation = variant === 'petals' ? 'source-over' : 'lighter';
+      // 'lighter' additive blending reads as glow on a dark field. Day sits
+      // on a pale field, so it stays ordinary alpha compositing.
+      ctx.globalCompositeOperation = variant === 'day' || variant === 'petals' ? 'source-over' : 'lighter';
       ctx.lineCap = 'round';
       if (variant === 'terminal') { ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; }
 
@@ -650,10 +645,8 @@ export const LagnaIntro: React.FC<Props> = ({ rashiIndex, onDone, theme }) => {
   const labelColor = LABEL_COLOR[variant];
 
   return (
-    // The theme this reveal is playing under may itself run with reduced
-    // motion (chalkboard sets it app-wide) — this moment should always fade
-    // smoothly regardless; only the OS-level preference (checked before this
-    // component is ever mounted) should suppress it.
+    // This moment always fades. Only the OS-level preference (checked before
+    // this component is mounted) should suppress it.
     <MotionConfig reducedMotion="never">
     <AnimatePresence>
       {active && (

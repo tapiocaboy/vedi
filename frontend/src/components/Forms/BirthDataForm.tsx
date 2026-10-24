@@ -2,11 +2,12 @@
  * Birth data input form component
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2, ChevronDown } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
+import { searchPlaces, type Place } from './places';
 
 interface Props {
   onSubmit: (data: BirthData) => void;
@@ -38,7 +39,6 @@ const TIMEZONES = [
   { value: 'Etc/GMT-3', label: 'UTC+3 (Moscow)' },
   { value: 'Etc/GMT-4', label: 'UTC+4 (Gulf)' },
   { value: 'Etc/GMT-5', label: 'UTC+5 (Pakistan)' },
-  { value: 'Asia/Kolkata', label: 'UTC+5:30 (India)' },
   { value: 'Etc/GMT-6', label: 'UTC+6 (Bangladesh)' },
   { value: 'Etc/GMT-7', label: 'UTC+7 (Indochina)' },
   { value: 'Etc/GMT-8', label: 'UTC+8 (China/Singapore)' },
@@ -61,6 +61,8 @@ const TIMEZONES = [
   { value: 'America/Buenos_Aires', label: 'Buenos Aires (Argentina)' },
   // Named Timezones - Europe
   { value: 'Europe/London', label: 'London (UK)' },
+  { value: 'Europe/Dublin', label: 'Dublin (Ireland)' },
+  { value: 'Europe/Lisbon', label: 'Lisbon (Portugal)' },
   { value: 'Europe/Paris', label: 'Paris (France)' },
   { value: 'Europe/Berlin', label: 'Berlin (Germany)' },
   { value: 'Europe/Rome', label: 'Rome (Italy)' },
@@ -82,16 +84,22 @@ const TIMEZONES = [
   { value: 'Europe/Budapest', label: 'Budapest (Hungary)' },
   // Named Timezones - Asia
   { value: 'Asia/Dubai', label: 'Dubai (UAE)' },
+  { value: 'Asia/Qatar', label: 'Doha (Qatar)' },
+  { value: 'Asia/Kuwait', label: 'Kuwait' },
   { value: 'Asia/Riyadh', label: 'Riyadh (Saudi Arabia)' },
+  { value: 'Asia/Baghdad', label: 'Baghdad (Iraq)' },
   { value: 'Asia/Tehran', label: 'Tehran (Iran)' },
   { value: 'Asia/Karachi', label: 'Karachi (Pakistan)' },
   { value: 'Asia/Kolkata', label: 'Kolkata/Mumbai (India)' },
   { value: 'Asia/Colombo', label: 'Colombo (Sri Lanka)' },
+  { value: 'Asia/Kathmandu', label: 'Kathmandu (Nepal)' },
   { value: 'Asia/Dhaka', label: 'Dhaka (Bangladesh)' },
+  { value: 'Asia/Yangon', label: 'Yangon (Myanmar)' },
   { value: 'Asia/Bangkok', label: 'Bangkok (Thailand)' },
   { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh (Vietnam)' },
   { value: 'Asia/Jakarta', label: 'Jakarta (Indonesia)' },
   { value: 'Asia/Singapore', label: 'Singapore' },
+  { value: 'Asia/Manila', label: 'Manila (Philippines)' },
   { value: 'Asia/Kuala_Lumpur', label: 'Kuala Lumpur (Malaysia)' },
   { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
   { value: 'Asia/Shanghai', label: 'Shanghai (China)' },
@@ -128,14 +136,39 @@ const LOCATION_KEY = 'vedi_location_prefs';
 const BROWSER_TZ = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'UTC'; }
 })();
-const BROWSER_TZ_IN_LIST = TIMEZONES.some(tz => tz.value === BROWSER_TZ) ? BROWSER_TZ : null;
 
-function loadSaved(): { latitude: string; longitude: string; timezone: string; ayanamsa: string; system: string } {
+interface SavedBirthPrefs {
+  latitude: string;
+  longitude: string;
+  timezone: string;
+  ayanamsa: string;
+  system: string;
+  date: string;
+  time: string;
+  place: string;
+}
+
+function loadSaved(): SavedBirthPrefs {
+  const blank: SavedBirthPrefs = {
+    latitude: '', longitude: '', timezone: BROWSER_TZ || 'UTC', ayanamsa: 'LAHIRI', system: 'VEDIC', date: '', time: '', place: '',
+  };
   try {
     const raw = localStorage.getItem(LOCATION_KEY);
-    if (raw) return { system: 'VEDIC', ...JSON.parse(raw) };
-  } catch {}
-  return { latitude: '', longitude: '', timezone: BROWSER_TZ_IN_LIST ?? 'UTC', ayanamsa: 'LAHIRI', system: 'VEDIC' };
+    if (!raw) return blank;
+    const parsed = JSON.parse(raw) as Partial<SavedBirthPrefs>;
+    return {
+      latitude: typeof parsed.latitude === 'string' ? parsed.latitude : '',
+      longitude: typeof parsed.longitude === 'string' ? parsed.longitude : '',
+      timezone: parsed.timezone || blank.timezone,
+      ayanamsa: parsed.ayanamsa || 'LAHIRI',
+      system: parsed.system === 'WESTERN' ? 'WESTERN' : 'VEDIC',
+      date: typeof parsed.date === 'string' ? parsed.date : '',
+      time: typeof parsed.time === 'string' ? parsed.time : '',
+      place: typeof parsed.place === 'string' ? parsed.place : '',
+    };
+  } catch {
+    return blank;
+  }
 }
 
 /** "6.91° N" style coordinate readout. */
@@ -147,17 +180,21 @@ function fmtCoord(value: string, pos: string, neg: string): string | null {
 
 export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lockSystem }) => {
   const { t } = useLang();
+  const placeId = useId();
   const saved = useRef(loadSaved());
 
   const [formData, setFormData] = useState({
-    date: '',
-    time: '',
+    // The partner form (lockSystem) must not inherit the primary person's birthday.
+    date: lockSystem ? '' : saved.current.date,
+    time: lockSystem ? '' : saved.current.time,
     latitude:  saved.current.latitude,
     longitude: saved.current.longitude,
-    timezone:  saved.current.timezone  || 'Etc/GMT+4',
+    timezone:  saved.current.timezone || BROWSER_TZ || 'UTC',
     ayanamsa:  (saved.current.ayanamsa || 'LAHIRI') as 'LAHIRI' | 'KRISHNAMURTI' | 'RAMAN',
     system: (lockSystem ?? (saved.current.system === 'WESTERN' ? 'WESTERN' : 'VEDIC')) as 'VEDIC' | 'WESTERN',
   });
+  const [placeQuery, setPlaceQuery] = useState(lockSystem ? '' : saved.current.place);
+  const [placePicked, setPlacePicked] = useState(!lockSystem && saved.current.place.length > 0);
 
   // A locked system (the Match tab's partner form) always tracks the parent
   // chart's system, even if the parent re-renders with a different one.
@@ -168,15 +205,36 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
   // Persist location fields whenever they change
   useEffect(() => {
     try {
+      // The partner form shares this key. Re-read so a partner edit keeps the
+      // birthday the primary form stored, instead of an older snapshot.
+      let keptDate = saved.current.date;
+      let keptTime = saved.current.time;
+      let keptSystem = saved.current.system;
+      let keptPlace = saved.current.place;
+      if (lockSystem) {
+        try {
+          const raw = localStorage.getItem(LOCATION_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as Partial<SavedBirthPrefs>;
+            if (typeof parsed.date === 'string') keptDate = parsed.date;
+            if (typeof parsed.time === 'string') keptTime = parsed.time;
+            if (typeof parsed.place === 'string') keptPlace = parsed.place;
+            if (parsed.system === 'WESTERN' || parsed.system === 'VEDIC') keptSystem = parsed.system;
+          }
+        } catch { /* keep the snapshot */ }
+      }
       localStorage.setItem(LOCATION_KEY, JSON.stringify({
         latitude:  formData.latitude,
         longitude: formData.longitude,
         timezone:  formData.timezone,
         ayanamsa:  formData.ayanamsa,
-        system:    formData.system,
+        system:    lockSystem ? keptSystem : formData.system,
+        date:      lockSystem ? keptDate : formData.date,
+        time:      lockSystem ? keptTime : formData.time,
+        place:     lockSystem ? keptPlace : placeQuery,
       }));
-    } catch {}
-  }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa, formData.system]);
+    } catch { /* storage unavailable */ }
+  }, [formData.latitude, formData.longitude, formData.timezone, formData.ayanamsa, formData.system, formData.date, formData.time, placeQuery, lockSystem]);
 
   /**
    * Input faults that produce a plausible-looking but wrong chart — a western
@@ -255,8 +313,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
           ...prev,
           latitude:  pos.coords.latitude.toFixed(4),
           longitude: pos.coords.longitude.toFixed(4),
-          timezone:  BROWSER_TZ_IN_LIST ?? prev.timezone,
+          timezone:  BROWSER_TZ || prev.timezone,
         }));
+        setPlaceQuery('');
+        setPlacePicked(false);
         setLocating(false);
       },
       err => {
@@ -270,6 +330,42 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
   const todayStr = new Date().toISOString().slice(0, 10);
   const latReadout = fmtCoord(formData.latitude, 'N', 'S');
   const lngReadout = fmtCoord(formData.longitude, 'E', 'W');
+
+  // A zone the list doesn't name (Kathmandu, Lisbon, …) would otherwise fall
+  // back to UTC and shift the ascendant. Offer the browser zone itself.
+  const tzOptions = useMemo(() => {
+    if (!BROWSER_TZ || TIMEZONES.some(tz => tz.value === BROWSER_TZ)) return TIMEZONES;
+    return [{ value: BROWSER_TZ, label: BROWSER_TZ.replace(/_/g, ' ') }, ...TIMEZONES];
+  }, []);
+
+  const placeMatches = useMemo(
+    () => (placePicked ? [] : searchPlaces(placeQuery)),
+    [placeQuery, placePicked],
+  );
+
+  const selectPlace = (place: Place) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: String(place.lat),
+      longitude: String(place.lng),
+      timezone: place.tz,
+    }));
+    setPlaceQuery(`${place.name}, ${place.country}`);
+    setPlacePicked(true);
+  };
+
+  const fillSample = () => {
+    setFormData(prev => ({
+      ...prev,
+      date: '1990-05-15',
+      time: '10:30',
+      latitude: '28.6139',
+      longitude: '77.209',
+      timezone: 'Asia/Kolkata',
+    }));
+    setPlaceQuery('New Delhi, India');
+    setPlacePicked(true);
+  };
 
   // Colour/size/background + native date-time legibility live in `.form-field`
   // (see index.css) so the date/time pickers render correctly on mobile and in
@@ -341,6 +437,56 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
         </div>
       </div>
 
+      {/* Birth place — a city search, with coordinates underneath for precision */}
+      <div>
+        <label className={labelClasses} htmlFor={placeId}>
+          <MapPin className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
+          {t('form.birthPlace')}
+        </label>
+        <input
+          id={placeId}
+          type="text"
+          value={placeQuery}
+          onChange={e => { setPlaceQuery(e.target.value); setPlacePicked(false); }}
+          placeholder={t('form.birthPlacePlaceholder')}
+          autoComplete="off"
+          className={inputClasses}
+        />
+        {placeQuery.trim().length >= 2 && !placePicked && (
+          <div className="mt-1.5 rounded-lg overflow-hidden border border-[rgba(var(--c-accent-rgb),0.18)]" role="listbox">
+            {placeMatches.length === 0 ? (
+              <p className="px-2.5 py-2 text-[11px] leading-snug form-label">{t('form.birthPlaceEmpty')}</p>
+            ) : placeMatches.map(place => (
+              <button
+                key={`${place.name}-${place.country}`}
+                type="button"
+                role="option"
+                onClick={() => selectPlace(place)}
+                className="w-full text-left px-2.5 py-2 text-xs font-semibold border-t border-[rgba(var(--c-accent-rgb),0.10)] first:border-t-0 hover:bg-[rgba(var(--c-accent-rgb),0.08)] transition-colors"
+              >
+                {place.name}
+                <span className="font-medium form-label"> · {place.country}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={locating}
+          className="preset-btn mt-1.5 w-full flex items-center justify-center gap-1.5 px-2.5 py-2 text-xs font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
+          style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
+        >
+          {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
+          {locating ? t('form.locating') : t('form.useMyLocation')}
+        </button>
+        {geoError && (
+          <p className="mt-1.5 text-xs text-rose-400 flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 shrink-0" /> {geoError}
+          </p>
+        )}
+      </div>
+
       {/* Quick Location Presets — folded by default */}
       <div>
         <button
@@ -355,35 +501,22 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
           {t('form.quickLocations')}
         </button>
         {quickLocationsOpen && (
-          <>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            {presetLocations.map(preset => (
               <button
+                key={preset.name}
                 type="button"
-                onClick={useMyLocation}
-                disabled={locating}
-                className="preset-btn flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg text-[var(--c-accent)] hover:border-[rgba(var(--c-accent-rgb),0.4)] transition-all disabled:opacity-60"
-                style={{ borderColor: 'rgba(var(--c-accent-rgb),0.35)' }}
+                onClick={() => {
+                  setPresetLocation(preset);
+                  setPlaceQuery(preset.name);
+                  setPlacePicked(true);
+                }}
+                className="preset-btn px-2.5 py-1.5 text-xs font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
               >
-                {locating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LocateFixed className="w-4 h-4" />}
-                {locating ? t('form.locating') : t('form.useMyLocation')}
+                {preset.name}
               </button>
-              {presetLocations.map(preset => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => setPresetLocation(preset)}
-                  className="preset-btn px-2.5 py-1.5 text-xs font-bold rounded-lg hover:border-[rgba(var(--c-accent-rgb),0.4)] hover:text-[var(--c-accent)] transition-all"
-                >
-                  {preset.name}
-                </button>
-              ))}
-            </div>
-            {geoError && (
-              <p className="mt-2 text-xs text-rose-400 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 shrink-0" /> {geoError}
-              </p>
-            )}
-          </>
+            ))}
+          </div>
         )}
       </div>
 
@@ -448,8 +581,8 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
             onChange={handleChange}
             className={inputClasses}
           >
-            {TIMEZONES.map(tz => (
-              <option key={tz.value} value={tz.value}>{tz.label}</option>
+            {tzOptions.map(tz => (
+              <option key={`${tz.label}|${tz.value}`} value={tz.value}>{tz.label}</option>
             ))}
           </select>
         </div>
@@ -491,6 +624,17 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
             </div>
           ))}
         </div>
+      )}
+
+      {!formData.date && !lockSystem && (
+        <button
+          type="button"
+          onClick={fillSample}
+          className="w-full text-[11px] font-semibold underline-offset-2 hover:underline"
+          style={{ color: 'var(--c-accent)' }}
+        >
+          {t('form.sample')}
+        </button>
       )}
 
       {/* Submit */}

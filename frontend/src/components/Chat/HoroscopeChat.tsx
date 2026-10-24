@@ -11,6 +11,7 @@ import {
 } from '../../services/horoscopeChat';
 import { useLang } from '../../i18n/LanguageContext';
 import { Markdown } from './Markdown';
+import { backdropTransition, drawerTransition } from '../shared/motion';
 
 interface Props {
   visible: boolean;
@@ -113,6 +114,7 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
           <motion.div
             className="fixed inset-0 z-[65] bg-black/50 backdrop-blur-sm"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={backdropTransition}
             onClick={onClose}
           />
           <motion.aside
@@ -122,7 +124,7 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
                 : 'right-0 top-0 bottom-0 w-full sm:w-[420px] border-l border-white/10'
             }`}
             initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            transition={{ type: 'tween', duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            transition={drawerTransition}
           >
             {/* Header */}
             <div className="flex items-center gap-3 p-4 border-b border-white/8 shrink-0">
