@@ -20,6 +20,7 @@ import { TapBadge, tapVars } from './tapTarget';
 import { AreaWhy, AstroDisclosure } from './AreaWhy';
 import { coreLang } from '../../i18n/translations';
 import { plainAreaLine } from '../../lib/core/areaReading';
+import { specificAreaLine } from '../../lib/core/plainSummary';
 import { READING_LABELS } from '../../lib/core/text/readingText';
 
 const TREND_ICONS = {
@@ -64,7 +65,26 @@ export const AreaReadingList: React.FC<{ prediction: DashaPredictionData; title?
         // Without a score breakdown (older data) the plain line still leads and
         // the engine's notes stand in for the astrology.
         const reading = readings[area];
-        const plainLine = reading?.plainLine ?? plainAreaLine(area, data.trend, L);
+        const periods = prediction.currentPeriods;
+        const specific = area !== 'general' && periods?.mahadasha && periods.antardasha
+          ? specificAreaLine({
+              lang: L,
+              overallRating: prediction.overallRating,
+              predictions: {
+                career: { trend: prediction.predictions.career?.trend ?? 'neutral' },
+                wealth: { trend: prediction.predictions.wealth?.trend ?? 'neutral' },
+                relationships: { trend: prediction.predictions.relationships?.trend ?? 'neutral' },
+                health: { trend: prediction.predictions.health?.trend ?? 'neutral' },
+              },
+              periods: {
+                mahadasha: periods.mahadasha,
+                antardasha: periods.antardasha,
+                pratyantardasha: periods.pratyantardasha,
+                sookshmaDasha: periods.sookshmaDasha,
+              },
+            }, area)
+          : null;
+        const plainLine = specific ?? reading?.plainLine ?? plainAreaLine(area, data.trend, L);
         const cfg = AREA_CONFIG[area];
         const Icon = cfg.icon;
         const isOpen = open === area;

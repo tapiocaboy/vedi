@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { monthYearLabel, monthShort, yearHeadline, groupStretches, changeLine, chapterHeadline, chapterSpan } from './yearAhead';
+import { monthYearLabel, monthShort, yearHeadline, yearContrast, chapterInside, stretchCaption, groupStretches, changeLine, chapterHeadline, chapterSpan } from './yearAhead';
 import { YEAR_TEXT, MONTH_SHORT } from './text/readingText';
 import type { Lang } from './i18n';
 
@@ -13,6 +13,27 @@ describe('year ahead wording', () => {
     ];
     expect(yearHeadline(months, 'en')).toBe('Strongest around January 2027; most demanding around February 2027.');
     expect(yearHeadline(months, 'ja')).toBe('最も強いのは2027年1月ごろ、最も負担が大きいのは2027年2月ごろ。');
+  });
+
+  it('names the planets sitting on the peak and the dip', () => {
+    const months = [
+      { year: 2026, month: 9, percentile: 80, main: 'Jupiter', sub: 'Venus' },
+      { year: 2026, month: 10, percentile: 20, main: 'Saturn', sub: 'Mars' },
+    ];
+    expect(yearContrast(months, 'en')).toBe('October 2026 is Venus inside Jupiter. November 2026 is Mars inside Saturn.');
+    expect(yearContrast(months, 'ja')).toBe('2026年10月は木星の中の金星。2026年11月は土星の中の火星。');
+    const even = [
+      { year: 2026, month: 9, percentile: 50, main: 'Jupiter', sub: 'Venus' },
+      { year: 2026, month: 10, percentile: 58, main: 'Saturn', sub: 'Mars' },
+    ];
+    expect(yearContrast(even, 'en')).toBeNull();
+  });
+
+  it('names the stretch being lived inside the current chapter', () => {
+    expect(chapterInside('Rahu', 'Moon', 'en')).toBe('Inside it, the Moon stretch is what you are living — Rahu-Chandra — emotional turbulence and psychic sensitivity.');
+    expect(stretchCaption('Saturn', 'Mercury', 'en')).toMatch(/methodical intelligence/);
+    expect(chapterInside('Rahu', 'Moon', 'ja')).not.toMatch(/\{\w+\}/);
+    expect(chapterInside('Rahu', 'Moon', 'ja')).not.toMatch(/emotional turbulence/);
   });
 
   it('calls a flat year flat instead of inventing a peak', () => {
@@ -39,6 +60,11 @@ describe('year ahead wording', () => {
     for (const lang of LANGS) {
       const texts = [
         monthYearLabel(2027, 1, lang), monthShort(1, lang), chapterHeadline('Saturn', lang),
+        chapterInside('Rahu', 'Moon', lang), stretchCaption('Saturn', 'Mercury', lang),
+        yearContrast([
+          { year: 2026, month: 9, percentile: 80, main: 'Jupiter', sub: 'Venus' },
+          { year: 2026, month: 10, percentile: 20, main: 'Saturn', sub: 'Mars' },
+        ], lang) ?? '',
         chapterSpan('2021-05-12T00:00:00Z', '2040-05-12T00:00:00Z', 34.6, 53.6, lang),
         changeLine({ date: '2027-01-23T12:00:00Z', level: 'sub', from: 'Mercury', to: 'Ketu' }, lang),
       ];

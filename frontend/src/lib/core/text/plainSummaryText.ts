@@ -229,6 +229,96 @@ export const NEXT_MAIN: L9 = {
   ml: 'അടുത്ത പ്രധാന കാലം: {planet}, {date} മുതൽ.',
 };
 
+/**
+ * The overall reading of the sub-period being lived, not the five-band slogan.
+ * `{subTheme}` / `{mainTheme}` are PLANET_THEME lines.
+ */
+export const OVERALL_NOW: L9 = {
+  en: 'Until {date}, {sub} is the planet running inside your {main} period. Day to day this is about {subTheme}, set against a longer background of {mainTheme}.',
+  si: '{date} දක්වා, ඔබේ {main} කාලය තුළ දැනට ක්‍රියාත්මක වන්නේ {sub} ය. දිනපතා මෙය {subTheme} පිළිබඳ ය; දිගු පසුබිම {mainTheme} ය.',
+  ta: '{date} வரை, உங்கள் {main} காலத்திற்குள் இயங்குவது {sub}. அன்றாடம் இது {subTheme} பற்றியது; நீண்ட பின்னணி {mainTheme}.',
+  zh: '直到{date}，在您的{main}大运里，当前运行的是{sub}。眼下的主题是{subTheme}，更长的背景则是{mainTheme}。',
+  hi: '{date} तक, आपकी {main} दशा के अंदर {sub} चल रहा है। रोज़मर्रा का मतलब है {subTheme}, और लंबी पृष्ठभूमि है {mainTheme}।',
+  ja: '{date}まで、{main}の長い期間の中で動いているのは{sub}です。日々の焦点は{subTheme}で、その奥には{mainTheme}があります。',
+  ko: '{date}까지, {main}의 긴 시기 안에서 지금 움직이는 행성은 {sub}입니다. 하루하루는 {subTheme}에 관한 시간이고, 더 긴 배경은 {mainTheme}입니다.',
+  ar: 'حتى {date}، الكوكب الجاري داخل فترة {main} هو {sub}. يوميًا يدور الأمر حول {subTheme}، على خلفية أطول هي {mainTheme}.',
+  ml: '{date} വരെ, നിങ്ങളുടെ {main} കാലത്തിനുള്ളിൽ പ്രവർത്തിക്കുന്നത് {sub} ആണ്. ദിനംപ്രതി ഇത് {subTheme} സംബന്ധിച്ചതാണ്; ദൈർഘ്യമേറിയ പശ്ചാത്തലം {mainTheme} ആണ്.',
+};
+
+/** Finer window whose lord is the same as the period it sits inside. */
+export const OVERALL_SAME: L9 = {
+  en: 'Until {date}, {fine} is running on its own — {fineTheme} — inside your {main} period with {sub} ({subTheme}).',
+  si: '{date} දක්වා {fine} තනිවම ක්‍රියාත්මක ය — {fineTheme} — ඔබේ {main} කාලය තුළ, {sub} සමඟ ({subTheme}).',
+  ta: '{date} வரை {fine} தானாகவே இயங்குகிறது — {fineTheme} — உங்கள் {main} காலத்திற்குள், {sub} உடன் ({subTheme}).',
+  zh: '直到{date}，{fine}单独运行——{fineTheme}——位于您的{main}大运与{sub}子运之中（{subTheme}）。',
+  hi: '{date} तक {fine} अपने आप चल रहा है — {fineTheme} — आपकी {main} दशा में, {sub} के साथ ({subTheme})।',
+  ja: '{date}まで、{fine}が単独で動いています——{fineTheme}。{main}の期間の中の{sub}（{subTheme}）の内側です。',
+  ko: '{date}까지 {fine}이(가) 홀로 운행합니다 — {fineTheme}. {main} 시기 안의 {sub}({subTheme}) 속에 있습니다.',
+  ar: 'حتى {date}، يجري {fine} وحده — {fineTheme} — داخل فترة {main} مع {sub} ({subTheme}).',
+  ml: '{date} വരെ {fine} സ്വയം പ്രവർത്തിക്കുന്നു — {fineTheme} — നിങ്ങളുടെ {main} കാലത്തിനുള്ളിൽ, {sub} സഹിതം ({subTheme}).',
+};
+
+/** Finer window (pratyantar or sookshma) inside the period one level up. */
+export const OVERALL_FINE: L9 = {
+  en: 'Until {date}, {fine} is the planet actually in charge. It brings {fineTheme} into the current {other} period, which is about {otherTheme}.',
+  si: '{date} දක්වා, ඇත්තටම භාරයේ සිටින්නේ {fine} ය. එය {otherTheme} පිළිබඳ වන දැනට පවතින {other} කාලයට {fineTheme} ගෙන එයි.',
+  ta: '{date} வரை, உண்மையில் பொறுப்பில் இருப்பது {fine}. {otherTheme} பற்றிய தற்போதைய {other} காலத்திற்குள் அது {fineTheme} ஆகியவற்றைக் கொண்டுவருகிறது.',
+  zh: '直到{date}，真正当令的是{fine}。它把{fineTheme}带进当前的{other}时期，而那段时期的主题是{otherTheme}。',
+  hi: '{date} तक, वास्तव में प्रभारी {fine} है। यह {otherTheme} वाले मौजूदा {other} दौर में {fineTheme} लेकर आता है।',
+  ja: '{date}まで、実際に場を仕切っているのは{fine}です。{otherTheme}がテーマの今の{other}の期間に、{fineTheme}を運び込みます。',
+  ko: '{date}까지, 실제로 이 시간을 이끄는 행성은 {fine}입니다. {otherTheme}이(가) 주제인 현재 {other} 시기에 {fineTheme}을(를) 끌어옵니다.',
+  ar: 'حتى {date}، الكوكب الذي يدير هذا الوقت فعلًا هو {fine}. يجلب {fineTheme} إلى فترة {other} الجارية، وهي عن {otherTheme}.',
+  ml: '{date} വരെ, യഥാർത്ഥത്തിൽ ചുമതലയുള്ളത് {fine} ആണ്. {otherTheme} സംബന്ധിച്ച ഇപ്പോഴത്തെ {other} കാലത്തിലേക്ക് അത് {fineTheme} കൊണ്ടുവരുന്നു.',
+};
+
+export const COMBINATION: L9 = {
+  en: 'As a pairing, this reads as: {theme}.',
+  si: 'ග්‍රහ යුගලයක් ලෙස මෙය මෙසේය: {theme}.',
+  ta: 'ஒரு இணைப்பாக இது இப்படி அமையும்: {theme}.',
+  zh: '作为一组搭配，这段时间是：{theme}。',
+  hi: 'जोड़ी के रूप में इसका मतलब है: {theme}।',
+  ja: '組み合わせとして読むと、こうです：{theme}。',
+  ko: '조합으로 읽으면 이렇습니다: {theme}.',
+  ar: 'كاقتران، تُقرأ هذه الفترة هكذا: {theme}.',
+  ml: 'ഒരു ജോഡിയായി ഇത് ഇങ്ങനെ വായിക്കാം: {theme}.',
+};
+
+export const BACKDROP: L9 = {
+  en: 'The longer period around it: {theme}.',
+  si: 'මෙය වටා ඇති දිගු කාලය: {theme}.',
+  ta: 'இதைச் சுற்றியுள்ள நீண்ட காலம்: {theme}.',
+  zh: '包在外面的更长时期：{theme}。',
+  hi: 'इसके चारों ओर का लंबा दौर: {theme}।',
+  ja: 'その外側にある長い期間：{theme}。',
+  ko: '그 바깥의 더 긴 시기: {theme}.',
+  ar: 'الفترة الأطول المحيطة بها: {theme}.',
+  ml: 'ഇതിനു ചുറ്റുമുള്ള ദൈർഘ്യമേറിയ കാലം: {theme}.',
+};
+
+export const AREA_TILT: L9 = {
+  en: 'With {planet} in charge right now, this leans toward {theme}.',
+  si: 'දැනට භාරයේ සිටින {planet} නිසා මෙය {theme} දෙසට නැඹුරු වේ.',
+  ta: 'இப்போது பொறுப்பில் இருக்கும் {planet} காரணமாக, இது {theme} நோக்கி சாய்கிறது.',
+  zh: '眼下由{planet}当令，这件事偏向{theme}。',
+  hi: 'अभी {planet} प्रभारी है, इसलिए यह {theme} की ओर झुका है।',
+  ja: '今これを仕切っているのは{planet}なので、{theme}のほうに傾きます。',
+  ko: '지금 이 시간을 맡은 {planet} 때문에 {theme} 쪽으로 기웁니다.',
+  ar: 'ولأن {planet} هو المسؤول الآن، يميل هذا نحو {theme}.',
+  ml: 'ഇപ്പോൾ ചുമതലയുള്ള {planet} കാരണം ഇത് {theme} ഭാഗത്തേക്ക് ചായുന്നു.',
+};
+
+export const COMBOS: L9 = {
+  en: 'Combinations active in this window: {list}.',
+  si: 'මේ කවුළුව තුළ ක්‍රියාත්මක සංයෝජන: {list}.',
+  ta: 'இந்த இடைவெளியில் செயல்படும் சேர்க்கைகள்: {list}.',
+  zh: '这段时间里正在起作用的组合：{list}。',
+  hi: 'इस अवधि में सक्रिय योग: {list}।',
+  ja: 'この期間に働いている組み合わせ：{list}。',
+  ko: '이 기간에 작동 중인 조합: {list}.',
+  ar: 'التركيبات الفاعلة في هذه النافذة: {list}.',
+  ml: 'ഈ ജാലകത്തിൽ സജീവമായ സംയോഗങ്ങൾ: {list}.',
+};
+
 /** One line per life area and trend. Each opens with the area's name. */
 export const AREA_LINE: Record<AreaKey, Record<TrendKey, L9>> = {
   career: {

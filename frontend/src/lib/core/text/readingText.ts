@@ -507,26 +507,26 @@ export const PLAYBOOK_TEXT: Record<'decisionFriend' | 'decisionEnemy' | 'decisio
     ml: 'തീരുമാനങ്ങൾക്ക് നിഷ്പക്ഷമായ സമയം — ചെറിയ, സ്ഥിരമായ ചുവടുകൾ കൂടിച്ചേരുന്നു. വലിയ നീക്കം കൂടുതൽ ഇണങ്ങുന്ന കാലത്തേക്ക് മാറ്റിവയ്ക്കുക.',
   },
   monthPd: {
-    en: 'The next few weeks are coloured by {planet} — {theme}.',
-    si: 'ඉදිරි සති කිහිපය {planet} විසින් වර්ණවත් කෙරේ — {theme}.',
-    ta: 'அடுத்த சில வாரங்கள் {planet} ஆல் வண்ணமிடப்படுகின்றன — {theme}.',
-    zh: '接下来几周由{planet}着色——{theme}。',
-    hi: 'अगले कुछ हफ़्तों पर {planet} का रंग रहेगा — {theme}।',
-    ja: 'これから数週間は{planet}の色合いが強まります——{theme}。',
-    ko: '앞으로 몇 주는 {planet}의 색채가 짙습니다 — {theme}.',
-    ar: 'تتلوّن الأسابيع القليلة المقبلة بـ{planet} — {theme}.',
-    ml: 'അടുത്ത ഏതാനും ആഴ്ചകൾക്ക് {planet} നിറം നൽകുന്നു — {theme}.',
+    en: 'The next few weeks belong to {planet} ({theme}), inside the current {other} period ({otherTheme}).',
+    si: 'ඉදිරි සති කිහිපය {planet} සතු ය ({theme}), දැනට පවතින {other} කාලය තුළ ({otherTheme}).',
+    ta: 'அடுத்த சில வாரங்கள் {planet} உடையவை ({theme}), தற்போதைய {other} காலத்திற்குள் ({otherTheme}).',
+    zh: '接下来几周属于{planet}（{theme}），处在当前的{other}时期之中（{otherTheme}）。',
+    hi: 'अगले कुछ हफ़्ते {planet} के हैं ({theme}), मौजूदा {other} दौर के अंदर ({otherTheme})।',
+    ja: 'これから数週間は{planet}の時間です（{theme}）。今の{other}の期間（{otherTheme}）の内側にあります。',
+    ko: '앞으로 몇 주는 {planet}의 시간입니다 ({theme}). 현재 {other} 시기({otherTheme}) 안에 있습니다.',
+    ar: 'الأسابيع القليلة المقبلة تخص {planet} ({theme})، داخل فترة {other} الجارية ({otherTheme}).',
+    ml: 'അടുത്ത ഏതാനും ആഴ്ചകൾ {planet}ന്റേതാണ് ({theme}), ഇപ്പോഴത്തെ {other} കാലത്തിനുള്ളിൽ ({otherTheme}).',
   },
   monthAd: {
-    en: 'The coming months follow your {planet} sub-period — {theme}.',
-    si: 'ඉදිරි මාස ඔබේ {planet} උප කාලය අනුගමනය කරයි — {theme}.',
-    ta: 'வரும் மாதங்கள் உங்கள் {planet} உட்காலத்தைப் பின்பற்றுகின்றன — {theme}.',
-    zh: '接下来几个月随您的{planet}子运而行——{theme}。',
-    hi: 'आने वाले महीने आपकी {planet} अंतर्दशा के अनुसार चलेंगे — {theme}।',
-    ja: 'これからの数か月は{planet}の副期に沿って進みます——{theme}。',
-    ko: '앞으로 몇 달은 {planet} 부 시기를 따라갑니다 — {theme}.',
-    ar: 'تتبع الأشهر المقبلة فترتك الفرعية لـ{planet} — {theme}.',
-    ml: 'വരുന്ന മാസങ്ങൾ നിങ്ങളുടെ {planet} ഉപദശയെ പിന്തുടരുന്നു — {theme}.',
+    en: 'The coming months follow your {planet} sub-period ({theme}), inside the longer {other} period ({otherTheme}).',
+    si: 'ඉදිරි මාස ඔබේ {planet} උප කාලය අනුගමනය කරයි ({theme}), දිගු {other} කාලය තුළ ({otherTheme}).',
+    ta: 'வரும் மாதங்கள் உங்கள் {planet} உட்காலத்தைப் பின்பற்றுகின்றன ({theme}), நீண்ட {other} காலத்திற்குள் ({otherTheme}).',
+    zh: '接下来几个月随您的{planet}子运（{theme}），处在更长的{other}时期之中（{otherTheme}）。',
+    hi: 'आने वाले महीने आपकी {planet} अंतर्दशा ({theme}) के अनुसार चलेंगे, लंबी {other} दशा के अंदर ({otherTheme})।',
+    ja: 'これからの数か月は{planet}の副期（{theme}）に沿い、より長い{other}の期間（{otherTheme}）の中で進みます。',
+    ko: '앞으로 몇 달은 {planet} 하위 시기({theme})를 따르며, 더 긴 {other} 시기({otherTheme}) 안에 있습니다.',
+    ar: 'تتبع الأشهر المقبلة فترتك الفرعية لـ{planet} ({theme})، داخل فترة {other} الأطول ({otherTheme}).',
+    ml: 'വരുന്ന മാസങ്ങൾ നിങ്ങളുടെ {planet} ഉപകാലത്തെ പിന്തുടരുന്നു ({theme}), ദൈർഘ്യമേറിയ {other} കാലത്തിനുള്ളിൽ ({otherTheme}).',
   },
 };
 
@@ -544,8 +544,8 @@ export const WEEKDAY: L9[] = [
 // ─── Graph tab: life chapters + the year ahead ──────────────────────────────
 
 export const YEAR_TEXT: Record<
-  'chaptersTitle' | 'chapterNow' | 'chapterSpan' | 'youAreHere' | 'ageRange' | 'chaptersHint'
-  | 'yearTitle' | 'yearHeadline' | 'yearFlat' | 'overall' | 'stretches' | 'subChange' | 'mainChange' | 'now' | 'footnote' | 'loading',
+  'chaptersTitle' | 'chapterNow' | 'chapterInside' | 'chapterSpan' | 'youAreHere' | 'ageRange' | 'chaptersHint'
+  | 'yearTitle' | 'yearHeadline' | 'yearPair' | 'yearFlat' | 'overall' | 'stretches' | 'subChange' | 'mainChange' | 'now' | 'footnote' | 'loading',
   L9
 > = {
   chaptersTitle: { en: 'Your life in chapters', si: 'ඔබේ ජීවිතය පරිච්ඡේද වශයෙන්', ta: 'அத்தியாயங்களாக உங்கள் வாழ்க்கை', zh: '分章节看您的人生', hi: 'अध्यायों में आपका जीवन', ja: '章で見るあなたの人生', ko: '장(章)으로 보는 당신의 삶', ar: 'حياتك في فصول', ml: 'അധ്യായങ്ങളായി നിങ്ങളുടെ ജീവിതം' },
@@ -553,6 +553,17 @@ export const YEAR_TEXT: Record<
     en: 'You are in the {planet} chapter — {theme}', si: 'ඔබ දැන් {planet} පරිච්ඡේදයේ — {theme}', ta: 'நீங்கள் {planet} அத்தியாயத்தில் இருக்கிறீர்கள் — {theme}',
     zh: '您正处于{planet}章节——{theme}', hi: 'आप {planet} के अध्याय में हैं — {theme}', ja: 'いまは{planet}の章——{theme}',
     ko: '지금은 {planet}의 장입니다 — {theme}', ar: 'أنت في فصل {planet} — {theme}', ml: 'നിങ്ങൾ {planet} അധ്യായത്തിലാണ് — {theme}',
+  },
+  chapterInside: {
+    en: 'Inside it, the {sub} stretch is what you are living — {theme}.',
+    si: 'එය තුළ ඔබ දැන් ගත කරන්නේ {sub} කාලයයි — {theme}.',
+    ta: 'அதற்குள் நீங்கள் வாழ்வது {sub} காலம் — {theme}.',
+    zh: '这一章里，您正在经历的是{sub}阶段——{theme}。',
+    hi: 'इस अध्याय में आप {sub} का दौर जी रहे हैं — {theme}।',
+    ja: 'この章の中で今過ごしているのは{sub}の区切りです——{theme}。',
+    ko: '이 장 안에서 지금 지나는 구간은 {sub}입니다 — {theme}.',
+    ar: 'داخل هذا الفصل تعيش مرحلة {sub} — {theme}.',
+    ml: 'ഈ അധ്യായത്തിനുള്ളിൽ നിങ്ങൾ ജീവിക്കുന്നത് {sub} ഘട്ടമാണ് — {theme}.',
   },
   chapterSpan: {
     en: '{start} – {end} · age {a} to {b}', si: '{start} – {end} · වයස {a} සිට {b} දක්වා', ta: '{start} – {end} · வயது {a} முதல் {b} வரை',
@@ -579,6 +590,17 @@ export const YEAR_TEXT: Record<
     hi: '{best} के आसपास सबसे मज़बूत; {worst} के आसपास सबसे कठिन।', ja: '最も強いのは{best}ごろ、最も負担が大きいのは{worst}ごろ。',
     ko: '{best} 무렵이 가장 강하고, {worst} 무렵이 가장 버겁습니다.', ar: 'الأقوى نحو {best}؛ والأكثر إجهادًا نحو {worst}.',
     ml: '{best} സമയത്ത് ഏറ്റവും ശക്തം; {worst} സമയത്ത് ഏറ്റവും ബുദ്ധിമുട്ട്.',
+  },
+  yearPair: {
+    en: '{best} is {bestSub} inside {bestMain}. {worst} is {worstSub} inside {worstMain}.',
+    si: '{best} යනු {bestMain} තුළ {bestSub} ය. {worst} යනු {worstMain} තුළ {worstSub} ය.',
+    ta: '{best} என்பது {bestMain}க்குள் {bestSub}. {worst} என்பது {worstMain}க்குள் {worstSub}.',
+    zh: '{best}是{bestMain}里的{bestSub}。{worst}是{worstMain}里的{worstSub}。',
+    hi: '{best} में {bestMain} के अंदर {bestSub} है। {worst} में {worstMain} के अंदर {worstSub} है।',
+    ja: '{best}は{bestMain}の中の{bestSub}。{worst}は{worstMain}の中の{worstSub}。',
+    ko: '{best}는 {bestMain} 안의 {bestSub}입니다. {worst}는 {worstMain} 안의 {worstSub}입니다.',
+    ar: '{best} هو {bestSub} داخل {bestMain}. {worst} هو {worstSub} داخل {worstMain}.',
+    ml: '{best} എന്നത് {bestMain}നുള്ളിലെ {bestSub} ആണ്. {worst} എന്നത് {worstMain}നുള്ളിലെ {worstSub} ആണ്.',
   },
   yearFlat: {
     en: 'An even year — no month stands far apart from the rest.', si: 'සමබර වසරක් — කිසිදු මාසයක් අනෙක්වාට වඩා බොහෝ වෙනස් නොවේ.',

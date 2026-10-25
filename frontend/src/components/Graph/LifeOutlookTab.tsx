@@ -15,7 +15,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Route, CalendarRange, CircleDot } from 'lucide-react';
+import { CheckCircle, CircleDot, CalendarRange, Loader2, MinusCircle, Route } from 'lucide-react';
 import { getYearAhead, type BirthData, type YearAhead, type MonthOutlook } from '../../services/api';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
@@ -24,10 +24,10 @@ import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
 import { AreaReadingList } from '../shared/AreaReadingList';
 import { PlainPeriodSummary } from '../shared/PlainPeriodSummary';
 import { YEAR_TEXT } from '../../lib/core/text/readingText';
-import { plainSubPeriodLine } from '../../lib/core/plainSummary';
+import { buildPlainSummary } from '../../lib/core/plainSummary';
 import {
-  monthYearLabel, monthShort, yearHeadline, groupStretches, changeLine,
-  chapterHeadline, chapterSpan, ageRange, youAreHere, planetTheme,
+  monthYearLabel, monthShort, yearHeadline, yearContrast, groupStretches, changeLine,
+  chapterHeadline, chapterInside, chapterSpan, ageRange, youAreHere, planetTheme, stretchCaption,
 } from '../../lib/core/yearAhead';
 
 const AREAS = ['career', 'wealth', 'relationships', 'health'] as const;
@@ -61,10 +61,21 @@ const SectionTitle: React.FC<{ icon: React.ComponentType<{ className?: string; s
 
 // ── Life in chapters ────────────────────────────────────────────────────────
 
+/** The lord being lived, and the different lord wrapped around it. */
+function monthPair(m: MonthOutlook): { outer?: string; inner?: string } {
+  const cp = m.prediction.currentPeriods;
+  const ad = cp?.antardasha?.lord;
+  const inner = cp?.pratyantardasha?.lord ?? ad;
+  if (!inner) return {};
+  const wrapped = ad && ad !== inner ? ad : cp?.mahadasha?.lord;
+  return { outer: wrapped && wrapped !== inner ? wrapped : inner, inner };
+}
+
 const ChaptersCard: React.FC<{ data: YearAhead }> = ({ data }) => {
   const { lang } = useLang();
   const L = coreLang(lang);
   const now = data.chapters.find(c => c.isNow) ?? data.chapters[0];
+  const sub = data.months[0]?.prediction.currentPeriods?.antardasha?.lord;
   const markerPct = Math.min(100, Math.max(0, (data.ageNow / data.lifeYears) * 100));
 
   return (
@@ -75,6 +86,7 @@ const ChaptersCard: React.FC<{ data: YearAhead }> = ({ data }) => {
         title={chapterHeadline(now.lord, L)}
         aside={chapterSpan(now.start, now.end, now.fromAge, now.toAge, L)}
       />
+      {sub && <p className="text-[13px] text-white/75 leading-relaxed">{chapterInside(now.lord, sub, L)}</p>}
 
       <div className="overflow-x-auto pb-1">
         <div className="relative min-w-[720px] pt-8">
@@ -105,7 +117,10 @@ const ChaptersCard: React.FC<{ data: YearAhead }> = ({ data }) => {
                   {!tiny && (
                     <>
                       <span className="text-sm font-semibold text-white truncate">{labelPlanet(c.lord, lang)}</span>
-                      <span className="text-[11.5px] leading-snug text-white/70 line-clamp-2">{planetTheme(c.lord, L)}</span>
+                      {c.isNow && sub && sub !== c.lord && (
+                        <span className="text-[11px] font-medium truncate" style={{ color: LORD_HEX[sub] ?? '#fff' }}>{labelPlanet(sub, lang)}</span>
+                      )}
+                      <span className={`text-[11.5px] leading-snug text-white/70 ${c.isNow && sub && sub !== c.lord ? 'line-clamp-1' : 'line-clamp-2'}`}>{c.isNow && sub ? stretchCaption(c.lord, sub, L) : planetTheme(c.lord, L)}</span>
                     </>
                   )}
                 </div>
@@ -138,17 +153,29 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
   const L = coreLang(lang);
   const months = data.months;
 
-  const headline = useMemo(() => yearHeadline(
-    months.map(m => ({ year: m.year, month: m.month, percentile: m.prediction.overallPercentile ?? 50 })), L,
-  ), [months, L]);
-  const stretches = useMemo(() => groupStretches(months.map(m => m.prediction.currentPeriods?.pratyantardasha?.lord)), [months]);
+  const points = useMemo(() => months.map(m => {
+    const pair = monthPair(m);
+    return {
+      year: m.year, month: m.month,
+      percentile: m.prediction.overallPercentile ?? 50,
+      main: pair.outer, sub: pair.inner,
+    };
+  }), [months]);
+  const headline = useMemo(() => yearHeadline(points, L), [points, L]);
+  const contrast = useMemo(() => yearContrast(points, L), [points, L]);
+  const stretches = useMemo(() => groupStretches(months.map(m => {
+    const { outer, inner } = monthPair(m);
+    if (!inner) return undefined;
+    return outer && outer !== inner ? `${outer}|${inner}` : inner;
+  })), [months]);
 
-  const cellBg = (i: number) => (i === picked ? 'bg-white/[0.06] rounded-lg' : '');
+  const cellBg = (i: number) => (i === picked ? 'rounded-lg bg-[rgba(var(--c-accent-rgb),0.10)]' : '');
   const grid: React.CSSProperties = { gridTemplateColumns: `7.5rem repeat(${months.length}, minmax(0, 1fr))` };
 
   return (
     <section className="glass-card rounded-2xl p-6 space-y-4">
       <SectionTitle icon={CalendarRange} kicker={YEAR_TEXT.yearTitle[L]} title={headline} />
+      {contrast && <p className="text-[13px] text-white/75 leading-relaxed -mt-1">{contrast}</p>}
 
       <div className="flex flex-wrap gap-3 text-xs text-white/65">
         {(['positive', 'neutral', 'mixed', 'negative'] as TrendKey[]).map(k => (
@@ -180,14 +207,23 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
           ))}
 
           <div className="text-[13px] font-semibold text-white pb-1">{YEAR_TEXT.overall[L]}</div>
-          {months.map((m, i) => (
-            <div key={m.at} className={`flex flex-col justify-end ${cellBg(i)}`} style={{ height: OVERALL_H + 6 }}>
-              <div
-                className="mx-1.5 rounded-t-md rounded-b-sm"
-                style={{ height: barPx(m.prediction.overallPercentile ?? 50, OVERALL_H), background: TREND_HEX[ratingTrend(m.prediction.overallRating)] }}
-              />
-            </div>
-          ))}
+          {months.map((m, i) => {
+            const tone = ratingTrend(m.prediction.overallRating);
+            return (
+              <div key={m.at} className={`flex flex-col justify-end ${cellBg(i)}`} style={{ height: OVERALL_H + 18 }}>
+                <span className="text-center text-[10px] font-semibold tabular-nums leading-none mb-1" style={{ color: TREND_HEX[tone] }}>
+                  {m.prediction.overallRating}
+                </span>
+                <div className="relative mx-1.5" style={{ height: OVERALL_H }}>
+                  <div className="absolute inset-0 rounded-md bg-white/[0.05]" />
+                  <div
+                    className="absolute inset-x-0 bottom-0 rounded-t-md rounded-b-sm"
+                    style={{ height: barPx(m.prediction.overallPercentile ?? 50, OVERALL_H), background: TREND_HEX[tone] }}
+                  />
+                </div>
+              </div>
+            );
+          })}
 
           {AREAS.map(area => (
             <React.Fragment key={area}>
@@ -196,10 +232,13 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
                 const p = m.prediction.predictions[area];
                 return (
                   <div key={m.at} className={`flex flex-col justify-end ${cellBg(i)}`} style={{ height: AREA_H + 4 }}>
-                    <div
-                      className="mx-2 rounded-t rounded-b-sm"
-                      style={{ height: barPx(p?.explanation?.percentile ?? 50, AREA_H), background: TREND_HEX[trendOf(p?.trend ?? 'neutral')] }}
-                    />
+                    <div className="relative mx-2" style={{ height: AREA_H }}>
+                      <div className="absolute inset-0 rounded bg-white/[0.05]" />
+                      <div
+                        className="absolute inset-x-0 bottom-0 rounded-t rounded-b-sm"
+                        style={{ height: barPx(p?.explanation?.percentile ?? 50, AREA_H), background: TREND_HEX[trendOf(p?.trend ?? 'neutral')] }}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -207,18 +246,23 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
           ))}
 
           <div className="text-[11px] text-white/45 self-start pt-2">{YEAR_TEXT.stretches[L]}</div>
-          {stretches.map(s => (
-            <div
-              key={`${s.lord}-${s.start}`}
-              className="self-start min-w-0 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 flex flex-col gap-0.5"
-              style={{ gridColumn: `${s.start + 2} / span ${s.span}` }}
-              title={planetTheme(s.lord, L)}
-            >
-              <span className="text-xs font-semibold text-white truncate">{labelPlanet(s.lord, lang)}</span>
-              {/* A one-month column is too narrow for the theme; it stays in the tooltip. */}
-              {s.span > 1 && <span className="text-[11px] leading-snug text-white/60 line-clamp-2">{planetTheme(s.lord, L)}</span>}
-            </div>
-          ))}
+          {stretches.map(s => {
+            const [host, fine] = s.lord.includes('|') ? s.lord.split('|') : [s.lord, s.lord];
+            const caption = stretchCaption(host, fine, L);
+            const name = host !== fine ? `${labelPlanet(host, lang)} · ${labelPlanet(fine, lang)}` : labelPlanet(fine, lang);
+            return (
+              <div
+                key={`${s.lord}-${s.start}`}
+                className="self-start min-w-0 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 flex flex-col gap-0.5"
+                style={{ gridColumn: `${s.start + 2} / span ${s.span}`, borderTopColor: LORD_HEX[fine] ?? undefined, borderTopWidth: 2 }}
+                title={caption}
+              >
+                <span className="text-xs font-semibold text-white truncate">{name}</span>
+                {/* A one-month column is too narrow for the reading; it stays in the tooltip. */}
+                {s.span > 1 && <span className="text-[11px] leading-snug text-white/60 line-clamp-2">{caption}</span>}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -243,7 +287,23 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
 const MonthCard: React.FC<{ month: MonthOutlook }> = ({ month }) => {
   const { lang, t } = useLang();
   const L = coreLang(lang);
-  const pd = month.prediction.currentPeriods?.pratyantardasha?.lord;
+  const cp = month.prediction.currentPeriods;
+  const s = useMemo(() => {
+    if (!cp?.mahadasha?.end || !cp.antardasha?.end) return null;
+    return buildPlainSummary({
+      lang: L,
+      overallRating: month.prediction.overallRating,
+      overallPercentile: month.prediction.overallPercentile,
+      predictions: month.prediction.predictions,
+      periods: {
+        mahadasha: cp.mahadasha,
+        antardasha: cp.antardasha,
+        pratyantardasha: cp.pratyantardasha,
+        sookshmaDasha: cp.sookshmaDasha,
+      },
+      indicators: month.prediction.indicators,
+    });
+  }, [L, month, cp]);
   return (
     <section className="glass-card rounded-2xl p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -255,7 +315,30 @@ const MonthCard: React.FC<{ month: MonthOutlook }> = ({ month }) => {
           <div className="text-lg font-bold text-white">{month.prediction.overallRating}/10</div>
         </div>
       </div>
-      <PlainPeriodSummary prediction={month.prediction} extraLine={pd ? plainSubPeriodLine(pd, L) : undefined} className="-mt-3" />
+      {s ? (
+        <>
+          <h3 className="text-[15px] font-medium text-white leading-relaxed">{s.headline}</h3>
+          {s.combination && <p className="text-[13px] text-white/75 leading-relaxed">{s.combination}</p>}
+          {s.standing && <p className="text-xs text-white/60">{s.standing}</p>}
+          {s.combos && <p className="text-[12px] text-white/60 leading-relaxed">{s.combos}</p>}
+          <div className="grid sm:grid-cols-2 gap-2">
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3">
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] uppercase tracking-wider text-emerald-300">
+                <CheckCircle className="w-3 h-3" /> {s.labels.goodFor}
+              </div>
+              <p className="text-[13px] text-white/80 leading-relaxed">{s.goodFor}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] uppercase tracking-wider text-white/50">
+                <MinusCircle className="w-3 h-3" /> {s.labels.goEasy}
+              </div>
+              <p className="text-[13px] text-white/80 leading-relaxed">{s.goEasy}</p>
+            </div>
+          </div>
+        </>
+      ) : (
+        <PlainPeriodSummary prediction={month.prediction} className="-mt-3" />
+      )}
       <AreaReadingList prediction={month.prediction} />
     </section>
   );

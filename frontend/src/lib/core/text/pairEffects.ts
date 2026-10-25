@@ -136,6 +136,14 @@ export const PAIR_EFFECTS: Record<string, PairEffect> = {
     relationships: { en: 'Deep romantic bonds; nurturing partnerships', si: 'ගැඹුරු ප්‍රේම බැඳීම්; රැකබලා ගන්නා හවුල්කාරිත්ව' },
     ratingMod: 1,
   },
+  'Venus-Sun': {
+    theme: { en: 'Shukra-Surya — charm meeting authority, and recognition for creative work', si: 'ශුක්‍ර-සූර්ය — ආකර්ෂණය නිලබලය හමු වේ; නිර්මාණාත්මක වැඩ සඳහා පිළිගැනීම' },
+    health: { en: 'Heart, eyes and skin need steadier care', si: 'හෘදය, ඇස් හා සම ගැන වඩා ස්ථාවර අවධානයක් ඕනෑ' },
+    wealth: { en: 'Income through arts, luxury trade, or work tied to people in charge', si: 'කලාව, සුඛෝපභෝගී වෙළඳාම හෝ බලධාරීන් ආශ්‍රිත වැඩ හරහා ආදායම්' },
+    career: { en: 'Creative work that needs an official yes — design, media, public roles', si: 'නිල අනුමැතියක් අවශ්‍ය නිර්මාණාත්මක වැඩ — නිර්මාණය, මාධ්‍ය, පොදු තනතුරු' },
+    relationships: { en: 'Warmth and status pull in different directions; keep agreements explicit', si: 'උණුසුම හා තත්ත්වය වෙනස් දිශාවලට අදියි; එකඟතා පැහැදිලිව තබා ගන්න' },
+    ratingMod: 0,
+  },
   'Venus-Saturn': {
     theme: { en: 'Shukra-Shani — disciplined love and long-term relationships', si: 'ශුක්‍ර-ශනි — විනයගරුක ආදරය හා දිගු කාලීන සම්බන්ධතා' },
     health: { en: 'Chronic reproductive or kidney issues possible', si: 'නිදන්ගත ප්‍රජනන හෝ වකුගඩු ගැටලු ඇති විය හැක' },

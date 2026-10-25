@@ -251,6 +251,12 @@ export const F_THEME_AD: Record<'friend' | 'enemy' | 'neutral', Frame1> = {
   },
 };
 
+/** The combination running now, then the longer period it sits inside. */
+export const F_THEME_NOW: Frame2 = {
+  en: (now, wider) => `Right now: ${now}. The longer period around it: ${wider}`,
+  si: (now, wider) => `මේ මොහොතේ: ${now}. මෙය වටා ඇති දිගු කාලය: ${wider}`,
+};
+
 export const F_THEME_PD: Frame1 = {
   en: pd => ` — currently in ${pd} Pratyantardasha`,
   si: pd => ` — දැනට ${pd} ප්‍රත්‍යන්තර් දශාව ගත වේ`,

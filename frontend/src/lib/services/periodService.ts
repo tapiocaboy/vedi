@@ -129,9 +129,12 @@ function buildPlaybook(
   const decisionWindow = PLAYBOOK_TEXT[friend ? 'decisionFriend' : enemy ? 'decisionEnemy' : 'decisionNeutral'][lang];
 
   const monthLord = pdLord ?? adLord;
+  const otherLord = pdLord ? adLord : mdLord;
   const monthAhead = PLAYBOOK_TEXT[pdLord ? 'monthPd' : 'monthAd'][lang]
     .replace('{planet}', planetName(monthLord, lang))
-    .replace('{theme}', PLANET_THEME[monthLord as PlanetKey]?.[lang] ?? '');
+    .replace('{theme}', PLANET_THEME[monthLord as PlanetKey]?.[lang] ?? '')
+    .replace('{other}', planetName(otherLord, lang))
+    .replace('{otherTheme}', PLANET_THEME[otherLord as PlanetKey]?.[lang] ?? '');
 
   return {
     bestDays: dayNames(good),

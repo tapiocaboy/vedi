@@ -7,7 +7,8 @@ import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, A
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
-import { searchPlaces, type Place } from './places';
+import { searchPlaces } from './places';
+import { geocodePlaces, mergePlaceChoices, type PlaceChoice } from './geocode';
 
 interface Props {
   onSubmit: (data: BirthData) => void;
@@ -195,6 +196,8 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
   });
   const [placeQuery, setPlaceQuery] = useState(lockSystem ? '' : saved.current.place);
   const [placePicked, setPlacePicked] = useState(!lockSystem && saved.current.place.length > 0);
+  const [remotePlaces, setRemotePlaces] = useState<PlaceChoice[]>([]);
+  const [lookingUp, setLookingUp] = useState(false);
 
   // A locked system (the Match tab's partner form) always tracks the parent
   // chart's system, even if the parent re-renders with a different one.
@@ -331,26 +334,57 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
   const latReadout = fmtCoord(formData.latitude, 'N', 'S');
   const lngReadout = fmtCoord(formData.longitude, 'E', 'W');
 
-  // A zone the list doesn't name (Kathmandu, Lisbon, …) would otherwise fall
-  // back to UTC and shift the ascendant. Offer the browser zone itself.
+  // A zone the list doesn't name would otherwise fall back to UTC and shift
+  // the ascendant. Offer the browser zone, and any zone a place lookup returned.
   const tzOptions = useMemo(() => {
-    if (!BROWSER_TZ || TIMEZONES.some(tz => tz.value === BROWSER_TZ)) return TIMEZONES;
-    return [{ value: BROWSER_TZ, label: BROWSER_TZ.replace(/_/g, ' ') }, ...TIMEZONES];
-  }, []);
+    const known = new Set(TIMEZONES.map(tz => tz.value));
+    const extra: { value: string; label: string }[] = [];
+    for (const zone of [BROWSER_TZ, formData.timezone]) {
+      if (zone && !known.has(zone) && !extra.some(item => item.value === zone)) {
+        extra.push({ value: zone, label: zone.replace(/_/g, ' ') });
+      }
+    }
+    return extra.length ? [...extra, ...TIMEZONES] : TIMEZONES;
+  }, [formData.timezone]);
 
-  const placeMatches = useMemo(
-    () => (placePicked ? [] : searchPlaces(placeQuery)),
-    [placeQuery, placePicked],
+  // Bundled cities answer immediately. Towns missing from that list are looked
+  // up by name; the coordinate fields stay editable either way.
+  useEffect(() => {
+    const q = placeQuery.trim();
+    if (placePicked || q.length < 2) {
+      setRemotePlaces([]);
+      setLookingUp(false);
+      return;
+    }
+    setLookingUp(searchPlaces(placeQuery).length === 0);
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => {
+      geocodePlaces(q, ac.signal).then(rows => {
+        if (ac.signal.aborted) return;
+        setRemotePlaces(rows);
+        setLookingUp(false);
+      });
+    }, 320);
+    return () => {
+      window.clearTimeout(timer);
+      ac.abort();
+    };
+  }, [placeQuery, placePicked]);
+
+  const placeChoices = useMemo(
+    () => (placePicked ? [] : mergePlaceChoices(searchPlaces(placeQuery), remotePlaces)),
+    [placeQuery, placePicked, remotePlaces],
   );
 
-  const selectPlace = (place: Place) => {
+  const selectPlace = (place: PlaceChoice) => {
     setFormData(prev => ({
       ...prev,
-      latitude: String(place.lat),
-      longitude: String(place.lng),
-      timezone: place.tz,
+      latitude: place.lat.toFixed(4),
+      longitude: place.lng.toFixed(4),
+      timezone: place.tz || prev.timezone,
     }));
-    setPlaceQuery(`${place.name}, ${place.country}`);
+    const region = place.region ? `${place.region}, ` : '';
+    setPlaceQuery(`${place.name}, ${region}${place.country}`.replace(/, $/, ''));
     setPlacePicked(true);
   };
 
@@ -454,20 +488,25 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
         />
         {placeQuery.trim().length >= 2 && !placePicked && (
           <div className="mt-1.5 rounded-lg overflow-hidden border border-[rgba(var(--c-accent-rgb),0.18)]" role="listbox">
-            {placeMatches.length === 0 ? (
-              <p className="px-2.5 py-2 text-[11px] leading-snug form-label">{t('form.birthPlaceEmpty')}</p>
-            ) : placeMatches.map(place => (
+            {placeChoices.length === 0 ? (
+              <p className="px-2.5 py-2 text-[11px] leading-snug form-label">
+                {lookingUp ? t('form.birthPlaceLooking') : t('form.birthPlaceEmpty')}
+              </p>
+            ) : placeChoices.map(place => (
               <button
-                key={`${place.name}-${place.country}`}
+                key={`${place.source}-${place.name}-${place.country}-${place.lat}`}
                 type="button"
                 role="option"
                 onClick={() => selectPlace(place)}
                 className="w-full text-left px-2.5 py-2 text-xs font-semibold border-t border-[rgba(var(--c-accent-rgb),0.10)] first:border-t-0 hover:bg-[rgba(var(--c-accent-rgb),0.08)] transition-colors"
               >
                 {place.name}
-                <span className="font-medium form-label"> · {place.country}</span>
+                <span className="font-medium form-label"> · {place.region ? `${place.region}, ` : ''}{place.country}</span>
               </button>
             ))}
+            {placeChoices.some(place => place.source === 'remote') && (
+              <p className="px-2.5 py-1.5 text-[10px] form-label border-t border-[rgba(var(--c-accent-rgb),0.10)]">{t('form.placeCredit')}</p>
+            )}
           </div>
         )}
         <button

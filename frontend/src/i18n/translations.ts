@@ -102,6 +102,8 @@ const en = {
   'form.birthPlace': 'Birth place',
   'form.birthPlacePlaceholder': 'Search a city — Mumbai, London, Tokyo',
   'form.birthPlaceEmpty': 'No matching city. Enter the coordinates below.',
+  'form.birthPlaceLooking': 'Looking up that place…',
+  'form.placeCredit': 'Place names by Open-Meteo',
   'form.sample': 'Try a sample chart',
   'form.locating': 'Locating…',
   'form.geoDenied': 'Location access denied — enter coordinates manually.',
@@ -944,8 +946,8 @@ const en = {
   'disclaimer.acceptNote': 'This notice will not appear again on this device.',
 
   'privacy.title': 'Your data stays on your device',
-  'privacy.bodyGenerate': 'All calculations happen locally in your browser. Nothing you enter is sent to any server or stored anywhere.',
-  'privacy.bodyLoad': 'This tool runs entirely in your browser. We do not collect, store, or transmit any information you enter — ever.',
+  'privacy.bodyGenerate': 'Chart calculations stay in your browser and are not stored. Only the city name is sent, to look up its coordinates.',
+  'privacy.bodyLoad': 'Birth details stay on this device. A city name is sent only to look up coordinates.',
   'privacy.dismiss': 'Dismiss',
 
   'cookies.title': 'Anonymous visit analytics',
@@ -1147,6 +1149,8 @@ const si: Record<keyof typeof en, string> = {
   'form.birthPlace': 'උපන් ස්ථානය',
   'form.birthPlacePlaceholder': 'නගරයක් සොයන්න — මුම්බායි, ලන්ඩන්, ටෝකියෝ',
   'form.birthPlaceEmpty': 'ගැලපෙන නගරයක් නැත. ඛණ්ඩාංක පහත ඇතුළත් කරන්න.',
+  'form.birthPlaceLooking': 'එම ස්ථානය සොයමින්…',
+  'form.placeCredit': 'ස්ථාන නම් Open-Meteo වෙතින්',
   'form.sample': 'ආදර්ශ කේන්දරයක් බලන්න',
   'form.locating': 'ස්ථානය සොයමින්…',
   'form.geoDenied': 'ස්ථාන ප්‍රවේශය ප්‍රතික්ෂේප විය — ඛණ්ඩාංක අතින් ඇතුළත් කරන්න.',
@@ -1989,8 +1993,8 @@ const si: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'මෙම දැනුම්දීම මෙම උපාංගයේ නැවත නොපෙන්වයි.',
 
   'privacy.title': 'ඔබේ දත්ත ඔබේ උපාංගයේම',
-  'privacy.bodyGenerate': 'සියල්ල බ්‍රව්සරය තුළම දේශීයව සිදුවේ. ඔබ ඇතුළත් කරන කිසිවක් සේවාදායකයකට නොයයි, ගබඩා ද නොවේ.',
-  'privacy.bodyLoad': 'මෙම මෙවලම ක්‍රියා කරන්නේ ඔබේ බ්‍රව්සරය තුළම ය. අප කිසිදු දත්තයක් එකතු නොකරමු, ගබඩා නොකරමු, කිසිදා යවන්නේ ද නැත.',
+  'privacy.bodyGenerate': 'ගණනයන් ඔබේ බ්‍රව්සරයේම පවතී, ගබඩා නොවේ. ඛණ්ඩාංක සෙවීමට නගරයේ නම පමණක් යවයි.',
+  'privacy.bodyLoad': 'උපන් විස්තර මෙම උපාංගයේම පවතී. ඛණ්ඩාංක සෙවීමට නගරයේ නම පමණක් යවයි.',
   'privacy.dismiss': 'වසන්න',
 
   'cookies.title': 'නිර්නාමික පිවිසුම් සංඛ්‍යාලේඛන',
@@ -2192,6 +2196,8 @@ const ta: Record<keyof typeof en, string> = {
   'form.birthPlace': 'பிறந்த இடம்',
   'form.birthPlacePlaceholder': 'நகரத்தைத் தேடுங்கள் — மும்பை, லண்டன், டோக்கியோ',
   'form.birthPlaceEmpty': 'பொருந்தும் நகரம் இல்லை. கீழே ஆயத்தொலைவுகளை உள்ளிடுங்கள்.',
+  'form.birthPlaceLooking': 'அந்த இடத்தைத் தேடுகிறது…',
+  'form.placeCredit': 'இடப் பெயர்கள் Open-Meteo வழியாக',
   'form.sample': 'மாதிரி ஜாதகம் நிரப்பு',
   'form.locating': 'இருப்பிடம் தேடப்படுகிறது…',
   'form.geoDenied': 'இருப்பிட அணுகல் மறுக்கப்பட்டது — ஆயத்தொலைவுகளைக் கைமுறையாக உள்ளிடவும்.',
@@ -3034,8 +3040,8 @@ const ta: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'இந்த அறிவிப்பு இந்தச் சாதனத்தில் மீண்டும் தோன்றாது.',
 
   'privacy.title': 'உங்கள் தரவு உங்கள் சாதனத்திலேயே',
-  'privacy.bodyGenerate': 'எல்லாக் கணக்கீடுகளும் உங்கள் உலாவியிலேயே நடக்கின்றன. நீங்கள் உள்ளிடுவது எதுவும் எந்தச் சேவையகத்திற்கும் அனுப்பப்படுவதோ சேமிக்கப்படுவதோ இல்லை.',
-  'privacy.bodyLoad': 'இந்தக் கருவி முழுவதும் உங்கள் உலாவியில் இயங்குகிறது. நீங்கள் உள்ளிடும் எந்தத் தகவலையும் நாங்கள் சேகரிப்பதோ சேமிப்பதோ அனுப்புவதோ இல்லை — எப்போதும்.',
+  'privacy.bodyGenerate': 'கணக்கீடுகள் உங்கள் உலாவியிலேயே நடக்கின்றன, சேமிக்கப்படுவதில்லை. ஆயத்தொலைவுகளைக் காண நகரப் பெயர் மட்டும் அனுப்பப்படுகிறது.',
+  'privacy.bodyLoad': 'பிறப்பு விவரங்கள் இந்தச் சாதனத்திலேயே இருக்கும். ஆயத்தொலைவுகளைக் காண நகரப் பெயர் மட்டும் அனுப்பப்படுகிறது.',
   'privacy.dismiss': 'மூடு',
 
   'cookies.title': 'அநாமதேய வருகை புள்ளிவிவரம்',
@@ -3237,6 +3243,8 @@ const zh: Record<keyof typeof en, string> = {
   'form.birthPlace': '出生地点',
   'form.birthPlacePlaceholder': '搜索城市，例如孟买、伦敦、东京',
   'form.birthPlaceEmpty': '没有匹配的城市。请在下方输入坐标。',
+  'form.birthPlaceLooking': '正在查找这个地点…',
+  'form.placeCredit': '地名由 Open-Meteo 提供',
   'form.sample': '试用示例星盘',
   'form.locating': '正在定位…',
   'form.geoDenied': '位置权限被拒绝——请手动输入经纬度。',
@@ -4079,8 +4087,8 @@ const zh: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': '此提示不会在本设备上再次出现。',
 
   'privacy.title': '您的数据只留在您的设备上',
-  'privacy.bodyGenerate': '所有计算都在您的浏览器本地进行。您输入的任何内容都不会发送到任何服务器，也不会被存储。',
-  'privacy.bodyLoad': '本工具完全在您的浏览器中运行。我们绝不收集、存储或传输您输入的任何信息。',
+  'privacy.bodyGenerate': '星盘计算留在您的浏览器中，不会被存储。只会发送城市名称，用来查询坐标。',
+  'privacy.bodyLoad': '出生资料留在此设备上。仅发送城市名称以查询坐标。',
   'privacy.dismiss': '知道了',
 
   'cookies.title': '匿名访问统计',
@@ -4282,6 +4290,8 @@ const hi: Record<keyof typeof en, string> = {
   'form.birthPlace': 'जन्म स्थान',
   'form.birthPlacePlaceholder': 'शहर खोजें — मुंबई, लंदन, टोक्यो',
   'form.birthPlaceEmpty': 'कोई शहर नहीं मिला। नीचे निर्देशांक लिखें।',
+  'form.birthPlaceLooking': 'वह जगह खोजी जा रही है…',
+  'form.placeCredit': 'स्थान नाम Open-Meteo से',
   'form.sample': 'नमूना कुंडली भरें',
   'form.locating': 'स्थान खोजा जा रहा है…',
   'form.geoDenied': 'स्थान की अनुमति नहीं मिली — निर्देशांक स्वयं दर्ज करें।',
@@ -5124,8 +5134,8 @@ const hi: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'यह सूचना इस डिवाइस पर दोबारा नहीं दिखेगी।',
 
   'privacy.title': 'आपका डेटा आपके डिवाइस पर ही रहता है',
-  'privacy.bodyGenerate': 'सारी गणनाएँ आपके ब्राउज़र में स्थानीय रूप से होती हैं। आपका दर्ज किया कुछ भी किसी सर्वर को नहीं भेजा जाता, न कहीं सहेजा जाता है।',
-  'privacy.bodyLoad': 'यह उपकरण पूरी तरह आपके ब्राउज़र में चलता है। आपकी दर्ज की कोई भी जानकारी हम न एकत्र करते हैं, न सहेजते हैं, न भेजते हैं — कभी नहीं।',
+  'privacy.bodyGenerate': 'गणनाएँ आपके ब्राउज़र में रहती हैं और कहीं सहेजी नहीं जातीं। निर्देशांक खोजने के लिए केवल शहर का नाम भेजा जाता है।',
+  'privacy.bodyLoad': 'जन्म विवरण इस डिवाइस पर रहते हैं। निर्देशांक खोजने के लिए केवल शहर का नाम भेजा जाता है।',
   'privacy.dismiss': 'ठीक है',
 
   'cookies.title': 'अनाम विज़िट आँकड़े',
@@ -5327,6 +5337,8 @@ const ko: Record<keyof typeof en, string> = {
   'form.birthPlace': '출생지',
   'form.birthPlacePlaceholder': '도시 검색 — 뭄바이, 런던, 도쿄',
   'form.birthPlaceEmpty': '일치하는 도시가 없습니다. 아래에 좌표를 입력하세요.',
+  'form.birthPlaceLooking': '그 장소를 찾는 중…',
+  'form.placeCredit': '지명은 Open-Meteo 제공',
   'form.sample': '예시 차트 채우기',
   'form.locating': '위치 확인 중…',
   'form.geoDenied': '위치 접근이 거부되었습니다 — 좌표를 직접 입력하세요.',
@@ -6169,8 +6181,8 @@ const ko: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': '이 알림은 이 기기에서 다시 표시되지 않습니다.',
 
   'privacy.title': '당신의 데이터는 기기에 남습니다',
-  'privacy.bodyGenerate': '모든 계산은 브라우저에서 로컬로 이루어집니다. 입력하신 그 무엇도 서버로 전송되거나 어디에도 저장되지 않습니다.',
-  'privacy.bodyLoad': '이 도구는 전적으로 브라우저에서 실행됩니다. 우리는 입력하신 어떠한 정보도 수집, 저장, 전송하지 않습니다 — 절대로.',
+  'privacy.bodyGenerate': '차트 계산은 브라우저에 남고 저장되지 않습니다. 좌표를 찾으려고 도시 이름만 전송됩니다.',
+  'privacy.bodyLoad': '출생 정보는 이 기기에 남습니다. 좌표를 찾으려고 도시 이름만 전송됩니다.',
   'privacy.dismiss': '닫기',
 
   'cookies.title': '익명 방문 분석',
@@ -6372,6 +6384,8 @@ const ar: Record<keyof typeof en, string> = {
   'form.birthPlace': 'مكان الولادة',
   'form.birthPlacePlaceholder': 'ابحث عن مدينة — مومباي، لندن، طوكيو',
   'form.birthPlaceEmpty': 'لا توجد مدينة مطابقة. أدخل الإحداثيات أدناه.',
+  'form.birthPlaceLooking': 'يجري البحث عن هذا المكان…',
+  'form.placeCredit': 'أسماء الأماكن من Open-Meteo',
   'form.sample': 'جرّب مخططًا تجريبيًا',
   'form.locating': 'تحديد الموقع…',
   'form.geoDenied': 'تم رفض الوصول إلى الموقع — أدخل الإحداثيات يدويًا.',
@@ -7214,8 +7228,8 @@ const ar: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'لن يظهر هذا الإشعار مرة أخرى على هذا الجهاز.',
 
   'privacy.title': 'بياناتك تبقى على جهازك',
-  'privacy.bodyGenerate': 'تُجرى جميع الحسابات محليًا في متصفحك. لا يُرسَل أي شيء تدخله إلى أي خادم أو يُخزَّن في أي مكان.',
-  'privacy.bodyLoad': 'تعمل هذه الأداة بالكامل في متصفحك. نحن لا نجمع أو نخزن أو ننقل أي معلومات تدخلها — أبدًا.',
+  'privacy.bodyGenerate': 'تبقى الحسابات في متصفحك ولا تُخزَّن. يُرسَل اسم المدينة فقط للبحث عن الإحداثيات.',
+  'privacy.bodyLoad': 'تبقى بيانات الميلاد على هذا الجهاز. يُرسَل اسم المدينة فقط للبحث عن الإحداثيات.',
   'privacy.dismiss': 'تجاهل',
 
   'cookies.title': 'تحليلات زيارات مجهولة',
@@ -7417,6 +7431,8 @@ const ja: Record<keyof typeof en, string> = {
   'form.birthPlace': '出生地',
   'form.birthPlacePlaceholder': '都市を検索 — ムンバイ、ロンドン、東京',
   'form.birthPlaceEmpty': '一致する都市がありません。下に座標を入力してください。',
+  'form.birthPlaceLooking': 'その場所を検索しています…',
+  'form.placeCredit': '地名は Open-Meteo より',
   'form.sample': 'サンプルを入力',
   'form.locating': '位置情報を取得中…',
   'form.geoDenied': '位置情報へのアクセスが拒否されました — 座標を手動で入力してください。',
@@ -8259,8 +8275,8 @@ const ja: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'この通知は、このデバイスでは今後表示されません。',
 
   'privacy.title': 'あなたのデータはこの端末に留まります',
-  'privacy.bodyGenerate': 'すべての計算はブラウザ内でローカルに行われます。入力した内容はサーバーに送信されたり、どこかに保存されたりすることはありません。',
-  'privacy.bodyLoad': 'このツールは完全にブラウザ内で動作します。入力された情報を収集、保存、送信することは一切ありません。',
+  'privacy.bodyGenerate': '計算はこのブラウザ内に留まり、保存されません。座標を調べるために都市名だけが送られます。',
+  'privacy.bodyLoad': '出生情報はこの端末に残ります。座標を調べるために都市名だけが送られます。',
   'privacy.dismiss': '閉じる',
 
   'cookies.title': '匿名の訪問分析',
@@ -8462,6 +8478,8 @@ const ml: Record<keyof typeof en, string> = {
   'form.birthPlace': 'ജനന സ്ഥലം',
   'form.birthPlacePlaceholder': 'നഗരം തിരയുക — മുംബൈ, ലണ്ടൻ, ടോക്കിയോ',
   'form.birthPlaceEmpty': 'പൊരുത്തപ്പെടുന്ന നഗരമില്ല. താഴെ നിർദ്ദേശാങ്കങ്ങൾ നൽകുക.',
+  'form.birthPlaceLooking': 'ആ സ്ഥലം തിരയുന്നു…',
+  'form.placeCredit': 'സ്ഥലനാമങ്ങൾ Open-Meteo വഴി',
   'form.sample': 'മാതൃകാ ചാർട്ട് നിറയ്ക്കുക',
   'form.locating': 'സ്ഥലം കണ്ടെത്തുന്നു…',
   'form.geoDenied': 'സ്ഥല ആക്‌സസ് നിരസിച്ചു — കോർഡിനേറ്റുകൾ സ്വയം നൽകുക.',
@@ -9304,8 +9322,8 @@ const ml: Record<keyof typeof en, string> = {
   'disclaimer.acceptNote': 'ഈ അറിയിപ്പ് ഈ ഉപകരണത്തിൽ വീണ്ടും ദൃശ്യമാകില്ല.',
 
   'privacy.title': 'നിങ്ങളുടെ ഡാറ്റ നിങ്ങളുടെ ഉപകരണത്തിൽ തന്നെ തുടരുന്നു',
-  'privacy.bodyGenerate': 'എല്ലാ കണക്കുകൂട്ടലുകളും നിങ്ങളുടെ ബ്രൗസറിൽ പ്രാദേശികമായി നടക്കുന്നു. നിങ്ങൾ നൽകുന്നതൊന്നും ഒരു സെർവറിലേക്കും അയക്കുകയോ എവിടെയും സൂക്ഷിക്കുകയോ ചെയ്യുന്നില്ല.',
-  'privacy.bodyLoad': 'ഈ ഉപകരണം പൂർണ്ണമായും നിങ്ങളുടെ ബ്രൗസറിൽ പ്രവർത്തിക്കുന്നു. നിങ്ങൾ നൽകുന്ന ഒരു വിവരവും ഞങ്ങൾ ശേഖരിക്കുകയോ സൂക്ഷിക്കുകയോ കൈമാറുകയോ ചെയ്യുന്നില്ല — ഒരിക്കലും.',
+  'privacy.bodyGenerate': 'കണക്കുകൂട്ടലുകൾ ബ്രൗസറിൽ തന്നെ നിൽക്കുന്നു, സൂക്ഷിക്കപ്പെടുന്നില്ല. നിർദ്ദേശാങ്കം കണ്ടെത്താൻ നഗരത്തിന്റെ പേര് മാത്രം അയക്കുന്നു.',
+  'privacy.bodyLoad': 'ജനന വിവരങ്ങൾ ഈ ഉപകരണത്തിൽ തന്നെ നിൽക്കുന്നു. നിർദ്ദേശാങ്കം കണ്ടെത്താൻ നഗരത്തിന്റെ പേര് മാത്രം അയക്കുന്നു.',
   'privacy.dismiss': 'തള്ളിക്കളയുക',
 
   'cookies.title': 'അജ്ഞാത സന്ദർശന വിശകലനം',

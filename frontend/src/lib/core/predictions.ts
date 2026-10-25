@@ -30,7 +30,7 @@ import {
   F_PD_HEALTH_ENEMY, F_PD_HEALTH_FRIEND, F_PD_CAREER_ENEMY, F_PD_CAREER_FRIEND,
   F_PD_REL_ENEMY, F_PD_REL_FRIEND, F_SD_GENERAL_FRIEND,
   F_HEALTH_SUMMARY, F_WEALTH_SUMMARY, F_CAREER_SUMMARY, F_REL_SUMMARY, F_GENERAL_SUMMARY,
-  F_THEME_BASE, F_THEME_AD, F_THEME_PD, F_THEME_SD, F_THEME_BINDUS,
+  F_THEME_BASE, F_THEME_AD, F_THEME_NOW, F_THEME_PD, F_THEME_SD, F_THEME_BINDUS,
   F_THEME_EXALTED, F_THEME_NEECHA_BHANGA, F_THEME_DEBILITATED, F_THEME_YOGAKARAKA,
   F_HOUSE_ANNOTATION, F_LORDSHIP_ANNOTATION, F_LORDED_HOUSE, F_SUB_PERIOD_PREFIX, F_SUB_PERIOD_LORD,
   F_RESONANCE_NAKSHATRA_LORD, F_RESONANCE_IN_LAGNA, F_RESONANCE_STACKED, F_TRANSIT_DIVERGES,
@@ -1058,7 +1058,7 @@ export class DashaPredictionEngine {
     const overallPercentile = Math.round(percentileOf('overall', overallScore));
     const nature = (pd.nature as string) ?? 'neutral';
 
-    let overallTheme = pairEff
+    const widerTheme = pairEff
       ? pick(pairEff.theme, lang)
       : nature === 'benefic'
         ? F_THEME_BASE.benefic[en2si(lang)](mdName)
@@ -1066,7 +1066,18 @@ export class DashaPredictionEngine {
           ? F_THEME_BASE.malefic[en2si(lang)](mdName)
           : F_THEME_BASE.neutral[en2si(lang)](mdName);
 
-    if (!pairEff && antardasha) {
+    // The overall line is the combination actually being lived: the finest two
+    // lords (sub-period × finer period), with the mahadasha–antardasha pairing
+    // as the longer background. A lone lord name is not a reading of the time.
+    const fineLord = sookshmaDasha ?? pratyantardasha;
+    const fineHost = sookshmaDasha ? (pratyantardasha ?? antardasha) : antardasha;
+    const windowPair = fineLord && fineHost ? getPairEffect(fineHost, fineLord) : null;
+
+    let overallTheme = windowPair
+      ? F_THEME_NOW[en2si(lang)](pick(windowPair.theme, lang), widerTheme)
+      : widerTheme;
+
+    if (!pairEff && !windowPair && antardasha) {
       const rel = this.getRelationship(mahadasha, antardasha);
       const adName = planetName(antardasha, lang);
       if (rel === 'friend') overallTheme += F_THEME_AD.friend[en2si(lang)](adName);
@@ -1074,8 +1085,8 @@ export class DashaPredictionEngine {
       else overallTheme += F_THEME_AD.neutral[en2si(lang)](adName);
     }
 
-    if (pratyantardasha) overallTheme += F_THEME_PD[en2si(lang)](planetName(pratyantardasha, lang));
-    if (sookshmaDasha) overallTheme += F_THEME_SD[en2si(lang)](planetName(sookshmaDasha, lang));
+    if (pratyantardasha && !windowPair) overallTheme += F_THEME_PD[en2si(lang)](planetName(pratyantardasha, lang));
+    if (sookshmaDasha && !windowPair) overallTheme += F_THEME_SD[en2si(lang)](planetName(sookshmaDasha, lang));
 
     // Surface the dasha lord's Ashtakavarga strength when available.
     const lordBindus = this._bindusForLord(mahadasha);

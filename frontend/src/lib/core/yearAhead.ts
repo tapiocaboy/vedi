@@ -3,8 +3,9 @@
  * views. Pure functions over numbers the engine already produced — the data
  * itself comes from lib/services/yearAheadService.ts.
  */
-import { type Lang, planetName } from './i18n';
+import { type Lang, pick, planetName } from './i18n';
 import { MONTHS, PLANET_THEME, type PlanetKey } from './text/plainSummaryText';
+import { PAIR_EFFECTS } from './text/pairEffects';
 import { YEAR_TEXT, MONTH_SHORT } from './text/readingText';
 import { formatPlainDate } from './plainSummary';
 
@@ -35,6 +36,43 @@ export function yearHeadline(months: { year: number; month: number; percentile: 
     best: monthYearLabel(best.year, best.month, lang),
     worst: monthYearLabel(worst.year, worst.month, lang),
   });
+}
+
+/**
+ * Which pairing sits on the strongest month and which on the hardest.
+ * Null when the year is too even to name a peak, or a month has no sub-period.
+ */
+export function yearContrast(
+  months: { year: number; month: number; percentile: number; main?: string; sub?: string }[],
+  lang: Lang,
+): string | null {
+  const named = months.filter((m): m is typeof m & { main: string; sub: string } => !!m.main && !!m.sub);
+  if (named.length < 2) return null;
+  const best = named.reduce((a, b) => (b.percentile > a.percentile ? b : a));
+  const worst = named.reduce((a, b) => (b.percentile < a.percentile ? b : a));
+  if (best.percentile - worst.percentile < 15 || (best.year === worst.year && best.month === worst.month)) return null;
+  return fill(YEAR_TEXT.yearPair[lang], {
+    best: monthYearLabel(best.year, best.month, lang),
+    worst: monthYearLabel(worst.year, worst.month, lang),
+    bestSub: planetName(best.sub, lang),
+    bestMain: planetName(best.main, lang),
+    worstSub: planetName(worst.sub, lang),
+    worstMain: planetName(worst.main, lang),
+  });
+}
+
+/** The stretch being lived inside the current main-period chapter. */
+export function chapterInside(main: string, sub: string, lang: Lang): string {
+  const pair = PAIR_EFFECTS[`${main}-${sub}`];
+  const themeText = pair && (lang === 'en' || lang === 'si') ? pick(pair.theme, lang) : theme(sub, lang);
+  return fill(YEAR_TEXT.chapterInside[lang], { sub: planetName(sub, lang), theme: themeText });
+}
+
+/** Caption for a run of months: the pair reading when we have one, else the short lord's theme. */
+export function stretchCaption(host: string, fine: string, lang: Lang): string {
+  const pair = host !== fine ? PAIR_EFFECTS[`${host}-${fine}`] : PAIR_EFFECTS[`${fine}-${fine}`];
+  if (pair && (lang === 'en' || lang === 'si')) return pick(pair.theme, lang);
+  return theme(fine, lang);
 }
 
 /** Consecutive months under the same short-period lord, as grid spans. */

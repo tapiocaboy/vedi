@@ -48,15 +48,37 @@ describe('nextPeriod', () => {
 describe('buildPlainSummary (English)', () => {
   const s = buildPlainSummary(base('en'));
 
-  it('headlines the calibrated band, not raw numbers', () => {
+  it('headlines this sub-period inside the main period, and names the pairing', () => {
     expect(s.band).toBe('good');
-    expect(s.headline).toBe('A favourable stretch');
+    expect(s.headline).toContain('14 March 2028');
+    expect(s.headline).toContain('Saturn');
+    expect(s.headline).toContain('Venus');
+    expect(s.headline).toContain('responsibility, patience and steady hard work');
+    expect(s.combination).toContain('disciplined love and long-term relationships');
   });
 
-  it('gives one line per life area, in a fixed order, matching each trend', () => {
+  it('reads a finer window from the planet actually in charge, against the longer pairing', () => {
+    const fine = buildPlainSummary(base('en', {
+      periods: {
+        mahadasha: { lord: 'Venus', end: '2032-07-24T12:00:00.000Z' },
+        antardasha: { lord: 'Saturn', end: '2028-03-14T12:00:00.000Z' },
+        pratyantardasha: { lord: 'Mercury', end: '2026-11-02T12:00:00.000Z' },
+      },
+    }));
+    expect(fine.headline).toContain('2 November 2026');
+    expect(fine.headline).toContain('Mercury');
+    expect(fine.headline).toContain('learning, communication, trade and deals');
+    expect(fine.combination).toContain('methodical intelligence');
+    expect(fine.combination).toContain('disciplined love');
+    expect(fine.goodFor).toBe(T.GOOD_FOR.Mercury.en);
+    expect(fine.areas[0].text).toContain('Systematic, detail-oriented work');
+  });
+
+  it('gives one line per life area, in a fixed order, from this pairing', () => {
     expect(s.areas.map(a => a.area)).toEqual(['career', 'wealth', 'relationships', 'health']);
-    expect(s.areas[0].text).toMatch(/^Career: a good stretch/);
-    expect(s.areas[3].text).toMatch(/^Health: take extra care/);
+    expect(s.areas[0].text).toMatch(/^Career: Long-term creative projects/);
+    expect(s.areas[0].text).toContain('Saturn');
+    expect(s.areas[3].text).toMatch(/^Health: Chronic reproductive/);
   });
 
   it('states where the period stands among all periods', () => {
@@ -84,7 +106,7 @@ describe('buildPlainSummary (English)', () => {
   });
 
   it('never names events, and always says these are tendencies', () => {
-    const all = [s.headline, s.standing, ...s.areas.map(a => a.text), s.goodFor, s.goEasy, ...s.lead, s.next].join(' ');
+    const all = [s.headline, s.standing, s.combination, s.combos, ...s.areas.map(a => a.text), s.goodFor, s.goEasy, ...s.lead, s.next].filter(Boolean).join(' ');
     expect(all).not.toMatch(/\b(marriage|wedding|divorce|death|die|accident|promotion will|you will (get|marry|lose))\b/i);
     expect(s.caution).toMatch(/tendencies/);
     expect(s.caution).toMatch(/not predictions of specific events/);
@@ -131,8 +153,9 @@ describe('plain-summary translations', () => {
   for (const [name, v] of Object.entries(T)) if (typeof v === 'object' && v) walk(name, v);
 
   it('covers every table in all nine languages', () => {
-    // 4 labels + 5 headlines + 2 standing + 9 themes + 4 lead/next + 16 area lines + 9 + 9 advice + 1 caution + 1 date pattern
-    expect(tables.length).toBe(60);
+    // 4 labels + 5 headlines + 2 standing + 9 themes + 4 lead/next + 7 overall/combo lines
+    // + 16 area lines + 9 + 9 advice + 1 caution + 1 date pattern
+    expect(tables.length).toBe(67);
     for (const [name, rec] of tables) for (const l of LANGS) expect(rec[l], `${name}.${l}`).toBeTruthy();
   });
 
@@ -148,7 +171,7 @@ describe('plain-summary translations', () => {
 
   it.each(LANGS)('%s builds a complete summary with no unfilled placeholders', lang => {
     const s = buildPlainSummary(base(lang));
-    const all = [s.headline, s.standing!, ...s.areas.map(a => a.text), s.goodFor, s.goEasy, ...s.lead, s.next, s.caution, ...Object.values(s.labels)];
+    const all = [s.headline, s.standing!, s.combination, s.combos, ...s.areas.map(a => a.text), s.goodFor, s.goEasy, ...s.lead, s.next, s.caution, ...Object.values(s.labels)].filter((t): t is string => !!t);
     for (const t of all) { expect(t).toBeTruthy(); expect(t).not.toMatch(/\{\w+\}/); }
     if (lang !== 'en') expect(s.headline).not.toBe(buildPlainSummary(base('en')).headline);
   });

@@ -47,7 +47,13 @@ export const PlainSummaryCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) =
     overallRating: prediction.overallRating,
     overallPercentile: prediction.overallPercentile,
     predictions: prediction.predictions,
-    periods: { mahadasha: currentPeriods.mahadasha, antardasha: currentPeriods.antardasha },
+    periods: {
+      mahadasha: currentPeriods.mahadasha,
+      antardasha: currentPeriods.antardasha,
+      pratyantardasha: currentPeriods.pratyantardasha,
+      sookshmaDasha: currentPeriods.sookshmaDasha,
+    },
+    indicators: prediction.indicators,
   }), [lang, prediction, currentPeriods]);
 
   // The Now tab is read against today's sky, so transit combinations apply.
@@ -79,7 +85,8 @@ export const PlainSummaryCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) =
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[10px] uppercase tracking-wider text-white/40">{s.labels.title}</div>
-          <h3 className="text-base font-semibold text-white leading-snug">{s.headline}</h3>
+          <h3 className="text-[15px] font-medium text-white leading-relaxed">{s.headline}</h3>
+          {s.combination && <p className="text-[13px] text-white/75 leading-relaxed mt-1.5">{s.combination}</p>}
         </div>
         <div className={`px-2.5 py-1 rounded-md border text-[11px] font-mono shrink-0 ${ratingColor(prediction.overallRating)}`}>
           {prediction.overallRating}/10
@@ -89,6 +96,7 @@ export const PlainSummaryCard: React.FC<{ snap: PeriodSnapshot }> = ({ snap }) =
       {(s.standing || readings.general) && (
         <div className="-mt-2">
           {s.standing && <p className="text-xs text-white/60">{s.standing}</p>}
+          {s.combos && <p className="text-[12px] text-white/60 leading-relaxed mt-1">{s.combos}</p>}
           {readings.general?.why && <p className="text-xs text-white/50 mt-1">{readings.general.why}</p>}
           {readings.general && <AreaWhy reading={readings.general} label={readings.general.labels.whyRating} />}
         </div>
