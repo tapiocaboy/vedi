@@ -13,12 +13,12 @@
  * is a long curved dash, and the whole cloud reads as flowing rather than
  * sliding. The assemble/hold/dissolve physics is shared by every theme; only
  * the *skin* changes per `theme` — palette, backdrop, and label colour.
- * Every theme draws the same ice sparks; only the colour and backdrop differ:
- *   - default (Night):  ice-blue streaks on a near-black field.
+ * Every theme draws the same sparks; only the colour and backdrop differ:
+ *   - default (Night):  ice-cyan streaks on an obsidian field.
  *   - chalk (Ink):      silver hairlines on a flat black field.
- *   - terminal (Signal): restrained green streaks on a dim field.
- *   - aqua (Glass):     instrument blue on a deep blue field.
- *   - day (Day):        ice blue on a pale field. The backdrop is light, so
+ *   - terminal (Signal): phosphor streaks on a dim field.
+ *   - aqua (Glass):     cyan on a deep blue field.
+ *   - day (Day):        steel blue on a pale field. The backdrop is light, so
  *                       this variant swaps 'lighter' glow blending for ordinary
  *                       alpha compositing.
  *
@@ -113,30 +113,30 @@ function variantFor(theme: string | undefined): Variant {
 
 /** Three tiers per variant: core, deep, pale highlight — same shape as the original GOLD table. */
 const PALETTE: Record<Variant, [number, number, number][]> = {
-  default:  [[142, 170, 255], [91, 124, 250], [232, 238, 255]],
+  default:  [[125, 232, 255], [47, 107, 255], [214, 236, 255]],
   chalk:    [[226, 232, 240], [148, 163, 184], [248, 250, 252]],
-  terminal: [[61, 220, 151], [34, 184, 116], [210, 248, 232]],
-  aqua:     [[91, 124, 250], [47, 95, 224], [197, 212, 255]],
-  day:      [[62, 95, 224], [91, 124, 250], [210, 220, 255]],
-  petals:   [[91, 124, 250], [62, 95, 224], [232, 238, 255]],
+  terminal: [[46, 230, 168], [20, 184, 122], [223, 254, 242]],
+  aqua:     [[62, 224, 255], [14, 90, 224], [210, 236, 255]],
+  day:      [[12, 91, 212], [58, 160, 255], [197, 222, 255]],
+  petals:   [[58, 160, 255], [12, 91, 212], [234, 243, 255]],
 };
 
 const BACKDROP: Record<Variant, string> = {
-  default:  'radial-gradient(ellipse at center, #0c1224 0%, #05060c 70%)',
-  chalk:    'radial-gradient(ellipse at center, #12141a 0%, #07080c 72%)',
-  terminal: 'radial-gradient(ellipse at center, #07140f 0%, #030605 72%)',
-  aqua:     'radial-gradient(ellipse at center, #102044 0%, #070b16 72%)',
-  day:      'radial-gradient(ellipse at center, #f7f8fb 0%, #e4eaf5 72%)',
-  petals:   'radial-gradient(ellipse at center, #f7f8fb 0%, #e4eaf5 72%)',
+  default:  'radial-gradient(ellipse at center, #0a1428 0%, #04060c 70%)',
+  chalk:    'radial-gradient(ellipse at center, #121418 0%, #040506 72%)',
+  terminal: 'radial-gradient(ellipse at center, #062018 0%, #030806 72%)',
+  aqua:     'radial-gradient(ellipse at center, #12305a 0%, #071018 72%)',
+  day:      'radial-gradient(ellipse at center, #f4f8fc 0%, #d5e3f2 72%)',
+  petals:   'radial-gradient(ellipse at center, #f4f8fc 0%, #d5e3f2 72%)',
 };
 
 const LABEL_COLOR: Record<Variant, { tag: string; title: string; sub: string }> = {
-  default:  { tag: 'rgba(142,170,255,0.85)', title: '#eef2ff', sub: 'rgba(142,170,255,0.55)' },
+  default:  { tag: 'rgba(125,232,255,0.9)',  title: '#f2f9ff', sub: 'rgba(125,232,255,0.6)' },
   chalk:    { tag: 'rgba(226,232,240,0.8)',  title: '#f8fafc', sub: 'rgba(148,163,184,0.7)' },
-  terminal: { tag: 'rgba(61,220,151,0.85)',  title: '#e8f7ef', sub: 'rgba(61,220,151,0.55)' },
-  aqua:     { tag: 'rgba(142,170,255,0.9)',  title: '#eef2ff', sub: 'rgba(142,170,255,0.6)' },
-  day:      { tag: 'rgba(62,95,224,0.85)',   title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
-  petals:   { tag: 'rgba(62,95,224,0.85)',   title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
+  terminal: { tag: 'rgba(46,230,168,0.9)',   title: '#e8f7ef', sub: 'rgba(46,230,168,0.55)' },
+  aqua:     { tag: 'rgba(62,224,255,0.95)',  title: '#f2faff', sub: 'rgba(142,202,255,0.7)' },
+  day:      { tag: 'rgba(12,91,212,0.9)',    title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
+  petals:   { tag: 'rgba(12,91,212,0.9)',    title: '#0f172a', sub: 'rgba(30,41,59,0.55)' },
 };
 
 /** ASCII-only so canvas monospace metrics stay predictable across platforms. */

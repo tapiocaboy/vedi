@@ -29,6 +29,9 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
   const { lang, t } = useLang();
   const zodiacs = useMemo(() => computeZodiacEffects(gochara, lang), [gochara, lang]);
   const [open, setOpen] = useState<number | null>(gochara.natalMoonRashi);
+  const [others, setOthers] = useState(false);
+  const mine = zodiacs.filter(z => z.rashi === gochara.natalMoonRashi);
+  const list = !standalone || others || mine.length === 0 ? zodiacs : mine;
 
   const head = isLight ? 'text-gray-800' : 'text-white';
   const body = isLight ? 'text-slate-600' : 'text-white/65';
@@ -56,7 +59,7 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
       <p className={`text-[11px] mb-3 ${sub}`}>{t('now.zodiacEffectsSubtitle')}</p>
 
       <div className="space-y-1.5">
-        {zodiacs.map(z => {
+        {list.map(z => {
           const isMine = z.rashi === gochara.natalMoonRashi;
           const isOpen = open === z.rashi;
           return (
@@ -110,6 +113,17 @@ export const ZodiacEffectsCard: React.FC<Props> = ({ gochara, standalone }) => {
           );
         })}
       </div>
+
+      {standalone && mine.length > 0 && zodiacs.length > mine.length && (
+        <button
+          type="button"
+          onClick={() => setOthers(o => !o)}
+          className="mt-2 w-full min-h-11 rounded-lg border text-xs font-semibold hover:bg-white/[0.04]"
+          style={{ borderColor: isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.10)', color: isLight ? '#334155' : 'rgba(255,255,255,0.70)' }}
+        >
+          {others ? t('common.hide') : `${t('common.show')} (${zodiacs.length - mine.length})`}
+        </button>
+      )}
     </div>
   );
 };

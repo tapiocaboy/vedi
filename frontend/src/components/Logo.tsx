@@ -18,7 +18,7 @@ export const Logo: React.FC<LogoProps> = ({ size = 40, className = '' }) => (
     height={size}
     viewBox="0 0 64 64"
     fill="none"
-    className={className}
+    className={`brand-mark ${className}`}
     aria-hidden
   >
     <rect x="5" y="5" width="54" height="54" rx="16" stroke={ACCENT} strokeWidth="1.75" />

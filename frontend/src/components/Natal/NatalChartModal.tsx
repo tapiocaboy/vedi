@@ -87,7 +87,6 @@ const LineRow: React.FC<{ line: NatalLine; open: boolean; onToggle: () => void }
             <span key={i} className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold ${TONE_CHIP[b.tone]}`}>{b.label}</span>
           ))}
         </div>
-        {!open && <p className="text-[11.5px] text-white/55 leading-relaxed mt-2">{line.summary}</p>}
       </div>
     </button>
     <AnimatePresence initial={false}>
@@ -109,15 +108,15 @@ const LineRow: React.FC<{ line: NatalLine; open: boolean; onToggle: () => void }
   </div>
 );
 
-const GROUP_LABEL: Record<NatalLine['group'], string> = {
-  lagna: 'Ascendant & Birth Star',
-  nakshatra: 'Ascendant & Birth Star',
-  planet: 'The Nine Planets',
-  house: 'The Twelve Houses',
-};
+const GROUPS = [
+  { id: 'core', key: 'natal.groupCore' as const, match: (g: NatalLine['group']) => g === 'lagna' || g === 'nakshatra' },
+  { id: 'planet', key: 'natal.groupPlanets' as const, match: (g: NatalLine['group']) => g === 'planet' },
+  { id: 'house', key: 'natal.groupHouses' as const, match: (g: NatalLine['group']) => g === 'house' },
+];
 
 const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
   const { lang, t } = useLang();
+  const [group, setGroup] = useState<(typeof GROUPS)[number]['id']>('core');
   const [openId, setOpenId] = useState<string | null>('lagna');
 
   const { data, isLoading, error } = useQuery({
@@ -137,8 +136,7 @@ const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
     return <div className="text-rose-300 text-sm py-10 text-center">{t('now.failed')}</div>;
   }
 
-  // Render groups in order, with a header before each new group.
-  const groupsRendered = new Set<string>();
+  const shown = data.lines.filter(line => GROUPS.find(g => g.id === group)!.match(line.group));
   return (
     <div className="space-y-4">
       <div className="rounded-xl border p-3.5" style={{ borderColor: 'rgba(var(--c-accent-rgb),0.20)', background: 'rgba(var(--c-accent-rgb),0.05)' }}>
@@ -149,19 +147,32 @@ const Body: React.FC<{ birthData: BirthData }> = ({ birthData }) => {
         <p className="text-[12px] text-white/70 leading-relaxed">{t('natal.intro')}</p>
       </div>
 
-      {data.lines.map(line => {
-        const label = GROUP_LABEL[line.group];
-        const showHeader = !groupsRendered.has(label);
-        if (showHeader) groupsRendered.add(label);
-        return (
-          <React.Fragment key={line.id}>
-            {showHeader && (
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-white/40 pt-1 px-0.5">{label}</div>
-            )}
-            <LineRow line={line} open={openId === line.id} onToggle={() => setOpenId(openId === line.id ? null : line.id)} />
-          </React.Fragment>
-        );
-      })}
+      <div className="flex flex-wrap gap-1.5">
+        {GROUPS.map(g => {
+          const count = data.lines.filter(line => g.match(line.group)).length;
+          const on = group === g.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => {
+                setGroup(g.id);
+                const first = data.lines.find(line => g.match(line.group));
+                setOpenId(first?.id ?? null);
+              }}
+              className={`min-h-9 px-3 rounded-full text-[11px] font-semibold border ${on ? 'on-accent text-white border-transparent' : 'border-white/10 text-white/70'}`}
+              style={on ? { background: 'var(--c-accent)' } : undefined}
+            >
+              {t(g.key)} · {count}
+            </button>
+          );
+        })}
+      </div>
+
+      {shown.map(line => (
+        <LineRow key={line.id} line={line} open={openId === line.id} onToggle={() => setOpenId(openId === line.id ? null : line.id)} />
+      ))}
 
       <p className="text-[10px] text-white/30 text-center pt-1">{t('natal.disclaimer')}</p>
     </div>

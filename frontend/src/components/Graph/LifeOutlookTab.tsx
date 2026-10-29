@@ -3,10 +3,10 @@
  *
  *   • Your life in chapters — every main period from birth to 90 as a band,
  *     named in plain words, with a "you are here" marker.
- *   • The year ahead — twelve months side by side: the overall reading and the
- *     four life areas as bars (height = where the month stands among all
- *     periods, colour = the trend label used everywhere in the app), the short
- *     stretches underneath, and the dates the periods change.
+ *   • The year ahead — one line for the shape of the year (height = where the
+ *     month stands among all periods), a ribbon for the short stretches, and a
+ *     heatmap for the four life areas (colour = the trend, depth = how strong
+ *     that standing is). The dates the periods change are marked on the line.
  *
  * Tapping a month opens its reading in plain words, with the astrology one tap
  * further down, exactly as on the Now and Timeline tabs. Each month is the
@@ -19,6 +19,7 @@ import { CheckCircle, CircleDot, CalendarRange, Loader2, MinusCircle, Route } fr
 import { getYearAhead, type BirthData, type YearAhead, type MonthOutlook } from '../../services/api';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
+import { useTheme } from '../../hooks/useTheme';
 import { labelArea, labelPlanet, labelTrend } from '../../i18n/astroLabels';
 import { LORD_HEX, TREND_HEX } from '../shared/BarCharts';
 import { AreaReadingList } from '../shared/AreaReadingList';
@@ -37,9 +38,21 @@ type TrendKey = keyof typeof TREND_HEX;
 const ratingTrend = (r: number): TrendKey => (r >= 7 ? 'positive' : r >= 5 ? 'neutral' : r >= 3 ? 'mixed' : 'negative');
 const trendOf = (t: string): TrendKey => (t in TREND_HEX ? (t as TrendKey) : 'neutral');
 
-/** Bar heights in px for a 0–100 standing. */
-const OVERALL_H = 88, AREA_H = 36;
-const barPx = (pct: number, max: number) => Math.max(4, Math.round((Math.min(100, Math.max(0, pct)) / 100) * max));
+/** Trend colour as text. Gold and emerald stay readable on a light page. */
+function toneText(tone: TrendKey, isLight: boolean): string {
+  if (!isLight) return TREND_HEX[tone];
+  if (tone === 'positive') return '#047857';
+  if (tone === 'negative') return '#be123c';
+  if (tone === 'mixed') return '#a16207';
+  return '#475569';
+}
+
+/** Trend colour deepened by the month's standing (0–100). */
+function depth(hex: string, pct: number): string {
+  const t = Math.min(100, Math.max(0, pct)) / 100;
+  const a = Math.round((0.55 + 0.45 * t) * 255).toString(16).padStart(2, '0');
+  return `${hex}${a}`;
+}
 
 const SectionTitle: React.FC<{ icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; kicker: string; title: string; aside?: string }> = ({ icon: Icon, kicker, title, aside }) => (
   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -148,10 +161,14 @@ const ChaptersCard: React.FC<{ data: YearAhead }> = ({ data }) => {
 
 // ── The year ahead ──────────────────────────────────────────────────────────
 
+const PLOT = { w: 720, h: 156, l: 10, r: 10, t: 22, b: 8 };
+
 const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) => void }> = ({ data, picked, onPick }) => {
   const { lang } = useLang();
+  const isLight = useTheme();
   const L = coreLang(lang);
   const months = data.months;
+  const n = months.length;
 
   const points = useMemo(() => months.map(m => {
     const pair = monthPair(m);
@@ -168,9 +185,31 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
     if (!inner) return undefined;
     return outer && outer !== inner ? `${outer}|${inner}` : inner;
   })), [months]);
+  const changeAt = useMemo(() => {
+    const hits = new Set<number>();
+    for (const c of data.changes) {
+      const d = new Date(c.date);
+      const i = months.findIndex(m => m.year === d.getUTCFullYear() && m.month === d.getUTCMonth());
+      if (i >= 0) hits.add(i);
+    }
+    return [...hits];
+  }, [data.changes, months]);
 
-  const cellBg = (i: number) => (i === picked ? 'rounded-lg bg-[rgba(var(--c-accent-rgb),0.10)]' : '');
-  const grid: React.CSSProperties = { gridTemplateColumns: `7.5rem repeat(${months.length}, minmax(0, 1fr))` };
+  const spread = points.reduce((a, p) => Math.max(a, p.percentile), 0) - points.reduce((a, p) => Math.min(a, p.percentile), 100);
+  const bestI = points.reduce((bi, p, i) => (p.percentile > points[bi].percentile ? i : bi), 0);
+  const worstI = points.reduce((wi, p, i) => (p.percentile < points[wi].percentile ? i : wi), 0);
+
+  const slot = (PLOT.w - PLOT.l - PLOT.r) / Math.max(1, n);
+  const xAt = (i: number) => PLOT.l + slot * i + slot / 2;
+  const yAt = (pct: number) => {
+    const t = Math.min(100, Math.max(0, pct)) / 100;
+    return PLOT.t + (PLOT.h - PLOT.t - PLOT.b) * (1 - t);
+  };
+  const floor = PLOT.h - PLOT.b;
+  const line = points.map((p, i) => `${i ? 'L' : 'M'}${xAt(i).toFixed(1)},${yAt(p.percentile).toFixed(1)}`).join(' ');
+  const area = n > 0 ? `${line} L${xAt(n - 1).toFixed(1)},${floor} L${xAt(0).toFixed(1)},${floor} Z` : '';
+  const guide = isLight ? 'rgba(15,23,42,0.10)' : 'rgba(255,255,255,0.10)';
+  const cols = `repeat(${n}, minmax(0, 1fr))`;
 
   return (
     <section className="glass-card rounded-2xl p-6 space-y-4">
@@ -187,82 +226,165 @@ const YearCard: React.FC<{ data: YearAhead; picked: number; onPick: (i: number) 
       </div>
 
       <div className="overflow-x-auto pb-1">
-        <div className="grid min-w-[720px] gap-x-1.5 gap-y-1.5 items-end" style={grid}>
-          <div />
-          {months.map((m, i) => (
-            <button
-              key={m.at}
-              type="button"
-              onClick={() => onPick(i)}
-              aria-pressed={i === picked}
-              aria-label={monthYearLabel(m.year, m.month, L)}
-              className={`min-h-[44px] rounded-lg flex flex-col items-center justify-center border transition-colors ${
-                i === picked ? 'on-accent text-white border-transparent' : 'border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.07]'
-              }`}
-              style={i === picked ? { background: 'var(--c-accent)' } : undefined}
-            >
-              <span className="text-xs font-semibold">{monthShort(m.month, L)}</span>
-              <span className="text-[10px] opacity-75">{m.isNow ? YEAR_TEXT.now[L] : String(m.year).slice(2)}</span>
-            </button>
-          ))}
-
-          <div className="text-[13px] font-semibold text-white pb-1">{YEAR_TEXT.overall[L]}</div>
-          {months.map((m, i) => {
-            const tone = ratingTrend(m.prediction.overallRating);
-            return (
-              <div key={m.at} className={`flex flex-col justify-end ${cellBg(i)}`} style={{ height: OVERALL_H + 18 }}>
-                <span className="text-center text-[10px] font-semibold tabular-nums leading-none mb-1" style={{ color: TREND_HEX[tone] }}>
-                  {m.prediction.overallRating}
-                </span>
-                <div className="relative mx-1.5" style={{ height: OVERALL_H }}>
-                  <div className="absolute inset-0 rounded-md bg-white/[0.05]" />
-                  <div
-                    className="absolute inset-x-0 bottom-0 rounded-t-md rounded-b-sm"
-                    style={{ height: barPx(m.prediction.overallPercentile ?? 50, OVERALL_H), background: TREND_HEX[tone] }}
-                  />
+        <div className="min-w-[520px] space-y-2.5">
+          <div className="flex gap-2">
+            <div className="w-16 shrink-0 flex flex-col">
+              <div className="flex-1 flex items-center text-[11px] font-semibold leading-tight text-white">{YEAR_TEXT.overall[L]}</div>
+              <div className="h-11 mt-1.5 shrink-0" aria-hidden />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="relative">
+                <svg viewBox={`0 0 ${PLOT.w} ${PLOT.h}`} className="block w-full h-auto" aria-hidden>
+                  <defs>
+                    <linearGradient id="year-ahead-fill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="var(--c-accent)" stopOpacity="0.38" />
+                      <stop offset="1" stopColor="var(--c-accent)" stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {[25, 50, 75].map(g => (
+                    <line key={g} x1={PLOT.l} x2={PLOT.w - PLOT.r} y1={yAt(g)} y2={yAt(g)} stroke={guide} strokeWidth="1" />
+                  ))}
+                  {n > 0 && (
+                    <rect
+                      x={PLOT.l + slot * picked}
+                      y={PLOT.t - 6}
+                      width={slot}
+                      height={floor - PLOT.t + 6}
+                      rx="8"
+                      fill="var(--c-accent)"
+                      opacity="0.12"
+                    />
+                  )}
+                  {area && <path d={area} fill="url(#year-ahead-fill)" />}
+                  {line && <path d={line} fill="none" stroke="var(--c-accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />}
+                  {changeAt.map(i => (
+                    <line
+                      key={i}
+                      x1={PLOT.l + slot * i}
+                      x2={PLOT.l + slot * i}
+                      y1={PLOT.t}
+                      y2={floor}
+                      stroke="var(--c-accent-2)"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                    />
+                  ))}
+                  {months.map((m, i) => {
+                    const tone = ratingTrend(m.prediction.overallRating);
+                    const y = yAt(points[i].percentile);
+                    const extreme = spread >= 15 && (i === bestI || i === worstI);
+                    return (
+                      <g key={m.at}>
+                        <circle
+                          cx={xAt(i)}
+                          cy={y}
+                          r={i === picked ? 6.5 : 4.2}
+                          fill={TREND_HEX[tone]}
+                          stroke={extreme ? 'var(--c-accent-2)' : (isLight ? '#ffffff' : '#0b1220')}
+                          strokeWidth={i === picked || extreme ? 2.2 : 1.4}
+                        />
+                        <text
+                          x={xAt(i)}
+                          y={y - 11}
+                          textAnchor="middle"
+                          fontSize="12"
+                          fontWeight="700"
+                          fontFamily="inherit"
+                          fill={toneText(tone, isLight)}
+                        >
+                          {m.prediction.overallRating}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="absolute inset-0 grid" style={{ gridTemplateColumns: cols }}>
+                  {months.map((m, i) => (
+                    <div key={m.at} className="cursor-pointer" onClick={() => onPick(i)} />
+                  ))}
                 </div>
               </div>
-            );
-          })}
-
-          {AREAS.map(area => (
-            <React.Fragment key={area}>
-              <div className="text-xs text-white/70 pb-0.5">{labelArea(area, lang)}</div>
-              {months.map((m, i) => {
-                const p = m.prediction.predictions[area];
-                return (
-                  <div key={m.at} className={`flex flex-col justify-end ${cellBg(i)}`} style={{ height: AREA_H + 4 }}>
-                    <div className="relative mx-2" style={{ height: AREA_H }}>
-                      <div className="absolute inset-0 rounded bg-white/[0.05]" />
-                      <div
-                        className="absolute inset-x-0 bottom-0 rounded-t rounded-b-sm"
-                        style={{ height: barPx(p?.explanation?.percentile ?? 50, AREA_H), background: TREND_HEX[trendOf(p?.trend ?? 'neutral')] }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
-
-          <div className="text-[11px] text-white/45 self-start pt-2">{YEAR_TEXT.stretches[L]}</div>
-          {stretches.map(s => {
-            const [host, fine] = s.lord.includes('|') ? s.lord.split('|') : [s.lord, s.lord];
-            const caption = stretchCaption(host, fine, L);
-            const name = host !== fine ? `${labelPlanet(host, lang)} · ${labelPlanet(fine, lang)}` : labelPlanet(fine, lang);
-            return (
-              <div
-                key={`${s.lord}-${s.start}`}
-                className="self-start min-w-0 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-2 flex flex-col gap-0.5"
-                style={{ gridColumn: `${s.start + 2} / span ${s.span}`, borderTopColor: LORD_HEX[fine] ?? undefined, borderTopWidth: 2 }}
-                title={caption}
-              >
-                <span className="text-xs font-semibold text-white truncate">{name}</span>
-                {/* A one-month column is too narrow for the reading; it stays in the tooltip. */}
-                {s.span > 1 && <span className="text-[11px] leading-snug text-white/60 line-clamp-2">{caption}</span>}
+              <div className="grid gap-1 mt-1.5" style={{ gridTemplateColumns: cols }}>
+                {months.map((m, i) => (
+                  <button
+                    key={m.at}
+                    type="button"
+                    onClick={() => onPick(i)}
+                    aria-pressed={i === picked}
+                    aria-label={`${monthYearLabel(m.year, m.month, L)}, ${YEAR_TEXT.overall[L]} ${m.prediction.overallRating}`}
+                    className={`min-h-11 rounded-lg flex flex-col items-center justify-center ${
+                      i === picked ? 'on-accent text-white' : 'text-white/70 hover:bg-white/[0.05]'
+                    }`}
+                    style={i === picked ? { background: 'var(--c-accent)' } : undefined}
+                  >
+                    <span className="text-[11px] font-semibold leading-none">{monthShort(m.month, L)}</span>
+                    <span className="text-[10px] leading-none mt-0.5 opacity-75">
+                      {m.isNow ? YEAR_TEXT.now[L] : (i === 0 || m.month === 0 ? String(m.year).slice(2) : '')}
+                    </span>
+                  </button>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {stretches.length > 0 && (
+            <div className="flex gap-2">
+              <div className="w-16 shrink-0 text-[10px] leading-tight text-white/45 pt-1">{YEAR_TEXT.stretches[L]}</div>
+              <div className="flex-1 min-w-0 grid gap-1" style={{ gridTemplateColumns: cols }}>
+                {stretches.map(s => {
+                  const [host, fine] = s.lord.includes('|') ? s.lord.split('|') : [s.lord, s.lord];
+                  const caption = stretchCaption(host, fine, L);
+                  const name = labelPlanet(fine, lang);
+                  const title = host !== fine ? `${name} · ${labelPlanet(host, lang)} — ${caption}` : caption;
+                  const hex = LORD_HEX[fine] ?? '#94a3b8';
+                  const live = picked >= s.start && picked < s.start + s.span;
+                  return (
+                    <div
+                      key={`${s.lord}-${s.start}`}
+                      title={title}
+                      className="min-w-0 rounded-lg px-1.5 py-1"
+                      style={{
+                        gridColumn: `${s.start + 1} / span ${s.span}`,
+                        background: `${hex}22`,
+                        boxShadow: `inset 0 2px 0 ${hex}${live ? ', inset 0 0 0 1.5px var(--c-accent)' : ''}`,
+                      }}
+                    >
+                      <span className="block text-[11px] font-semibold text-white truncate">{name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {AREAS.map(area => (
+              <div key={area} className="flex gap-2 items-center">
+                <div className="w-16 shrink-0 text-[10px] leading-tight text-white/70 line-clamp-2" title={labelArea(area, lang)}>
+                  {labelArea(area, lang)}
+                </div>
+                <div className="flex-1 min-w-0 grid gap-1" style={{ gridTemplateColumns: cols }}>
+                  {months.map((m, i) => {
+                    const p = m.prediction.predictions[area];
+                    const tone = trendOf(p?.trend ?? 'neutral');
+                    const pct = p?.explanation?.percentile ?? 50;
+                    return (
+                      <div
+                        key={m.at}
+                        title={`${labelArea(area, lang)} · ${monthYearLabel(m.year, m.month, L)} · ${labelTrend(tone, lang)}`}
+                        onClick={() => onPick(i)}
+                        className="h-8 rounded-md cursor-pointer"
+                        style={{
+                          background: depth(TREND_HEX[tone], pct),
+                          boxShadow: i === picked ? 'inset 0 0 0 2px var(--c-accent)' : undefined,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

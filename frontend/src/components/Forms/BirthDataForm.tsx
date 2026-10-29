@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useId } from 'react';
-import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2, ChevronDown } from 'lucide-react';
+import { Calendar, MapPin, Clock, Settings, LocateFixed, Loader2, ShieldCheck, AlertTriangle, Globe2, ChevronDown, Sparkles } from 'lucide-react';
 import { useLang } from '../../i18n/LanguageContext';
 import type { BirthData } from '../../types/astrology';
 import { validateBirthData, canCastChart } from '../../lib/core/birthDataValidation';
@@ -416,7 +416,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
             <Globe2 className="inline w-3.5 h-3.5 mr-1 text-[var(--c-accent)]" />
             {t('form.system')}
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="system-switch grid grid-cols-2 gap-1">
             {(['VEDIC', 'WESTERN'] as const).map(sys => (
               <button
                 key={sys}
@@ -424,7 +424,7 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
                 onClick={() => setFormData(prev => ({ ...prev, system: sys }))}
                 aria-pressed={formData.system === sys}
                 className={`px-3 py-2 rounded-lg text-[13px] font-bold border transition-all ${
-                  formData.system === sys ? 'text-white on-accent border-transparent' : 'preset-btn'
+                  formData.system === sys ? 'text-white on-accent border-transparent' : 'preset-btn border-transparent'
                 }`}
                 style={formData.system === sys ? { backgroundColor: 'var(--c-accent)' } : undefined}
               >
@@ -691,7 +691,10 @@ export const BirthDataForm: React.FC<Props> = ({ onSubmit, isLoading = false, lo
             {t('form.analyzing')}
           </span>
         ) : (
-          t('form.generate')
+          <span className="flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            {t('form.generate')}
+          </span>
         )}
       </button>
 

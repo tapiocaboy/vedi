@@ -41,6 +41,7 @@ import { ExperimentalMatchModal } from './components/Match/ExperimentalMatchModa
 import { MonthlyTransitsModal } from './components/Transits/MonthlyTransitsModal';
 import { NatalChartModal } from './components/Natal/NatalChartModal';
 import { FavourableForecast } from './components/Forecast/FavourableForecast';
+import { WindowsModal } from './components/Forecast/WindowsModal';
 import { HoroscopeChat } from './components/Chat/HoroscopeChat';
 import { downloadChartMarkdown } from './lib/core/exportChart';
 import { isChatConfigured } from './services/horoscopeChat';
@@ -167,7 +168,7 @@ function SectionTabs({
               {selected && (
                 <motion.span
                   layoutId="active-tab-pill"
-                  className="absolute inset-0 rounded-lg shadow-sm"
+                  className="absolute inset-0 rounded-lg tab-pill"
                   style={{ backgroundColor: ACCENT }}
                   transition={{ type: 'spring', stiffness: 480, damping: 38 }}
                 />
@@ -208,6 +209,7 @@ function AppContent() {
   const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [matchExperimentalVisible, setMatchExperimentalVisible] = useState(false);
   const [monthlyTransitsVisible, setMonthlyTransitsVisible] = useState(false);
+  const [windowsVisible, setWindowsVisible] = useState(false);
   const [natalChartVisible, setNatalChartVisible] = useState(false);
   const [chatVisible, setChatVisible] = useState(false);
   const [sidebarHidden, setSidebarHidden] = useState(false);
@@ -397,6 +399,13 @@ function AppContent() {
         onDismiss={() => setMatchExperimentalVisible(false)}
       />
 
+      {/* All 18 months — the best-window explanation behind the header strip */}
+      <WindowsModal
+        visible={windowsVisible}
+        onClose={() => setWindowsVisible(false)}
+        chart={chartData}
+      />
+
       {/* Monthly transits — sign changes this month + their effects */}
       <MonthlyTransitsModal
         visible={monthlyTransitsVisible}
@@ -454,12 +463,10 @@ function AppContent() {
         onDecline={() => handleCookieConsent(false)}
       />
 
-      {/* High-tech particle network — dark & light themes only (mono/terminal are static) */}
+      {/* Star field on Night, Day, and Glass. Ink and Signal stay a still panel. */}
       {theme !== 'mono' && theme !== 'terminal' && <ParticleField isLight={isLight} />}
 
-      {theme !== 'mono' && theme !== 'terminal' && (
-        <div className="page-wash" aria-hidden />
-      )}
+      <div className="page-wash" aria-hidden />
 
       {/* ── Header ───────────────────────────────────────────────────── */}
       <header className="sticky z-30 border-b app-header top-0">
@@ -473,7 +480,7 @@ function AppContent() {
           <FavourableForecast
             chart={chartData}
             isLight={isLight}
-            onClick={() => setMonthlyTransitsVisible(true)}
+            onClick={() => setWindowsVisible(true)}
           />
 
           {/* Right side: status + language + theme toggle */}
@@ -959,10 +966,16 @@ function AppContent() {
                 >
                   <div className="form-wash" aria-hidden />
                   <div className="relative z-10">
-                    <h3 className="text-2xl font-display font-bold text-white mb-3">
-                      {t('empty.title')}
-                    </h3>
-                    <p className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/50'}`}>
+                    <div className="empty-hero">
+                      <div className="empty-stage" aria-hidden>
+                        <span className="empty-ring empty-ring-sweep" />
+                        <span className="empty-ring empty-ring-b" />
+                      </div>
+                      <h3 className="relative z-[1] text-2xl sm:text-3xl font-display font-bold text-gradient max-w-md">
+                        {t('empty.title')}
+                      </h3>
+                    </div>
+                    <p className={`max-w-sm mx-auto text-sm leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/55'}`}>
                       {t('empty.body')}
                     </p>
                     <ol className="flex flex-wrap items-center justify-center gap-2 mt-5">

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarRange, X, Loader2, ArrowRight, RotateCcw, Sparkles, AlertTriangle, TrendingUp, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
+import { CalendarRange, X, Loader2, ArrowRight, RotateCcw, Sparkles, AlertTriangle, TrendingUp, ChevronLeft, ChevronRight, ChevronDown, RotateCw } from 'lucide-react';
 import { getMonthlyTransits, type MonthlyTransitEvent } from '../../lib/core/monthlyTransits';
 import type { Chart } from '../../types/astrology';
 import { useLang } from '../../i18n/LanguageContext';
 import { coreLang } from '../../i18n/translations';
-import { labelPlanet } from '../../i18n/astroLabels';
+import { labelPlanet, labelTrend } from '../../i18n/astroLabels';
 
 interface Props {
   visible: boolean;
@@ -18,32 +18,38 @@ function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function valenceChip(v: number): { label: string; cls: string } {
-  if (v > 0) return { label: 'Favourable', cls: 'text-emerald-300 bg-emerald-500/12 border-emerald-400/30' };
-  if (v < 0) return { label: 'Demanding', cls: 'text-rose-300 bg-rose-500/12 border-rose-400/30' };
-  return { label: 'Mixed', cls: 'text-amber-300 bg-amber-500/12 border-amber-400/30' };
+function valenceOf(v: number, lang: Parameters<typeof labelTrend>[1]): { label: string; cls: string } {
+  if (v > 0) return { label: labelTrend('positive', lang), cls: 'text-emerald-300 bg-emerald-500/12 border-emerald-400/30' };
+  if (v < 0) return { label: labelTrend('negative', lang), cls: 'text-rose-300 bg-rose-500/12 border-rose-400/30' };
+  return { label: labelTrend('mixed', lang), cls: 'text-amber-300 bg-amber-500/12 border-amber-400/30' };
 }
 
 const EventCard: React.FC<{ ev: MonthlyTransitEvent }> = ({ ev }) => {
   const { lang, t } = useLang();
-  const chip = valenceChip(ev.valence);
+  const [open, setOpen] = useState(false);
+  const chip = valenceOf(ev.valence, lang);
   const Icon = ev.type === 'ingress' ? ArrowRight : RotateCcw;
   const accentBorder = ev.valence > 0 ? 'border-emerald-400/20' : ev.valence < 0 ? 'border-rose-400/20' : 'border-white/10';
+  const action = ev.type === 'ingress'
+    ? `${t('monthly.enters')} ${ev.toRashiName}`
+    : `${ev.type === 'retrograde' ? t('monthly.retro') : t('monthly.direct')} · ${ev.toRashiName}`;
 
   return (
-    <div className={`rounded-xl border ${accentBorder} bg-black/30 p-4 space-y-2.5`}>
-      <div className="flex items-start gap-2.5">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+    <div className={`rounded-xl border ${accentBorder} bg-black/30 overflow-hidden`}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="w-full text-left p-3.5 flex items-start gap-2.5"
+      >
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           style={{ background: 'rgba(var(--c-accent-rgb),0.10)', border: '1px solid rgba(var(--c-accent-rgb),0.22)' }}>
           <Icon className="w-4 h-4" style={{ color: 'var(--c-accent-2)' }} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <h4 className="text-sm font-semibold text-white leading-tight">
-              {labelPlanet(ev.planet, lang)}{' '}
-              {ev.type === 'ingress'
-                ? <span className="text-white/60 font-normal">{t('monthly.enters')} {ev.toRashiName}</span>
-                : <span className="text-white/60 font-normal">{ev.type === 'retrograde' ? t('monthly.retro') : t('monthly.direct')} · {ev.toRashiName}</span>}
+              {labelPlanet(ev.planet, lang)} <span className="text-white/60 font-normal">{action}</span>
             </h4>
             <span className="text-[10px] font-mono text-white/40 shrink-0">{fmtDate(ev.date)}</span>
           </div>
@@ -53,19 +59,23 @@ const EventCard: React.FC<{ ev: MonthlyTransitEvent }> = ({ ev }) => {
             <span className="text-[10px] font-mono text-white/40">· {ev.houseFromLagna}H {t('monthly.fromLagna')}</span>
           </div>
         </div>
-      </div>
-
-      <div className="pl-[2.625rem] space-y-2">
-        <p className="text-[12px] text-white/75 leading-relaxed">{ev.effect}</p>
-        <ul className="space-y-1">
-          {ev.themes.map((th, i) => (
-            <li key={i} className="text-[11px] text-white/55 leading-relaxed flex gap-1.5">
-              <span className="text-violet-400 shrink-0">•</span>
-              <span>{th}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+        <ChevronDown className={`w-4 h-4 mt-1 shrink-0 text-white/45 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-3.5 pb-3.5 pl-[3.4rem] space-y-2">
+          <p className="text-[12px] text-white/75 leading-relaxed">{ev.effect}</p>
+          {ev.themes.length > 0 && (
+            <ul className="space-y-1">
+              {ev.themes.map((th, i) => (
+                <li key={i} className="text-[11px] text-white/55 leading-relaxed flex gap-1.5">
+                  <span className="text-white/30 shrink-0">•</span>
+                  <span>{th}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 };

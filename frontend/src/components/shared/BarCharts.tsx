@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 export const BAR_PALETTE = {
-  pink: '#5B7CFA',
+  pink: 'var(--c-accent)',
   gold: '#ffcb3a',
   plum: '#1e1225',
 } as const;
