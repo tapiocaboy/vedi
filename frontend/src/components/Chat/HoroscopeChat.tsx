@@ -10,6 +10,7 @@ import {
   type ChatMessage,
 } from '../../services/horoscopeChat';
 import { useLang } from '../../i18n/LanguageContext';
+import { interpolate } from '../../i18n/translations';
 import { Markdown } from './Markdown';
 import { backdropTransition, drawerTransition } from '../shared/motion';
 
@@ -178,7 +179,7 @@ export const HoroscopeChat: React.FC<Props> = ({ visible, onClose, chart }) => {
                         {DIVISIONAL_INDEX.map(d => (
                           <button
                             key={d.code}
-                            onClick={() => send(t('chat.askAboutChart', { code: d.code, plain: d.plain }))}
+                            onClick={() => send(interpolate(t('chat.askAboutChart'), { code: d.code, plain: d.plain }))}
                             title={d.question}
                             className="text-[11px] rounded-lg border border-white/12 bg-white/8 px-2 py-1 text-white/70 hover:bg-white/15 hover:text-white transition-colors"
                           >

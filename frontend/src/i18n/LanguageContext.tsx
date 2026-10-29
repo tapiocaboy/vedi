@@ -13,7 +13,12 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue>({
   lang: 'en',
   setLang: () => {},
-  t: key => translations.en[key],
+  // Same substitution as the provider. A stale context (after a failed refresh)
+  // must still fill {placeholders}, or buttons send the template literally.
+  t: (key, vars) => {
+    const raw = translations.en[key];
+    return vars ? interpolate(raw, vars) : raw;
+  },
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
